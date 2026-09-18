@@ -1,6 +1,8 @@
 using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
@@ -17,8 +19,12 @@ public abstract class PrivilegedDbContext : DbContextBase
     private readonly IEntityTypeConfigurationProvider provider;
     private readonly string defaultSchema;
 
-    protected PrivilegedDbContext(DbContextOptions options, IEntityTypeConfigurationProvider provider, string defaultSchema)
-        : base(options)
+    protected PrivilegedDbContext(
+        DbContextOptions options,
+        IOptions<OutboxOptions> outboxOptions,
+        IEntityTypeConfigurationProvider provider,
+        string defaultSchema)
+        : base(options, outboxOptions)
     {
         this.provider = provider;
         this.defaultSchema = defaultSchema;

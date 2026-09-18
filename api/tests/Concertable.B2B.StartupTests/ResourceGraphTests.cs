@@ -30,7 +30,7 @@ public sealed class ResourceGraphTests
     [Fact]
     public async Task ProductionGraphAndStrictValidation_AreValid()
     {
-        var validBuilder = AppHost.CreateBuilder([]);
+        var validBuilder = AppHost.CreateBuilder(["--Stripe:SecretKey="]);
         AssertImageEndpoint(validBuilder, AuthConstants.Resource, "https", scheme: "http");
         AssertContainerRuntimeArgs(validBuilder, AuthConstants.Resource, "--user", "root");
         AssertUsesDeveloperCertificate(validBuilder, AuthConstants.Resource);
@@ -45,6 +45,24 @@ public sealed class ResourceGraphTests
         var paymentEnvironment = await GetRawEnvironmentAsync(payment, CancellationToken.None);
         Assert.Equal("8080;8081", paymentEnvironment["ASPNETCORE_HTTP_PORTS"]);
         Assert.Equal("8081", paymentEnvironment["PaymentTransport__GrpcPort"]);
+        var migrations = Assert.IsType<ProjectResource>(validBuilder.Resources.Single(resource =>
+            resource.Name == B2BConstants.MigrationsResource));
+        Assert.NotEmpty(migrations.Annotations.OfType<EnvironmentCallbackAnnotation>());
+        AssertWaitsFor(
+            validBuilder,
+            B2BConstants.MigrationsResource,
+            B2BConstants.Database,
+            WaitType.WaitUntilHealthy);
+        AssertWaitsFor(
+            validBuilder,
+            B2BConstants.WebResource,
+            B2BConstants.MigrationsResource,
+            WaitType.WaitForCompletion);
+        AssertWaitsFor(
+            validBuilder,
+            B2BConstants.WorkersResource,
+            B2BConstants.MigrationsResource,
+            WaitType.WaitForCompletion);
         foreach (var resourceName in new[] { B2BConstants.WebResource, B2BConstants.WorkersResource })
         {
             var consumer = validBuilder.Resources.Single(resource => resource.Name == resourceName);
@@ -379,5 +397,21 @@ public sealed class ResourceGraphTests
         Assert.Equal(endpointName, endpoint.Name);
         Assert.Equal(scheme, endpoint.UriScheme);
         Assert.Equal(targetPort, endpoint.TargetPort);
+    }
+
+    private static void AssertWaitsFor(
+        IDistributedApplicationBuilder builder,
+        string resourceName,
+        string dependencyName,
+        WaitType waitType)
+    {
+        var resource = builder.Resources.Single(candidate => candidate.Name == resourceName);
+        var wait = Assert.Single(
+            resource.Annotations.OfType<WaitAnnotation>(),
+            annotation => annotation.Resource.Name == dependencyName);
+
+        Assert.Equal(waitType, wait.WaitType);
+        if (waitType == WaitType.WaitForCompletion)
+            Assert.Equal(0, wait.ExitCode);
     }
 }

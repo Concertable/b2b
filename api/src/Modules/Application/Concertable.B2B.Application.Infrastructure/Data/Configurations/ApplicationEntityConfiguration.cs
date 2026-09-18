@@ -26,11 +26,11 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
         builder.Navigation(application => application.VerifyPayment).AutoInclude();
         builder.HasIndex(application => application.AcceptanceOperationId)
             .IsUnique()
-            .HasFilter("[AcceptanceOperationId] IS NOT NULL");
+            .HasFilter("\"AcceptanceOperationId\" IS NOT NULL");
         builder.HasIndex(application => new { application.OpportunityId, application.ArtistId }).IsUnique();
         builder.HasIndex(application => application.OpportunityId)
             .IsUnique()
-            .HasFilter($"[State] = {(int)ApplicationState.Accepted}");
+            .HasFilter($"\"State\" = {(int)ApplicationState.Accepted}");
         builder.ComplexProperty(application => application.ArtistESignature, ConfigureSignature);
     }
 

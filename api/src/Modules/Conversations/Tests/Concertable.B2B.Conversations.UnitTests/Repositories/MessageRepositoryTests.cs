@@ -2,7 +2,9 @@ using Concertable.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.B2B.Conversations.Infrastructure.Repositories;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Conversations.UnitTests.Repositories;
 
@@ -19,6 +21,7 @@ public sealed class MessageRepositoryTests
 
     private static ConversationsDbContext NewContext(string dbName) =>
         new(new DbContextOptionsBuilder<ConversationsDbContext>().UseInMemoryDatabase(dbName).Options,
+            Options.Create(new OutboxOptions()),
             new ConversationsConfigurationProvider(),
             new StubTenantContext(VenueTenantId));
 

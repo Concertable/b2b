@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -19,10 +20,10 @@ namespace Concertable.B2B.Deal.Infrastructure.Data.Migrations
                 schema: "deal",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PaymentMethod = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PaymentMethod = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,8 +35,8 @@ namespace Concertable.B2B.Deal.Infrastructure.Data.Migrations
                 schema: "deal",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false),
-                    ArtistDoorPercent = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false),
+                    ArtistDoorPercent = table.Column<decimal>(type: "numeric", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -54,8 +55,8 @@ namespace Concertable.B2B.Deal.Infrastructure.Data.Migrations
                 schema: "deal",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false),
-                    Fee = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false),
+                    Fee = table.Column<decimal>(type: "numeric", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -74,8 +75,8 @@ namespace Concertable.B2B.Deal.Infrastructure.Data.Migrations
                 schema: "deal",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false),
-                    HireFee = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false),
+                    HireFee = table.Column<decimal>(type: "numeric", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -94,9 +95,9 @@ namespace Concertable.B2B.Deal.Infrastructure.Data.Migrations
                 schema: "deal",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false),
-                    Guarantee = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    ArtistDoorPercent = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false),
+                    Guarantee = table.Column<decimal>(type: "numeric", nullable: false),
+                    ArtistDoorPercent = table.Column<decimal>(type: "numeric", nullable: false)
                 },
                 constraints: table =>
                 {

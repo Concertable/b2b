@@ -52,6 +52,11 @@
   ],
   "oci": [
     {
+      "repository": "ghcr.io/concertable/b2b-migrations",
+      "project": "api/src/Concertable.B2B.Migrations/Concertable.B2B.Migrations.csproj",
+      "archive": "b2b-migrations.tar.gz"
+    },
+    {
       "repository": "ghcr.io/concertable/b2b-seeding-simulator",
       "project": "api/src/Seed/Concertable.B2B.Seed.Simulator/Concertable.B2B.Seed.Simulator.csproj",
       "archive": "b2b-seeding-simulator.tar.gz"

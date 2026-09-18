@@ -20,7 +20,7 @@ internal sealed class TenantInvitationEntityConfiguration : IEntityTypeConfigura
         // One live invite per (tenant, email); filtered on Pending so a revoked/expired one doesn't block a re-invite.
         builder.HasIndex(i => new { i.TenantId, i.Email })
             .IsUnique()
-            .HasFilter($"[Status] = {(int)InvitationStatus.Pending}");
+            .HasFilter($"\"Status\" = {(int)InvitationStatus.Pending}");
 
         // Registration-match lookup in TenantProvisioningHandler.
         builder.HasIndex(i => i.Email);

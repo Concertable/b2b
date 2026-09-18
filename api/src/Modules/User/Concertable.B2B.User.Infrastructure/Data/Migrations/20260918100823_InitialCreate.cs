@@ -15,17 +15,20 @@ namespace Concertable.B2B.User.Infrastructure.Data.Migrations
             migrationBuilder.EnsureSchema(
                 name: "user");
 
+            migrationBuilder.AlterDatabase()
+                .Annotation("Npgsql:PostgresExtension:postgis", ",,");
+
             migrationBuilder.CreateTable(
                 name: "Users",
                 schema: "user",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    County = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Town = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Location = table.Column<Point>(type: "geography", nullable: true),
-                    Avatar = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    County = table.Column<string>(type: "text", nullable: true),
+                    Town = table.Column<string>(type: "text", nullable: true),
+                    Location = table.Column<Point>(type: "geometry (point, 4326)", nullable: true),
+                    Avatar = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {

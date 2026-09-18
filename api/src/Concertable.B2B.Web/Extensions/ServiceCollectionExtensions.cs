@@ -4,7 +4,7 @@ using Concertable.DataAccess.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Data;
@@ -95,7 +95,7 @@ public static class ServiceCollectionExtensions
         services.AddDataAccessSpecifications();
 
         services.AddScoped<IDbConnection>(_ =>
-            new SqlConnection(configuration.GetConnectionString(B2BDb.Name)));
+            new NpgsqlConnection(configuration.GetConnectionString(B2BDb.Name)));
 
         return services;
     }

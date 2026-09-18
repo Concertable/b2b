@@ -10,7 +10,7 @@ public sealed class InvoiceSequenceEntity : ISequence<InvoiceSequenceEntity>
 {
     public Guid TenantId { get; private set; }
     public long NextNumber { get; private set; }
-    public byte[] RowVersion { get; private set; } = null!;
+    public uint RowVersion { get; private set; }
 
     private InvoiceSequenceEntity() { }
 

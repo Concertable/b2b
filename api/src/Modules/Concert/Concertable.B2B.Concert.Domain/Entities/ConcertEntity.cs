@@ -25,7 +25,7 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     private static readonly ConcertStateMachine stateMachine = new();
 
     public int Id { get; private set; }
-    public byte[] Version { get; private set; } = null!;
+    public uint Version { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public int BookingId { get; private set; }

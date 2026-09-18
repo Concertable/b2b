@@ -52,6 +52,21 @@ before the entities are migrated.
 
 ## HIGH
 
+### The backend CI category filter silently skips untagged test projects
+
+The backend workflow runs the solution with `--filter
+"Category=Unit|Category=Integration|Category=Architecture|Category=Startup"`. Several projects contain
+tests but no matching category traits, so `dotnet test` reports "No test matches" and exits successfully.
+The affected non-E2E projects observed during the PostgreSQL cut-over are DataAccess unit, Application unit,
+Artist unit, Booking unit, Conversations integration, Conversations unit, User unit, and Venue unit. The
+workflow therefore presents a green backend gate without executing those assemblies.
+
+**Resolves when:** every intended backend test project either supplies a matching assembly/test category or
+the workflow selects projects by an explicit tier manifest, and CI fails when any intended project discovers
+zero selected tests.
+
+---
+
 ### Authorization code is homed by accident-of-ownership, not by a real module
 
 `PermissionAuthorizationHandler` / `PermissionRequirement` / `IMembershipContext` (request-time policy

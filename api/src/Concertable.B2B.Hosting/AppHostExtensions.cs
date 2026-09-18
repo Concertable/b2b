@@ -10,10 +10,25 @@ public static class AppHostExtensions
 {
     extension(IDistributedApplicationBuilder builder)
     {
+        public IResourceBuilder<ServiceContainerResource> AddB2BMigrations(
+            string image,
+            string digest,
+            IResourceBuilder<PostgresDatabaseResource> database) =>
+            builder.AddContainerImage(B2BConstants.MigrationsResource, image, digest)
+                .WithReference(database)
+                .WaitFor(database);
+
+        public IResourceBuilder<ProjectResource> AddB2BMigrations<TProject>(
+            IResourceBuilder<PostgresDatabaseResource> database)
+            where TProject : IProjectMetadata, new() =>
+            builder.AddProject<TProject>(B2BConstants.MigrationsResource)
+                .WithReference(database)
+                .WaitFor(database);
+
         public IResourceBuilder<ServiceContainerResource> AddB2BWeb(
             string image,
             string digest,
-            IResourceBuilder<SqlServerDatabaseResource> sql,
+            IResourceBuilder<PostgresDatabaseResource> sql,
             IResourceBuilder<IResourceWithServiceDiscovery> auth,
             IResourceBuilder<AzureStorageResource> storage,
             IResourceBuilder<AzureBlobStorageResource> blobs,
@@ -41,7 +56,7 @@ public static class AppHostExtensions
         }
 
         public IResourceBuilder<ProjectResource> AddB2BWeb<TProject>(
-            IResourceBuilder<SqlServerDatabaseResource> sql,
+            IResourceBuilder<PostgresDatabaseResource> sql,
             IResourceBuilder<IResourceWithServiceDiscovery> auth,
             IResourceBuilder<AzureStorageResource> storage,
             IResourceBuilder<AzureBlobStorageResource> blobs,
@@ -69,7 +84,7 @@ public static class AppHostExtensions
         }
 
         public IResourceBuilder<AzureFunctionsProjectResource> AddB2BWorkers<TProject>(
-            IResourceBuilder<SqlServerDatabaseResource> sql,
+            IResourceBuilder<PostgresDatabaseResource> sql,
             IResourceBuilder<IResourceWithServiceDiscovery>? paymentWeb = null,
             IResourceBuilder<IResourceWithServiceDiscovery>? auth = null)
             where TProject : IProjectMetadata, new()
@@ -103,7 +118,7 @@ public static class AppHostExtensions
         public IResourceBuilder<ServiceContainerResource> AddB2BWorkers(
             string image,
             string digest,
-            IResourceBuilder<SqlServerDatabaseResource> sql,
+            IResourceBuilder<PostgresDatabaseResource> sql,
             IResourceBuilder<IResourceWithServiceDiscovery>? paymentWeb = null,
             IResourceBuilder<IResourceWithServiceDiscovery>? auth = null)
         {

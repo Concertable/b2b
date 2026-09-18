@@ -15,7 +15,7 @@
     <PackageReference Include="Concertable.Payment.Contracts" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Dapper" />
-    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Npgsql" />
     <PackageReference Include="Respawn" />
   </ItemGroup>
 

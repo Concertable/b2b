@@ -133,7 +133,7 @@ internal sealed class MessageService : IMessageService
     }
 
     public Task MarkInboxReadAsync() =>
-        repository.AdvanceReadPointersAsync(tenantContext.GetTenantId(), currentUser.GetId(), timeProvider.GetUtcNow().DateTime);
+        repository.AdvanceReadPointersAsync(tenantContext.GetTenantId(), currentUser.GetId(), timeProvider.GetUtcNow().UtcDateTime);
 
     private async Task<IPagination<MessageDto>> ToPaginationAsync(IPagination<MessageEntity> messages)
     {

@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -19,22 +20,22 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    MessageId = table.Column<int>(type: "int", nullable: false),
-                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReporterTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReportedTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReportedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Details = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    MessageExcerpt = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    SubmittedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Outcome = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ResolvedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ResolvedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    ResolutionNotes = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MessageId = table.Column<int>(type: "integer", nullable: false),
+                    VenueTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ArtistTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReporterTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReportedTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReportedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Category = table.Column<string>(type: "text", nullable: false),
+                    Details = table.Column<string>(type: "text", nullable: true),
+                    MessageExcerpt = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    SubmittedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Outcome = table.Column<string>(type: "text", nullable: true),
+                    ResolvedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ResolvedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ResolutionNotes = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -46,19 +47,19 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SenderTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SentByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Action = table.Column<int>(type: "int", nullable: true),
-                    SentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    HiddenAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    HiddenByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    RestoredAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RestoredByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    VenueTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ArtistTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SenderTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SentByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Action = table.Column<int>(type: "integer", nullable: true),
+                    SentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    HiddenAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    HiddenByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    RestoredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RestoredByUserId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -70,10 +71,10 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    County = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Town = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    County = table.Column<string>(type: "text", nullable: false),
+                    Town = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -85,12 +86,12 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    LastReadAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    VenueTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ArtistTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastReadAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {

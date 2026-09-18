@@ -20,6 +20,7 @@ public sealed class ImageCompositionTests
     public void AddB2BWeb_ByImage_DeclaresTheEndpointConsumersResolve()
     {
         var builder = DistributedApplication.CreateBuilder();
+        var postgres = builder.AddPostgres("postgres");
         var sql = builder.AddSqlServer("sql");
         var asb = builder.AddServiceBus();
         var (storage, blobs) = builder.AddAzureStorage();
@@ -35,7 +36,7 @@ public sealed class ImageCompositionTests
         var web = builder.AddB2BWeb(
             "ghcr.io/concertable/b2b-web",
             Digest,
-            sql.AddDatabase(B2BConstants.Database),
+            postgres.AddDatabase(B2BConstants.Database),
             auth,
             storage,
             blobs,
@@ -48,5 +49,22 @@ public sealed class ImageCompositionTests
 
         Assert.Equal("http", endpoint.UriScheme);
         Assert.Equal(B2BConstants.ContainerPort, endpoint.TargetPort);
+    }
+
+    [Fact]
+    public void AddB2BMigrations_ByImage_ReferencesAndWaitsForPostgres()
+    {
+        var builder = DistributedApplication.CreateBuilder();
+        var database = builder.AddPostgres("postgres").AddDatabase(B2BConstants.Database);
+
+        var migrations = builder.AddB2BMigrations(
+            "ghcr.io/concertable/b2b-migrations",
+            Digest,
+            database);
+
+        Assert.Contains(
+            migrations.Resource.Annotations.OfType<WaitAnnotation>(),
+            wait => ReferenceEquals(wait.Resource, database.Resource));
+        Assert.NotEmpty(migrations.Resource.Annotations.OfType<EnvironmentCallbackAnnotation>());
     }
 }
