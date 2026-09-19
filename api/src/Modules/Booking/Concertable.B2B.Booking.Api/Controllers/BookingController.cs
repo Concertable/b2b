@@ -16,7 +16,7 @@ internal sealed class BookingController : ControllerBase
 
     public BookingController(IBookingService bookingService) => this.bookingService = bookingService;
 
-    [HasPermission(TenantPermission.OperationsView)]
+    [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet("application/{applicationId:int}/summary")]
     public async Task<ActionResult<BookingSummary>> GetByApplicationId(
         int applicationId,
@@ -28,7 +28,7 @@ internal sealed class BookingController : ControllerBase
             : Ok(booking.ToSummary());
     }
 
-    [HasPermission(TenantPermission.OperationsView)]
+    [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet("application/{applicationId:int}/operations")]
     public async Task<ActionResult<BookingOperationsResponse>> GetOperationsByApplicationId(
         int applicationId,
@@ -46,7 +46,7 @@ internal sealed class BookingController : ControllerBase
                 booking.FailureMessage));
     }
 
-    [HasPermission(TenantPermission.BookingsCancel)]
+    [HasPermission(TenantPermission.BookingsCancelName)]
     [HttpPost("{bookingId}/cancel")]
     public async Task<IActionResult> Cancel(int bookingId, CancellationToken ct) =>
         (await bookingService.CancelAsync(bookingId, ct)).ToNoContentOrProblem();

@@ -1,32 +1,82 @@
+using System.Collections.Frozen;
+
 namespace Concertable.B2B.Authorization.Contracts;
 
-/// <summary>
-/// Every permission a membership role can carry. One flat set: a permission is granted by role alone,
-/// and whether the active tenant may run the operation at all is the owning operation's eligibility
-/// policy — a tenant business activity, a resource grant, or both.
-/// </summary>
-public static class TenantPermission
+public readonly record struct TenantPermission
 {
-    public const string OperationsView = "operations.view";
-    public const string ProfileEdit = "profile.edit";
-    public const string PayoutsManage = "payouts.manage";
-    public const string SettlementView = "settlement.view";
-    public const string SettlementTrigger = "settlement.trigger";
-    public const string TenantSettingsEdit = "tenant.settings.edit";
-    public const string TenantDelete = "tenant.delete";
-    public const string MembersInvite = "members.invite";
-    public const string MembersRemove = "members.remove";
-    public const string MembersManageRoles = "members.manage_roles";
-    public const string MessagesRead = "messages.read";
-    public const string MessagesSend = "messages.send";
-    public const string ConcertsOpsEdit = "concerts.ops_edit";
-    public const string ConcertsCheckIn = "concerts.check_in";
-    public const string ConcertsDeclareDoorRevenue = "concerts.declare_door_revenue";
-    public const string OpportunitiesManage = "opportunities.manage";
-    public const string ApplicationsDecide = "applications.decide";
-    public const string ApplicationsSubmit = "applications.submit";
-    public const string ConcertsManage = "concerts.manage";
-    public const string BookingsCancel = "bookings.cancel";
-    public const string TermsRead = "terms.read";
-    public const string ResourcesShare = "resources.share";
+    public const string OperationsViewName = "operations.view";
+    public const string ProfileEditName = "profile.edit";
+    public const string PayoutsManageName = "payouts.manage";
+    public const string SettlementViewName = "settlement.view";
+    public const string SettlementTriggerName = "settlement.trigger";
+    public const string TenantSettingsEditName = "tenant.settings.edit";
+    public const string TenantDeleteName = "tenant.delete";
+    public const string MembersInviteName = "members.invite";
+    public const string MembersRemoveName = "members.remove";
+    public const string MembersManageRolesName = "members.manage_roles";
+    public const string MessagesReadName = "messages.read";
+    public const string MessagesSendName = "messages.send";
+    public const string ConcertsOpsEditName = "concerts.ops_edit";
+    public const string ConcertsCheckInName = "concerts.check_in";
+    public const string ConcertsDeclareDoorRevenueName = "concerts.declare_door_revenue";
+    public const string OpportunitiesManageName = "opportunities.manage";
+    public const string ApplicationsDecideName = "applications.decide";
+    public const string ApplicationsSubmitName = "applications.submit";
+    public const string ConcertsManageName = "concerts.manage";
+    public const string BookingsCancelName = "bookings.cancel";
+    public const string TermsReadName = "terms.read";
+    public const string ResourcesShareName = "resources.share";
+
+    public static TenantPermission OperationsView { get; } = new(OperationsViewName);
+    public static TenantPermission ProfileEdit { get; } = new(ProfileEditName);
+    public static TenantPermission PayoutsManage { get; } = new(PayoutsManageName);
+    public static TenantPermission SettlementView { get; } = new(SettlementViewName);
+    public static TenantPermission SettlementTrigger { get; } = new(SettlementTriggerName);
+    public static TenantPermission TenantSettingsEdit { get; } = new(TenantSettingsEditName);
+    public static TenantPermission TenantDelete { get; } = new(TenantDeleteName);
+    public static TenantPermission MembersInvite { get; } = new(MembersInviteName);
+    public static TenantPermission MembersRemove { get; } = new(MembersRemoveName);
+    public static TenantPermission MembersManageRoles { get; } = new(MembersManageRolesName);
+    public static TenantPermission MessagesRead { get; } = new(MessagesReadName);
+    public static TenantPermission MessagesSend { get; } = new(MessagesSendName);
+    public static TenantPermission ConcertsOpsEdit { get; } = new(ConcertsOpsEditName);
+    public static TenantPermission ConcertsCheckIn { get; } = new(ConcertsCheckInName);
+    public static TenantPermission ConcertsDeclareDoorRevenue { get; } = new(ConcertsDeclareDoorRevenueName);
+    public static TenantPermission OpportunitiesManage { get; } = new(OpportunitiesManageName);
+    public static TenantPermission ApplicationsDecide { get; } = new(ApplicationsDecideName);
+    public static TenantPermission ApplicationsSubmit { get; } = new(ApplicationsSubmitName);
+    public static TenantPermission ConcertsManage { get; } = new(ConcertsManageName);
+    public static TenantPermission BookingsCancel { get; } = new(BookingsCancelName);
+    public static TenantPermission TermsRead { get; } = new(TermsReadName);
+    public static TenantPermission ResourcesShare { get; } = new(ResourcesShareName);
+
+    public static IReadOnlySet<TenantPermission> All { get; } = new[]
+    {
+        OperationsView, ProfileEdit, PayoutsManage, SettlementView, SettlementTrigger,
+        TenantSettingsEdit, TenantDelete, MembersInvite, MembersRemove, MembersManageRoles,
+        MessagesRead, MessagesSend, ConcertsOpsEdit, ConcertsCheckIn, ConcertsDeclareDoorRevenue,
+        OpportunitiesManage, ApplicationsDecide, ApplicationsSubmit, ConcertsManage, BookingsCancel,
+        TermsRead, ResourcesShare,
+    }.ToFrozenSet();
+
+    private static readonly FrozenDictionary<string, TenantPermission> ByValue =
+        All.ToFrozenDictionary(permission => permission.Value, StringComparer.Ordinal);
+
+    private TenantPermission(string value)
+    {
+        this.Value = value;
+    }
+
+    public string Value { get; }
+
+    public static bool TryParse(string? value, out TenantPermission permission)
+    {
+        if (value is not null && ByValue.TryGetValue(value, out permission))
+            return true;
+
+        permission = default;
+        return false;
+    }
+
+    public override string ToString() => Value ?? string.Empty;
 }

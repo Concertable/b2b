@@ -4,6 +4,11 @@ namespace Concertable.B2B.Authorization.Contracts;
 
 public sealed class HasPermissionAttribute : AuthorizeAttribute
 {
-    public HasPermissionAttribute(string permission)
-        => Policy = PermissionPolicy.Name(permission);
+    public HasPermissionAttribute(string permissionName)
+    {
+        if (!TenantPermission.TryParse(permissionName, out var permission))
+            throw new ArgumentException($"Unknown tenant permission '{permissionName}'.", nameof(permissionName));
+
+        Policy = PermissionPolicy.Name(permission);
+    }
 }

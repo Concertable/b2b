@@ -4,17 +4,21 @@ public static class PermissionPolicy
 {
     public const string Prefix = "perm:";
 
-    public static string Name(string permission) => $"{Prefix}{permission}";
-
-    /// <summary>Parses a <c>perm:</c> policy name into its permission; <see langword="false"/> for any other name.</summary>
-    public static bool TryParse(string policyName, out string permission)
+    public static string Name(TenantPermission permission)
     {
-        permission = string.Empty;
+        if (!TenantPermission.TryParse(permission.Value, out var declared) || declared != permission)
+            throw new ArgumentOutOfRangeException(nameof(permission));
 
-        if (!policyName.StartsWith(Prefix, StringComparison.Ordinal))
+        return $"{Prefix}{permission.Value}";
+    }
+
+    public static bool TryParse(string? policyName, out TenantPermission permission)
+    {
+        permission = default;
+
+        if (policyName is null || !policyName.StartsWith(Prefix, StringComparison.Ordinal))
             return false;
 
-        permission = policyName[Prefix.Length..];
-        return true;
+        return TenantPermission.TryParse(policyName[Prefix.Length..], out permission);
     }
 }

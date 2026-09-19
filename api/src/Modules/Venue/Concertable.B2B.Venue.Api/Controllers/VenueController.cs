@@ -38,14 +38,14 @@ internal sealed class VenueController : ControllerBase
     }
 
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
-    [HasPermission(TenantPermission.OperationsView)]
+    [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
         (await venueService.GetDetailsAsync(ct))
             .ToOkOrNoContent(venue => venue.ToDetailsResponse());
 
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
-    [HasPermission(TenantPermission.ProfileEdit)]
+    [HasPermission(TenantPermission.ProfileEditName)]
     [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPost($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> Create(
@@ -57,7 +57,7 @@ internal sealed class VenueController : ControllerBase
                 venue => $"/api/venue/{venue.Id}");
 
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
-    [HasPermission(TenantPermission.ProfileEdit)]
+    [HasPermission(TenantPermission.ProfileEditName)]
     [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPut($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> Update(

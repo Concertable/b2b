@@ -18,5 +18,5 @@ public interface IHasResourceAccessContext
     Guid? ActiveUserId { get; }
     long? ActivePermissionVersion { get; }
 
-    ResourceAudience AudienceFor(string permission);
+    ResourceAudience AudienceFor(TenantPermission permission);
 }

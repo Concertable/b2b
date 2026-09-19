@@ -2,12 +2,10 @@
 
 namespace Concertable.B2B.Authorization.Infrastructure.Authorization;
 
-/// <summary>Role to permissions. What a business is, is eligibility decided by the owning operation, not a
-/// second authority axis over the role bundle.</summary>
 internal sealed class PermissionCatalog : IPermissionCatalog
 {
-    private static readonly FrozenDictionary<TenantRole, FrozenSet<string>> ByRole =
-        new Dictionary<TenantRole, FrozenSet<string>>
+    private static readonly FrozenDictionary<TenantRole, FrozenSet<TenantPermission>> ByRole =
+        new Dictionary<TenantRole, FrozenSet<TenantPermission>>
         {
             [TenantRole.Owner] = new[]
             {
@@ -61,13 +59,13 @@ internal sealed class PermissionCatalog : IPermissionCatalog
             }.ToFrozenSet(),
         }.ToFrozenDictionary();
 
-    public IReadOnlySet<string> For(TenantRole role) =>
-        ByRole.TryGetValue(role, out var permissions) ? permissions : FrozenSet<string>.Empty;
+    public IReadOnlySet<TenantPermission> For(TenantRole role) =>
+        ByRole.TryGetValue(role, out var permissions) ? permissions : FrozenSet<TenantPermission>.Empty;
 
-    public bool Grants(TenantRole role, string permission) =>
+    public bool Grants(TenantRole role, TenantPermission permission) =>
         ByRole.TryGetValue(role, out var permissions) && permissions.Contains(permission);
 
-    public ResourceAudience AudienceFor(TenantRole role, string permission)
+    public ResourceAudience AudienceFor(TenantRole role, TenantPermission permission)
     {
         if (!Grants(role, permission))
             return ResourceAudience.None;
@@ -80,6 +78,5 @@ internal sealed class PermissionCatalog : IPermissionCatalog
         };
     }
 
-    /// <summary>Every permission granted to at least one role — the catalog-coverage test checks this against the declared constants.</summary>
-    internal static IReadOnlySet<string> All { get; } = ByRole.Values.SelectMany(p => p).ToFrozenSet();
+    internal static IReadOnlySet<TenantPermission> All { get; } = ByRole.Values.SelectMany(p => p).ToFrozenSet();
 }

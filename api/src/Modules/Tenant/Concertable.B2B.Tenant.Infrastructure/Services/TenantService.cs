@@ -44,7 +44,7 @@ internal sealed class TenantService : ITenantService
                 m.LegalName,
                 m.Role,
                 m.BusinessProfiles,
-                [.. permissionCatalog.For(m.Role)]))
+                [.. permissionCatalog.For(m.Role).Select(permission => permission.Value)]))
             .ToList();
     }
 

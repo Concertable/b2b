@@ -3,195 +3,91 @@
 - Plan: `plans/party-foundation/PARTY_FOUNDATION_PLAN.md`
 - Roadmap: `plans/party-foundation/PARTY_FOUNDATION_ROADMAP.md`
 - Roadmap item: `party-foundation/core`
+- Worktree: `C:\Users\TommySeery\source\repos\Concertable\b2b\.worktrees\Refactor-PartyFoundationLegacyBindings`
 - Branch: `Refactor/PartyFoundationLegacyBindings`
-- Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
-- Prior implementation head: `a9a8ce32` (P1 exact-scope reads)
-- Current checkpoint: P1 4.2 exact-scope reads complete and locally verified
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
+- Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
+- Current checkpoint: P1 4.1 DDD permission value complete and locally verified
+- Dependency/package gates: none for the current local P1 slice
 - Delivery gate: do not push or merge; the user authorized local P1 implementation and commits only.
+- Last reconciled: 19 September 2026 against the current worktree and local verification artifacts
 
 ## Current state
 
-P1 implementation is active on this branch. Slices 1-4 and the complete shipped mutation surface in 4.3 are implemented.
-Application, Booking and Concert reads now expose operation-specific Summary, Proposal/Terms, Operations and
-Finance contracts. Generic private-detail routes are deleted, public Concert reads require publication,
-contracts and invoices resolve by their actual parent keys, and client callers consume the narrowed shapes.
-System cancellation handlers for Application and Opportunity use privileged stances, so asynchronous
-reopening and notification cannot silently record an inbox receipt against an interactive tenant filter.
-Application apply, accept, reject, cancel and withdraw now execute through the root command transaction with
-locked current-membership authority, exact Proposal grants, privileged mutation repositories and a final
-post-flush authority check. Payment verification and its Booking handlers join the same root transaction,
-and module-owned artist, opportunity, deal and venue command facts enlist their privileged contexts.
-Booking cancellation now admits either accepted principal under `bookings.cancel` and the exact Operations
-grant, using the same locked membership/resource/final-validation sequence.
-Concert cancellation now admits either current principal under `concerts.manage` and the exact Operations
-grant, using the privileged Concert stance, locked Concert/grant rows and final post-flush validation.
-Concert edit/post/door revenue, summary sharing and member assignment now use the same root command,
-locked membership/resource/grant evidence and post-flush authority validation. Summary-share request
-receipts and newly issued grants are staged explicitly in the privileged command context. Concurrent
-same-request shares replay one recorded grant.
+P1 slices 1-4, the complete shipped mutation surface in 4.3, exact-scope reads and the 4.1 authorization
+DDD polish are implemented. Application, Booking and Concert reads expose operation-specific contracts;
+protected mutations use the root command transaction, locked current authority, exact grants, privileged
+repositories and final post-flush validation. Provider race and rollback coverage remains recorded in the
+prior P1 commits.
 
-`ApplicationSide` and its venue/artist response variants are deleted. Application responses now expose
-one operation-specific action set derived independently from principal identity and the exact permission
-for decide, submit and terms-read operations. No shipped Concert check-in command exists in P1, so there
-was no mutation surface to migrate for that reserved permission.
-
-Provider-real Application transition races now serialize to one successful transition and one conflict. The
-cross-module rollback probe reaches the Booking failure and proves that Application, Booking, Concert and
-outbound-message changes roll back together.
-
-## Completed slices
-
-### 1 — Compose membership, audience and resource access once
-
-Commit `5ab4356b` introduced `MembershipSnapshot`, resource audiences, operation-specific permissions,
-module-local access scopes and grants, exact resource filters, contract principal grants, Concert summary
-sharing/member assignment, `AccessVersion`, and Concert command receipts. Generic Application/Booking share
-surfaces and the binary restricted-participant fallback were removed.
-
-### 2 — Give system work a named capability
-
-Commit `b2001b2f` deleted the ambient host/execution-purpose bypass. Privileged contexts and repositories now
-serve explicit system workflows and seeders. Completion discovery moved to a read repository, published
-Concert projection predicates include publication state, and mismatched settlement outcomes no longer mint
-successful inbox receipts.
-
-### 3 — Align schema and seeding with the access model
-
-Commit `f6ecc9bf` regenerated the five initial migrations for the access model, including the Tenant authority
-view, permission/access versions, membership grant keys, grant uniqueness and command receipts. Privileged
-seeding stances omit the tenant write interceptor, pre-commit Concert handlers use privileged reads, and
-Tenant deletion removes owned activity rows first.
-
-### 4 — One local transaction per command
-
-- Deleted `SharedConnectionExtensions`; every ordinary module/read context now uses its own connection string.
-- Added `CommandTransaction`, a scoped accessor, per-module enlistment behaviors and one root command executor.
-- The root executor allocates a fresh DI scope, handler graph, SQL connection and transaction for every
-  execution-strategy attempt; the transitional same-scope boundary no longer performs unsafe retries.
-- Every participating EF context explicitly joins the owned SQL transaction. Result failures poison the root
-  and roll back even when no exception is thrown.
-- Flush iterates every enlisted context through its normal `SaveChangesAsync` event/outbox pipeline until the
-  graph is quiescent, then runs registered authority validators and commits.
-- EF transaction wrappers and scoped contexts are disposed before the owned connection.
-- `CommandOutcome` recognizes all Reunion result families used by the service.
-- `InvoiceIssuer` uses enlisted privileged invoice and sequence repositories. Invoice sequence and Concert
-  mutation reads acquire explicit `UPDLOCK, HOLDLOCK` key locks.
-- Settlement reserve and completion run in separate fresh command scopes around the external provider call.
-- Settlement outcome processors now keep inbox evidence, Concert mutation, invoice/activity work and outbox
-  insertion inside one privileged transaction; unknown targets and operations fail without a receipt.
-
-### 4.3 — Application command policy
-
-- Added enlisted command-fact ports for Artist, Opportunity, Deal and Venue so Application commands do not
-  call ordinary module facades inside the root transaction.
-- Apply, accept, reject, cancel and withdraw fence current membership, require their exact permission and
-  Proposal grant, lock Application resources and grants, and revalidate authority after the final flush.
-- The command executor can return a typed closed failure when final authority is no longer valid, rolling the
-  entire transaction back before commit.
-- Payment verification uses the privileged Application stance, while Booking verification handlers resolve
-  and mutate through their privileged repository and workflow in the same command transaction.
-- Save-interceptor race simulations were replaced with concurrent HTTP requests against the real provider.
-- Booking cancellation uses the exact `bookings.cancel` API permission, admits either accepted principal,
-  locks Booking and Operations grants, and revalidates authority after flush.
-- Booking payment verification uses the same resource lock as cancellation, so confirmation and cancellation
-  serialize without optimistic-concurrency leakage.
-- Booking save-interceptor races were replaced with provider-real concurrent cancellations and confirmation
-  outcomes.
-- Concert cancellation uses the exact `concerts.manage` API permission, admits either current principal,
-  locks Concert and Operations grants, and revalidates authority after flush.
-- Concert cancellation races now run as concurrent provider-backed requests for duplicate cancellation and
-  against settlement reservation.
-- Concert update/post use `concerts.ops.edit` plus the venue Operations grant; door revenue uses
-  `concerts.declare_door_revenue` plus venue Operations and Finance grants.
-- Concert summary share/revoke and member assignment/removal use `resources.share`, principal Summary
-  entitlement, enlisted recipient/member facts, complete ACL locks and final authority validation.
-- Durable share receipts are locked after the Concert ACL and replay the recorded response; provider-real
-  concurrent same-request tests prove one grant is issued.
-- New access grants and command receipts are explicitly staged as added children in the privileged context,
-  avoiding EF treating client-keyed children as updates.
-- Deleted `ApplicationSide`, generic response variants and the unrelated-tenant venue fallback. One action
-  response computes each link from the corresponding principal and permission policy.
+`TenantPermission` is now a closed `readonly record struct` with canonical instances, values, parsing,
+equality and formatting. Catalogs, membership/resource contexts, policies, requirements and runtime callers
+use the value type. Only membership DTO serialization and ASP.NET policy/attribute names use strings;
+attributes parse and reject undeclared names immediately. The architecture gate also removed the unused
+Concert unit-test `Reunion.Validation` reference it exposed.
 
 ## Next Steps
 
-Transfer: Refactor the authorization permission vocabulary into a behavioral value type before continuing P1.
-Transfer to: A fresh Codex context in the current worktree.
-Resume stage: P1 4.1 authorization DDD polish.
-Resume when: The new context has read this plan and ledger and inspected the current Authorization contracts.
-Continue in this order. Each slice ends with a solution build, unit/architecture gate and local commit.
+Scope: current slice only; full plan remains incomplete.
+Current slice: P1 4.7 Conversation identity, audience, sequencing and safe delivery.
+Remaining scope: P1 4.8-4.10, then P2-P5 and terminal delivery remain open.
+Done when: the 4.7 replacement is built, its focused gates pass, and the slice is committed locally.
 
-1. **4.1 — DDD permission value.** Replace the static string-only `TenantPermission` vocabulary with a closed
-   `readonly record struct TenantPermission` whose private construction, declared instances, `Value`,
-   `TryParse`, equality and formatting own permission identity. Convert `IPermissionCatalog`,
-   `IMembershipContext`, `PermissionRequirement`, `PermissionPolicy` and every domain/application caller to
-   that type; the catalog owns typed role grants and audiences. Keep strings only at serialization and ASP.NET
-   policy-name edges. Because attribute arguments cannot be record-struct instances, co-locate compile-time
-   `*Name` constants with their typed instances for `[HasPermission]`; the attribute must parse immediately,
-   reject undeclared names and expose no string-based authorization API downstream. Delete obsolete string
-   overloads/helpers rather than retaining compatibility. Add value parsing/closure tests, update catalog and
-   policy tests, run Authorization unit tests, architecture tests and the solution build, then commit locally.
-2. **4.7 — Conversation.** Complete `Thread` → `Conversation`, address create/send by `ConversationId`, add
-   request receipts, immutable initial audience, message sequence, monotonic read position, Tenant display
-   projections and safe delivery.
-3. **4.8/4.9 — neutral lifecycle and clients.** Finish `TenantBusinessActivity`, neutral onboarding,
-   contact/activity administration, invitation role policy, deletion and admin verification contracts, then
-   implement the real Business web/mobile journeys and tenant-switch isolation.
-4. **4.10 — qualification.** Replace textual resource-filter tests with model/provider coverage and run every
-   module integration tier, provider race/revocation cases, workers, contract/invoice access, external summary
-   denial, browser and native evidence. Run the canonical review over the completed P1 candidate.
+Replace `Thread` with `Conversation` across code, schema, routes, clients, tests and guidance. Address create
+and send operations by `ConversationId`; add durable create/send receipts, immutable initial audience,
+explicit Read/SendMessages grants, locked message sequence allocation, monotonic membership read positions,
+Tenant-owned display projections and invalidation-only delivery that reauthorizes current readers. Delete
+participant-set lookup/deduplication, counterpart inference, message-content activities and every old name.
+End with the solution build, focused unit/integration coverage, architecture gate and a local commit.
 
-## Verification at the current checkpoint
+After 4.7, complete neutral Tenant lifecycle/client journeys in 4.8/4.9, then the P1 qualification matrix and
+canonical review in 4.10.
 
-- `dotnet build Concertable.B2B.slnx --no-restore`: passed, 0 errors; four existing warnings.
-- DataAccess Unit tier: 5 passed.
-- Architecture tier: 24 passed. The new DataAccess tests now carry the Unit assembly trait and a direct
-  Reunion reference, satisfying CI ownership checks.
-- Concert unit tier: 90 passed after deleting obsolete ordinary-context mutation mocks.
-- Concert summary sharing/member-assignment integration tier: 4 passed, including artist-principal sharing,
-  outsider denial, durable replay, concurrent same-request issuance and assignment removal.
-- Application exact-action integration cases: 9 passed under the short artifact root, covering independent
-  decision/submission actions, cancellation/withdrawal transitions and terms-link visibility.
-- Concert cancellation integration tier: 9 passed, including both-principal authority, outsider denial,
-  duplicate cancellation and cancellation/settlement serialization.
-- `ConcertDoorSplitApiTests`: 8 passed through fresh reserve/complete command scopes, covering provider
-  operation reuse, persistence interruption, duplicate outcomes and invoice completion.
-- Application integration tier: 74 passed, including provider-real accept/reject, accept/cancel,
-  accept/withdraw and competing-acceptance races.
-- Booking integration tier: 24 passed, including both-principal cancellation, outsider denial, duplicate
-  cancellation, capture/cancellation and payment-verification/cancellation races.
-- Cross-module rollback probe
-  `CaptureSuccess_WhenBookingSaveFails_RollsBackBookingConcertAndOutboundMessages`: passed.
-- Application integration tier: 75 passed.
-- Booking integration tier: 24 passed.
-- Concert exact-scope focused cases and all four repaired regression cases passed; the full tier needs a
-  fresh diagnostic run because the aggregate invocation stalled without reporting a test failure.
-- Lifecycle tier: the six exact-scope regressions pass after narrowing boundary contracts and moving system
-  cancellation handlers to privileged contexts; the complete 40-test tier still needs its final rerun.
-- Shared, Artist and Venue TypeScript checks passed through the root compiler toolchain. The workspace build
-  wrapper could not locate its installed Vitest shim, while direct compiler invocation succeeded.
+## Completed work
 
-Still required before a P1 completion claim: every module integration tier, provider race and revocation
-ordering coverage, workers, contract/invoice reads, external-summary denial, real browser/native evidence and
-canonical review. The Startup resource-graph case previously timed out waiting for the Stripe CLI and must be
-rechecked where that resource is available.
+- Slice 1, commit `5ab4356b`: membership snapshots, audiences, module-local exact grants, principal issuance,
+  Concert summary sharing/member assignment and deletion of generic Application/Booking sharing.
+- Slice 2, commit `b2001b2f`: deleted ambient host privilege; explicit privileged processing, published
+  Concert projection and outcome receipt correctness.
+- Slice 3, commit `f6ecc9bf`: regenerated access migrations, authority view, grant keys/indexes and seeding
+  stances.
+- Slice 4: independent ordinary connections plus one enlisted root command transaction, quiescent
+  event/outbox flushing, authority validation and settlement/invoice atomicity.
+- Slice 4.3: Application, Booking and Concert mutations use exact command policy, resource/grant locks,
+  durable share replay and provider-real race coverage; `ApplicationSide` is deleted.
+- Slice 4.1, this commit: typed permission identity end to end, strict ASP.NET name parsing, typed catalogs and
+  client serialization at the wire boundary, with value/policy/catalog tests.
 
-The full Concert integration tier currently also exposes an unrelated existing test-harness failure:
-`GetUpcomingForManagers_IncludesConcertAlreadyInProgress` resolves an interactive filtered context without an
-active tenant and fails in isolation before reaching the cancellation changes.
+## Verification
 
-## Stable decisions
+- `dotnet build Concertable.B2B.slnx --no-restore`: passed, 0 errors; only pre-existing warnings.
+- Authorization unit tier: 47 passed.
+- Tenant unit tier: 141 passed.
+- Architecture tier: 24 passed after deleting the unused Concert unit-test package reference.
+- Previous provider baseline remains valid: Application integration 75 passed; Booking integration 24 passed;
+  focused Concert exact-scope/cancellation/settlement and Lifecycle exact-scope regressions passed.
+
+Still required before a P1 completion claim: every module integration tier, provider race/revocation ordering,
+workers, contract/invoice reads, external-summary denial, real browser/native evidence and canonical review.
+The complete Concert and Lifecycle tiers retain their recorded 4.10 rerun obligations. The Startup resource-
+graph case must be rechecked where Stripe CLI is available.
+
+## Reviews
+
+No review yet for the completed P1 candidate; the canonical review remains the final 4.10 gate.
+
+## Decisions, discoveries, blockers, and deviations
 
 - Tenant remains the business/legal/membership/settlement identity; tokens remain identity-only.
-- Eligibility, permission and resource audience are separate facts.
+- Eligibility, membership permission and resource audience remain separate facts.
 - No ambient host bypass, query-filter bypass, generic private-details endpoint or unchecked load/save.
-- P1 external disclosure is Concert Summary only; operational member assignments stay inside a principal
-  tenant. Accepted third-business responsibilities remain P2.
-- Protected commands use one local transaction. Ordinary and parallel reads use independent connections.
-- Interactive command retries use a fresh scope and durable receipt; external payment/blob calls remain
-  outside the database transaction and reuse a durable provider operation identity.
-- No compatibility layer or data backfill: the product is pre-launch.
-- Migrations stay owned by the filtered context; privileged contexts perform explicit cross-tenant system work.
+- P1 external disclosure is Concert Summary only; member assignments stay inside a principal tenant.
+- Protected commands use one local transaction; ordinary and parallel reads use independent connections.
+- External payment/blob calls remain outside the database transaction and reuse durable operation identity.
+- The product is pre-launch: no compatibility layer, backfill or retained old vocabulary.
+- Migrations stay owned by the filtered context; privileged contexts perform explicit system work.
+- The architecture gate initially found a stale direct `Reunion.Validation` package reference in Concert unit
+  tests; no source consumed it, so it was deleted and the gate reran green.
 
 ## External/deferred owners
 

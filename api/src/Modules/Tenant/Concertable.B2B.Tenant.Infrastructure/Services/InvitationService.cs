@@ -142,7 +142,7 @@ internal sealed class InvitationService : IInvitationService
                         tenant.LegalName,
                         invitation.Role,
                         [.. tenant.BusinessProfiles.Where(p => p.IsActive).Select(p => p.Kind)],
-                        [.. permissionCatalog.For(invitation.Role)]));
+                        [.. permissionCatalog.For(invitation.Role).Select(permission => permission.Value)]));
             }, error => error.ToAcceptInvitationError());
     }
 }

@@ -8,6 +8,14 @@ namespace Concertable.B2B.Authorization.UnitTests;
 
 public sealed class MembershipContextTests
 {
+    public static TheoryData<TenantRole, TenantPermission, bool> RolePermissions => new()
+    {
+        { TenantRole.Finance, TenantPermission.PayoutsManage, true },
+        { TenantRole.Finance, TenantPermission.ProfileEdit, false },
+        { TenantRole.Manager, TenantPermission.OpportunitiesManage, true },
+        { TenantRole.Manager, TenantPermission.PayoutsManage, false },
+    };
+
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<IHttpContextAccessor> httpContextAccessor;
     private readonly Mock<IMembershipReadRepository> memberships;
@@ -97,7 +105,7 @@ public sealed class MembershipContextTests
         this.httpContext.Request.Headers[TenantHeaders.TenantId] = headerTenant.ToString();
         this.currentUser.SetupGet(u => u.Id).Returns(userId);
         this.memberships.Setup(f => f.GetSnapshotByUserIdAndTenantIdAsync(userId, headerTenant, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipFact?)null);
+            .ReturnsAsync((MembershipSnapshot?)null);
 
         await this.context.ResolveAsync();
 
@@ -105,19 +113,14 @@ public sealed class MembershipContextTests
     }
 
     [Fact]
-    public async Task ResolveAsync_MalformedHeader_TreatedAsAbsentAndDefaultsToSoleMembership()
+    public async Task ResolveAsync_MalformedHeader_Throws()
     {
         var userId = Guid.NewGuid();
-        var tenantId = Guid.NewGuid();
         WithHttpRequest();
         this.httpContext.Request.Headers[TenantHeaders.TenantId] = "not-a-guid";
         this.currentUser.SetupGet(u => u.Id).Returns(userId);
-        this.memberships.Setup(f => f.GetSnapshotsByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([Membership(tenantId)]);
 
-        await this.context.ResolveAsync();
-
-        Assert.Equal(tenantId, ((ITenantContext)this.context).TenantId);
+        await Assert.ThrowsAsync<MalformedTenantHeaderException>(() => this.context.ResolveAsync());
     }
 
     [Fact]
@@ -174,15 +177,10 @@ public sealed class MembershipContextTests
     #region HasPermission
 
     [Theory]
-    [InlineData(TenantRole.Finance, TenantPermission.PayoutsManage, true)]
-    [InlineData(TenantRole.Finance, TenantPermission.ProfileEdit, false)]
-    [InlineData(TenantRole.Manager, TenantPermission.OpportunitiesManage, true)]
-    [InlineData(TenantRole.Manager, TenantPermission.PayoutsManage, false)]
-    [InlineData(TenantRole.RestrictedParticipant, TenantPermission.OperationsView, true)]
-    [InlineData(TenantRole.RestrictedParticipant, TenantPermission.MessagesRead, false)]
+    [MemberData(nameof(RolePermissions))]
     public async Task HasPermission_ResolvedMembership_ReadsTheRoleBundleAlone(
         TenantRole role,
-        string permission,
+        TenantPermission permission,
         bool expected)
     {
         var userId = Guid.NewGuid();

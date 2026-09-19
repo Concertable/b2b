@@ -446,7 +446,7 @@ internal sealed class ConcertService : IConcertService
     private async Task<bool> ValidateOperationsAuthorityAsync(
         int id,
         MembershipSnapshot expectedActor,
-        string permission,
+        TenantPermission permission,
         CancellationToken ct)
     {
         var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
@@ -474,7 +474,7 @@ internal sealed class ConcertService : IConcertService
     private Task<bool> CanOperateAsync(
         int id,
         MembershipSnapshot actor,
-        string permission,
+        TenantPermission permission,
         CancellationToken ct) =>
         privilegedRepository.CanOperateAsync(
             id,

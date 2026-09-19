@@ -23,16 +23,16 @@ internal sealed class ApplicationController : ControllerBase
         this.mapper = mapper;
     }
 
-    [HasPermission(TenantPermission.ApplicationsDecide)]
+    [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpGet("opportunity/{id}")]
-    [HasPermission(TenantPermission.TermsRead)]
+    [HasPermission(TenantPermission.TermsReadName)]
     public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetAllByOpportunityId(int id)
     {
         var result = await applicationService.GetByOpportunityIdAsync(id);
         return (await result.MapAsync(mapper.ToProposalResponsesAsync)).ToOkOrProblem();
     }
 
-    [HasPermission(TenantPermission.ApplicationsSubmit)]
+    [HasPermission(TenantPermission.ApplicationsSubmitName)]
     [EnableRateLimiting(RateLimitPolicies.Apply)]
     [HttpPost("{opportunityId}")]
     public async Task<ActionResult<ApplicationProposalResponse>> Apply(
@@ -46,8 +46,8 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HttpGet("artist/pending")]
-    [HasPermission(TenantPermission.ApplicationsSubmit)]
-    [HasPermission(TenantPermission.TermsRead)]
+    [HasPermission(TenantPermission.ApplicationsSubmitName)]
+    [HasPermission(TenantPermission.TermsReadName)]
     public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetPendingForArtist()
     {
         var result = await applicationService.GetPendingForArtistAsync();
@@ -55,8 +55,8 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HttpGet("artist/recently-denied")]
-    [HasPermission(TenantPermission.ApplicationsSubmit)]
-    [HasPermission(TenantPermission.TermsRead)]
+    [HasPermission(TenantPermission.ApplicationsSubmitName)]
+    [HasPermission(TenantPermission.TermsReadName)]
     public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetRecentDeniedForArtist()
     {
         var result = await applicationService.GetRecentDeniedForArtistAsync();
@@ -65,7 +65,7 @@ internal sealed class ApplicationController : ControllerBase
 
     [HttpGet("venue/current")]
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
-    [HasPermission(TenantPermission.OperationsView)]
+    [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<ApplicationSummaryResponse>>> GetPendingForCurrentVenue()
     {
         var result = await applicationService.GetPendingForCurrentVenueAsync();
@@ -74,14 +74,14 @@ internal sealed class ApplicationController : ControllerBase
 
     [HttpGet("artist/current")]
     [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
-    [HasPermission(TenantPermission.OperationsView)]
+    [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<ApplicationSummaryResponse>>> GetCurrentForCurrentArtist()
     {
         var result = await applicationService.GetCurrentForCurrentArtistAsync();
         return (await result.MapAsync(mapper.ToSummaryResponsesAsync)).ToOkOrProblem();
     }
 
-    [HasPermission(TenantPermission.OperationsView)]
+    [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet("{id:int}/summary")]
     public async Task<ActionResult<ApplicationSummaryResponse>> GetSummary(int id)
     {
@@ -89,7 +89,7 @@ internal sealed class ApplicationController : ControllerBase
         return (await result.MapAsync(mapper.ToSummaryResponseAsync)).ToOkOrProblem();
     }
 
-    [HasPermission(TenantPermission.TermsRead)]
+    [HasPermission(TenantPermission.TermsReadName)]
     [HttpGet("{id:int}/proposal")]
     public async Task<ActionResult<ApplicationProposalResponse>> GetProposal(int id)
     {
@@ -97,21 +97,21 @@ internal sealed class ApplicationController : ControllerBase
         return (await result.MapAsync(mapper.ToProposalResponseAsync)).ToOkOrProblem();
     }
 
-    [HasPermission(TenantPermission.ApplicationsSubmit)]
+    [HasPermission(TenantPermission.ApplicationsSubmitName)]
     [HttpGet("opportunity/{opportunityId}/eligibility")]
     public async Task<ActionResult<bool>> CanApply(int opportunityId)
     {
         return Ok(await applicationService.CanApplyAsync(opportunityId));
     }
 
-    [HasPermission(TenantPermission.ApplicationsDecide)]
+    [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpGet("{applicationId}/eligibility")]
     public async Task<ActionResult<bool>> CanAccept(int applicationId)
     {
         return Ok(await applicationService.CanAcceptAsync(applicationId));
     }
 
-    [HasPermission(TenantPermission.ApplicationsSubmit)]
+    [HasPermission(TenantPermission.ApplicationsSubmitName)]
     [EnableRateLimiting(RateLimitPolicies.Checkout)]
     [HttpPost("opportunity/{opportunityId}/checkout")]
     public async Task<ActionResult<Checkout>> ApplyCheckout(int opportunityId)
@@ -119,14 +119,14 @@ internal sealed class ApplicationController : ControllerBase
         return (await applicationService.ApplyCheckoutAsync(opportunityId)).ToOkOrProblem();
     }
 
-    [HasPermission(TenantPermission.ApplicationsDecide)]
+    [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpPost("{applicationId}/checkout")]
     public async Task<ActionResult<Checkout>> AcceptCheckout(int applicationId)
     {
         return (await applicationService.AcceptCheckoutAsync(applicationId)).ToOkOrProblem();
     }
 
-    [HasPermission(TenantPermission.ApplicationsDecide)]
+    [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpPost("{applicationId}/accept")]
     public async Task<IActionResult> Accept(
         int applicationId,
@@ -139,21 +139,21 @@ internal sealed class ApplicationController : ControllerBase
             ct)).ToNoContentOrProblem();
     }
 
-    [HasPermission(TenantPermission.ApplicationsSubmit)]
+    [HasPermission(TenantPermission.ApplicationsSubmitName)]
     [HttpPost("{applicationId}/withdraw")]
     public async Task<IActionResult> Withdraw(int applicationId, CancellationToken ct)
     {
         return (await applicationService.WithdrawAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 
-    [HasPermission(TenantPermission.ApplicationsDecide)]
+    [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpPost("{applicationId}/reject")]
     public async Task<IActionResult> Reject(int applicationId, CancellationToken ct)
     {
         return (await applicationService.RejectAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 
-    [HasPermission(TenantPermission.ApplicationsDecide)]
+    [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpPost("{applicationId}/cancel")]
     public async Task<IActionResult> Cancel(int applicationId, CancellationToken ct)
     {

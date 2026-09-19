@@ -2,11 +2,9 @@
 
 public interface IPermissionCatalog
 {
-    bool Grants(TenantRole role, string permission);
+    bool Grants(TenantRole role, TenantPermission permission);
 
-    /// <summary>Everything the role carries, for a client that is told its permissions rather than deriving them.</summary>
-    IReadOnlySet<string> For(TenantRole role);
+    IReadOnlySet<TenantPermission> For(TenantRole role);
 
-    /// <summary>Evaluated per requested operation, never once for the whole request.</summary>
-    ResourceAudience AudienceFor(TenantRole role, string permission);
+    ResourceAudience AudienceFor(TenantRole role, TenantPermission permission);
 }

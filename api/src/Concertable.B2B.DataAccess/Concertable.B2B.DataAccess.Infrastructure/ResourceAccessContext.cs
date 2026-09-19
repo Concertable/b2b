@@ -17,5 +17,5 @@ public sealed class ResourceAccessContext : IResourceAccessContext
 
     public DateTime UtcNow => timeProvider.GetUtcNow().UtcDateTime;
 
-    public ResourceAudience AudienceFor(string permission) => membershipContext.AudienceFor(permission);
+    public ResourceAudience AudienceFor(TenantPermission permission) => membershipContext.AudienceFor(permission);
 }

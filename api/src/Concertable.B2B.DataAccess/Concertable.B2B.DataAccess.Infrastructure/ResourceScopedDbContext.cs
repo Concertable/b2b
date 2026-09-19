@@ -21,7 +21,7 @@ public abstract class ResourceScopedDbContext : TenantScopedDbContext, IHasResou
     public Guid? ActiveUserId => ResourceAccess.Membership?.UserId;
     public long? ActivePermissionVersion => ResourceAccess.Membership?.PermissionVersion;
 
-    public ResourceAudience AudienceFor(string permission) => ResourceAccess.AudienceFor(permission);
+    public ResourceAudience AudienceFor(TenantPermission permission) => ResourceAccess.AudienceFor(permission);
 
     protected ResourceScopedDbContext(
         DbContextOptions options,

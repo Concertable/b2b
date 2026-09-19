@@ -31,10 +31,10 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
 
     public bool IsHost => false;
 
-    public bool HasPermission(string permission) =>
+    public bool HasPermission(TenantPermission permission) =>
         Membership is { } active && permissionCatalog.Grants(active.Role, permission);
 
-    public ResourceAudience AudienceFor(string permission) =>
+    public ResourceAudience AudienceFor(TenantPermission permission) =>
         Membership is { } active
             ? permissionCatalog.AudienceFor(active.Role, permission)
             : ResourceAudience.None;

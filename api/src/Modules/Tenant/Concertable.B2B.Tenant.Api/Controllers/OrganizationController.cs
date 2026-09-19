@@ -30,14 +30,14 @@ internal sealed class OrganizationController : ControllerBase
     }
 
     [HttpPut]
-    [HasPermission(TenantPermission.TenantSettingsEdit)]
+    [HasPermission(TenantPermission.TenantSettingsEditName)]
     public async Task<ActionResult<TenantDetails>> Update(
         UpdateTenantRequest request,
         CancellationToken ct) =>
         (await tenantService.UpdateAsync(request, ct)).ToOkOrProblem();
 
     [HttpDelete]
-    [HasPermission(TenantPermission.TenantDelete)]
+    [HasPermission(TenantPermission.TenantDeleteName)]
     public async Task<IActionResult> Delete(CancellationToken ct) =>
         (await tenantService.DeleteAsync(ct)).ToNoContentOrProblem();
 }

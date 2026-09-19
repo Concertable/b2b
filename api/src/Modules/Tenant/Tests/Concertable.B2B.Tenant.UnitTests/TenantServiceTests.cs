@@ -397,12 +397,12 @@ public sealed class TenantServiceTests
             .ReturnsAsync([new UserMembership(Guid.NewGuid(), tenantId, "Bare Ltd", TenantRole.Door, 1, [])]);
         permissionCatalog
             .Setup(catalog => catalog.For(TenantRole.Door))
-            .Returns(new HashSet<string> { TenantPermission.OperationsView, TenantPermission.ConcertsCheckIn });
+            .Returns(new HashSet<TenantPermission> { TenantPermission.OperationsView, TenantPermission.ConcertsCheckIn });
 
         var memberships = await service.GetMembershipsAsync(userId);
 
         Assert.Equal(
-            [TenantPermission.ConcertsCheckIn, TenantPermission.OperationsView],
+            [TenantPermission.ConcertsCheckInName, TenantPermission.OperationsViewName],
             memberships.Single().Permissions.Order());
     }
 }

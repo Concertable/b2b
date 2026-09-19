@@ -7,7 +7,7 @@ namespace Concertable.B2B.Dashboard.Artist.Api;
 
 [ApiController]
 [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
-[HasPermission(TenantPermission.OperationsView)]
+[HasPermission(TenantPermission.OperationsViewName)]
 [Route("api/artist-dashboard")]
 internal sealed class ArtistDashboardController : ControllerBase
 {
