@@ -33,7 +33,7 @@ public static class AppHost
             .WithPostGis()
             .WithArgs("-c", "max_prepared_transactions=100");
         var b2bDb = postgres.AddDatabase(B2BDatabase.Name);
-        var sql = builder.AddSqlServer("sql").WithDataVolume("concertable-b2b-sql-data");
+        var sql = builder.AddSqlServerContainer("concertable-b2b-sql-data");
         var authDb = sql.AddDatabase(AuthConstants.Database);
         var paymentDb = sql.AddDatabase(PaymentConstants.Database);
         var (storage, blobs) = builder.AddAzureStorage();
