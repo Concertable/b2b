@@ -5,14 +5,19 @@
 - Roadmap item: `party-foundation/core`
 - Branch: `Refactor/PartyFoundationLegacyBindings`
 - Reviewed base: `309e40d4b4b704fe94246332130566b89f464de4`
-- Prior implementation head: `f6ecc9bf` (P1 slices 1-3)
-- Current checkpoint: P1 4.3 command policy complete and locally verified
+- Prior implementation head: `a9a8ce32` (P1 exact-scope reads)
+- Current checkpoint: P1 4.2 exact-scope reads complete and locally verified
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Delivery gate: do not push or merge; the user authorized local P1 implementation and commits only.
 
 ## Current state
 
 P1 implementation is active on this branch. Slices 1-4 and the complete shipped mutation surface in 4.3 are implemented.
+Application, Booking and Concert reads now expose operation-specific Summary, Proposal/Terms, Operations and
+Finance contracts. Generic private-detail routes are deleted, public Concert reads require publication,
+contracts and invoices resolve by their actual parent keys, and client callers consume the narrowed shapes.
+System cancellation handlers for Application and Opportunity use privileged stances, so asynchronous
+reopening and notification cannot silently record an inbox receipt against an interactive tenant filter.
 Application apply, accept, reject, cancel and withdraw now execute through the root command transaction with
 locked current-membership authority, exact Proposal grants, privileged mutation repositories and a final
 post-flush authority check. Payment verification and its Booking handlers join the same root transaction,
@@ -112,16 +117,13 @@ Tenant deletion removes owned activity rows first.
 
 Continue in this order. Each slice ends with a solution build, unit/architecture gate and local commit.
 
-1. **4.2 completion — exact-scope reads.** Remove financial/proposal fields from summaries, split Summary,
-   Operations, Terms and Finance routes and permission checks, delete generic private-detail endpoints, and
-   separate financial dashboards.
-2. **4.7 — Conversation.** Complete `Thread` → `Conversation`, address create/send by `ConversationId`, add
+1. **4.7 — Conversation.** Complete `Thread` → `Conversation`, address create/send by `ConversationId`, add
    request receipts, immutable initial audience, message sequence, monotonic read position, Tenant display
    projections and safe delivery.
-3. **4.8/4.9 — neutral lifecycle and clients.** Finish `TenantBusinessActivity`, neutral onboarding,
+2. **4.8/4.9 — neutral lifecycle and clients.** Finish `TenantBusinessActivity`, neutral onboarding,
    contact/activity administration, invitation role policy, deletion and admin verification contracts, then
    implement the real Business web/mobile journeys and tenant-switch isolation.
-4. **4.10 — qualification.** Replace textual resource-filter tests with model/provider coverage and run every
+3. **4.10 — qualification.** Replace textual resource-filter tests with model/provider coverage and run every
    module integration tier, provider race/revocation cases, workers, contract/invoice access, external summary
    denial, browser and native evidence. Run the canonical review over the completed P1 candidate.
 
@@ -146,6 +148,14 @@ Continue in this order. Each slice ends with a solution build, unit/architecture
   cancellation, capture/cancellation and payment-verification/cancellation races.
 - Cross-module rollback probe
   `CaptureSuccess_WhenBookingSaveFails_RollsBackBookingConcertAndOutboundMessages`: passed.
+- Application integration tier: 75 passed.
+- Booking integration tier: 24 passed.
+- Concert exact-scope focused cases and all four repaired regression cases passed; the full tier needs a
+  fresh diagnostic run because the aggregate invocation stalled without reporting a test failure.
+- Lifecycle tier: the six exact-scope regressions pass after narrowing boundary contracts and moving system
+  cancellation handlers to privileged contexts; the complete 40-test tier still needs its final rerun.
+- Shared, Artist and Venue TypeScript checks passed through the root compiler toolchain. The workspace build
+  wrapper could not locate its installed Vitest shim, while direct compiler invocation succeeded.
 
 Still required before a P1 completion claim: every module integration tier, provider race and revocation
 ordering coverage, workers, contract/invoice reads, external-summary denial, real browser/native evidence and
