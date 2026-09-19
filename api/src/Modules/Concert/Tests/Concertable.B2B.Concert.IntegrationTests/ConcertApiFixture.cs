@@ -23,29 +23,26 @@ public sealed class ConcertApiFixture : ApiFixture
     private ICompletionRunner completionRunner = null!;
     private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
 
-    internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
-
     internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
 
-    /// <summary>
-    /// The concert is created by an event dispatched after the request that confirmed the booking has
-    /// returned, so reading it straight after the webhook races the dispatcher.
-    /// </summary>
     internal async Task<HttpResponseMessage> GetConcertByApplicationAsync(HttpClient client, int applicationId)
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
-        HttpResponseMessage response;
         do
         {
-            response = await client.GetAsync($"/api/concert/application/{applicationId}");
-            if (response.StatusCode != HttpStatusCode.NotFound)
-                return response;
+            var concertId = await dbContext.Concerts
+                .AsNoTracking()
+                .Where(concert => concert.ApplicationId == applicationId)
+                .Select(concert => (int?)concert.Id)
+                .SingleOrDefaultAsync();
+            if (concertId is not null)
+                return await client.GetAsync($"/api/concert/{concertId}/operations");
 
             await Task.Delay(100);
         }
         while (DateTimeOffset.UtcNow <= deadline);
 
-        return response;
+        return new HttpResponseMessage(HttpStatusCode.NotFound);
     }
     internal IQueryable<InvoiceEntity> Invoices => dbContext.Invoices.AsNoTracking();
     internal IQueryable<SelfBillingAgreementEntity> SelfBillingAgreements =>
@@ -81,9 +78,6 @@ public sealed class ConcertApiFixture : ApiFixture
     /// Commits <paramref name="competingChange"/> between the next concert transition's read and its
     /// update, so that transition loses the race and has to rerun against the winner's state.
     /// </summary>
-    internal void ArmConcertConflict(Func<Task> competingChange) =>
-        Conflicts.ArmOnce<ConcertEntity>(competingChange);
-
     // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
     // and SQL Server rejects OUTPUT against a table that has an enabled trigger. Stated over the new
     // row alone, it still admits the settlement reservation and rejects only what follows it.
@@ -124,6 +118,8 @@ public sealed class ConcertApiFixture : ApiFixture
                 .ExecuteUpdateAsync(setters => setters.SetProperty(
                     concert => concert.VenueTenantId,
                     venue));
+
+        dbContext.ChangeTracker.Clear();
     }
 
     internal async Task AddSelfBillingAgreementsAsync(
@@ -138,9 +134,6 @@ public sealed class ConcertApiFixture : ApiFixture
 
     protected override void OnConfigureServices(IServiceCollection services)
     {
-        services.AddResettables(Conflicts);
-        services.ConfigureDbContext<ConcertDbContext>(
-            (_, options) => options.AddInterceptors(Conflicts));
     }
 
     protected override void OnReset(IServiceScope scope)

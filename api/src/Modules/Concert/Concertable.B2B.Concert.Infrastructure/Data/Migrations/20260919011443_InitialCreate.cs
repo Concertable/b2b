@@ -76,6 +76,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ConcertId = table.Column<int>(type: "int", nullable: false),
                     BookingId = table.Column<int>(type: "int", nullable: false),
                     SequenceNumber = table.Column<long>(type: "bigint", nullable: false),
                     InvoiceNumber = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
@@ -451,6 +452,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 schema: "concert",
                 table: "Invoices",
                 column: "BookingId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Invoices_ConcertId",
+                schema: "concert",
+                table: "Invoices",
+                column: "ConcertId",
                 unique: true);
 
             migrationBuilder.CreateIndex(

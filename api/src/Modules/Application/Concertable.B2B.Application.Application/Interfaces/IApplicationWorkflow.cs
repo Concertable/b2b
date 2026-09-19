@@ -6,7 +6,7 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationWorkflow
 {
-    Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
+    Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default);

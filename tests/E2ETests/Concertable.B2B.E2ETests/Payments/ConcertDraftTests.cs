@@ -49,7 +49,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
         await fixture.Polling.UntilAsync(
             async () =>
             {
-                var response = await venueManagerClient.GetAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}");
+                var response = await venueManagerClient.GetAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/summary");
                 await response.ShouldBe(HttpStatusCode.OK);
                 return await response.Content.ReadAsync<ApplicationResponse>();
             },
@@ -78,7 +78,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
         await fixture.Polling.UntilAsync(
             async () =>
             {
-                var response = await venueManagerClient.GetAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}");
+                var response = await venueManagerClient.GetAsync($"/api/application/{fixture.SeedState.VenueHireApp.Id}/summary");
                 await response.ShouldBe(HttpStatusCode.OK);
                 return await response.Content.ReadAsync<ApplicationResponse>();
             },
@@ -94,7 +94,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var applicationResponse = await venueManagerClient.GetAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}");
+        var applicationResponse = await venueManagerClient.GetAsync($"/api/application/{fixture.SeedState.DoorSplitApp.Id}/summary");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);
@@ -108,7 +108,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var applicationResponse = await venueManagerClient.GetAsync($"/api/application/{fixture.SeedState.VersusApp.Id}");
+        var applicationResponse = await venueManagerClient.GetAsync($"/api/application/{fixture.SeedState.VersusApp.Id}/summary");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationResponse>();
         Assert.Equal(ApplicationStatus.Accepted, application!.Status);

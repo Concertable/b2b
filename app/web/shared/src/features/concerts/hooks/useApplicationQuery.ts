@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
 import applicationApi from "../api/applicationApi";
-import type { Application } from "../types";
+import type { ApplicationProposal } from "../types";
 
 export function useApplicationsByOpportunityQuery(opportunityId: number) {
   return useQuery({
@@ -13,7 +13,7 @@ export function useApplicationsByOpportunityQuery(opportunityId: number) {
 export function useApplicationQuery(applicationId: number) {
   return useQuery({
     queryKey: ["applications", applicationId],
-    queryFn: () => applicationApi.getApplicationById(applicationId),
+    queryFn: () => applicationApi.getProposal(applicationId),
   });
 }
 
@@ -43,7 +43,7 @@ export function useAcceptApplicationMutation(opportunityId: number) {
       eSignature: ESignatureRequest;
     }) => applicationApi.acceptApplication(applicationId, eSignature),
     onSuccess: (_data, { applicationId }) => {
-      queryClient.setQueryData<Application>(
+      queryClient.setQueryData<ApplicationProposal>(
         ["applications", applicationId],
         (application) =>
           application ? { ...application, status: "accepted" } : application,

@@ -40,7 +40,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         var concertResponse = await fixture.GetConcertByApplicationAsync(client, appId);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<OperationsResponse>();
         Assert.NotNull(concert!.Actions!.Cancel); // cancel offered while Booked
 
         // Act
@@ -55,8 +55,8 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(ConcertState.Cancelled, persisted.State);
 
-        var afterResponse = await client.GetAsync($"/api/concert/application/{appId}");
-        var after = await afterResponse.Content.ReadAsync<MyDetailsResponse>();
+        var afterResponse = await client.GetAsync($"/api/concert/{concert.Id}/operations");
+        var after = await afterResponse.Content.ReadAsync<OperationsResponse>();
         Assert.Null(after!.Actions!.Cancel);
     }
 
@@ -72,7 +72,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         var concertResponse = await fixture.GetConcertByApplicationAsync(client, appId);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<OperationsResponse>();
         // Act
         var cancelResponse = await client.PostAsync($"/api/concert/{concert!.Id}/cancel");
 
@@ -95,7 +95,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await fixture.PaymentSimulator.SendWebhookAsync();
         var concertResponse = await fixture.GetConcertByApplicationAsync(client, appId);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<OperationsResponse>();
         var cancelResponse = await client.PostAsync($"/api/concert/{concert!.Id}/cancel");
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
 
@@ -117,7 +117,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
         var concertResponse = await fixture.GetConcertByApplicationAsync(client, appId);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<OperationsResponse>();
 
         // Act
         var cancelResponse = await client.PostAsync($"/api/concert/{concert!.Id}/cancel");
@@ -185,7 +185,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await fixture.PaymentSimulator.SendWebhookAsync();
         var concertResponse = await fixture.GetConcertByApplicationAsync(client, appId);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
-        var concert = await concertResponse.Content.ReadAsync<MyDetailsResponse>();
+        var concert = await concertResponse.Content.ReadAsync<OperationsResponse>();
         Assert.NotNull(concert);
         var concertId = concert.Id;
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -233,7 +233,8 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
         await venueClient.PostAsync($"/api/application/{appId}/checkout");
         await venueClient.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.PaymentSimulator.SendWebhookAsync();
-        var concert = await (await venueClient.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
+        var concert = await (await fixture.GetConcertByApplicationAsync(venueClient, appId))
+            .Content.ReadAsync<OperationsResponse>();
         Assert.NotNull(concert);
 
         // Act
@@ -255,8 +256,8 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
             $"/api/application/{appId}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.PaymentSimulator.SendWebhookAsync();
-        var concert = await (await venueClient.GetAsync($"/api/concert/application/{appId}"))
-            .Content.ReadAsync<MyDetailsResponse>();
+        var concert = await (await fixture.GetConcertByApplicationAsync(venueClient, appId))
+            .Content.ReadAsync<OperationsResponse>();
         var unrelatedClient = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         var response = await unrelatedClient.PostAsync($"/api/concert/{concert!.Id}/cancel");
@@ -268,7 +269,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
     private static async Task<BookingSummary> GetBookingAsync(HttpClient client, int applicationId)
     {
-        var response = await client.GetAsync($"/api/booking/application/{applicationId}");
+        var response = await client.GetAsync($"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         return Assert.IsType<BookingSummary>(await response.Content.ReadAsync<BookingSummary>());
     }

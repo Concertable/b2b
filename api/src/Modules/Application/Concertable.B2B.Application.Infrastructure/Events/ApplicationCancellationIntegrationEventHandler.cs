@@ -11,12 +11,12 @@ internal sealed class ApplicationCancellationIntegrationEventHandler :
     IIntegrationEventHandler<BookingCancelledEvent>,
     IIntegrationEventHandler<ConcertCancelledEvent>
 {
-    private readonly ApplicationDbContext context;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly ApplicationPrivilegedDbContext context;
+    private readonly IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior;
 
     public ApplicationCancellationIntegrationEventHandler(
-        ApplicationDbContext context,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        ApplicationPrivilegedDbContext context,
+        IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.context = context;
         this.unitOfWorkBehavior = unitOfWorkBehavior;

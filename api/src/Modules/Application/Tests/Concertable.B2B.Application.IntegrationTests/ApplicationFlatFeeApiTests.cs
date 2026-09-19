@@ -70,9 +70,9 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
         await applyResponse.ShouldBe(HttpStatusCode.Created);
-        var application = await applyResponse.Content.ReadAsync<ApplicationResponse>();
+        var application = await applyResponse.Content.ReadAsync<ApplicationProposalResponse>();
         Assert.NotNull(application);
-        Assert.Equal($"/api/application/{application.Id}", applyResponse.Headers.Location?.OriginalString);
+        Assert.Equal($"/api/application/{application.Id}/proposal", applyResponse.Headers.Location?.OriginalString);
         var standard = await fixture.Applications
             .OfType<ApplicationEntity>()
             .FirstOrDefaultAsync(value => value.OpportunityId == opportunity.Id);

@@ -18,6 +18,7 @@ public sealed class InvoiceEntity : IIdEntity
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
+    public int ConcertId { get; private set; }
     public int BookingId { get; private set; }
 
     /// <summary>The party who made the supply and on whose behalf the invoice is self-billed — the settlement payee.</summary>
@@ -59,6 +60,7 @@ public sealed class InvoiceEntity : IIdEntity
 
         var invoice = new InvoiceEntity
         {
+            ConcertId = concert.Id,
             BookingId = concert.BookingId,
             VenueTenantId = concert.VenueTenantId,
             ArtistTenantId = concert.ArtistTenantId,

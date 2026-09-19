@@ -5,97 +5,93 @@ namespace Concertable.B2B.Concert.Api.Mappers;
 
 internal static class ConcertMappers
 {
-    extension(ConcertSummary dto)
+    extension(PublishedConcert concert)
     {
-        public SummaryResponse ToSummaryResponse() => new()
-        {
-            Id = dto.Id,
-            Name = dto.Name,
-            ImageUrl = dto.ImageUrl,
-            Price = dto.Price,
-            TotalTickets = dto.TotalTickets,
-            AvailableTickets = dto.AvailableTickets,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            DatePosted = dto.DatePosted,
-            Venue = new VenueSummaryResponse
-            {
-                Id = dto.Venue.Id,
-                Name = dto.Venue.Name,
-                Rating = dto.Venue.Rating
-            },
-            Artist = new ArtistSummaryResponse
-            {
-                Id = dto.Artist.Id,
-                Name = dto.Artist.Name,
-                Rating = dto.Artist.Rating,
-                Genres = dto.Artist.Genres.ToList()
-            }
-        };
+        public PublishedConcertResponse ToResponse() =>
+            new(
+                concert.Id,
+                concert.Name,
+                concert.About,
+                concert.StartsAt,
+                concert.EndsAt,
+                concert.VenueName,
+                concert.ArtistName,
+                concert.Price);
     }
 
-    extension(IEnumerable<ConcertSummary> dtos)
+    extension(IEnumerable<PublishedConcert> concerts)
     {
-        public IEnumerable<SummaryResponse> ToSummaryResponses() => dtos.Select(d => d.ToSummaryResponse());
+        public IEnumerable<PublishedConcertResponse> ToResponses() =>
+            concerts.Select(concert => concert.ToResponse());
     }
 
-    extension(ConcertDetails dto)
+    extension(ConcertSummary concert)
     {
-        public DetailsResponse ToDetailsResponse() => new()
-        {
-            Id = dto.Id,
-            Name = dto.Name,
-            About = dto.About,
-            BannerUrl = dto.BannerUrl,
-            Avatar = dto.Avatar ?? dto.Artist.Avatar,
-            Rating = dto.Rating,
-            Price = dto.Price,
-            TotalTickets = dto.TotalTickets,
-            AvailableTickets = dto.AvailableTickets,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            DatePosted = dto.DatePosted,
-            Genres = dto.Genres.ToList(),
-            Artist = dto.Artist.ToArtistResponse(),
-            Venue = dto.Venue.ToVenueResponse()
-        };
+        public SummaryResponse ToResponse() =>
+            new(
+                concert.Id,
+                concert.Name,
+                concert.StartDate,
+                concert.EndDate,
+                concert.VenueName,
+                concert.ArtistName,
+                concert.State);
+    }
 
-        public MyDetailsResponse ToMyDetailsResponse() => new()
+    extension(IEnumerable<ConcertSummary> concerts)
+    {
+        public IEnumerable<SummaryResponse> ToSummaryResponses() =>
+            concerts.Select(concert => concert.ToResponse());
+    }
+
+    extension(ConcertOperations concert)
+    {
+        public OperationsResponse ToResponse() => new()
         {
-            Id = dto.Id,
-            Name = dto.Name,
-            About = dto.About,
-            BannerUrl = dto.BannerUrl,
-            Avatar = dto.Avatar ?? dto.Artist.Avatar,
-            Rating = dto.Rating,
-            Price = dto.Price,
-            TotalTickets = dto.TotalTickets,
-            AvailableTickets = dto.AvailableTickets,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            DatePosted = dto.DatePosted,
-            Genres = dto.Genres.ToList(),
-            Artist = dto.Artist.ToArtistResponse(),
-            Venue = dto.Venue.ToVenueResponse(),
-            TicketsSold = dto.TicketsSold,
-            DoorRevenue = dto.DoorRevenue,
-            Actions = new ConcertActions(
-                Cancel: dto.CanCancel
-                    ? new ActionLink($"/api/concert/{dto.Id}/cancel", HttpMethods.Post)
-                    : null,
-                Contract: new ActionLink($"/api/concert/{dto.Id}/contract/pdf", HttpMethods.Get),
-                DeclareDoorRevenue: dto.CanDeclareDoorRevenue
-                    ? new ActionLink($"/api/concert/{dto.Id}/door-revenue", HttpMethods.Post)
-                    : null,
-                Invoice: dto.InvoiceId is not null
-                    ? new ActionLink($"/api/concert/{dto.Id}/invoice/pdf", HttpMethods.Get)
+            Id = concert.Id,
+            ApplicationId = concert.ApplicationId,
+            Name = concert.Name,
+            About = concert.About,
+            BannerUrl = concert.BannerUrl,
+            Avatar = concert.Avatar ?? concert.Artist.Avatar,
+            Rating = concert.Rating,
+            TotalTickets = concert.TotalTickets,
+            AvailableTickets = concert.AvailableTickets,
+            Price = concert.Price,
+            StartDate = concert.StartDate,
+            EndDate = concert.EndDate,
+            DatePosted = concert.DatePosted,
+            State = concert.State,
+            Genres = concert.Genres.ToList(),
+            Artist = concert.Artist.ToResponse(),
+            Venue = concert.Venue.ToResponse(),
+            Actions = new ConcertOperationsActions(
+                concert.CanCancel
+                    ? new ActionLink($"/api/concert/{concert.Id}/cancel", HttpMethods.Post)
                     : null)
         };
     }
 
+    extension(ConcertFinance concert)
+    {
+        public FinanceResponse ToResponse() =>
+            new(
+                concert.Id,
+                concert.TicketsSold,
+                concert.DoorRevenue,
+                concert.IsRevenueShare,
+                new ConcertFinanceActions(
+                    concert.CanDeclareDoorRevenue
+                        ? new ActionLink($"/api/concert/{concert.Id}/door-revenue", HttpMethods.Post)
+                        : null,
+                    concert.InvoiceId is not null
+                        ? new ActionLink($"/api/concert/{concert.Id}/invoice/pdf", HttpMethods.Get)
+                        : null));
+    }
+
     extension(ConcertArtist artist)
     {
-        private ArtistResponse ToArtistResponse() => new()
+        private ArtistResponse ToResponse() => new()
         {
             Id = artist.Id,
             Name = artist.Name,
@@ -109,7 +105,7 @@ internal static class ConcertMappers
 
     extension(ConcertVenue venue)
     {
-        private VenueResponse ToVenueResponse() => new()
+        private VenueResponse ToResponse() => new()
         {
             Id = venue.Id,
             Name = venue.Name,

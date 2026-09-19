@@ -20,6 +20,7 @@ public abstract class ContractEntity : IIdEntity
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public int BookingId { get; private set; }
+    public int ApplicationId { get; private set; }
     public string VenueName { get; private set; } = null!;
     public string ArtistName { get; private set; } = null!;
     public DateRange Period { get; private set; } = null!;
@@ -52,6 +53,7 @@ public abstract class ContractEntity : IIdEntity
         var opportunity = application.Opportunity;
         var contract = snapshot.Contract;
         BookingId = bookingId;
+        ApplicationId = application.Id;
         VenueTenantId = opportunity.Venue.TenantId;
         ArtistTenantId = application.Artist.TenantId;
         VenueName = opportunity.Venue.Name;

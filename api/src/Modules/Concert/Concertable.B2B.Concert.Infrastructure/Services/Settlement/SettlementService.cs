@@ -121,6 +121,17 @@ internal sealed class SettlementService : ISettlementService
 
         var supplierTenantId = concert.SettlementPayeeTenantId;
         var customerTenantId = concert.SettlementPayerTenantId;
+        var supplierVerified = await tenantModule.IsVerifiedAsync(supplierTenantId, ct);
+        var customerVerified = await tenantModule.IsVerifiedAsync(customerTenantId, ct);
+        if (!supplierVerified || !customerVerified)
+        {
+            logger.SettlementDeferredPendingVerification(
+                concertId,
+                supplierVerified ? customerTenantId : supplierTenantId);
+            return new SettlementPreparation.Terminal(
+                SettlementOutcome.DeferredPendingVerification);
+        }
+
         var supplierComplete = await tenantModule.IsTaxComplianceCompleteAsync(supplierTenantId);
         var customerComplete = await tenantModule.IsTaxComplianceCompleteAsync(customerTenantId);
         if (!supplierComplete || !customerComplete)

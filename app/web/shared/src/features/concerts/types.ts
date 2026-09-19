@@ -59,28 +59,61 @@ export type ApplicationActionsOf<TName extends ApplicationActionName> = {
   [K in TName]?: ActionLink;
 };
 
-export type ApplicationActions = ApplicationActionsOf<ApplicationActionName> & {
-  /** @deprecated the wire field is `decline`; drops once consumers cut over. */
-  reject?: ActionLink;
-};
+export type ApplicationActions = ApplicationActionsOf<ApplicationActionName>;
 
-export interface ConcertActions {
+export interface ConcertOperationsActions {
   cancel?: ActionLink;
-  contract?: ActionLink;
+}
+
+export interface ConcertFinanceActions {
   declareDoorRevenue?: ActionLink;
   invoice?: ActionLink;
 }
 
-export interface MyConcert extends Concert {
-  ticketsSold: number;
-  doorRevenue?: number;
-  actions: ConcertActions;
+export interface ConcertOperations extends Concert {
+  applicationId: number;
+  actions: ConcertOperationsActions;
 }
 
-export interface Application {
+export interface ConcertFinance {
+  id: number;
+  ticketsSold: number;
+  doorRevenue?: number;
+  isRevenueShare: boolean;
+  actions: ConcertFinanceActions;
+}
+
+export interface ConcertDraftReference {
+  id: number;
+  applicationId: number;
+}
+
+export interface ApplicationProposal {
   id: number;
   artist: ArtistSummary;
-  opportunity: Opportunity;
+  opportunity: {
+    id: number;
+    venueId: number;
+    venueName: string;
+    startDate: string;
+    endDate: string;
+    genres: Genre[];
+    deal: Deal;
+  };
   status: ApplicationStatus;
   actions: ApplicationActions;
+}
+
+export interface ApplicationSummary {
+  id: number;
+  artist: ArtistSummary;
+  opportunity: {
+    id: number;
+    venueId: number;
+    venueName: string;
+    startDate: string;
+    endDate: string;
+    genres: Genre[];
+  };
+  status: ApplicationStatus;
 }

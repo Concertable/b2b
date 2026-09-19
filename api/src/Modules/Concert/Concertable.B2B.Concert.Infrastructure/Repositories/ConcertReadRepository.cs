@@ -29,15 +29,7 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
     public Task<PublishedConcert?> GetPublishedByIdAsync(int id, CancellationToken ct = default) =>
         context.Concerts
             .Where(concert => concert.Id == id && concert.DatePosted != null)
-            .Select(concert => new PublishedConcert(
-                concert.Id,
-                concert.Name,
-                concert.About,
-                concert.Period.Start,
-                concert.Period.End,
-                concert.Venue.Name,
-                concert.Artist.Name,
-                concert.Price))
+            .ToPublished()
             .SingleOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
@@ -55,66 +47,55 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
             .Select(concert => concert.Id)
             .ToListAsync(ct);
 
-    public async Task<ConcertDetails?> GetDetailsByIdAsync(int id)
-    {
-        return await context.Concerts
-            .Where(e => e.Id == id)
-            .ToDetails(
-                context.ConcertRatingProjections,
-                context.ArtistRatingProjections,
-                context.VenueRatingProjections)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<ConcertSummary?> GetSummaryAsync(int id)
-    {
-        return await context.Concerts
-            .Where(e => e.Id == id)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int venueId)
+    public async Task<IReadOnlyList<PublishedConcert>> GetUpcomingByVenueIdAsync(
+        int venueId,
+        CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
             .Where(e => e.VenueId == venueId
                         && e.Period.Start >= now
                         && e.DatePosted != null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
+            .ToPublished()
+            .ToListAsync(ct);
     }
 
-    public async Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int artistId)
+    public async Task<IReadOnlyList<PublishedConcert>> GetUpcomingByArtistIdAsync(
+        int artistId,
+        CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
             .Where(e => e.ArtistId == artistId
                         && e.Period.Start >= now
                         && e.DatePosted != null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
+            .ToPublished()
+            .ToListAsync(ct);
     }
 
-    public async Task<IEnumerable<ConcertSummary>> GetHistoryByVenueIdAsync(int venueId)
+    public async Task<IReadOnlyList<PublishedConcert>> GetHistoryByVenueIdAsync(
+        int venueId,
+        CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow();
         return await context.Concerts
             .Where(e => e.VenueId == venueId
                         && e.Period.Start < now
                         && e.DatePosted != null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
+            .ToPublished()
+            .ToListAsync(ct);
     }
 
-    public async Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int artistId)
+    public async Task<IReadOnlyList<PublishedConcert>> GetHistoryByArtistIdAsync(
+        int artistId,
+        CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
         return await context.Concerts
             .Where(e => e.ArtistId == artistId
                         && e.Period.Start < now
                         && e.DatePosted != null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
+            .ToPublished()
+            .ToListAsync(ct);
     }
 }

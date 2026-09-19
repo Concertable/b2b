@@ -389,6 +389,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<int>("BookingId")
                         .HasColumnType("int");
 
+                    b.Property<int>("ConcertId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -518,6 +521,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BookingId")
+                        .IsUnique();
+
+                    b.HasIndex("ConcertId")
                         .IsUnique();
 
                     b.ToTable("Invoices", "concert");

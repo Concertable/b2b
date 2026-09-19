@@ -35,7 +35,7 @@ internal sealed class BookingService : IBookingService
     public async Task<BookingDto?> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        (await bookingRepository.GetByApplicationIdAsync(applicationId, ct))?.ToDto();
+        (await bookingRepository.GetSummaryByApplicationIdAsync(applicationId, ct))?.ToDto();
 
     public Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
@@ -46,10 +46,23 @@ internal sealed class BookingService : IBookingService
         int applicationId,
         CancellationToken ct = default)
     {
-        var booking = await bookingRepository.GetByApplicationIdAsync(applicationId, ct);
+        var booking = await bookingRepository.GetSummaryByApplicationIdAsync(applicationId, ct);
         return booking is null
             ? null
             : new BookingSummaryDto(
+                booking.Id,
+                booking.ApplicationId,
+                booking.State);
+    }
+
+    public async Task<BookingOperationsDto?> GetOperationsByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default)
+    {
+        var booking = await bookingRepository.GetOperationsByApplicationIdAsync(applicationId, ct);
+        return booking is null
+            ? null
+            : new BookingOperationsDto(
                 booking.Id,
                 booking.ApplicationId,
                 booking.State,
@@ -65,10 +78,7 @@ internal sealed class BookingService : IBookingService
             .Select(booking => new BookingSummaryDto(
                 booking.Id,
                 booking.ApplicationId,
-                booking.State,
-                booking.OperationId,
-                booking.FinancialFailure?.Code,
-                booking.FinancialFailure?.Message))
+                booking.State))
             .ToList();
 
     public Task<int> GetArtistAwaitingCheckoutCountAsync(

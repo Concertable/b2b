@@ -52,11 +52,11 @@ public sealed class TenantScopingTests : IAsyncLifetime
         var artistParty = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var thirdParty = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
-        await (await venueParty.GetAsync($"/api/application/{applicationId}"))
+        await (await venueParty.GetAsync($"/api/application/{applicationId}/proposal"))
             .ShouldBe(HttpStatusCode.OK);
-        await (await artistParty.GetAsync($"/api/application/{applicationId}"))
+        await (await artistParty.GetAsync($"/api/application/{applicationId}/proposal"))
             .ShouldBe(HttpStatusCode.OK);
-        await (await thirdParty.GetAsync($"/api/application/{applicationId}"))
+        await (await thirdParty.GetAsync($"/api/application/{applicationId}/proposal"))
             .ShouldBe(HttpStatusCode.NotFound);
     }
 

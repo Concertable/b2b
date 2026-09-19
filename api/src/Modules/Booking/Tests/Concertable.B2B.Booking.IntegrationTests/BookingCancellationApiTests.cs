@@ -410,12 +410,12 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             request);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
-        var applicationResponse = await client.GetAsync($"/api/application/{applicationId}");
+        var applicationResponse = await client.GetAsync($"/api/application/{applicationId}/proposal");
         await applicationResponse.ShouldBe(HttpStatusCode.OK);
         var application = await applicationResponse.Content.ReadAsync<ApplicationBoundaryResponse>();
         Assert.NotNull(application);
         Assert.Null(application.Actions.Cancel);
-        var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
+        var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}/summary");
         await bookingResponse.ShouldBe(HttpStatusCode.OK);
         var booking = await bookingResponse.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(booking);

@@ -25,65 +25,76 @@ internal sealed class ApplicationController : ControllerBase
 
     [HasPermission(TenantPermission.ApplicationsDecide)]
     [HttpGet("opportunity/{id}")]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetAllByOpportunityId(int id)
+    [HasPermission(TenantPermission.TermsRead)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetAllByOpportunityId(int id)
     {
         var result = await applicationService.GetByOpportunityIdAsync(id);
-        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToProposalResponsesAsync)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmit)]
     [EnableRateLimiting(RateLimitPolicies.Apply)]
     [HttpPost("{opportunityId}")]
-    public async Task<ActionResult<ApplicationResponse>> Apply(
+    public async Task<ActionResult<ApplicationProposalResponse>> Apply(
         int opportunityId,
         [FromBody] ApplyRequest request,
         CancellationToken ct)
     {
         var result = await applicationService.ApplyAsync(opportunityId, request.ESignature, ct);
-        var response = await result.MapAsync(mapper.ToResponseAsync);
-        return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}");
+        var response = await result.MapAsync(mapper.ToProposalResponseAsync);
+        return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}/proposal");
     }
 
     [HttpGet("artist/pending")]
     [HasPermission(TenantPermission.ApplicationsSubmit)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetPendingForArtist()
+    [HasPermission(TenantPermission.TermsRead)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetPendingForArtist()
     {
         var result = await applicationService.GetPendingForArtistAsync();
-        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToProposalResponsesAsync)).ToOkOrProblem();
     }
 
     [HttpGet("artist/recently-denied")]
     [HasPermission(TenantPermission.ApplicationsSubmit)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetRecentDeniedForArtist()
+    [HasPermission(TenantPermission.TermsRead)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetRecentDeniedForArtist()
     {
         var result = await applicationService.GetRecentDeniedForArtistAsync();
-        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToProposalResponsesAsync)).ToOkOrProblem();
     }
 
     [HttpGet("venue/current")]
     [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
     [HasPermission(TenantPermission.OperationsView)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetPendingForCurrentVenue()
+    public async Task<ActionResult<IReadOnlyList<ApplicationSummaryResponse>>> GetPendingForCurrentVenue()
     {
         var result = await applicationService.GetPendingForCurrentVenueAsync();
-        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToSummaryResponsesAsync)).ToOkOrProblem();
     }
 
     [HttpGet("artist/current")]
     [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
     [HasPermission(TenantPermission.OperationsView)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetCurrentForCurrentArtist()
+    public async Task<ActionResult<IReadOnlyList<ApplicationSummaryResponse>>> GetCurrentForCurrentArtist()
     {
         var result = await applicationService.GetCurrentForCurrentArtistAsync();
-        return (await result.MapAsync(mapper.ToResponsesAsync)).ToOkOrProblem();
+        return (await result.MapAsync(mapper.ToSummaryResponsesAsync)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.OperationsView)]
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ApplicationResponse>> GetById(int id)
+    [HttpGet("{id:int}/summary")]
+    public async Task<ActionResult<ApplicationSummaryResponse>> GetSummary(int id)
     {
-        var result = await applicationService.GetByIdAsync(id);
-        return (await result.MapAsync(mapper.ToResponseAsync)).ToOkOrProblem();
+        var result = await applicationService.GetSummaryAsync(id);
+        return (await result.MapAsync(mapper.ToSummaryResponseAsync)).ToOkOrProblem();
+    }
+
+    [HasPermission(TenantPermission.TermsRead)]
+    [HttpGet("{id:int}/proposal")]
+    public async Task<ActionResult<ApplicationProposalResponse>> GetProposal(int id)
+    {
+        var result = await applicationService.GetProposalAsync(id);
+        return (await result.MapAsync(mapper.ToProposalResponseAsync)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmit)]

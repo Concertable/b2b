@@ -18,10 +18,7 @@ internal static class BookingMappers
             new(
                 booking.Id,
                 booking.ApplicationId,
-                booking.State.ToStatus(),
-                booking.OperationId,
-                booking.FailureCode,
-                booking.FailureMessage);
+                booking.State.ToStatus());
     }
 
     extension(BookingState state)

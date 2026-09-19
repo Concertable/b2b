@@ -1,6 +1,7 @@
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
+using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -23,17 +24,24 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
     public async ValueTask AddContractAsync(ContractEntity contract, CancellationToken ct = default) =>
         await context.Contracts.AddAsync(contract, ct);
 
-    public Task<BookingEntity?> GetByApplicationIdAsync(
+    public Task<BookingEntity?> GetSummaryByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        context.Bookings.SingleOrDefaultAsync(
+        WithScope(BookingAccessScope.Summary).SingleOrDefaultAsync(
+            booking => booking.ApplicationId == applicationId,
+            ct);
+
+    public Task<BookingEntity?> GetOperationsByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default) =>
+        WithScope(BookingAccessScope.Operations).SingleOrDefaultAsync(
             booking => booking.ApplicationId == applicationId,
             ct);
 
     public Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        context.Bookings
+        WithScope(BookingAccessScope.Summary)
             .Where(booking => booking.ApplicationId == applicationId)
             .Select(booking => (int?)booking.Id)
             .SingleOrDefaultAsync(ct);
@@ -41,7 +49,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
     public async Task<IReadOnlyList<BookingEntity>> GetByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds,
         CancellationToken ct = default) =>
-        await context.Bookings
+        await WithScope(BookingAccessScope.Summary)
             .Where(booking => applicationIds.Contains(booking.ApplicationId))
             .ToListAsync(ct);
 
@@ -72,7 +80,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
         Guid artistTenantId,
         DateTime now,
         CancellationToken ct = default) =>
-        context.Bookings.CountAsync(
+        WithScope(BookingAccessScope.Operations).CountAsync(
             booking =>
                 booking.ArtistTenantId == artistTenantId &&
                 booking.EndDate > now &&
@@ -80,5 +88,10 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
                 (booking.State == BookingState.AwaitingConfirmation ||
                  booking.State == BookingState.ConfirmationFailed),
             ct);
+
+    private IQueryable<BookingEntity> WithScope(BookingAccessScope scope) =>
+        context.Bookings.Where(booking =>
+            context.BookingAccessGrants.Any(grant =>
+                grant.ResourceId == booking.Id && grant.Scope == scope));
 
 }

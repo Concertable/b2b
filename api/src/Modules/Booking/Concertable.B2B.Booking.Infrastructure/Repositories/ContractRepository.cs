@@ -14,20 +14,17 @@ internal sealed class ContractRepository : Repository<ContractEntity>, IContract
     public Task<ContractEntity?> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        (from contract in context.Contracts
-         join booking in context.Bookings on contract.BookingId equals booking.Id
-         where booking.ApplicationId == applicationId
-         select contract)
-        .SingleOrDefaultAsync(ct);
+        context.Contracts.SingleOrDefaultAsync(
+            contract => contract.ApplicationId == applicationId,
+            ct);
 
     public Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        (from contract in context.Contracts
-         join booking in context.Bookings on contract.BookingId equals booking.Id
-         where booking.ApplicationId == applicationId
-         select (int?)contract.Id)
-        .SingleOrDefaultAsync(ct);
+        context.Contracts
+            .Where(contract => contract.ApplicationId == applicationId)
+            .Select(contract => (int?)contract.Id)
+            .SingleOrDefaultAsync(ct);
 
     public Task<ContractEntity?> GetByBookingIdAsync(
         int bookingId,

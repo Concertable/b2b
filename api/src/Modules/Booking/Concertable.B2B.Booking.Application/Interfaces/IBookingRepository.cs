@@ -8,7 +8,10 @@ internal interface IBookingRepository : IRepository<BookingEntity, int>
 {
     Task<BookingEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default);
     ValueTask AddContractAsync(ContractEntity contract, CancellationToken ct = default);
-    Task<BookingEntity?> GetByApplicationIdAsync(
+    Task<BookingEntity?> GetSummaryByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default);
+    Task<BookingEntity?> GetOperationsByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);
     Task<int?> GetIdByApplicationIdAsync(

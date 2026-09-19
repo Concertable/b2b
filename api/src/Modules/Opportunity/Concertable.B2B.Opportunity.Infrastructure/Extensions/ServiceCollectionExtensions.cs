@@ -56,6 +56,7 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IOpportunityRepository, OpportunityRepository>();
             services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
             services.AddScoped<IOpportunityService, OpportunityService>();

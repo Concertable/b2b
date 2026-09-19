@@ -17,6 +17,7 @@ internal sealed class InvoiceEntityConfiguration : IEntityTypeConfiguration<Invo
         builder.HasIndex(invoice => invoice.BookingId).IsUnique();
 
         builder.Property(i => i.InvoiceNumber).HasMaxLength(64);
+        builder.HasIndex(invoice => invoice.ConcertId).IsUnique();
 
         builder.ComplexProperty(i => i.Amounts, a =>
         {

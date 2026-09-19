@@ -72,13 +72,19 @@ internal sealed class ApplicationService : IApplicationService
         this.commandExecutor = commandExecutor;
     }
 
-    public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
-        applicationRepository.GetByIdAsync(id)
+    public Task<Result<ApplicationSummaryDto, ApplicationError>> GetSummaryAsync(int id) =>
+        applicationRepository.GetSummaryByIdAsync(id)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(application => mapper.ToDtoAsync(application));
+            .MapAsync(application => mapper.ToSummaryAsync(application));
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
+    public Task<Result<ApplicationProposalDto, ApplicationError>> GetProposalAsync(int id) =>
+        applicationRepository.GetProposalByIdAsync(id)
+            .ToOption()
+            .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
+            .MapAsync(application => mapper.ToProposalAsync(application));
+
+    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
     {
         var opportunityOption = await opportunityModule.GetAsync(id);
         if (!opportunityOption.TryGetValue(out var opportunity) ||
@@ -86,10 +92,10 @@ internal sealed class ApplicationService : IApplicationService
             return new ApplicationError.OpportunityForbidden(id);
 
         var applications = await applicationRepository.GetByOpportunityIdAsync(id);
-        return new Success<IReadOnlyList<ApplicationDto>>(await mapper.ToDtosAsync(applications));
+        return new Success<IReadOnlyList<ApplicationProposalDto>>(await mapper.ToProposalsAsync(applications));
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync()
+    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetPendingForArtistAsync()
     {
         var artistOption = await artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
@@ -98,13 +104,13 @@ internal sealed class ApplicationService : IApplicationService
         var applications = await applicationRepository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
             ApplicationState.Applied);
-        var dtos = await mapper.ToDtosAsync(applications);
-        return new Success<IReadOnlyList<ApplicationDto>>(
+        var dtos = await mapper.ToProposalsAsync(applications);
+        return new Success<IReadOnlyList<ApplicationProposalDto>>(
             dtos.Where(application => application.Opportunity.StartDate > timeProvider.GetUtcNow())
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync()
+    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetRecentDeniedForArtistAsync()
     {
         var artistOption = await artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
@@ -113,14 +119,14 @@ internal sealed class ApplicationService : IApplicationService
         var applications = await applicationRepository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
             ApplicationState.Rejected);
-        var dtos = await mapper.ToDtosAsync(applications);
-        return new Success<IReadOnlyList<ApplicationDto>>(
+        var dtos = await mapper.ToProposalsAsync(applications);
+        return new Success<IReadOnlyList<ApplicationProposalDto>>(
             dtos.OrderByDescending(application => application.Opportunity.EndDate)
                 .Take(5)
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForCurrentVenueAsync()
+    public async Task<Result<IReadOnlyList<ApplicationSummaryDto>, ApplicationError>> GetPendingForCurrentVenueAsync()
     {
         if (tenantContext.TenantId is not { } tenantId)
             return new ApplicationError.MissingVenue();
@@ -129,8 +135,8 @@ internal sealed class ApplicationService : IApplicationService
             tenantId,
             ApplicationState.Applied);
         var now = timeProvider.GetUtcNow();
-        var dtos = await mapper.ToDtosAsync(applications);
-        return new Success<IReadOnlyList<ApplicationDto>>(
+        var dtos = await mapper.ToSummariesAsync(applications);
+        return new Success<IReadOnlyList<ApplicationSummaryDto>>(
             dtos.Where(application => application.Opportunity.EndDate > now)
                 .OrderBy(application => application.Opportunity.StartDate)
                 .ThenBy(application => application.Id)
@@ -138,15 +144,15 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetCurrentForCurrentArtistAsync()
+    public async Task<Result<IReadOnlyList<ApplicationSummaryDto>, ApplicationError>> GetCurrentForCurrentArtistAsync()
     {
         if (tenantContext.TenantId is not { } tenantId)
             return new ApplicationError.MissingArtist();
 
         var applications = await applicationRepository.GetCurrentByArtistTenantIdAsync(tenantId);
         var now = timeProvider.GetUtcNow();
-        var dtos = await mapper.ToDtosAsync(applications);
-        return new Success<IReadOnlyList<ApplicationDto>>(
+        var dtos = await mapper.ToSummariesAsync(applications);
+        return new Success<IReadOnlyList<ApplicationSummaryDto>>(
             dtos.Where(application => application.Opportunity.EndDate > now)
                 .OrderBy(application => application.Opportunity.StartDate)
                 .ThenBy(application => application.Id)
@@ -154,7 +160,7 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
-    public Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
+    public Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
@@ -412,7 +418,7 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanAcceptAsync(int applicationId)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId);
+        var application = await applicationRepository.GetProposalByIdAsync(applicationId);
         if (application is null)
             return new ApplicationEligibilityError.ApplicationNotFound();
 

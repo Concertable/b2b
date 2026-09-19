@@ -80,7 +80,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var application = fixture.SeedState.FlatFeeApp;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var response = await client.GetAsync($"/api/application/{application.Id}");
+        var response = await client.GetAsync($"/api/application/{application.Id}/proposal");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadAsync<JsonElement>();
@@ -96,7 +96,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var application = fixture.SeedState.FlatFeeApp;
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
-        var response = await client.GetAsync($"/api/application/{application.Id}");
+        var response = await client.GetAsync($"/api/application/{application.Id}/proposal");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadAsync<JsonElement>();
@@ -104,6 +104,20 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var actions = body.GetProperty("actions");
         Assert.True(actions.TryGetProperty("withdraw", out _));
         Assert.False(actions.TryGetProperty("accept", out _));
+    }
+
+    [Fact]
+    public async Task GetSummary_OmitsProposalTermsAndActions()
+    {
+        var application = fixture.SeedState.FlatFeeApp;
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+
+        var response = await client.GetAsync($"/api/application/{application.Id}/summary");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsync<JsonElement>();
+        Assert.False(body.TryGetProperty("actions", out _));
+        Assert.False(body.GetProperty("opportunity").TryGetProperty("deal", out _));
     }
 
     #endregion
@@ -344,7 +358,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         Assert.Equal(
             ApplicationState.Accepted,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
-        var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
+        var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}/summary");
         await bookingResponse.ShouldBe(HttpStatusCode.OK);
         var booking = await bookingResponse.Content.ReadAsync<JsonElement>();
         Assert.Equal("confirmed", booking.GetProperty("status").GetString());

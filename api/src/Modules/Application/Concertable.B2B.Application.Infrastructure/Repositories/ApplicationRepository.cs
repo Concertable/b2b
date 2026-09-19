@@ -2,6 +2,7 @@ using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
+using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,18 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public ApplicationRepository(ApplicationDbContext context) : base(context) =>
         this.context = context;
 
+    public Task<ApplicationEntity?> GetSummaryByIdAsync(
+        int id,
+        CancellationToken ct = default) =>
+        WithScope(ApplicationAccessScope.Summary)
+            .SingleOrDefaultAsync(application => application.Id == id, ct);
+
+    public Task<ApplicationEntity?> GetProposalByIdAsync(
+        int id,
+        CancellationToken ct = default) =>
+        WithScope(ApplicationAccessScope.Proposal)
+            .SingleOrDefaultAsync(application => application.Id == id, ct);
+
     // Rewriting the state column with the value it already holds is what bumps the row's version; marking the
     // whole entity modified would rewrite the tenant pair, which the tenant guard rejects.
     public void MarkChanged(ApplicationEntity application) =>
@@ -22,7 +35,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default) =>
-        await context.Applications
+        await WithScope(ApplicationAccessScope.Proposal)
             .Where(application => application.OpportunityId == opportunityId)
             .ToListAsync(ct);
 
@@ -39,7 +52,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
         Guid artistTenantId,
         ApplicationState state,
         CancellationToken ct = default) =>
-        await context.Applications
+        await WithScope(ApplicationAccessScope.Proposal)
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
                 application.State == state)
@@ -49,7 +62,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
         Guid venueTenantId,
         ApplicationState state,
         CancellationToken ct = default) =>
-        await context.Applications
+        await WithScope(ApplicationAccessScope.Summary)
             .AsNoTracking()
             .Where(application =>
                 application.VenueTenantId == venueTenantId &&
@@ -59,7 +72,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyList<ApplicationEntity>> GetCurrentByArtistTenantIdAsync(
         Guid artistTenantId,
         CancellationToken ct = default) =>
-        await context.Applications
+        await WithScope(ApplicationAccessScope.Summary)
             .AsNoTracking()
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
@@ -110,7 +123,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyList<ApplicationDashboardProjection>> GetVenueDashboardProjectionsAsync(
         Guid venueTenantId,
         CancellationToken ct = default) =>
-        await context.Applications
+        await WithScope(ApplicationAccessScope.Summary)
             .Where(application =>
                 application.VenueTenantId == venueTenantId &&
                 application.State == ApplicationState.Applied)
@@ -123,7 +136,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyList<ApplicationDashboardProjection>> GetArtistDashboardProjectionsAsync(
         Guid artistTenantId,
         CancellationToken ct = default) =>
-        await context.Applications
+        await WithScope(ApplicationAccessScope.Summary)
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
                 (application.State == ApplicationState.Applied ||
@@ -156,4 +169,9 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
         context.Applications
             .Include(application => application.AccessGrants)
             .FirstOrDefaultAsync(application => application.Id == id, ct);
+
+    private IQueryable<ApplicationEntity> WithScope(ApplicationAccessScope scope) =>
+        context.Applications.Where(application =>
+            context.ApplicationAccessGrants.Any(grant =>
+                grant.ResourceId == application.Id && grant.Scope == scope));
 }

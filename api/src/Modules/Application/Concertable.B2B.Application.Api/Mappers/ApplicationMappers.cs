@@ -10,9 +10,25 @@ namespace Concertable.B2B.Application.Api.Mappers;
 
 internal static class ApplicationMappers
 {
-    extension(ApplicationDto dto)
+    extension(ApplicationSummaryDto dto)
     {
-        public ApplicationResponse ToResponse(
+        public ApplicationSummaryResponse ToResponse(BookingSummary? booking) =>
+            new(
+                dto.Id,
+                dto.Artist,
+                new OpportunitySummaryResponse(
+                    dto.Opportunity.Id,
+                    dto.Opportunity.VenueId,
+                    dto.Opportunity.VenueName,
+                    dto.Opportunity.StartDate,
+                    dto.Opportunity.EndDate,
+                    dto.Opportunity.Genres.ToList()),
+                ToStatus(dto.Status, dto.State, booking, false));
+    }
+
+    extension(ApplicationProposalDto dto)
+    {
+        public ApplicationProposalResponse ToResponse(
             BookingSummary? booking,
             MembershipSnapshot? actor,
             IPermissionCatalog permissions)
@@ -28,20 +44,11 @@ internal static class ApplicationMappers
                 && (reader.TenantId == dto.VenueTenantId || reader.TenantId == dto.ArtistTenantId)
                 && permissions.Grants(reader.Role, TenantPermission.TermsRead);
             var checkoutCapable = dto.Opportunity.Deal.DealType.RequiresAcceptCheckout();
-            var status = booking?.Status switch
-            {
-                BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed when checkoutCapable =>
-                    ApplicationStatus.AwaitingPayment,
-                BookingStatus.Confirmed or BookingStatus.CancellationPending or BookingStatus.CancellationFailed =>
-                    ApplicationStatus.Confirmed,
-                BookingStatus.Cancelled => ApplicationStatus.Cancelled,
-                _ => dto.Status
-            };
 
-            return new ApplicationResponse(
+            return new ApplicationProposalResponse(
                 dto.Id,
                 dto.Artist,
-                new OpportunitySummaryResponse(
+                new OpportunityProposalResponse(
                     dto.Opportunity.Id,
                     dto.Opportunity.VenueId,
                     dto.Opportunity.VenueName,
@@ -49,7 +56,7 @@ internal static class ApplicationMappers
                     dto.Opportunity.EndDate,
                     dto.Opportunity.Genres.ToList(),
                     dto.Opportunity.Deal),
-                status,
+                ToStatus(dto.Status, dto.State, booking, checkoutCapable),
                 new ApplicationActions(
                     Accept: canDecide && isPending
                         ? new ActionLink($"/api/application/{dto.Id}/accept", HttpMethods.Post)
@@ -71,4 +78,19 @@ internal static class ApplicationMappers
                         : null));
         }
     }
+
+    private static ApplicationStatus ToStatus(
+        ApplicationStatus status,
+        ApplicationState state,
+        BookingSummary? booking,
+        bool checkoutCapable) =>
+        booking?.Status switch
+        {
+            BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed when checkoutCapable =>
+                ApplicationStatus.AwaitingPayment,
+            BookingStatus.Confirmed or BookingStatus.CancellationPending or BookingStatus.CancellationFailed =>
+                ApplicationStatus.Confirmed,
+            BookingStatus.Cancelled => ApplicationStatus.Cancelled,
+            _ => status
+        };
 }

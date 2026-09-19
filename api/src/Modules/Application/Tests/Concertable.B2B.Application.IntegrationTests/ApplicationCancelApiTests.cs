@@ -118,9 +118,9 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
-        var beforeResponse = await client.GetAsync($"/api/application/{appId}");
+        var beforeResponse = await client.GetAsync($"/api/application/{appId}/proposal");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
-        var before = await beforeResponse.Content.ReadAsync<ApplicationResponse>();
+        var before = await beforeResponse.Content.ReadAsync<ApplicationProposalResponse>();
         Assert.Equal(ApplicationStatus.Pending, before!.Status);
         Assert.NotNull(before.Actions.Cancel);
         Assert.Equal($"/api/application/{appId}/cancel", before.Actions.Cancel.Href);
@@ -128,9 +128,9 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
 
         await cancelResponse.ShouldBe(HttpStatusCode.NoContent);
-        var afterResponse = await client.GetAsync($"/api/application/{appId}");
+        var afterResponse = await client.GetAsync($"/api/application/{appId}/proposal");
         await afterResponse.ShouldBe(HttpStatusCode.OK);
-        var after = await afterResponse.Content.ReadAsync<ApplicationResponse>();
+        var after = await afterResponse.Content.ReadAsync<ApplicationProposalResponse>();
         Assert.Equal(ApplicationStatus.Cancelled, after!.Status);
         Assert.Null(after.Actions.Cancel);
         Assert.Null(after.Actions.Accept);
@@ -143,10 +143,10 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var appId = fixture.SeedState.AwaitingPaymentApp.Id;
 
-        var response = await client.GetAsync($"/api/application/{appId}");
+        var response = await client.GetAsync($"/api/application/{appId}/proposal");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationProposalResponse>();
         Assert.Null(application!.Actions.Cancel);
     }
 
@@ -156,10 +156,10 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var appId = fixture.SeedState.FlatFeeApp.Id;
 
-        var response = await client.GetAsync($"/api/application/{appId}");
+        var response = await client.GetAsync($"/api/application/{appId}/proposal");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationProposalResponse>();
         Assert.NotNull(application!.Actions.Withdraw);
     }
 

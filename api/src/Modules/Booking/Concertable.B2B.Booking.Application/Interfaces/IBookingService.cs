@@ -15,6 +15,9 @@ internal interface IBookingService
     Task<BookingSummaryDto?> GetSummaryByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);
+    Task<BookingOperationsDto?> GetOperationsByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default);
     Task<IReadOnlyList<BookingSummaryDto>> GetSummariesByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds,
         CancellationToken ct = default);

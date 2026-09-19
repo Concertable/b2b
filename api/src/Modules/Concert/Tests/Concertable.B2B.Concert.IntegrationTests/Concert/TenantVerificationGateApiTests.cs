@@ -25,10 +25,7 @@ public sealed class TenantVerificationGateApiTests : IAsyncLifetime
 
     private async Task RepointArtistTenantAsync(int concertId, Guid artistTenantId)
     {
-        using var scope = fixture.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
-        await context.Concerts.Where(c => c.Id == concertId)
-            .ExecuteUpdateAsync(s => s.SetProperty(c => c.ArtistTenantId, artistTenantId));
+        await fixture.RepointConcertTenantsAsync(concertId, artistTenantId: artistTenantId);
     }
 
     private Task<ConcertEntity> ConcertAsync(int concertId) =>

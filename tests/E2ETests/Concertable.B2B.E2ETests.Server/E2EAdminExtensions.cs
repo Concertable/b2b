@@ -57,6 +57,7 @@ public static class E2EAdminExtensions
             group.MapGet("/applications/{applicationId:int}/booking-id", GetBookingIdAsync);
             group.MapGet("/applications/{applicationId:int}/state", GetApplicationStateAsync);
             group.MapGet("/applications/{applicationId:int}/concert-state", GetConcertStateAsync);
+            group.MapGet("/applications/{applicationId:int}/concert-id", GetConcertIdAsync);
             group.MapGet("/venues/{venueId:int}/opportunities/newest-id", GetNewestOpportunityIdAsync);
             group.MapPost("/applications/{applicationId:int}/method-verification", OpenMethodVerificationAsync);
             group.MapPost("/concerts/{concertId:int}/door-revenue", DeclareDoorRevenueAsync);
@@ -169,6 +170,13 @@ public static class E2EAdminExtensions
             INNER JOIN booking.Bookings AS bookings ON bookings.Id = concerts.BookingId
             WHERE bookings.ApplicationId = @applicationId
             """,
+            new { applicationId }));
+
+    private static async Task<IResult> GetConcertIdAsync(
+        int applicationId,
+        IDbConnection connection) =>
+        Results.Ok(await connection.QuerySingleAsync<int>(
+            "SELECT Id FROM concert.Concerts WHERE ApplicationId = @applicationId",
             new { applicationId }));
 
     // Accept checkout is closed once the opportunity has passed, so a seeded past application cannot be

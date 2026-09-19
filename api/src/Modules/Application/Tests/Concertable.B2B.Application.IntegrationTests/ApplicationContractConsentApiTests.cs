@@ -118,10 +118,10 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 
-        var response = await venueClient.GetAsync($"/api/application/{applicationId}");
+        var response = await venueClient.GetAsync($"/api/application/{applicationId}/proposal");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationProposalResponse>();
         Assert.NotNull(application);
         Assert.NotNull(application.Actions.Contract);
         Assert.Equal($"/api/application/{applicationId}/contract/pdf", application.Actions.Contract!.Href);
@@ -136,10 +136,10 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
         var applicationId = await ApplyAsync(opportunityId);
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
-        var response = await artistClient.GetAsync($"/api/application/{applicationId}");
+        var response = await artistClient.GetAsync($"/api/application/{applicationId}/proposal");
 
         await response.ShouldBe(HttpStatusCode.OK);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationProposalResponse>();
         Assert.NotNull(application);
         Assert.Null(application.Actions.Contract);
     }
@@ -161,7 +161,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
             $"/api/application/{opportunityId}",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await response.ShouldBe(HttpStatusCode.Created);
-        var application = await response.Content.ReadAsync<ApplicationResponse>();
+        var application = await response.Content.ReadAsync<ApplicationProposalResponse>();
         Assert.NotNull(application);
         return application.Id;
     }

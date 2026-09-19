@@ -84,6 +84,7 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     BookingId = table.Column<int>(type: "int", nullable: false),
+                    ApplicationId = table.Column<int>(type: "int", nullable: false),
                     VenueName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ArtistName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DealType = table.Column<int>(type: "int", nullable: false),
@@ -236,6 +237,13 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                 columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId" },
                 unique: true,
                 filter: "[RevokedAt] IS NULL AND [MembershipId] IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Contracts_ApplicationId",
+                schema: "booking",
+                table: "Contracts",
+                column: "ApplicationId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Contracts_BookingId",

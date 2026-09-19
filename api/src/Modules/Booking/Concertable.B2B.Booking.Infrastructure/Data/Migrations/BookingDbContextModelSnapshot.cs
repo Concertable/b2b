@@ -242,6 +242,9 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("ApplicationId")
+                        .HasColumnType("int");
+
                     b.Property<string>("ArtistName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -367,6 +370,9 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         });
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId")
+                        .IsUnique();
 
                     b.HasIndex("BookingId")
                         .IsUnique();

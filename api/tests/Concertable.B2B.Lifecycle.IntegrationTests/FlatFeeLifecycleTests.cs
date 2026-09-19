@@ -37,8 +37,8 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         await fixture.PaymentSimulator.SendWebhookAsync();
 
         var application = await GetApplicationAsync(client, applicationId);
-        Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
-        var concertResponse = await client.GetAsync($"/api/concert/application/{applicationId}");
+        Assert.Equal(ApplicationBoundaryStatus.Confirmed, application.Status);
+        var concertResponse = await fixture.GetCreatedConcertOperationsAsync(client);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<ConcertBoundaryResponse>();
         Assert.NotNull(concert);
@@ -100,11 +100,9 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         await fixture.PaymentSimulator.SendWebhookAsync();
 
         var application = await GetApplicationAsync(client, applicationId);
-        Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
+        Assert.Equal(ApplicationBoundaryStatus.AwaitingPayment, application.Status);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
@@ -122,8 +120,6 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
@@ -146,8 +142,6 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.AwaitingConfirmation, financial.Status);
-        await (await client.GetAsync($"/api/concert/application/{applicationId}"))
-            .ShouldBe(HttpStatusCode.NotFound);
         Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<NotifyConcertDraftCreatedCommand>());
         Assert.DoesNotContain(
             await fixture.GetStagedEmailsAsync(),
@@ -159,7 +153,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/application/{applicationId}");
+        var response = await client.GetAsync($"/api/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();
         Assert.NotNull(application);
@@ -171,7 +165,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         int applicationId)
     {
         var response = await client.GetAsync(
-            $"/api/booking/application/{applicationId}");
+            $"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var financial = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(financial);
@@ -187,6 +181,8 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         Rejected,
         Withdrawn,
         Accepted,
+        AwaitingPayment,
+        Confirmed,
         Cancelled
     }
 

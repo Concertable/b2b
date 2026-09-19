@@ -9,16 +9,22 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 internal interface IConcertService
 {
     Task CreateAsync(ConfirmedBookingSnapshot booking, CancellationToken ct = default);
-    Task<Result<ConcertDetails, ConcertError>> GetDetailsByIdAsync(int id);
-    Task<Result<ConcertDetails, ConcertError>> GetDetailsAsync(
+    Task<Result<PublishedConcert, ConcertError>> GetPublishedAsync(
         int id,
         CancellationToken ct = default);
-    Task<Result<FileDownload, ConcertError>> GetContractPdfAsync(
+    Task<Result<ConcertSummary, ConcertError>> GetSummaryAsync(
         int id,
         CancellationToken ct = default);
-    Task<Result<ConcertDetails, ConcertError>> GetDetailsByApplicationIdAsync(int applicationId);
-    Task<IReadOnlyList<ConcertSummary>> GetUpcomingByVenueIdAsync(int id);
-    Task<IReadOnlyList<ConcertSummary>> GetUpcomingByArtistIdAsync(int id);
+    Task<Result<ConcertOperations, ConcertError>> GetOperationsAsync(
+        int id,
+        CancellationToken ct = default);
+    Task<Result<ConcertFinance, ConcertError>> GetFinanceAsync(
+        int id,
+        CancellationToken ct = default);
+    Task<Result<IReadOnlyList<ConcertDraftReference>, ConcertError>> GetDraftsForCurrentVenueAsync(
+        CancellationToken ct = default);
+    Task<IReadOnlyList<PublishedConcert>> GetUpcomingByVenueIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<PublishedConcert>> GetUpcomingByArtistIdAsync(int id, CancellationToken ct = default);
     Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentVenueAsync();
     Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentArtistAsync();
     Task<Result<ConcertUpdateResponse, UpdateConcertError>> UpdateAsync(
@@ -53,8 +59,8 @@ internal interface IConcertService
     Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,
         CancellationToken ct = default);
-    Task<IReadOnlyList<ConcertSummary>> GetHistoryByArtistIdAsync(int id);
-    Task<IReadOnlyList<ConcertSummary>> GetHistoryByVenueIdAsync(int id);
-    Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(int id);
-    Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(int id);
+    Task<IReadOnlyList<PublishedConcert>> GetHistoryByArtistIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<PublishedConcert>> GetHistoryByVenueIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(int id, CancellationToken ct = default);
 }

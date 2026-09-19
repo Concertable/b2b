@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
@@ -54,6 +55,39 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         Assert.NotNull(secondShare);
         Assert.Equal(firstShare.GrantId, secondShare.GrantId);
         Assert.Equal(firstShare.AccessVersion, secondShare.AccessVersion);
+    }
+
+    [Fact]
+    public async Task SharedSummary_ExposesOnlySummaryScope()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
+        var owner = CreateOwningArtistClient(concert.ArtistId);
+        var recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var share = await owner.PostAsync(
+            $"/api/concert/{concert.Id}/summary-shares",
+            new
+            {
+                requestId = Guid.NewGuid(),
+                recipientTenantId,
+                recipientMembershipId = (Guid?)null,
+                expectedAccessVersion = concert.AccessVersion,
+                validUntil = (DateTime?)null,
+            });
+        await share.ShouldBe(HttpStatusCode.OK);
+        var recipient = fixture.CreateClient(fixture.SeedState.VenueManager2);
+
+        var summary = await recipient.GetAsync($"/api/concert/{concert.Id}/summary");
+
+        await summary.ShouldBe(HttpStatusCode.OK);
+        using var payload = JsonDocument.Parse(await summary.Content.ReadAsStringAsync());
+        Assert.False(payload.RootElement.TryGetProperty("price", out _));
+        Assert.False(payload.RootElement.TryGetProperty("ticketsSold", out _));
+        Assert.False(payload.RootElement.TryGetProperty("doorRevenue", out _));
+        Assert.False(payload.RootElement.TryGetProperty("actions", out _));
+        await (await recipient.GetAsync($"/api/concert/{concert.Id}/operations"))
+            .ShouldBe(HttpStatusCode.NotFound);
+        await (await recipient.GetAsync($"/api/concert/{concert.Id}/finance"))
+            .ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]

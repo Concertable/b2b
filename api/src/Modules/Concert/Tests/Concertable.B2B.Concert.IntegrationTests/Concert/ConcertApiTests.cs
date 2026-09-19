@@ -52,10 +52,23 @@ public sealed class ConcertApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetPublished_ReturnsOnlyPostedConcerts()
+    {
+        var client = fixture.CreateClient();
+        var published = fixture.SeedState.Concerts.First(concert => concert.DatePosted is not null);
+        var unpublished = fixture.SeedState.Concerts.First(concert => concert.DatePosted is null);
+
+        await (await client.GetAsync($"/api/concert/{published.Id}"))
+            .ShouldBe(HttpStatusCode.OK);
+        await (await client.GetAsync($"/api/concert/{unpublished.Id}"))
+            .ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task GetUpcomingForManagers_IncludesConcertAlreadyInProgress()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<ConcertPrivilegedDbContext>();
         var seededConcert = fixture.SeedState.Concerts.First(concert => concert.DatePosted is not null);
         var concert = await context.Concerts
             .SingleAsync(entity => entity.Id == seededConcert.Id);

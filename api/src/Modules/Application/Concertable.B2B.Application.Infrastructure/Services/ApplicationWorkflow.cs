@@ -83,7 +83,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.transactions = transactions;
     }
 
-    public async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
+    public async Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default)
@@ -105,20 +105,20 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         }
         catch (DbUpdateException exception) when (exception.IsDuplicateKey())
         {
-            return await commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationDto, ApplyApplicationError>>(
+            return await commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposalDto, ApplyApplicationError>>(
                 (workflow, token) => workflow.ClassifyApplyConflictAsync(opportunityId, actor, token),
                 ct);
         }
     }
 
-    private Task<Result<ApplicationDto, ApplyApplicationError>> ExecuteApplyAsync(
+    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ExecuteApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         MembershipSnapshot actor,
         IPAddress ipAddress,
         string? userAgent,
         CancellationToken ct) =>
-        commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationDto, ApplyApplicationError>>(
+        commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposalDto, ApplyApplicationError>>(
             (workflow, token) => workflow.ApplyCommandAsync(
                 opportunityId,
                 eSignature,
@@ -127,10 +127,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 userAgent,
                 token),
             (workflow, result, token) => workflow.ValidateApplyAuthorityAsync(result, actor, token),
-            () => (Result<ApplicationDto, ApplyApplicationError>)new ApplyApplicationError.NotPermitted(),
+            () => (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.NotPermitted(),
             ct);
 
-    private Task<Result<ApplicationDto, ApplyApplicationError>> ApplyCommandAsync(
+    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyCommandAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         MembershipSnapshot actor,
@@ -147,7 +147,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 ct),
             ct);
 
-    private async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyCoreAsync(
+    private async Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyCoreAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         MembershipSnapshot expectedActor,
@@ -220,12 +220,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             ?? throw new InvalidOperationException($"Artist {artist.Id} disappeared during apply.");
         var venue = await venueFacts.GetByIdAsync(opportunity.VenueId, ct)
             ?? throw new InvalidOperationException($"Venue {opportunity.VenueId} disappeared during apply.");
-        return new ApplicationDto(
+        return new ApplicationProposalDto(
             application.Id,
             application.VenueTenantId,
             application.ArtistTenantId,
             artistSummary,
-            new OpportunitySummary(
+            new OpportunityProposal(
                 opportunity.Id,
                 opportunity.VenueId,
                 venue.Name,
@@ -237,7 +237,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             application.State);
     }
 
-    private Task<Result<ApplicationDto, ApplyApplicationError>> ClassifyApplyConflictAsync(
+    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ClassifyApplyConflictAsync(
         int opportunityId,
         MembershipSnapshot expectedActor,
         CancellationToken ct) =>
@@ -246,13 +246,13 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
             if (actor is null
                 || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
-                return (Result<ApplicationDto, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
+                return (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
 
             if (await privilegedRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
                     opportunityId,
                     actor.TenantId,
                     ct))
-                return (Result<ApplicationDto, ApplyApplicationError>)new ApplyApplicationError.AlreadyApplied();
+                return (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.AlreadyApplied();
 
             throw new InvalidOperationException("Application save failed without creating an application.");
         }, ct);
@@ -438,7 +438,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ApplicationTermsFingerprint.Calculate(deal, new DateRange(opportunity.StartDate, opportunity.EndDate));
 
     private async Task<bool> ValidateApplyAuthorityAsync(
-        Result<ApplicationDto, ApplyApplicationError> result,
+        Result<ApplicationProposalDto, ApplyApplicationError> result,
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
