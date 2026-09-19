@@ -40,6 +40,7 @@ using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Concertable.Kernel;
+using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Concert.Infrastructure.Extensions;
 
@@ -129,6 +130,7 @@ public static class ServiceCollectionExtensions
             // Mappers
             // Module facades
             services.AddScoped<IConcertModule, ConcertModule>();
+            services.AddScoped<ITenantDeletionGuard, ConcertTenantDeletionGuard>();
 
             // Domain event -> integration event + read-model projection handlers
             services.AddScoped<IDomainEventHandler<ConcertChangedDomainEvent>, ConcertChangedDomainEventHandler>();

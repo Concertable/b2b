@@ -11,6 +11,7 @@ using Concertable.B2B.Application.Infrastructure.Data.Seeders;
 using Concertable.B2B.Application.Infrastructure.Events;
 using Concertable.B2B.Application.Infrastructure.Repositories;
 using Concertable.B2B.Application.Infrastructure.Services;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Application.Infrastructure.Services.Payment;
 using Concertable.B2B.Application.Infrastructure.Strategies;
 using Concertable.B2B.Application.Infrastructure.Validators;
@@ -97,6 +98,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
             services.AddApplicationDealStrategies();
             services.AddScoped<IApplicationModule, ApplicationModule>();
+            services.AddScoped<ITenantDeletionGuard, ApplicationTenantDeletionGuard>();
 
             services.AddSingleton<ApplicationConfigurationProvider>();
             services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>

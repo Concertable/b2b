@@ -39,7 +39,7 @@ Modules live under `api/src/Modules/`. Each follows the `Concertable.B2B.<Module
 | **Booking** | `BookingEntity` (confirmation and pre-Concert cancellation), `ContractEntity` (accepted terms/signatures) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **Concert** | `ConcertEntity` (live concert, publication, cancellation and settlement; frozen booking snapshot), `InvoiceEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **Deal** | `DealEntity` (current TPT: `FlatFeeDealEntity`, `DoorSplitDealEntity`, `VersusDealEntity`, `VenueHireDealEntity`) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
-| **Conversations** | `MessageEntity`, `ParticipantProfile` (local sender-display projection) | Api, Application, Contracts, Domain, Infrastructure |
+| **Conversations** | `MessageEntity`, `TenantDisplay` (local sender-display projection) | Api, Application, Contracts, Domain, Infrastructure |
 | **Tenant** | `TenantEntity` (business account, membership boundary, legal/VAT/Stripe identity, settlement payee) | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests, UnitTests |
 | **User** | `UserEntity` (flat) + standalone `AdminProfileEntity` — no TPH, no manager-profile subtypes | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
 | **Venue** | `VenueEntity`, `VenueImageEntity`, `PayoutAccountEntity` | Api, Application, Contracts, Domain, Infrastructure, IntegrationTests |
@@ -66,7 +66,7 @@ All event types implement `IIntegrationEvent` from `Concertable.Messaging.Contra
 | `ConcertPostedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Concert moves to Posted stage |
 | `ConcertRatingUpdatedEvent` | `Concertable.B2B.Concert.Contracts.Events` | Rating projection updated |
 
-The B2B host also dispatches published integration events to registered local handlers. Conversations consumes `ArtistChangedEvent` and `VenueChangedEvent` locally to maintain its `ParticipantProfile` projection keyed by `TenantId`; sender rendering never reaches into Artist or Venue storage synchronously.
+The B2B host also dispatches published integration events to registered local handlers. Conversations consumes `TenantChangedEvent` locally to maintain its `TenantDisplay` projection keyed by `TenantId`; sender rendering never reaches into another module's storage synchronously.
 
 ### Consumed
 

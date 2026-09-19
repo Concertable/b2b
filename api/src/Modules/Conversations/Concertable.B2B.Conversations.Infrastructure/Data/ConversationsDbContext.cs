@@ -3,16 +3,19 @@ using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.Conversations.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data;
 
 internal sealed class ConversationsDbContext(
     DbContextOptions<ConversationsDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     ConversationsConfigurationProvider provider,
     ITenantContext tenantContext,
     IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, provider, tenantContext, resourceAccess, Schema.Name)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();

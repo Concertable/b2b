@@ -98,7 +98,7 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
         var membership = Assert.Single(me!.Memberships);
         Assert.Equal(TenantOf(manager.Id), membership.TenantId);
         Assert.Equal(TenantRole.Owner, membership.Role);
-        Assert.Equal([TenantBusinessProfileKind.VenueOperator], membership.BusinessProfiles);
+        Assert.Equal([TenantBusinessActivityKind.VenueOperator], membership.BusinessActivities);
     }
 
     /// <summary>The additive slice of <c>/api/auth/me</c> this phase introduces — the rest of the polymorphic user payload is ignored.</summary>

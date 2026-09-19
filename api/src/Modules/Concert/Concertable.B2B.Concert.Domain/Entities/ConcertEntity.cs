@@ -76,9 +76,6 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         return concert;
     }
 
-    /* Both principals reach their own concert through grants like anyone else, issued with the concert so
-       none can exist that its own parties cannot see. A confirmation creates it, so there is no human the
-       issue can be attributed to. */
     private void IssuePrincipalGrants(DateTime at)
     {
         foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())

@@ -206,13 +206,13 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
     public Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default) =>
         context.Memberships
             .Where(m => m.UserId == userId && m.TenantId == tenantId)
-            .ToUserMemberships(context.Tenants, context.BusinessProfiles)
+            .ToUserMemberships(context.Tenants, context.BusinessActivities)
             .FirstOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<UserMembership>> GetMembershipsAsync(Guid userId, CancellationToken ct = default) =>
         await context.Memberships
             .Where(m => m.UserId == userId)
-            .ToUserMemberships(context.Tenants, context.BusinessProfiles)
+            .ToUserMemberships(context.Tenants, context.BusinessActivities)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
@@ -233,6 +233,14 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
 
     public Task<TenantMembershipEntity?> FindMembershipAsync(Guid tenantId, Guid userId, CancellationToken ct = default) =>
         context.Memberships.FirstOrDefaultAsync(m => m.TenantId == tenantId && m.UserId == userId, ct);
+
+    public Task<TenantMembershipEntity?> FindMembershipByIdAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default) =>
+        context.Memberships.FirstOrDefaultAsync(
+            membership => membership.TenantId == tenantId && membership.Id == membershipId,
+            ct);
 
     public Task<int> CountOwnersAsync(Guid tenantId, CancellationToken ct = default) =>
         context.Memberships.CountAsync(m => m.TenantId == tenantId && m.Role == TenantRole.Owner, ct);

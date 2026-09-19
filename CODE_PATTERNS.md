@@ -11,13 +11,13 @@ The bases live in `B2B.DataAccess.Infrastructure`; each concrete context lives i
 
 | Stance | Base | Concrete examples |
 |---|---|---|
-| Grant-reached — a tenant holding a live grant on the row | `AccessScopedDbContext` | `ApplicationDbContext`, `BookingDbContext`, `ConcertDbContext`, `ConversationsDbContext` |
+| Grant-reached — a tenant holding a live grant on the row | `ResourceScopedDbContext` | `ApplicationDbContext`, `BookingDbContext`, `ConcertDbContext`, `ConversationsDbContext` |
 | Single-owner filtered — the row names its one owning tenant | `TenantScopedDbContext` | `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` |
 | Tenant-independent read, `SaveChanges` throws | `ReadDbContext` (shared DataAccess) | `Application`, `Artist`, `Booking`, `Concert`, `Opportunity`, `Venue` |
 | Unscoped but writable | `PrivilegedDbContext` | `ConversationsPrivilegedDbContext` (moderation) |
 | Untenanted module | `DbContextBase` + own `OnModelCreating` | `Admin`, `Deal`, `Tenant`, `User` — no base owns their `OnModelCreating`; `api/TECH_DEBT.md` holds the repo-wide entry |
 
-`AccessScopedDbContext` derives from `TenantScopedDbContext`, so a context can declare both stances: Concert
+`ResourceScopedDbContext` derives from `TenantScopedDbContext`, so a context can declare both stances: Concert
 filters its concerts and invoices by grant and its self-billing agreements by single owner.
 
 Filters are declared per entity in the owning context's `ApplyTenantFilters`, never auto-derived from a

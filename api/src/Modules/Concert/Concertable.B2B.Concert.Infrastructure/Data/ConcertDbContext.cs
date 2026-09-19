@@ -6,16 +6,19 @@ using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Venue.Domain.ReadModels;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 
 internal sealed class ConcertDbContext(
     DbContextOptions<ConcertDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext,
     IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, provider, tenantContext, resourceAccess, Schema.Name)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();

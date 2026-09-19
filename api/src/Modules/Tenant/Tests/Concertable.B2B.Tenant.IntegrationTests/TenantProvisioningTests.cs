@@ -22,11 +22,11 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Theory]
-    [InlineData(InteractiveClient.VenueBrowser, TenantBusinessProfileKind.VenueOperator)]
-    [InlineData(InteractiveClient.ArtistBrowser, TenantBusinessProfileKind.Artist)]
-    public async Task Registration_NewManager_ProvisionsTenantWithProfileAndFoundingOwner(
+    [InlineData(InteractiveClient.VenueBrowser, TenantBusinessActivityKind.VenueOperator)]
+    [InlineData(InteractiveClient.ArtistBrowser, TenantBusinessActivityKind.Artist)]
+    public async Task Registration_NewManager_ProvisionsTenantWithActivityAndFoundingOwner(
         InteractiveClient client,
-        TenantBusinessProfileKind expected)
+        TenantBusinessActivityKind expected)
     {
         var userId = Guid.NewGuid();
         await fixture.ProvisionAsync(new CredentialRegisteredEvent(userId, $"{Guid.NewGuid():N}@test.com", InteractiveClientInfo.Get(client).Id));
@@ -34,17 +34,33 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == userId);
         Assert.NotNull(membership);
         Assert.Equal(TenantRole.Owner, membership!.Role);
-        Assert.Null(membership.InvitedByUserId);
+        Assert.Null(membership.InvitedByMembershipId);
 
         var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == membership.TenantId);
         Assert.NotNull(tenant);
         Assert.Equal(userId, tenant!.CreatedByUserId);
 
-        var profile = Assert.Single(await fixture.BusinessProfiles
+        var activity = Assert.Single(await fixture.BusinessActivities
             .Where(p => p.TenantId == membership.TenantId)
             .ToListAsync());
-        Assert.Equal(expected, profile.Kind);
-        Assert.Null(profile.RetiredAt);
+        Assert.Equal(expected, activity.Kind);
+        Assert.Null(activity.RetiredAt);
+    }
+
+    [Theory]
+    [InlineData(InteractiveClient.BusinessBrowser)]
+    [InlineData(InteractiveClient.BusinessMobile)]
+    public async Task Registration_BusinessClient_DoesNotInferTenantOrMarketplaceActivity(
+        InteractiveClient client)
+    {
+        var userId = Guid.NewGuid();
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(
+            userId,
+            $"{Guid.NewGuid():N}@test.com",
+            InteractiveClientInfo.Get(client).Id));
+
+        Assert.False(await fixture.Memberships.AnyAsync(candidate => candidate.UserId == userId));
+        Assert.False(await fixture.Tenants.AnyAsync(candidate => candidate.CreatedByUserId == userId));
     }
 
     [Fact]
@@ -71,7 +87,9 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         Assert.NotNull(membership);
         Assert.Equal(tenantId, membership!.TenantId);
         Assert.Equal(TenantRole.Manager, membership.Role);
-        Assert.Equal(inviter.Id, membership.InvitedByUserId);
+        var inviterMembership = await fixture.Memberships.SingleAsync(
+            candidate => candidate.TenantId == tenantId && candidate.UserId == inviter.Id);
+        Assert.Equal(inviterMembership.Id, membership.InvitedByMembershipId);
 
         // The invited user joins the inviter's live tenant — no personal tenant, no re-Announce.
         Assert.False(await fixture.Tenants.AnyAsync(t => t.CreatedByUserId == newUserId));
@@ -114,6 +132,34 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         await fixture.ProvisionAsync(e, envelope);
 
         Assert.Equal(1, await fixture.Memberships.CountAsync(m => m.UserId == newUserId));
+    }
+
+    [Fact]
+    public async Task Registration_InviterPermissionVersionChanged_ProvisionsPersonalTenant()
+    {
+        var inviter = fixture.SeedState.VenueManager1;
+        var inviterTenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == inviter.Id).Id;
+        var newUserId = Guid.NewGuid();
+        var newEmail = $"{Guid.NewGuid():N}@invited.test";
+        var invitation = await fixture.AddInvitationAsync(
+            inviterTenantId,
+            newEmail,
+            TenantRole.Manager,
+            inviter.Id,
+            DateTime.UtcNow.AddDays(7));
+        await fixture.ChangeMembershipRoleAsync(inviterTenantId, inviter.Id, TenantRole.Owner);
+
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(
+            newUserId,
+            newEmail,
+            InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id));
+
+        var membership = await fixture.Memberships.SingleAsync(candidate => candidate.UserId == newUserId);
+        Assert.Equal(TenantRole.Owner, membership.Role);
+        Assert.NotEqual(inviterTenantId, membership.TenantId);
+        Assert.Equal(
+            InvitationStatus.Revoked,
+            (await fixture.Invitations.SingleAsync(candidate => candidate.Id == invitation.Id)).Status);
     }
 
     [Fact]

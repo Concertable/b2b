@@ -6,5 +6,5 @@ namespace Concertable.B2B.Deal.Infrastructure.Data;
 internal sealed class DealDbContextFactory : B2BDesignTimeDbContextFactory<DealDbContext>
 {
     protected override DealDbContext Create(DbContextOptions<DealDbContext> options) =>
-        new(options, new DealConfigurationProvider());
+        new(options, DefaultOutboxOptions, new DealConfigurationProvider());
 }

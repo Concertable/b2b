@@ -1,5 +1,6 @@
-﻿using Concertable.B2B.Tenant.Infrastructure.Data;
+using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Mappers;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
@@ -7,39 +8,77 @@ namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 internal sealed class TenantRepository : Repository<TenantEntity>, ITenantRepository
 {
     private readonly TenantDbContext context;
+    private readonly CommandTransactionAccessor transactions;
 
-    public TenantRepository(TenantDbContext context) : base(context)
+    public TenantRepository(
+        TenantDbContext context,
+        CommandTransactionAccessor transactions) : base(context)
     {
         this.context = context;
+        this.transactions = transactions;
     }
 
-    public Task<BusinessFacts?> GetBusinessFactsByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+    public async Task<TenantEntity?> GetByIdForAdministrationAsync(
+        Guid tenantId,
+        CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Tenant administration requires an active command transaction.");
+        await transaction.EnlistAsync(context, ct);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM tenant.Tenants WITH (UPDLOCK, HOLDLOCK)
+             WHERE Id = {tenantId}
+             """,
+            ct);
+        return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.Id == tenantId, ct);
+    }
+
+    public async Task<TenantEntity?> GetByCreatedByUserIdForCreationAsync(
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Tenant creation requires an active command transaction.");
+        await transaction.EnlistAsync(context, ct);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM tenant.Tenants WITH (UPDLOCK, HOLDLOCK, INDEX(IX_Tenants_CreatedByUserId))
+             WHERE CreatedByUserId = {userId}
+             """,
+            ct);
+        return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.CreatedByUserId == userId, ct);
+    }
+
+    public Task<TenantBusinessDetails?> GetTenantBusinessDetailsByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
         context.Tenants
             .Where(t => t.Id == tenantId)
-            .ToBusinessFacts(context.BusinessProfiles)
+            .ToTenantBusinessDetails(context.BusinessActivities)
             .FirstOrDefaultAsync(ct);
 
-    public async Task<IReadOnlyList<BusinessFacts>> GetBusinessFactsByTenantIdsAsync(
+    public async Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsByTenantIdsAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default) =>
         await context.Tenants
             .Where(t => tenantIds.Contains(t.Id))
-            .ToBusinessFacts(context.BusinessProfiles)
+            .ToTenantBusinessDetails(context.BusinessActivities)
             .ToListAsync(ct);
 
-    public Task<bool> HasActiveBusinessProfileAsync(
+    public Task<bool> HasActiveBusinessActivityAsync(
         Guid tenantId,
-        TenantBusinessProfileKind kind,
+        TenantBusinessActivityKind kind,
         CancellationToken ct = default) =>
-        context.BusinessProfiles
-            .AnyAsync(p => p.TenantId == tenantId && p.Kind == kind && p.RetiredAt == null, ct);
+        context.BusinessActivities
+            .AnyAsync(activity => activity.TenantId == tenantId && activity.Kind == kind && activity.RetiredAt == null, ct);
 
-    public async Task RemoveBusinessProfilesByTenantIdAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task RemoveBusinessActivitiesByTenantIdAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var profiles = await context.BusinessProfiles
-            .Where(profile => profile.TenantId == tenantId)
+        var activities = await context.BusinessActivities
+            .Where(activity => activity.TenantId == tenantId)
             .ToListAsync(ct);
 
-        context.BusinessProfiles.RemoveRange(profiles);
+        context.BusinessActivities.RemoveRange(activities);
     }
 }

@@ -1,22 +1,23 @@
-﻿using Concertable.DataAccess.Application;
+using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal interface ITenantRepository : IRepository<TenantEntity, Guid>
 {
-    Task<BusinessFacts?> GetBusinessFactsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+    Task<TenantEntity?> GetByIdForAdministrationAsync(Guid tenantId, CancellationToken ct = default);
 
-    /// <summary>Business facts for many tenants in one query — list consumers read a page of businesses, and a
-    /// per-row lookup would issue one round trip each.</summary>
-    Task<IReadOnlyList<BusinessFacts>> GetBusinessFactsByTenantIdsAsync(
+    Task<TenantEntity?> GetByCreatedByUserIdForCreationAsync(Guid userId, CancellationToken ct = default);
+
+    Task<TenantBusinessDetails?> GetTenantBusinessDetailsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsByTenantIdsAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default);
 
-    Task<bool> HasActiveBusinessProfileAsync(
+    Task<bool> HasActiveBusinessActivityAsync(
         Guid tenantId,
-        TenantBusinessProfileKind kind,
+        TenantBusinessActivityKind kind,
         CancellationToken ct = default);
 
-    // Restricted, not cascading: the tenant's own deletion is the one act that may remove these.
-    Task RemoveBusinessProfilesByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+    Task RemoveBusinessActivitiesByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

@@ -1,4 +1,4 @@
-﻿using Concertable.Auth.Contracts.Events;
+using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
@@ -18,7 +18,7 @@ public sealed class TenantApiFixture : ApiFixture
 
     public IQueryable<TenantEntity> Tenants => dbContext.Tenants.AsNoTracking();
     public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.AsNoTracking();
-    public IQueryable<TenantBusinessProfileEntity> BusinessProfiles => dbContext.BusinessProfiles.AsNoTracking();
+    public IQueryable<TenantBusinessActivityEntity> BusinessActivities => dbContext.BusinessActivities.AsNoTracking();
     public IQueryable<TenantInvitationEntity> Invitations => dbContext.Invitations.AsNoTracking();
     public IQueryable<TenantVerificationEntity> Verifications =>
         dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
@@ -38,19 +38,30 @@ public sealed class TenantApiFixture : ApiFixture
         await dbContext.SaveChangesAsync();
     }
 
+    public async Task ChangeMembershipRoleAsync(Guid tenantId, Guid userId, TenantRole role)
+    {
+        var membership = await dbContext.Memberships.SingleAsync(
+            candidate => candidate.TenantId == tenantId && candidate.UserId == userId);
+        membership.ChangeRole(role);
+        await dbContext.SaveChangesAsync();
+    }
+
     public async Task<TenantInvitationEntity> AddInvitationAsync(
         Guid tenantId,
         string email,
         TenantRole role,
-        Guid createdBy,
+        Guid inviterUserId,
         DateTime expiresAt)
     {
         var now = DateTime.UtcNow;
+        var inviter = await dbContext.Memberships.SingleOrDefaultAsync(
+            membership => membership.TenantId == tenantId && membership.UserId == inviterUserId);
         var invitation = TenantInvitationEntity.Create(
             tenantId,
             email.Trim().ToLowerInvariant(),
             role,
-            createdBy,
+            inviter?.Id ?? Guid.NewGuid(),
+            inviter?.PermissionVersion ?? 1,
             now,
             expiresAt - now);
         invitation.ClearDomainEvents();

@@ -1,13 +1,15 @@
 ﻿using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Application.Infrastructure.Data;
 
-/// <summary>The unfiltered, unfenced stance for work no human is acting in. See <see cref="ApplicationDbContext"/>.</summary>
 internal sealed class ApplicationPrivilegedDbContext(
     DbContextOptions<ApplicationPrivilegedDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     ApplicationConfigurationProvider provider)
-    : PrivilegedDbContext(options, provider, Schema.Name)
+    : PrivilegedDbContext(options, outboxOptions, provider, Schema.Name)
 {
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<VerifyPaymentEntity> VerifyPayments => Set<VerifyPaymentEntity>();

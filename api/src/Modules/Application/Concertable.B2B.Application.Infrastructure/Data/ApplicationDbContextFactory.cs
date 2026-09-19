@@ -8,6 +8,7 @@ internal sealed class ApplicationDbContextFactory : B2BDesignTimeDbContextFactor
     protected override ApplicationDbContext Create(DbContextOptions<ApplicationDbContext> options) =>
         new(
             options,
+            DefaultOutboxOptions,
             new ApplicationConfigurationProvider(),
             DesignTimeTenantContext.Instance,
             DesignTimeResourceAccessContext.Instance);

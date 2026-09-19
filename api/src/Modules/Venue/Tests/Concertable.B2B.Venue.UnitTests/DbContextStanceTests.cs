@@ -2,7 +2,9 @@ using Concertable.B2B.Venue.Domain.Entities;
 using Concertable.B2B.Venue.Infrastructure.Data;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace Concertable.B2B.Venue.UnitTests;
@@ -18,6 +20,7 @@ public sealed class DbContextStanceTests
             provider);
         await using var tenantContext = new VenueDbContext(
             CreateOptions<VenueDbContext>(),
+            Options.Create(new OutboxOptions()),
             provider,
             Mock.Of<ITenantContext>());
 

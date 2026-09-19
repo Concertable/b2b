@@ -1,16 +1,19 @@
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Booking.Infrastructure.Data;
 
 internal sealed class BookingDbContext(
     DbContextOptions<BookingDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     BookingConfigurationProvider provider,
     ITenantContext tenantContext,
     IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, provider, tenantContext, resourceAccess, Schema.Name)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
 {
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
     public DbSet<ContractEntity> Contracts => Set<ContractEntity>();

@@ -29,14 +29,14 @@ internal sealed class ArtistController : ControllerBase
             .ToOkOrNotFound(artist => artist.ToDetailsResponse());
     }
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
         (await artistService.GetDetailsAsync(ct))
             .ToOkOrNoContent(artist => artist.ToDetailsResponse());
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.ProfileEditName)]
     [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPost($"/api/organization/{RouteSegment}")]
@@ -48,7 +48,7 @@ internal sealed class ArtistController : ControllerBase
                 artist => artist.ToDetailsResponse(),
                 artist => $"/api/artist/{artist.Id}");
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.ProfileEditName)]
     [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPut($"/api/organization/{RouteSegment}")]

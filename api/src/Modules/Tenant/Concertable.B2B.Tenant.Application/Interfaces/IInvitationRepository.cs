@@ -4,6 +4,8 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal interface IInvitationRepository : IRepository<TenantInvitationEntity, Guid>
 {
+    Task<TenantInvitationEntity?> GetByIdForUpdateAsync(Guid invitationId, CancellationToken ct = default);
+
     /// <summary>Every invitation row of a tenant — the delete-org cascade removes them so no invitation outlives its tenant.</summary>
     Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default);
 

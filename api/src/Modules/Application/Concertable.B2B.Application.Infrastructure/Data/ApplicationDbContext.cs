@@ -1,16 +1,19 @@
 using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Application.Infrastructure.Data;
 
 internal sealed class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     ApplicationConfigurationProvider provider,
     ITenantContext tenantContext,
     IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, provider, tenantContext, resourceAccess, Schema.Name)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
 {
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<VerifyPaymentEntity> VerifyPayments => Set<VerifyPaymentEntity>();

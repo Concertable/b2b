@@ -1,6 +1,5 @@
 namespace Concertable.B2B.Tenant.Application.DTOs;
 
-/// <summary>A row of the admin verification-review queue, carrying the tenant's own legal name and contact.</summary>
 internal sealed record PendingVerificationDto
 {
     public required Guid TenantId { get; init; }

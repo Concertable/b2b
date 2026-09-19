@@ -33,7 +33,7 @@ internal sealed class VenueReviewController : ControllerBase
         Ok(await reviewService.GetSummaryAsync(venueId));
 
     [HttpGet($"/api/organization/{VenueController.RouteSegment}/{RouteSegment}/recent")]
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<RecentReviewResponse>>> GetRecentForCurrent(
         CancellationToken ct) =>

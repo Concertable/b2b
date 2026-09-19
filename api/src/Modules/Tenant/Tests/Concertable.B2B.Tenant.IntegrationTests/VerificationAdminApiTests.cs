@@ -206,26 +206,21 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         Assert.Contains(fixture.EmailSender.Sent, e => e.To == venue.Email);
     }
 
-    /// <summary>Mirrors <see cref="GetPending_ShouldReturn200_WithArtistContactEnrichment"/>'s proof that
-    /// <see cref="Concertable.B2B.Seed.Infrastructure.SeedState.ArtistManagerNoArtist"/> owns no artist
-    /// by default (that test explicitly creates one before asserting on it) — this test deliberately does not,
-    /// so the tenant is provably contactless.</summary>
     [Fact]
-    public async Task Approve_ShouldReturn204_AndSendNothing_WhenTenantOwnsNoProfile()
+    public async Task Approve_TenantOwnsNoMarketplaceActivity_NotifiesTenantContact()
     {
         var owner = fixture.SeedState.ArtistManagerNoArtist;
         var tenantId = TenantOf(owner.Id);
         await fixture.AddPendingVerificationAsync(
             tenantId, VerificationDocumentType.CompanyRegistration, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
-        var alreadySent = fixture.EmailSender.Sent.Count;
 
         var response = await admin.PostAsync($"/api/verification/{tenantId}/approve", null);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         var verification = fixture.Verifications.Single(v => v.TenantId == tenantId);
         Assert.Equal(TenantVerificationStatus.Approved, verification.Status);
-        Assert.Equal(alreadySent, fixture.EmailSender.Sent.Count);
+        Assert.Contains(fixture.EmailSender.Sent, email => email.To == owner.Email);
     }
 
     #endregion

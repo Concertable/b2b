@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Tenant.Application.DTOs;
+using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 
@@ -16,20 +16,34 @@ internal interface ITenantService
         CancellationToken ct = default);
     Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default);
 
-    Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default);
+    Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default);
 
-    Task<IReadOnlyList<BusinessFacts>> GetBusinessFactsAsync(
+    Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default);
 
-    Task<bool> HasBusinessProfileAsync(
+    Task<bool> HasBusinessActivityAsync(
         Guid tenantId,
-        TenantBusinessProfileKind kind,
+        TenantBusinessActivityKind kind,
         CancellationToken ct = default);
 
     Task<Option<TenantDetails>> GetDetailsAsync(CancellationToken ct = default);
 
+    Task<Result<TenantDetails, CreateTenantError>> CreateAsync(
+        CreateTenantRequest request,
+        CancellationToken ct = default);
+
     Task<Result<TenantDetails, UpdateTenantError>> UpdateAsync(UpdateTenantRequest request, CancellationToken ct = default);
+
+    Task<Result<TenantDetails, ChangeBusinessActivityError>> ActivateBusinessActivityAsync(
+        TenantBusinessActivityKind kind,
+        ChangeBusinessActivityRequest request,
+        CancellationToken ct = default);
+
+    Task<Result<TenantDetails, ChangeBusinessActivityError>> RetireBusinessActivityAsync(
+        TenantBusinessActivityKind kind,
+        ChangeBusinessActivityRequest request,
+        CancellationToken ct = default);
 
     Task<UnitResult<DeleteTenantError>> DeleteAsync(CancellationToken ct = default);
 

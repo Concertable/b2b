@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Application.Responses;
+using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Api.Mappers;
@@ -81,7 +81,7 @@ internal sealed class ConcertController : ControllerBase
         (await concertService.GetFinanceAsync(id, ct))
             .ToOkOrProblem(concert => concert.ToResponse());
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet("drafts/current")]
     public async Task<ActionResult<IReadOnlyList<ConcertDraftReference>>> GetDraftsForCurrentVenue(
@@ -122,13 +122,13 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [HttpGet("upcoming/venue/current")]
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentVenue() =>
         (await concertService.GetUpcomingForCurrentVenueAsync()).ToOkOrProblem();
 
     [HttpGet("upcoming/artist/current")]
-    [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentArtist() =>
         (await concertService.GetUpcomingForCurrentArtistAsync()).ToOkOrProblem();
@@ -149,7 +149,7 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetHistoryByArtistIdAsync(id, ct)).ToResponses());
     }
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HttpGet("unposted/venue/{id}")]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByVenueId(
@@ -159,7 +159,7 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetUnpostedByVenueIdAsync(id, ct)).ToSummaryResponses());
     }
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HttpGet("unposted/artist/{id}")]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByArtistId(
@@ -169,7 +169,7 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetUnpostedByArtistIdAsync(id, ct)).ToSummaryResponses());
     }
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ConcertsOpsEditName)]
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(
@@ -180,7 +180,7 @@ internal sealed class ConcertController : ControllerBase
         return (await concertService.UpdateAsync(id, request, ct)).ToOkOrProblem();
     }
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ConcertsOpsEditName)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(
@@ -198,7 +198,7 @@ internal sealed class ConcertController : ControllerBase
         return (await concertService.CancelAsync(id, ct)).ToNoContentOrProblem();
     }
 
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ConcertsDeclareDoorRevenueName)]
     [HttpPost("{id}/door-revenue")]
     public async Task<IActionResult> DeclareDoorRevenue(

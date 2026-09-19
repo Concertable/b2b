@@ -8,10 +8,6 @@ namespace Concertable.B2B.Authorization.Infrastructure.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    /// <summary>
-    /// Registers request authority. The module owns no storage: the host must also bind
-    /// <see cref="IMembershipReadRepository"/> to the module that owns membership rows.
-    /// </summary>
     public static IServiceCollection AddAuthorizationModule(this IServiceCollection services)
     {
         services.AddSingleton<IMembershipContextAccessor, MembershipContextAccessor>();
@@ -22,9 +18,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<MembershipContext>());
         services.AddScoped<IMembershipContext>(sp => sp.GetRequiredService<MembershipContext>());
 
-        /* String-permission authorization: a single on-demand policy provider (singleton) builds every
-           perm:<name> policy and delegates Admin/[Authorize] to the default provider; the scoped handler
-           reads the membership context. No startup policy loop. */
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 

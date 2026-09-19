@@ -1,10 +1,5 @@
 namespace Concertable.B2B.Application.Domain.Entities;
 
-/// <summary>
-/// A rebuildable projection of which dates an artist, venue and opportunity are already committed on. It
-/// answers availability and conflict and nothing else, so it carries no tenants, fees or party identities:
-/// a caller learns that a date is taken, never whose booking took it.
-/// </summary>
 public sealed class ConcertAvailabilityEntity
 {
     public int ConcertId { get; private set; }

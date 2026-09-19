@@ -9,5 +9,4 @@ public sealed class DesignTimeTenantContext : ITenantContext
 
     public Guid? TenantId => null;
 
-    public bool IsHost => false;
 }

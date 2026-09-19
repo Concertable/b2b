@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Concertable.B2B.Dashboard.Venue.Api;
 
 [ApiController]
-[RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+[RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
 [HasPermission(TenantPermission.OperationsViewName)]
 [Route("api/venue-dashboard")]
 internal sealed class VenueDashboardController : ControllerBase

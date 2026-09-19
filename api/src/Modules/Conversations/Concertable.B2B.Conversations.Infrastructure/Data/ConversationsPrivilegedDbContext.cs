@@ -1,12 +1,15 @@
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data;
 
 internal sealed class ConversationsPrivilegedDbContext(
     DbContextOptions<ConversationsPrivilegedDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     ConversationsConfigurationProvider provider)
-    : PrivilegedDbContext(options, provider, Schema.Name)
+    : PrivilegedDbContext(options, outboxOptions, provider, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<ConversationAccessGrant> ConversationAccessGrants => Set<ConversationAccessGrant>();

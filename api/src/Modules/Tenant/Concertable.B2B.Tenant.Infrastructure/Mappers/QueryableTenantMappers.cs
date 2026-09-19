@@ -4,8 +4,8 @@ internal static class QueryableTenantMappers
 {
     extension(IQueryable<TenantEntity> tenants)
     {
-        public IQueryable<BusinessFacts> ToBusinessFacts(IQueryable<TenantBusinessProfileEntity> businessProfiles) =>
-            tenants.Select(t => new BusinessFacts(
+        public IQueryable<TenantBusinessDetails> ToTenantBusinessDetails(IQueryable<TenantBusinessActivityEntity> businessActivities) =>
+            tenants.Select(t => new TenantBusinessDetails(
                 t.Id,
                 t.LegalName,
                 t.ContactEmail,
@@ -26,10 +26,10 @@ internal static class QueryableTenantMappers
                         BankReference = t.TaxCompliance.BankReference,
                         HoldsMusicLicence = t.TaxCompliance.HoldsMusicLicence,
                     },
-                businessProfiles
+                businessActivities
                     .Where(p => p.TenantId == t.Id && p.RetiredAt == null)
                     .Select(p => p.Kind)
                     .ToList(),
-                t.AuthorityVersion));
+                t.EligibilityVersion));
     }
 }

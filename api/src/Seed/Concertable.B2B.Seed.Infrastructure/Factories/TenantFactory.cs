@@ -10,14 +10,14 @@ public static class TenantFactory
     public static TenantEntity Create(
         Guid userId,
         string email,
-        TenantBusinessProfileKind? businessProfile,
+        TenantBusinessActivityKind? businessActivity,
         DateTime createdAt,
         bool taxComplianceComplete = true)
     {
-        var tenant = TenantEntity.Create(email, userId, createdAt, TenantSeedIds.For(userId));
+        var tenant = TenantEntity.Create(email, email, userId, createdAt, TenantSeedIds.For(userId));
 
-        if (businessProfile is { } kind)
-            tenant.ActivateBusinessProfile(kind, createdAt);
+        if (businessActivity is { } kind)
+            tenant.ActivateBusinessActivity(kind, createdAt);
 
         return !taxComplianceComplete
             ? tenant

@@ -1,4 +1,4 @@
-﻿namespace Concertable.B2B.Tenant.Infrastructure;
+namespace Concertable.B2B.Tenant.Infrastructure;
 
 internal sealed class TenantModule : ITenantModule
 {
@@ -33,19 +33,19 @@ internal sealed class TenantModule : ITenantModule
     public Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default) =>
         service.IsCurrentMembershipAsync(tenantId, membershipId, ct);
 
-    public Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default) =>
-        service.GetBusinessFactsAsync(tenantId, ct);
+    public Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default) =>
+        service.GetTenantBusinessDetailsAsync(tenantId, ct);
 
-    public Task<IReadOnlyList<BusinessFacts>> GetBusinessFactsAsync(
+    public Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default) =>
-        service.GetBusinessFactsAsync(tenantIds, ct);
+        service.GetTenantBusinessDetailsAsync(tenantIds, ct);
 
-    public Task<bool> HasBusinessProfileAsync(
+    public Task<bool> HasBusinessActivityAsync(
         Guid tenantId,
-        TenantBusinessProfileKind kind,
+        TenantBusinessActivityKind kind,
         CancellationToken ct = default) =>
-        service.HasBusinessProfileAsync(tenantId, kind, ct);
+        service.HasBusinessActivityAsync(tenantId, kind, ct);
 
     public Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default) =>
         service.IsTaxComplianceCompleteAsync(tenantId, ct);

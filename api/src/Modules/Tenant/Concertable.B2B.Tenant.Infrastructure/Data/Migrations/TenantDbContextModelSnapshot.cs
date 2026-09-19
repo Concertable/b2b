@@ -67,7 +67,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.ToTable("Activities", "tenant");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantBusinessProfileEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantBusinessActivityEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -90,7 +90,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.HasIndex("TenantId", "Kind")
                         .IsUnique();
 
-                    b.ToTable("BusinessProfiles", "tenant");
+                    b.ToTable("BusinessActivities", "tenant");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantEntity", b =>
@@ -98,10 +98,6 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("AuthorityVersion")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint");
 
                     b.Property<string>("ContactEmail")
                         .IsRequired()
@@ -122,12 +118,22 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Property<long>("DisplayVersion")
                         .HasColumnType("bigint");
 
+                    b.Property<long>("EligibilityVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("LegalName")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId")
+                        .IsUnique();
 
                     b.ToTable("Tenants", "tenant");
                 });
@@ -147,15 +153,18 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid>("InviterMembershipId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("InviterPermissionVersion")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Role")
                         .HasColumnType("int");
@@ -165,6 +174,10 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -186,7 +199,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("InvitedByUserId")
+                    b.Property<Guid?>("InvitedByMembershipId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<long>("PermissionVersion")
@@ -343,10 +356,10 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantBusinessProfileEntity", b =>
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantBusinessActivityEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantEntity", null)
-                        .WithMany("BusinessProfiles")
+                        .WithMany("BusinessActivities")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -438,7 +451,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantEntity", b =>
                 {
-                    b.Navigation("BusinessProfiles");
+                    b.Navigation("BusinessActivities");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantVerificationEntity", b =>

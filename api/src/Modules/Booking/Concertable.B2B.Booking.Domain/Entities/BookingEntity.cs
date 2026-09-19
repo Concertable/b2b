@@ -75,8 +75,6 @@ public sealed class BookingEntity : IIdEntity, IConcurrencyVersioned, IEventRais
         VenueTenantId = opportunity.Venue.TenantId;
         ArtistTenantId = application.Artist.TenantId;
 
-        /* Both principals reach their own booking through grants like anyone else, issued here so no booking
-           can exist that its own parties cannot see. The issuer is the acceptance that created it. */
         var acceptance = snapshot.Contract.VenueSignature;
         foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
         {

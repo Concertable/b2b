@@ -2,11 +2,6 @@
 
 namespace Concertable.B2B.DataAccess.Application;
 
-/// <summary>
-/// One tenant's access to one resource, at one scope. Each owning module declares its own grant entity over
-/// its own scope vocabulary, because the resource foreign key is real and module-local; this base carries only
-/// the audience, validity and provenance every grant family shares.
-/// </summary>
 public abstract class ResourceAccessGrant<TScope> : IGuidEntity
     where TScope : struct, Enum
 {
@@ -14,10 +9,8 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
 
     public Guid Id { get; protected set; }
 
-    /// <summary>The owning module's own key for the resource disclosed.</summary>
     public int ResourceId { get; protected set; }
 
-    /// <summary>The tenant the resource is disclosed to.</summary>
     public Guid TenantId { get; protected set; }
 
     public Guid? MembershipId { get; protected set; }
@@ -28,8 +21,6 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
     public DateTime? RevokedAt { get; protected set; }
     public Guid IssuedByTenantId { get; protected set; }
 
-    /// <summary>The human who issued it, or null where the act had none — a resource created by a payment
-    /// confirmation grants its principals access with no person to attribute it to.</summary>
     public Guid? IssuedByUserId { get; protected set; }
 
     public ResourceGrantKind Kind { get; protected set; }

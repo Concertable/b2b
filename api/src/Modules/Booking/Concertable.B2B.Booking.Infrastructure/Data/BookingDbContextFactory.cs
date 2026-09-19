@@ -8,6 +8,7 @@ internal sealed class BookingDbContextFactory : B2BDesignTimeDbContextFactory<Bo
     protected override BookingDbContext Create(DbContextOptions<BookingDbContext> options) =>
         new(
             options,
+            DefaultOutboxOptions,
             new BookingConfigurationProvider(),
             DesignTimeTenantContext.Instance,
             DesignTimeResourceAccessContext.Instance);

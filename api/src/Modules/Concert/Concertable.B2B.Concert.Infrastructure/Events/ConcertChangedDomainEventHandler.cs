@@ -49,9 +49,6 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
             venue.Location.Y,
             venue.Location.X,
             concert.Genres.ToArray(),
-            /* Whoever pays the performer is whoever sold the tickets, and the concert type already says
-               which side that is — VenueHire reverses it. P2 replaces both with the accepted settlement
-               binding, which is where a direction that is agreed rather than derived belongs. */
             concert.SettlementPayerTenantId == concert.VenueTenantId ? venue.UserId : artist.UserId,
             concert.SettlementPayerTenantId), ct);
     }

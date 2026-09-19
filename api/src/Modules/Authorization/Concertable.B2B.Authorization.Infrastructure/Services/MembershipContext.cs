@@ -29,8 +29,6 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
 
     public Guid? TenantId => Membership?.TenantId;
 
-    public bool IsHost => false;
-
     public bool HasPermission(TenantPermission permission) =>
         Membership is { } active && permissionCatalog.Grants(active.Role, permission);
 
@@ -53,12 +51,6 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
         accessor.Resolution = new MembershipResolution(await ResolveMembershipAsync(userId, cancellationToken));
     }
 
-    /// <summary>
-    /// An <c>X-Tenant-Id</c> header names the acting tenant and is validated against the caller's memberships —
-    /// a header for a tenant they don't belong to resolves nothing, so the request fails closed. With no header,
-    /// a sole membership is the default; a user with several must name one, so the request fails closed rather
-    /// than guess.
-    /// </summary>
     private async Task<MembershipSnapshot?> ResolveMembershipAsync(Guid userId, CancellationToken cancellationToken)
     {
         if (TryGetHeaderTenantId(out var headerTenantId))

@@ -25,6 +25,7 @@ using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
+using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Booking.Infrastructure.Extensions;
 
@@ -70,6 +71,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
             services.AddScoped<IBookingModule, BookingModule>();
+            services.AddScoped<ITenantDeletionGuard, BookingTenantDeletionGuard>();
             services.AddBookingDealStrategies();
             services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,
                 ApplicationAcceptedDomainEventHandler>();

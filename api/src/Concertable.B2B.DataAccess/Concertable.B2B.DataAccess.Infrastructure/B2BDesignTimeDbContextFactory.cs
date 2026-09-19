@@ -1,12 +1,16 @@
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
 public abstract class B2BDesignTimeDbContextFactory<TContext> : IDesignTimeDbContextFactory<TContext>
     where TContext : DbContext
 {
+    protected static IOptions<OutboxOptions> DefaultOutboxOptions { get; } = Options.Create(new OutboxOptions());
+
     public TContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<TContext>()

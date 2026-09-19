@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
@@ -63,16 +64,19 @@ public sealed class InvitationTests : IAsyncLifetime
         Assert.Equal(TenantRole.Manager, dto.Role);
 
         var invitation = fixture.Invitations.Single(i => i.Id == dto.Id);
+        var ownerMembership = fixture.Memberships.Single(
+            membership => membership.TenantId == tenantId && membership.UserId == owner.Id);
         Assert.Equal(tenantId, invitation.TenantId);
         Assert.Equal(InvitationStatus.Pending, invitation.Status);
-        Assert.Equal(owner.Id, invitation.CreatedByUserId);
+        Assert.Equal(ownerMembership.Id, invitation.InviterMembershipId);
+        Assert.Equal(ownerMembership.PermissionVersion, invitation.InviterPermissionVersion);
 
         var email = Assert.Single(await fixture.GetStagedEmailsAsync(), e => e.To == invitee);
-        Assert.Contains($"https://localhost:5175/settings/members/accept/{dto.Id}", email.Body);
+        Assert.Contains($"https://localhost:5177/settings/members/accept/{dto.Id}", email.Body);
     }
 
     [Fact]
-    public async Task Invite_AsArtistOwner_SendsEmailWithArtistPortalAcceptLink()
+    public async Task Invite_AsArtistOwner_SendsEmailWithBusinessPortalAcceptLink()
     {
         var owner = fixture.SeedState.ArtistManager1; // founding Owner of an artist tenant
         const string invitee = "artistcolleague@example.com";
@@ -80,7 +84,7 @@ public sealed class InvitationTests : IAsyncLifetime
         var dto = await InviteAsync(fixture.CreateClient(owner), invitee, TenantRole.Manager);
 
         var email = Assert.Single(await fixture.GetStagedEmailsAsync(), e => e.To == invitee);
-        Assert.Contains($"https://localhost:5176/settings/members/accept/{dto.Id}", email.Body);
+        Assert.Contains($"https://localhost:5177/settings/members/accept/{dto.Id}", email.Body);
     }
 
     [Fact]
@@ -148,6 +152,22 @@ public sealed class InvitationTests : IAsyncLifetime
             TenantRole.Staff);
 
         await response.ShouldBe(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task Invite_AsManagerAssigningManager_IsForbidden()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var tenantId = TenantOf(owner.Id);
+        var manager = fixture.SeedState.VenueManagerNoVenue;
+        await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
+
+        var response = await Invite(
+            ClientInTenant(manager.Id, manager.Email, tenantId),
+            "invitee@example.com",
+            TenantRole.Manager);
+
+        await response.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -266,10 +286,11 @@ public sealed class InvitationTests : IAsyncLifetime
         var joined = (await response.Content.ReadAsync<MembershipDto>())!;
         Assert.Equal(tenantId, joined.TenantId);
         Assert.Equal(TenantRole.Manager, joined.Role);
-        Assert.Equal([TenantBusinessProfileKind.VenueOperator], joined.BusinessProfiles);
+        Assert.Equal([TenantBusinessActivityKind.VenueOperator], joined.BusinessActivities);
         var membership = fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == invitee.Id);
+        var ownerMembership = fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == owner.Id);
         Assert.Equal(TenantRole.Manager, membership.Role);
-        Assert.Equal(owner.Id, membership.InvitedByUserId);
+        Assert.Equal(ownerMembership.Id, membership.InvitedByMembershipId);
         Assert.Equal(InvitationStatus.Accepted, fixture.Invitations.Single(i => i.Id == dto.Id).Status);
     }
 
@@ -343,6 +364,60 @@ public sealed class InvitationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Accept_InviterNoLongerAuthorizedForRole_IsForbidden()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var tenantId = TenantOf(owner.Id);
+        var coOwner = fixture.SeedState.VenueManagerNoVenue;
+        var invitee = fixture.SeedState.ArtistManagerNoArtist;
+        await fixture.AddOwnerMembershipAsync(tenantId, coOwner.Id);
+        var invitation = await InviteAsync(
+            fixture.CreateClient(owner),
+            invitee.Email,
+            TenantRole.Manager);
+        var coOwnerClient = ClientInTenant(coOwner.Id, coOwner.Email, tenantId);
+        await (await coOwnerClient.PutAsJsonAsync(
+            $"/api/organization/members/{owner.Id}/role",
+            new { role = TenantRole.Staff.ToString() }))
+            .ShouldBe(HttpStatusCode.NoContent);
+
+        var response = await fixture.CreateClient(invitee)
+            .PostAsync($"/api/invitation/{invitation.Id}/accept");
+
+        await response.ShouldBe(HttpStatusCode.Forbidden);
+        Assert.DoesNotContain(
+            fixture.Memberships,
+            membership => membership.TenantId == tenantId && membership.UserId == invitee.Id);
+    }
+
+    [Fact]
+    public async Task Accept_InviterPermissionVersionChanged_IsForbidden()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var tenantId = TenantOf(owner.Id);
+        var coOwner = fixture.SeedState.VenueManagerNoVenue;
+        var invitee = fixture.SeedState.ArtistManagerNoArtist;
+        await fixture.AddOwnerMembershipAsync(tenantId, coOwner.Id);
+        var invitation = await InviteAsync(
+            fixture.CreateClient(owner),
+            invitee.Email,
+            TenantRole.Manager);
+        var coOwnerClient = ClientInTenant(coOwner.Id, coOwner.Email, tenantId);
+        await (await coOwnerClient.PutAsJsonAsync(
+            $"/api/organization/members/{owner.Id}/role",
+            new { role = TenantRole.Owner.ToString() }))
+            .ShouldBe(HttpStatusCode.NoContent);
+
+        var response = await fixture.CreateClient(invitee)
+            .PostAsync($"/api/invitation/{invitation.Id}/accept");
+
+        await response.ShouldBe(HttpStatusCode.Forbidden);
+        Assert.DoesNotContain(
+            fixture.Memberships,
+            membership => membership.TenantId == tenantId && membership.UserId == invitee.Id);
+    }
+
+    [Fact]
     public async Task Accept_TenantNoLongerExists_IsRejected_WithoutMembership()
     {
         var invitee = fixture.SeedState.VenueManagerNoVenue;
@@ -363,7 +438,7 @@ public sealed class InvitationTests : IAsyncLifetime
     [Fact]
     public async Task DeleteOrganization_RemovesTheTenantsInvitations()
     {
-        var owner = fixture.SeedState.VenueManager1;
+        var owner = fixture.SeedState.VenueManagerNoVenue;
         var tenantId = TenantOf(owner.Id);
         var client = fixture.CreateClient(owner);
         await InviteAsync(client, "cleanup@example.com", TenantRole.Manager);

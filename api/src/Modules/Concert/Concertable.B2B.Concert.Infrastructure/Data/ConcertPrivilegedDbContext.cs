@@ -2,15 +2,17 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Venue.Domain.ReadModels;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 
-/// <summary>The unfiltered, unfenced stance for work no human is acting in. See <see cref="ConcertDbContext"/>.</summary>
 internal sealed class ConcertPrivilegedDbContext(
     DbContextOptions<ConcertPrivilegedDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     ConcertConfigurationProvider provider)
-    : PrivilegedDbContext(options, provider, Schema.Name)
+    : PrivilegedDbContext(options, outboxOptions, provider, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();

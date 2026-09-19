@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Api.Mappers;
 using Concertable.B2B.Application.Api.Requests;
@@ -64,7 +64,7 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HttpGet("venue/current")]
-    [RequiresBusinessProfile(TenantBusinessProfileKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<ApplicationSummaryResponse>>> GetPendingForCurrentVenue()
     {
@@ -73,7 +73,7 @@ internal sealed class ApplicationController : ControllerBase
     }
 
     [HttpGet("artist/current")]
-    [RequiresBusinessProfile(TenantBusinessProfileKind.Artist)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<ApplicationSummaryResponse>>> GetCurrentForCurrentArtist()
     {

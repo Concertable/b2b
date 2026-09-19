@@ -1,4 +1,4 @@
-﻿namespace Concertable.B2B.Tenant.Infrastructure.Mappers;
+namespace Concertable.B2B.Tenant.Infrastructure.Mappers;
 
 internal static class QueryableMembershipMappers
 {
@@ -8,7 +8,7 @@ internal static class QueryableMembershipMappers
         // projected record doesn't translate, so any Where must sit on TenantMembershipEntity.
         public IQueryable<UserMembership> ToUserMemberships(
             IQueryable<TenantEntity> tenants,
-            IQueryable<TenantBusinessProfileEntity> businessProfiles) =>
+            IQueryable<TenantBusinessActivityEntity> businessActivities) =>
             memberships.Join(
                 tenants,
                 m => m.TenantId,
@@ -19,7 +19,7 @@ internal static class QueryableMembershipMappers
                     t.LegalName,
                     m.Role,
                     m.PermissionVersion,
-                    businessProfiles
+                    businessActivities
                         .Where(p => p.TenantId == m.TenantId && p.RetiredAt == null)
                         .Select(p => p.Kind)
                         .ToList()));

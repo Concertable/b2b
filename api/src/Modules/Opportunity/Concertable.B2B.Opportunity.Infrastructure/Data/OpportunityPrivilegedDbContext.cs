@@ -1,13 +1,15 @@
 ﻿using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Data;
 
-/// <summary>The unfiltered, unfenced stance for work no human is acting in. See <see cref="OpportunityDbContext"/>.</summary>
 internal sealed class OpportunityPrivilegedDbContext(
     DbContextOptions<OpportunityPrivilegedDbContext> options,
+    IOptions<OutboxOptions> outboxOptions,
     OpportunityConfigurationProvider provider)
-    : PrivilegedDbContext(options, provider, Schema.Name)
+    : PrivilegedDbContext(options, outboxOptions, provider, Schema.Name)
 {
     public DbSet<OpportunityEntity> Opportunities => Set<OpportunityEntity>();
 }

@@ -55,7 +55,7 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 
 public class ApiFixture : IAsyncLifetime
 {
-    private SqlFixture sqlFixture = null!;
+    private SqlServerFixture sqlFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
     private readonly List<WebApplicationFactory<Program>> customFactories = [];
@@ -86,7 +86,7 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        sqlFixture = new SqlFixture();
+        sqlFixture = new SqlServerFixture();
         await sqlFixture.InitializeAsync();
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {

@@ -4,10 +4,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-/// <summary>
-/// The columns and indexes every grant family shares. A module's own configuration derives from this and adds
-/// the real foreign key to its resource — that key is module-local, so only the module can declare it.
-/// </summary>
 public abstract class ResourceAccessGrantConfiguration<TGrant, TScope> : IEntityTypeConfiguration<TGrant>
     where TGrant : ResourceAccessGrant<TScope>
     where TScope : struct, Enum

@@ -6,12 +6,16 @@
     <Nullable>enable</Nullable>
     <IsTestProject>false</IsTestProject>
     <IsPackable>false</IsPackable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Respawn" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Stripe.net" />
+    <PackageReference Include="Testcontainers.MsSql" />
     <PackageReference Include="xunit" />
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Payment.Contracts" />

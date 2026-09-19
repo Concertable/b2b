@@ -8,6 +8,7 @@ internal sealed class ConversationsDbContextFactory : B2BDesignTimeDbContextFact
     protected override ConversationsDbContext Create(DbContextOptions<ConversationsDbContext> options) =>
         new(
             options,
+            DefaultOutboxOptions,
             new ConversationsConfigurationProvider(),
             DesignTimeTenantContext.Instance,
             DesignTimeResourceAccessContext.Instance);

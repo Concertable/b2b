@@ -2,7 +2,9 @@ using Concertable.B2B.Artist.Domain.Entities;
 using Concertable.B2B.Artist.Infrastructure.Data;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace Concertable.B2B.Artist.UnitTests;
@@ -18,6 +20,7 @@ public sealed class DbContextStanceTests
             provider);
         await using var tenantContext = new ArtistDbContext(
             CreateOptions<ArtistDbContext>(),
+            Options.Create(new OutboxOptions()),
             provider,
             Mock.Of<ITenantContext>());
 

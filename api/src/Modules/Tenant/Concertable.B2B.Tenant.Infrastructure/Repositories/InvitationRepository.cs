@@ -1,4 +1,5 @@
 using Concertable.B2B.Tenant.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
@@ -6,10 +7,31 @@ namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 internal sealed class InvitationRepository : Repository<TenantInvitationEntity>, IInvitationRepository
 {
     private readonly TenantDbContext context;
+    private readonly CommandTransactionAccessor transactions;
 
-    public InvitationRepository(TenantDbContext context) : base(context)
+    public InvitationRepository(
+        TenantDbContext context,
+        CommandTransactionAccessor transactions) : base(context)
     {
         this.context = context;
+        this.transactions = transactions;
+    }
+
+    public async Task<TenantInvitationEntity?> GetByIdForUpdateAsync(
+        Guid invitationId,
+        CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Invitation updates require an active command transaction.");
+        await transaction.EnlistAsync(context, ct);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM tenant.Invitations WITH (UPDLOCK, HOLDLOCK)
+             WHERE Id = {invitationId}
+             """,
+            ct);
+        return await context.Invitations.SingleOrDefaultAsync(invitation => invitation.Id == invitationId, ct);
     }
 
     public async Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>

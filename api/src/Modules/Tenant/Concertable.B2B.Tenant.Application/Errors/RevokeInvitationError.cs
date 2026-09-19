@@ -12,7 +12,10 @@ internal abstract partial record RevokeInvitationError : IError
                 $"Invitation {invitationId} was not found."),
         InvitationNotPending =>
             ErrorDefinition.Conflict<InvitationNotPending>(
-                "Only a pending invitation can be revoked.")
+                "Only a pending invitation can be revoked."),
+        NotPermitted =>
+            ErrorDefinition.Forbidden<NotPermitted>(
+                "You cannot revoke this invitation.")
     };
 
     [ErrorCode("tenant.revoke_invitation_not_found")]
@@ -20,4 +23,7 @@ internal abstract partial record RevokeInvitationError : IError
 
     [ErrorCode("tenant.revoke_invitation_not_pending")]
     public partial record InvitationNotPending;
+
+    [ErrorCode("tenant.revoke_invitation_not_permitted")]
+    public partial record NotPermitted;
 }

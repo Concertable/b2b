@@ -43,7 +43,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     Email = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Role = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    InviterMembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    InviterPermissionVersion = table.Column<long>(type: "bigint", nullable: false),
+                    Version = table.Column<long>(type: "bigint", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     AcceptedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
@@ -64,7 +66,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Role = table.Column<int>(type: "int", nullable: false),
                     PermissionVersion = table.Column<long>(type: "bigint", nullable: false),
-                    InvitedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    InvitedByMembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -81,10 +83,11 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     LegalName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     DisplayVersion = table.Column<long>(type: "bigint", nullable: false),
+                    Version = table.Column<long>(type: "bigint", nullable: false),
                     ContactEmail = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
                     CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AuthorityVersion = table.Column<long>(type: "bigint", nullable: false),
+                    EligibilityVersion = table.Column<long>(type: "bigint", nullable: false),
                     TaxCompliance_VatNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     TaxCompliance_SellerIdentifier = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     TaxCompliance_RegisteredAddress_Line1 = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
@@ -119,7 +122,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "BusinessProfiles",
+                name: "BusinessActivities",
                 schema: "tenant",
                 columns: table => new
                 {
@@ -131,9 +134,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_BusinessProfiles", x => x.Id);
+                    table.PrimaryKey("PK_BusinessActivities", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_BusinessProfiles_Tenants_TenantId",
+                        name: "FK_BusinessActivities_Tenants_TenantId",
                         column: x => x.TenantId,
                         principalSchema: "tenant",
                         principalTable: "Tenants",
@@ -179,9 +182,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_BusinessProfiles_TenantId_Kind",
+                name: "IX_BusinessActivities_TenantId_Kind",
                 schema: "tenant",
-                table: "BusinessProfiles",
+                table: "BusinessActivities",
                 columns: new[] { "TenantId", "Kind" },
                 unique: true);
 
@@ -213,6 +216,13 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Tenants_CreatedByUserId",
+                schema: "tenant",
+                table: "Tenants",
+                column: "CreatedByUserId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_VerificationDocuments_TenantVerificationId",
                 schema: "tenant",
                 table: "VerificationDocuments",
@@ -224,25 +234,17 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 table: "Verifications",
                 column: "TenantId",
                 unique: true);
-
-            migrationBuilder.Sql("""
-                CREATE VIEW tenant.MembershipAuthority AS
-                SELECT Id AS MembershipId, TenantId, UserId, PermissionVersion
-                FROM tenant.Memberships;
-                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DROP VIEW IF EXISTS tenant.MembershipAuthority;");
-
             migrationBuilder.DropTable(
                 name: "Activities",
                 schema: "tenant");
 
             migrationBuilder.DropTable(
-                name: "BusinessProfiles",
+                name: "BusinessActivities",
                 schema: "tenant");
 
             migrationBuilder.DropTable(

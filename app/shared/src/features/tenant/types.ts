@@ -1,7 +1,6 @@
 import type { User } from "@concertable/shared/features/auth/types";
 import type { TENANT_BUSINESS_ACTIVITIES, TENANT_ROLES } from "./constants";
 
-/** A kind of marketplace work a business has activated. A business holds zero or more. */
 export type TenantBusinessActivity = (typeof TENANT_BUSINESS_ACTIVITIES)[number];
 export type TenantRole = (typeof TENANT_ROLES)[number];
 

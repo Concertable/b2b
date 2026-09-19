@@ -3,12 +3,6 @@ using Xunit;
 
 namespace Concertable.B2B.ArchitectureTests;
 
-/// <summary>
-/// A grant family is three separate declarations — the grant entity, its EF configuration, and the filter that
-/// reads it — and nothing in the type system ties them together. A family declared without its configuration
-/// maps no table; a grant-scoped context that declares no filter reads every tenant's rows. These tests are
-/// what says otherwise.
-/// </summary>
 public sealed class ResourceAccessGuardTests
 {
     [Fact]
@@ -27,7 +21,6 @@ public sealed class ResourceAccessGuardTests
     [Fact]
     public void GrantFamilies_AreDiscoverable()
     {
-        // Guards the guard: a rename of the grant base would otherwise leave the test above scanning nothing.
         Assert.NotEmpty(GrantFamilies());
     }
 

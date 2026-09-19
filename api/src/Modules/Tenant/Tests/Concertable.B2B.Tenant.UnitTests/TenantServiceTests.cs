@@ -36,11 +36,15 @@ public sealed class TenantServiceTests
             invitationRepository.Object,
             tenantContext.Object,
             new VatPolicy(new UkVatCalculator()),
-            permissionCatalog.Object);
+            permissionCatalog.Object,
+            new ImmediateUnitOfWorkBehavior(),
+            TimeProvider.System,
+            [],
+            Mock.Of<ICurrentUser>());
     }
 
     private static TenantEntity Bare() =>
-        TenantEntity.Create("bare@test.com", Guid.NewGuid(), DateTime.UtcNow);
+        TenantEntity.Create("Bare business", "bare@test.com", Guid.NewGuid(), DateTime.UtcNow);
 
     private static TenantEntity Onboarded(string? vatNumber)
     {
@@ -91,7 +95,9 @@ public sealed class TenantServiceTests
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
-        repository.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync((TenantEntity?)null);
+        repository
+            .Setup(r => r.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TenantEntity?)null);
 
         var result = await service.UpdateAsync(null!);
 
@@ -106,11 +112,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = new TaxComplianceDto
             {
                 SellerIdentifier = "",
@@ -145,11 +153,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "Acme Ltd",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = ValidTaxCompliance() with
             {
                 SellerIdentifier = "",
@@ -174,11 +184,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "Acme Ltd",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = null!
         };
 
@@ -198,11 +210,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "Acme Ltd",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = ValidTaxCompliance() with
             {
                 RegisteredAddress = null!
@@ -227,11 +241,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = ValidTaxCompliance()
         };
 
@@ -242,6 +258,25 @@ public sealed class TenantServiceTests
         Assert.Equal(["LegalName is required."], invalid.Errors.Errors["LegalName"]);
         repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    #endregion
+
+    #region ChangeBusinessActivityAsync
+
+    [Fact]
+    public async Task ActivateBusinessActivityAsync_UndefinedKind_ReturnsInvalidWithoutLoadingTenant()
+    {
+        var request = new ChangeBusinessActivityRequest { ExpectedEligibilityVersion = 1 };
+
+        var result = await service.ActivateBusinessActivityAsync((TenantBusinessActivityKind)999, request);
+
+        Assert.True(result.TryGetError(out var error));
+        var invalid = Assert.IsType<ChangeBusinessActivityError.Invalid>(error);
+        Assert.Equal(["The organization activity is invalid."], invalid.Errors.Errors["kind"]);
+        repository.Verify(
+            value => value.GetByIdForAdministrationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

@@ -1,4 +1,4 @@
-﻿namespace Concertable.B2B.Tenant.Contracts;
+namespace Concertable.B2B.Tenant.Contracts;
 
 public interface ITenantModule
 {
@@ -10,9 +10,9 @@ public interface ITenantModule
         CancellationToken ct = default);
 
     Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default);
-    Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default);
-    Task<IReadOnlyList<BusinessFacts>> GetBusinessFactsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
-    Task<bool> HasBusinessProfileAsync(Guid tenantId, TenantBusinessProfileKind kind, CancellationToken ct = default);
+    Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default);
+    Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
+    Task<bool> HasBusinessActivityAsync(Guid tenantId, TenantBusinessActivityKind kind, CancellationToken ct = default);
     Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default);
     Task<bool> IsVerifiedAsync(Guid tenantId, CancellationToken ct = default);
     Task<Option<TaxComplianceDto>> GetTaxComplianceAsync(Guid tenantId, CancellationToken ct = default);

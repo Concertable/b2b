@@ -2,14 +2,12 @@
 using Concertable.B2B.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-/// <summary>
-/// The stance for a module whose rows are reached through resource access grants rather than an ownership
-/// column. The single-owner stance stays on <see cref="TenantScopedDbContext"/>; a context may declare both.
-/// </summary>
 public abstract class ResourceScopedDbContext : TenantScopedDbContext, IHasResourceAccessContext
 {
     public IResourceAccessContext ResourceAccess { get; }
@@ -25,18 +23,19 @@ public abstract class ResourceScopedDbContext : TenantScopedDbContext, IHasResou
 
     protected ResourceScopedDbContext(
         DbContextOptions options,
+        IOptions<OutboxOptions> outboxOptions,
         IEntityTypeConfigurationProvider provider,
         ITenantContext tenantContext,
         IResourceAccessContext resourceAccess,
         string defaultSchema)
-        : base(options, provider, tenantContext, defaultSchema)
+        : base(options, outboxOptions, provider, tenantContext, defaultSchema)
     {
         ResourceAccess = resourceAccess;
     }
 
-    protected override void ConfigureBorrowedRelations(ModelBuilder modelBuilder)
+    protected override void ConfigureMembershipAuthority(ModelBuilder modelBuilder)
     {
-        base.ConfigureBorrowedRelations(modelBuilder);
+        base.ConfigureMembershipAuthority(modelBuilder);
         modelBuilder.ApplyConfiguration(new MembershipAuthorityConfiguration());
     }
 }

@@ -132,7 +132,6 @@ public sealed class MembershipContextTests
         await this.context.ResolveAsync();
 
         Assert.Null(((ITenantContext)this.context).TenantId);
-        Assert.False(((ITenantContext)this.context).IsHost);
     }
 
     [Fact]
@@ -158,18 +157,6 @@ public sealed class MembershipContextTests
         await this.context.ResolveAsync();
 
         Assert.Null(((ITenantContext)this.context).TenantId);
-    }
-
-    #endregion
-
-    #region IsHost
-
-    [Fact]
-    public void IsHost_IsNeverTrue()
-    {
-        WithoutHttpRequest();
-
-        Assert.False(((ITenantContext)this.context).IsHost);
     }
 
     #endregion
