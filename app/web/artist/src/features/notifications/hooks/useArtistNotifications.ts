@@ -9,8 +9,8 @@ export function useArtistNotifications() {
   const queryClient = useQueryClient();
 
   useMountEffect(() => {
-    notificationConnection.on("MessageReceived", () => {
-      void queryClient.invalidateQueries({ queryKey: ["messages"] });
+    notificationConnection.on("ConversationChanged", () => {
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "artist", "inbox"] });
     });
 
     notificationConnection.on(
@@ -25,7 +25,7 @@ export function useArtistNotifications() {
     );
 
     return () => {
-      notificationConnection.off("MessageReceived");
+      notificationConnection.off("ConversationChanged");
       notificationConnection.off("ApplicationAccepted");
     };
   });

@@ -71,6 +71,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIntegrationEventHandler<CredentialRegisteredEvent>, TenantProvisioningHandler>();
         services.AddScoped<IIntegrationEventHandler<TenantActivityRecordedEvent>, TenantActivityRecordedHandler>();
         services.AddScoped<IDomainEventHandler<TenantCreatedDomainEvent>, TenantCreatedDomainEventHandler>();
+        services.AddScoped<IDomainEventHandler<TenantDisplayChangedDomainEvent>, TenantDisplayChangedDomainEventHandler>();
         services.AddScoped<IDomainEventHandler<TenantInvitationCreatedDomainEvent>, TenantInvitationCreatedDomainEventHandler>();
 
         // includeInternalTypes: the Tenant validators are internal — without it they're never registered and the VAT-format rule silently doesn't run (mirrors Concert).

@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   invalidateQueries: vi.fn(),
   invalidateRouter: vi.fn(),
   selectTenant: vi.fn(),
+  startNotifications: vi.fn(),
+  stopNotifications: vi.fn(),
 }));
 
 vi.mock("react", () => ({
@@ -43,6 +45,12 @@ vi.mock("@concertable/b2b/features/tenant", () => ({
     selectionRequired: false,
   }),
 }));
+vi.mock("@concertable/web/lib/signalr", () => ({
+  notificationConnection: {
+    start: mocks.startNotifications,
+    stop: mocks.stopNotifications,
+  },
+}));
 
 describe("web tenant selection", () => {
   beforeEach(() => {
@@ -51,6 +59,8 @@ describe("web tenant selection", () => {
     mocks.selectTenant.mockResolvedValue(undefined);
     mocks.invalidateQueries.mockResolvedValue(undefined);
     mocks.invalidateRouter.mockResolvedValue(undefined);
+    mocks.startNotifications.mockResolvedValue(undefined);
+    mocks.stopNotifications.mockResolvedValue(undefined);
   });
 
   it("refreshes identity before selecting a newly available tenant", async () => {
@@ -79,5 +89,17 @@ describe("web tenant selection", () => {
     expect(order[0]).toBe("refresh");
     expect(order[1]).toBe("select");
     expect(order.slice(2)).toEqual(expect.arrayContaining(["router", "queries"]));
+  });
+
+  it("restarts notifications around a tenant switch", async () => {
+    const order: string[] = [];
+    mocks.stopNotifications.mockImplementation(async () => order.push("stop"));
+    mocks.selectTenant.mockImplementation(async () => order.push("select"));
+    mocks.startNotifications.mockImplementation(async () => order.push("start"));
+
+    const { selectTenant } = useTenant("venueOperator");
+    await selectTenant("existing-tenant");
+
+    expect(order).toEqual(["stop", "select", "start"]);
   });
 });

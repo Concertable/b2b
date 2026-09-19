@@ -79,6 +79,8 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     LegalName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    DisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    DisplayVersion = table.Column<long>(type: "bigint", nullable: false),
                     ContactEmail = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
                     CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),

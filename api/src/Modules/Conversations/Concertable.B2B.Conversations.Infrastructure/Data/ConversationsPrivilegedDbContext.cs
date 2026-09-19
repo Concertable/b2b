@@ -3,17 +3,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data;
 
-/// <summary>
-/// The Conversations module's platform-admin stance: the same anemic configuration as
-/// <see cref="ConversationsDbContext"/>, writable, with no tenant filter — a platform operator moderates
-/// threads they are not party to. The tenant-filtered counterpart is <see cref="ConversationsDbContext"/>.
-/// </summary>
 internal sealed class ConversationsPrivilegedDbContext(
     DbContextOptions<ConversationsPrivilegedDbContext> options,
     ConversationsConfigurationProvider provider)
     : PrivilegedDbContext(options, provider, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
+    public DbSet<ConversationAccessGrant> ConversationAccessGrants => Set<ConversationAccessGrant>();
+    public DbSet<ConversationCreationReceipt> ConversationCreationReceipts => Set<ConversationCreationReceipt>();
+    public DbSet<ConversationReadPosition> ConversationReadPositions => Set<ConversationReadPosition>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
-    public DbSet<ThreadEntity> Threads => Set<ThreadEntity>();
+    public DbSet<ConversationEntity> Conversations => Set<ConversationEntity>();
+    public DbSet<TenantDisplay> TenantDisplays => Set<TenantDisplay>();
 }

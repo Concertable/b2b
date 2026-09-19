@@ -17,6 +17,8 @@ public sealed class TenantEntityTests
 
         Assert.NotEqual(Guid.Empty, tenant.Id);
         Assert.Equal("Acme Ltd", tenant.LegalName);
+        Assert.Equal("Acme Ltd", tenant.DisplayName);
+        Assert.Equal(1, tenant.DisplayVersion);
         Assert.Equal("Acme Ltd", tenant.ContactEmail);
         Assert.Equal(userId, tenant.CreatedByUserId);
         Assert.Equal(now, tenant.CreatedAt);
@@ -40,10 +42,13 @@ public sealed class TenantEntityTests
             userId,
             DateTime.UtcNow);
 
-        var raised = Assert.IsType<TenantCreatedDomainEvent>(Assert.Single(tenant.DomainEvents));
+        var raised = Assert.Single(tenant.DomainEvents.OfType<TenantCreatedDomainEvent>());
         Assert.Equal(tenant.Id, raised.TenantId);
         Assert.Equal(userId, raised.CreatedByUserId);
         Assert.Equal("manager@acme.com", raised.Email);
+
+        var displayChanged = Assert.Single(tenant.DomainEvents.OfType<TenantDisplayChangedDomainEvent>());
+        Assert.Same(tenant, displayChanged.Tenant);
     }
 
     [Fact]
@@ -58,10 +63,13 @@ public sealed class TenantEntityTests
 
         tenant.Announce();
 
-        var raised = Assert.IsType<TenantCreatedDomainEvent>(Assert.Single(tenant.DomainEvents));
+        var raised = Assert.Single(tenant.DomainEvents.OfType<TenantCreatedDomainEvent>());
         Assert.Equal(tenant.Id, raised.TenantId);
         Assert.Equal(userId, raised.CreatedByUserId);
         Assert.Equal("manager@acme.com", raised.Email);
+
+        var displayChanged = Assert.Single(tenant.DomainEvents.OfType<TenantDisplayChangedDomainEvent>());
+        Assert.Same(tenant, displayChanged.Tenant);
     }
 
     [Fact]
@@ -83,12 +91,16 @@ public sealed class TenantEntityTests
             Guid.NewGuid(),
             DateTime.UtcNow);
         var taxCompliance = TaxComplianceValue();
+        tenant.ClearDomainEvents();
 
         var result = tenant.UpdateLegalDetails("Acme Ltd", taxCompliance);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("Acme Ltd", tenant.LegalName);
         Assert.Equal(taxCompliance, tenant.TaxCompliance);
+        Assert.Equal("Acme Ltd", tenant.EffectiveDisplayName);
+        Assert.Equal(2, tenant.DisplayVersion);
+        Assert.Single(tenant.DomainEvents.OfType<TenantDisplayChangedDomainEvent>());
     }
 
     [Fact]

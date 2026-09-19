@@ -3,24 +3,24 @@ using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Conversations.Domain.Entities;
 
-public sealed class ThreadAccessGrant : ResourceAccessGrant<ThreadAccessScope>
+public sealed class ConversationAccessGrant : ResourceAccessGrant<ConversationAccessScope>
 {
-    private ThreadAccessGrant() { }
+    private ConversationAccessGrant() { }
 
-    internal static ThreadAccessGrant Issue(
-        int threadId,
+    internal static ConversationAccessGrant Issue(
+        int conversationId,
         Guid tenantId,
         Guid? membershipId,
-        ThreadAccessScope scope,
+        ConversationAccessScope scope,
         Guid issuedByTenantId,
         Guid? issuedByUserId,
         ResourceGrantKind kind,
         DateTime at,
         DateTime? validUntil = null)
     {
-        var grant = new ThreadAccessGrant();
+        var grant = new ConversationAccessGrant();
         grant.Initialize(
-            threadId,
+            conversationId,
             tenantId,
             membershipId,
             scope,

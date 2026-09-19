@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Conversations.Contracts;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -16,7 +16,11 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
     private readonly SeedState seedData;
     private readonly TimeProvider timeProvider;
 
-    public ConversationsDevSeeder(ConversationsPrivilegedDbContext context, ConversationsDbContext migrations, SeedState seedData, TimeProvider timeProvider)
+    public ConversationsDevSeeder(
+        ConversationsPrivilegedDbContext context,
+        ConversationsDbContext migrations,
+        SeedState seedData,
+        TimeProvider timeProvider)
     {
         this.context = context;
         this.migrations = migrations;
@@ -26,40 +30,68 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
 
     public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
-    public async Task SeedAsync(CancellationToken ct = default) =>
+    public async Task SeedAsync(CancellationToken ct = default)
+    {
+        await SeedDisplaysAsync(ct);
         await context.Messages.SeedIfEmptyAsync(async () =>
         {
             var now = timeProvider.GetUtcNow().UtcDateTime;
             var artists = seedData.ArtistManagers;
             var venues = seedData.VenueManagers;
-
             if (artists.Count < 3 || venues.Count < 3)
                 return;
 
-            // Threads are saved first so the messages can reference real ids, exactly as sending does.
-            var threads = new List<ThreadEntity>(3);
+            var conversations = new List<ConversationEntity>(3);
             for (var pair = 0; pair < 3; pair++)
             {
-                threads.Add(ThreadEntity.Create(
-                    [TenantSeedIds.For(venues[pair].Id), TenantSeedIds.For(artists[pair].Id)],
+                var artistTenantId = TenantSeedIds.For(artists[pair].Id);
+                conversations.Add(ConversationEntity.Create(
+                    [TenantSeedIds.For(venues[pair].Id), artistTenantId],
+                    artistTenantId,
+                    artists[pair].Id,
                     now.AddDays(-7)));
             }
-
-            context.Threads.AddRange(threads);
+            context.Conversations.AddRange(conversations);
             await context.SaveChangesAsync(ct);
 
             context.Messages.AddRange(
-                FromArtist(threads[0].Id, artists[0].Id, "Hi — looking forward to the gig.", now.AddDays(-7)),
-                FromVenue(threads[0].Id, venues[0].Id, "Your application has been accepted!", now.AddDays(-6), MessageAction.ApplicationAccepted),
-                FromArtist(threads[1].Id, artists[1].Id, "Applied to your opportunity — thanks!", now.AddDays(-5), MessageAction.ApplicationReceived),
-                FromArtist(threads[2].Id, artists[2].Id, "Setup needs an extra mic.", now.AddDays(-2)));
-
+                Message(conversations[0], artists[0].Id, "Hi — looking forward to the gig.", now.AddDays(-7)),
+                Message(conversations[0], venues[0].Id, "Your application has been accepted!", now.AddDays(-6), MessageAction.ApplicationAccepted),
+                Message(conversations[1], artists[1].Id, "Applied to your opportunity — thanks!", now.AddDays(-5), MessageAction.ApplicationReceived),
+                Message(conversations[2], artists[2].Id, "Setup needs an extra mic.", now.AddDays(-2)));
             await context.SaveChangesAsync(ct);
         });
+    }
 
-    private static MessageEntity FromArtist(int threadId, Guid artistUserId, string content, DateTime sentDate, MessageAction? action = null) =>
-        MessageEntity.Create(threadId, TenantSeedIds.For(artistUserId), artistUserId, content, sentDate, action);
+    private MessageEntity Message(
+        ConversationEntity conversation,
+        Guid userId,
+        string content,
+        DateTime sentAt,
+        MessageAction? action = null)
+    {
+        var tenantId = TenantSeedIds.For(userId);
+        var membershipId = seedData.Memberships.Single(membership =>
+            membership.TenantId == tenantId && membership.UserId == userId).Id;
+        return MessageEntity.Create(
+            conversation.Id,
+            conversation.AllocateMessageSequence(),
+            Guid.NewGuid(),
+            ResourceCommandReceipt.HashPayload(content, action),
+            tenantId,
+            membershipId,
+            userId,
+            content,
+            sentAt,
+            action);
+    }
 
-    private static MessageEntity FromVenue(int threadId, Guid venueUserId, string content, DateTime sentDate, MessageAction? action = null) =>
-        MessageEntity.Create(threadId, TenantSeedIds.For(venueUserId), venueUserId, content, sentDate, action);
+    private async Task SeedDisplaysAsync(CancellationToken ct)
+    {
+        if (await context.TenantDisplays.AnyAsync(ct))
+            return;
+        context.TenantDisplays.AddRange(seedData.Tenants.Select(tenant =>
+            TenantDisplay.Create(tenant.Id, tenant.DisplayVersion, tenant.EffectiveDisplayName)));
+        await context.SaveChangesAsync(ct);
+    }
 }

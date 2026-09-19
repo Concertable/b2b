@@ -5,46 +5,53 @@ public sealed class MessageEntity : IIdEntity
     private MessageEntity() { }
 
     public int Id { get; private set; }
-    public int ThreadId { get; private set; }
+    public int ConversationId { get; private set; }
+    public long Sequence { get; private set; }
+    public Guid RequestId { get; private set; }
+    public string PayloadHash { get; private set; } = null!;
     public string Content { get; private set; } = null!;
     public Guid SenderTenantId { get; private set; }
+    public Guid SentByMembershipId { get; private set; }
     public Guid SentByUserId { get; private set; }
     public MessageAction? Action { get; private set; }
-    public DateTime SentDate { get; private set; }
+    public DateTime SentAt { get; private set; }
     public DateTime? HiddenAt { get; private set; }
     public Guid? HiddenByUserId { get; private set; }
     public DateTime? RestoredAt { get; private set; }
     public Guid? RestoredByUserId { get; private set; }
 
-    /// <summary>Hidden when the last moderation action was a hide. Both stamps are kept forever, so a
-    /// hide that was later appealed and reversed is still evidenced.</summary>
     public bool IsHidden => HiddenAt is not null && (RestoredAt is null || RestoredAt < HiddenAt);
 
     public static MessageEntity Create(
-        int threadId,
+        int conversationId,
+        long sequence,
+        Guid requestId,
+        string payloadHash,
         Guid senderTenantId,
+        Guid sentByMembershipId,
         Guid sentByUserId,
         string content,
-        DateTime sentDate,
+        DateTime sentAt,
         MessageAction? action = null) => new()
         {
-            ThreadId = threadId,
+            ConversationId = conversationId,
+            Sequence = sequence,
+            RequestId = requestId,
+            PayloadHash = payloadHash,
             SenderTenantId = senderTenantId,
+            SentByMembershipId = sentByMembershipId,
             SentByUserId = sentByUserId,
             Content = content,
-            SentDate = sentDate,
+            SentAt = sentAt,
             Action = action
         };
 
-    // Hiding is a visibility change, never a delete: the appeal right and any information request
-    // both need the original content.
     public void Hide(Guid byUserId, DateTime at)
     {
         HiddenAt = at;
         HiddenByUserId = byUserId;
     }
 
-    // Never clears the hide stamps — reversing a decision must not erase that it was made.
     public void Restore(Guid byUserId, DateTime at)
     {
         RestoredAt = at;

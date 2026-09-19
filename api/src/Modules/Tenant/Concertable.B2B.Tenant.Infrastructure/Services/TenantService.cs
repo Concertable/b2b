@@ -54,6 +54,11 @@ internal sealed class TenantService : ITenantService
         return memberships.Select(m => m.UserId).ToList();
     }
 
+    public Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default) =>
+        membershipRepository.GetSnapshotsByTenantIdsAsync(tenantIds, ct);
+
     public async Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default)
     {
         var memberships = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);

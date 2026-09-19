@@ -9,10 +9,11 @@ internal sealed class ConversationsConfigurationProvider : IEntityTypeConfigurat
     public void Configure(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new ContentReportEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new ConversationCreationReceiptConfiguration());
         modelBuilder.ApplyConfiguration(new MessageEntityConfiguration());
-        modelBuilder.ApplyConfiguration(new ThreadReadStateEntityConfiguration());
-        modelBuilder.ApplyConfiguration(new ParticipantProfileConfiguration());
-        modelBuilder.ApplyConfiguration(new ThreadEntityConfiguration());
-        modelBuilder.ApplyConfiguration(new ThreadAccessGrantConfiguration());
+        modelBuilder.ApplyConfiguration(new ConversationReadPositionConfiguration());
+        modelBuilder.ApplyConfiguration(new TenantDisplayConfiguration());
+        modelBuilder.ApplyConfiguration(new ConversationEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new ConversationAccessGrantConfiguration());
     }
 }

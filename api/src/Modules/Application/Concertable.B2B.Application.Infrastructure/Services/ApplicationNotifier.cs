@@ -4,11 +4,15 @@ using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.Notifications;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ApplicationNotifier : IApplicationNotifier
 {
+    private static readonly Guid ConversationRequestNamespace =
+        Guid.Parse("127b2cd6-b16f-53df-9853-158673bff66a");
     private readonly IApplicationPrivilegedRepository repository;
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
@@ -85,12 +89,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         string content,
         MessageAction action)
     {
-        await conversationsModule.SendAsync(
-            [application.VenueTenantId, application.ArtistTenantId],
-            application.ArtistTenantId,
-            currentUser.GetId(),
-            content,
-            action);
+        await NotifyAsync(application, content, action);
     }
 
     private async Task NotifyArtistAsync(
@@ -98,11 +97,25 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         string content,
         MessageAction action)
     {
-        await conversationsModule.SendAndNotifyAsync(
-            [application.VenueTenantId, application.ArtistTenantId],
-            application.VenueTenantId,
-            currentUser.GetId(),
+        await NotifyAsync(application, content, action);
+    }
+
+    private async Task NotifyAsync(
+        ApplicationEntity application,
+        string content,
+        MessageAction action)
+    {
+        var conversationId = await conversationsModule.CreateAsync(
+            RequestId(application.Id, "conversation"),
+            [application.VenueTenantId, application.ArtistTenantId]);
+        await conversationsModule.SendAsync(
+            conversationId,
+            RequestId(application.Id, action.ToString()),
             content,
             action);
     }
+
+    private static Guid RequestId(int applicationId, string operation) =>
+        new(MD5.HashData(Encoding.UTF8.GetBytes(
+            $"{ConversationRequestNamespace:N}:{applicationId}:{operation}")));
 }

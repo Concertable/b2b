@@ -1,6 +1,12 @@
+export interface ConversationParticipant {
+  tenantId: string;
+  displayName: string;
+}
+
 export interface MessagePreview {
   id: number;
-  otherPartyName: string;
+  conversationId: number;
+  participants: ConversationParticipant[];
   preview: string;
   at: string;
   unread: boolean;

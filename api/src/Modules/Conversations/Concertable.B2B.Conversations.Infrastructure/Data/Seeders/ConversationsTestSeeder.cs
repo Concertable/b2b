@@ -1,5 +1,5 @@
-﻿using Concertable.DataAccess;
-using Concertable.B2B.Conversations.Contracts;
+using Concertable.B2B.DataAccess.Application;
+using Concertable.DataAccess;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -17,7 +17,11 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
     private readonly SeedState seedData;
     private readonly TimeProvider timeProvider;
 
-    public ConversationsTestSeeder(ConversationsPrivilegedDbContext context, ConversationsDbContext migrations, SeedState seedData, TimeProvider timeProvider)
+    public ConversationsTestSeeder(
+        ConversationsPrivilegedDbContext context,
+        ConversationsDbContext migrations,
+        SeedState seedData,
+        TimeProvider timeProvider)
     {
         this.context = context;
         this.migrations = migrations;
@@ -29,6 +33,7 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
+        await SeedDisplaysAsync(ct);
         await context.Messages.SeedIfEmptyAsync(async () =>
         {
             var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -36,19 +41,52 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
             var artistUserId = seedData.ArtistManager1.Id;
             var venueTenantId = TenantSeedIds.For(venueUserId);
             var artistTenantId = TenantSeedIds.For(artistUserId);
-
-            // Saved first so the messages can reference a real thread id, exactly as sending does.
-            var thread = ThreadEntity.Create([venueTenantId, artistTenantId], now.AddDays(-1));
-            context.Threads.Add(thread);
+            var venueMembershipId = MembershipId(venueTenantId, venueUserId);
+            var artistMembershipId = MembershipId(artistTenantId, artistUserId);
+            var conversation = ConversationEntity.Create(
+                [venueTenantId, artistTenantId], artistTenantId, artistUserId, now.AddDays(-1));
+            context.Conversations.Add(conversation);
             await context.SaveChangesAsync(ct);
 
-            context.Messages.AddRange(
-                MessageEntity.Create(thread.Id, artistTenantId, artistUserId,
-                    "Test inbox message — artist to venue.", now.AddDays(-1), MessageAction.ApplicationReceived),
-                MessageEntity.Create(thread.Id, venueTenantId, venueUserId,
-                    "Test inbox message — venue to artist.", now, MessageAction.ApplicationAccepted));
-
+            var firstContent = "Test inbox message — artist to venue.";
+            var first = MessageEntity.Create(
+                conversation.Id,
+                conversation.AllocateMessageSequence(),
+                Guid.NewGuid(),
+                ResourceCommandReceipt.HashPayload(firstContent, MessageAction.ApplicationReceived),
+                artistTenantId,
+                artistMembershipId,
+                artistUserId,
+                firstContent,
+                now.AddDays(-1),
+                MessageAction.ApplicationReceived);
+            var secondContent = "Test inbox message — venue to artist.";
+            var second = MessageEntity.Create(
+                conversation.Id,
+                conversation.AllocateMessageSequence(),
+                Guid.NewGuid(),
+                ResourceCommandReceipt.HashPayload(secondContent, MessageAction.ApplicationAccepted),
+                venueTenantId,
+                venueMembershipId,
+                venueUserId,
+                secondContent,
+                now,
+                MessageAction.ApplicationAccepted);
+            context.Messages.AddRange(first, second);
             await context.SaveChangesAsync(ct);
         });
+    }
+
+    private Guid MembershipId(Guid tenantId, Guid userId) =>
+        seedData.Memberships.Single(membership =>
+            membership.TenantId == tenantId && membership.UserId == userId).Id;
+
+    private async Task SeedDisplaysAsync(CancellationToken ct)
+    {
+        if (await context.TenantDisplays.AnyAsync(ct))
+            return;
+        context.TenantDisplays.AddRange(seedData.Tenants.Select(tenant =>
+            TenantDisplay.Create(tenant.Id, tenant.DisplayVersion, tenant.EffectiveDisplayName)));
+        await context.SaveChangesAsync(ct);
     }
 }

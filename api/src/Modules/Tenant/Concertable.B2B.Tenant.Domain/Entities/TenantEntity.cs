@@ -9,6 +9,9 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     public Guid Id { get; private set; }
     public string LegalName { get; private set; } = null!;
+    public string DisplayName { get; private set; } = null!;
+    public long DisplayVersion { get; private set; }
+    public string EffectiveDisplayName => TaxCompliance is null ? DisplayName : LegalName;
 
     /// <summary>
     /// Where this business is reached. Held separately from <see cref="LegalName"/> because setup replaces the
@@ -52,12 +55,15 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
         {
             Id = id ?? Guid.NewGuid(),
             LegalName = email,
+            DisplayName = email,
+            DisplayVersion = 1,
             ContactEmail = email,
             CreatedByUserId = createdByUserId,
             CreatedAt = createdAt,
             AuthorityVersion = 1,
         };
         tenant.events.Raise(new TenantCreatedDomainEvent(tenant.Id, createdByUserId, email));
+        tenant.events.Raise(new TenantDisplayChangedDomainEvent(tenant));
         return tenant;
     }
 
@@ -67,7 +73,11 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// single provisioning trigger: <c>Announce</c> fires once the ASB subscriptions exist, where the seeder's
     /// own startup-time publish would race subscription creation and be dropped.
     /// </summary>
-    public void Announce() => events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, ContactEmail));
+    public void Announce()
+    {
+        events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, ContactEmail));
+        events.Raise(new TenantDisplayChangedDomainEvent(this));
+    }
 
     /// <summary>
     /// Tenant setup: replaces the provisioning placeholder legal name (the registration email)
@@ -88,9 +98,15 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
         if (errors.Count > 0)
             return new ValidationErrors(errors);
 
+        var previousDisplayName = EffectiveDisplayName;
         LegalName = legalName;
         TaxCompliance = taxCompliance;
         AuthorityVersion++;
+        if (EffectiveDisplayName != previousDisplayName)
+        {
+            DisplayVersion++;
+            events.Raise(new TenantDisplayChangedDomainEvent(this));
+        }
         return new Success();
     }
 

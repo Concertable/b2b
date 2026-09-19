@@ -1,27 +1,41 @@
+using Concertable.B2B.Conversations.Application.Requests;
+
 namespace Concertable.B2B.Conversations.Infrastructure;
 
 internal sealed class ConversationsModule : IConversationsModule
 {
-    private readonly IMessageService messageService;
+    private readonly IConversationService conversationService;
 
-    public ConversationsModule(IMessageService messageService)
+    public ConversationsModule(IConversationService conversationService)
     {
-        this.messageService = messageService;
+        this.conversationService = conversationService;
     }
 
-    public Task SendAsync(
+    public async Task<int> CreateAsync(
+        Guid requestId,
         IReadOnlyCollection<Guid> participantTenantIds,
-        Guid senderTenantId,
-        Guid sentByUserId,
-        string content,
-        MessageAction? action = null) =>
-        messageService.SendAsync(participantTenantIds, senderTenantId, sentByUserId, content, action);
+        CancellationToken ct = default)
+    {
+        var result = await conversationService.CreateAsync(
+            new CreateConversationRequest(requestId, [.. participantTenantIds]), ct);
+        return result.TryGetValue(out var conversation)
+            ? conversation.ConversationId
+            : throw new InvalidOperationException("The conversation could not be created.");
+    }
 
-    public Task SendAndNotifyAsync(
-        IReadOnlyCollection<Guid> participantTenantIds,
-        Guid senderTenantId,
-        Guid sentByUserId,
+    public async Task SendAsync(
+        int conversationId,
+        Guid requestId,
         string content,
-        MessageAction? action = null) =>
-        messageService.SendAndNotifyAsync(participantTenantIds, senderTenantId, sentByUserId, content, action);
+        MessageAction? action = null,
+        CancellationToken ct = default)
+    {
+        var result = await conversationService.SendAsync(
+            conversationId,
+            new SendMessageRequest(requestId, content),
+            action,
+            ct);
+        if (result.TryGetError(out _))
+            throw new InvalidOperationException("The conversation message could not be sent.");
+    }
 }

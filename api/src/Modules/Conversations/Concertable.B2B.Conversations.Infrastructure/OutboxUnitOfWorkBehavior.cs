@@ -6,13 +6,14 @@ using Concertable.Messaging.Infrastructure.Outbox;
 
 namespace Concertable.B2B.Conversations.Infrastructure;
 
-internal interface IOutboxUnitOfWorkBehavior : IOutboxUnitOfWorkBehavior<ConversationsDbContext>;
+internal interface IPrivilegedOutboxUnitOfWorkBehavior
+    : IOutboxUnitOfWorkBehavior<ConversationsPrivilegedDbContext>;
 
-internal sealed class OutboxUnitOfWorkBehavior(
-    ConversationsDbContext context,
+internal sealed class PrivilegedOutboxUnitOfWorkBehavior(
+    ConversationsPrivilegedDbContext context,
     CommandTransactionFactory transactions,
     CommandTransactionAccessor commandAccessor,
     IDbContextAccessor outboxAccessor)
-    : CommandOutboxUnitOfWorkBehavior<ConversationsDbContext>(
+    : CommandOutboxUnitOfWorkBehavior<ConversationsPrivilegedDbContext>(
         context, transactions, commandAccessor, outboxAccessor),
-        IOutboxUnitOfWorkBehavior;
+        IPrivilegedOutboxUnitOfWorkBehavior;

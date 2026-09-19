@@ -1,2 +1,2 @@
-export type { MessagePreview } from "./types";
-export { default as messageApi } from "./api/messageApi";
+export type { ConversationParticipant, MessagePreview } from "./types";
+export { default as conversationApi } from "./api/conversationApi";

@@ -38,17 +38,17 @@ its own purpose-named abstraction over the read context — `IConcertAvailabilit
 - **Unfiltered by design:** `Opportunity` (the applying artist reads the venue's opportunity to stamp the
   deal), `Deal` (the applying artist reads the venue's terms), `ConcertAvailability` (it answers only that a
   date is taken).
-- **Grant-reached:** `Application`, `Booking`, `Contract`, `Concert`, `Invoice`, `Thread`, `Message`,
-  `ThreadReadState`, `ContentReport`. Public concert browse is served by the read stance.
+- **Grant-reached:** `Application`, `Booking`, `Contract`, `Concert`, `Invoice`, `Conversation`,
+  `Message`, `ConversationReadPosition`, `ContentReport`. Public concert browse is served by the read stance.
 - **Single-owner filtered:** `Venue`, `Artist` — owner-private reads, with public browse split off to the
   read stance.
 
 ## The resource access grant families
 
-One per resource, each over its own facet vocabulary, all deriving from `ResourceAccessGrant<TFacet>`:
+One per resource, each over its own scope vocabulary, all deriving from `ResourceAccessGrant<TScope>`:
 `ApplicationAccessGrant` (Summary/Proposal), `BookingAccessGrant` (Summary/Operations),
 `ContractAccessGrant` (Terms), `ConcertAccessGrant` (Summary/Operations/Finance), `InvoiceAccessGrant`
-(Invoice), `ThreadAccessGrant` (Read/Participate). Each is a child collection of its own aggregate, so a
+(Invoice), `ConversationAccessGrant` (Read/SendMessages). Each is a child collection of its own aggregate, so a
 resource and its principals' access commit together.
 
 ## The `DealType` strategy families

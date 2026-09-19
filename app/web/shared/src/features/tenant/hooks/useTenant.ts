@@ -9,6 +9,7 @@ import {
   useTenant as useCoreTenant,
 } from "@concertable/b2b/features/tenant";
 import type { TenantBusinessProfile } from "@concertable/b2b/features/tenant/types";
+import { notificationConnection } from "@concertable/web/lib/signalr";
 
 export function useTenantIdentity() {
   return useB2bIdentityQuery();
@@ -33,8 +34,13 @@ export function useTenant(businessProfile: TenantBusinessProfile) {
           staleTime: 0,
         });
       }
-      await tenantSession.select(tenantId);
-      await Promise.all([router.invalidate(), queryClient.invalidateQueries()]);
+      await notificationConnection.stop();
+      try {
+        await tenantSession.select(tenantId);
+        await Promise.all([router.invalidate(), queryClient.invalidateQueries()]);
+      } finally {
+        await notificationConnection.start();
+      }
     },
     [identity, queryClient, router],
   );

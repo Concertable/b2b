@@ -12,6 +12,6 @@ internal sealed class ContentReportEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(r => r.Category).HasConversion<string>();
         builder.Property(r => r.Outcome).HasConversion<string>();
         builder.HasIndex(r => r.MessageId);
-        builder.HasIndex(r => new { r.ThreadId, r.ReporterTenantId });
+        builder.HasIndex(r => new { r.ConversationId, r.ReporterTenantId, r.ReporterUserId });
     }
 }

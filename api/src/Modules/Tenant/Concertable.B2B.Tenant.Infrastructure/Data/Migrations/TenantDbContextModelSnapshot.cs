@@ -114,6 +114,14 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<long>("DisplayVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("LegalName")
                         .IsRequired()
                         .HasMaxLength(200)

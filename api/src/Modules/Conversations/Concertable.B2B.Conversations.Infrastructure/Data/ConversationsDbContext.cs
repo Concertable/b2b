@@ -16,50 +16,48 @@ internal sealed class ConversationsDbContext(
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
-    public DbSet<ThreadEntity> Threads => Set<ThreadEntity>();
-    public DbSet<ThreadAccessGrant> ThreadAccessGrants => Set<ThreadAccessGrant>();
-    public DbSet<ThreadReadStateEntity> ThreadReadStates => Set<ThreadReadStateEntity>();
-    public DbSet<ParticipantProfile> ParticipantProfiles => Set<ParticipantProfile>();
+    public DbSet<ConversationEntity> Conversations => Set<ConversationEntity>();
+    public DbSet<ConversationAccessGrant> ConversationAccessGrants => Set<ConversationAccessGrant>();
+    public DbSet<ConversationReadPosition> ConversationReadPositions => Set<ConversationReadPosition>();
+    public DbSet<TenantDisplay> TenantDisplays => Set<TenantDisplay>();
 
     public ResourceAudience ReadAudience => AudienceFor(TenantPermission.MessagesRead);
     public ResourceAudience SendAudience => AudienceFor(TenantPermission.MessagesSend);
 
-    /* Messages and read state are reached through their conversation's Read grant; a report additionally
-       requires that the reading tenant is the one that raised it, because being in a conversation is not
-       licence to read who reported whom or what a moderator concluded. */
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ThreadAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCurrentMember<ThreadAccessGrant, ThreadAccessScope>(this)
+        modelBuilder.Entity<ConversationAccessGrant>().HasQueryFilter(TenantFilters.Key,
+            ResourceAccessExpressions.LiveForCurrentMember<ConversationAccessGrant, ConversationAccessScope>(this)
                 .And(grant =>
-                    grant.Scope == ThreadAccessScope.Read
+                    grant.Scope == ConversationAccessScope.Read
                         && (ReadAudience == ResourceAudience.TenantResources
                                 && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
                             || ReadAudience == ResourceAudience.AssignedResources
                                 && grant.MembershipId == ActiveMembershipId)
-                    || grant.Scope == ThreadAccessScope.SendMessages
+                    || grant.Scope == ConversationAccessScope.SendMessages
                         && (SendAudience == ResourceAudience.TenantResources
                                 && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
                             || SendAudience == ResourceAudience.AssignedResources
                                 && grant.MembershipId == ActiveMembershipId)));
 
-        modelBuilder.Entity<ThreadEntity>().HasQueryFilter(TenantFilters.Key, thread =>
-            ThreadAccessGrants.Any(grant =>
-                grant.ResourceId == thread.Id && grant.Scope == ThreadAccessScope.Read));
+        modelBuilder.Entity<ConversationEntity>().HasQueryFilter(TenantFilters.Key, conversation =>
+            ConversationAccessGrants.Any(grant =>
+                grant.ResourceId == conversation.Id && grant.Scope == ConversationAccessScope.Read));
 
         modelBuilder.Entity<MessageEntity>().HasQueryFilter(TenantFilters.Key, message =>
-            ThreadAccessGrants.Any(grant =>
-                grant.ResourceId == message.ThreadId && grant.Scope == ThreadAccessScope.Read));
+            ConversationAccessGrants.Any(grant =>
+                grant.ResourceId == message.ConversationId && grant.Scope == ConversationAccessScope.Read));
 
-        modelBuilder.Entity<ThreadReadStateEntity>().HasQueryFilter(TenantFilters.Key, state =>
+        modelBuilder.Entity<ConversationReadPosition>().HasQueryFilter(TenantFilters.Key, state =>
             state.TenantId == ActiveTenantId
-            && state.UserId == ActiveUserId
-            && ThreadAccessGrants.Any(grant =>
-                grant.ResourceId == state.ThreadId && grant.Scope == ThreadAccessScope.Read));
+            && state.MembershipId == ActiveMembershipId
+            && ConversationAccessGrants.Any(grant =>
+                grant.ResourceId == state.ConversationId && grant.Scope == ConversationAccessScope.Read));
 
         modelBuilder.Entity<ContentReportEntity>().HasQueryFilter(TenantFilters.Key, report =>
             report.ReporterTenantId == ActiveTenantId
-            && ThreadAccessGrants.Any(grant =>
-                grant.ResourceId == report.ThreadId && grant.Scope == ThreadAccessScope.Read));
+            && report.ReporterUserId == ActiveUserId
+            && ConversationAccessGrants.Any(grant =>
+                grant.ResourceId == report.ConversationId && grant.Scope == ConversationAccessScope.Read));
     }
 }

@@ -5,6 +5,9 @@ public interface ITenantModule
     Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
+    Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
 
     Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default);
     Task<Option<BusinessFacts>> GetBusinessFactsAsync(Guid tenantId, CancellationToken ct = default);

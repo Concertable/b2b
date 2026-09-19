@@ -136,6 +136,59 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         return new TenantCommandFacts(actor, targetTenantExists, targetMembership);
     }
 
+    public async Task<TenantAudienceFacts?> ResolveAudienceAsync(
+        MembershipSnapshot expectedActor,
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Tenant audience facts require an active command transaction.");
+        await transaction.EnlistAsync(context, ct);
+
+        var distinctTenantIds = tenantIds.Distinct().Order().ToList();
+        foreach (var tenantId in distinctTenantIds)
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                 SELECT 1
+                 FROM tenant.Tenants WITH (HOLDLOCK)
+                 WHERE Id = {tenantId}
+                 """,
+                ct);
+        }
+
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM tenant.Memberships WITH (HOLDLOCK)
+             WHERE Id = {expectedActor.MembershipId}
+             """,
+            ct);
+
+        var actor = await context.Memberships
+            .Where(membership =>
+                membership.Id == expectedActor.MembershipId
+                && membership.TenantId == expectedActor.TenantId
+                && membership.UserId == expectedActor.UserId)
+            .Select(membership => new MembershipSnapshot(
+                membership.Id,
+                membership.TenantId,
+                membership.UserId,
+                membership.Role,
+                membership.PermissionVersion))
+            .SingleOrDefaultAsync(ct);
+        if (actor is null
+            || actor.Role != expectedActor.Role
+            || actor.PermissionVersion != expectedActor.PermissionVersion)
+            return null;
+
+        var existingTenantIds = await context.Tenants
+            .Where(tenant => distinctTenantIds.Contains(tenant.Id))
+            .Select(tenant => tenant.Id)
+            .ToHashSetAsync(ct);
+        return new TenantAudienceFacts(actor, existingTenantIds);
+    }
+
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
         Guid userId, Guid tenantId, CancellationToken cancellationToken = default) =>
         context.Memberships
@@ -164,6 +217,19 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
 
     public async Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Memberships.Where(m => m.TenantId == tenantId).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default) =>
+        await context.Memberships
+            .Where(membership => tenantIds.Contains(membership.TenantId))
+            .Select(membership => new MembershipSnapshot(
+                membership.Id,
+                membership.TenantId,
+                membership.UserId,
+                membership.Role,
+                membership.PermissionVersion))
+            .ToListAsync(ct);
 
     public Task<TenantMembershipEntity?> FindMembershipAsync(Guid tenantId, Guid userId, CancellationToken ct = default) =>
         context.Memberships.FirstOrDefaultAsync(m => m.TenantId == tenantId && m.UserId == userId, ct);

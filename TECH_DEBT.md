@@ -364,7 +364,7 @@ report-content work it was applied in exactly one place (`VenueController.Approv
 As an *authorization axis* this is correct and sufficient — it answers "is this caller a platform
 operator?", which is precisely what those endpoints ask, and it is deliberately not tenant RBAC
 (a `TenantRole` is scoped to one tenant and must never let a venue Owner moderate someone else's
-thread; an integration test asserts a tenant Owner gets 403 on every moderation endpoint). As an
+conversation; an integration test asserts a tenant Owner gets 403 on every moderation endpoint). As an
 *operations surface* it is not sufficient:
 
 - **No admin SPA**, so moderation is Swagger/curl-driven at launch.
@@ -380,28 +380,17 @@ to drive moderation — at which point the Swagger/curl workaround and this entr
 
 ---
 
-### Conversations has no thread aggregate, no per-thread read, and no retention policy
+### Conversations has no retention policy
 
-A "thread" in Conversations is implicit — it is whatever shares a `(VenueTenantId, ArtistTenantId)`
-pair. There is a `MessageEntity` and a `ThreadReadStateEntity` but no `ThreadEntity`, and consequently:
-
-- **No per-thread view exists.** `GetByTenantIdAsync` returns one flat inbox ordered by `SentDate`
-  across every counterparty. That is right for the notification bell it currently feeds and wrong the
-  moment anyone wants an actual conversation UI.
-- **`AdvanceReadPointersAsync` is O(threads) per call** — it loads every distinct pair, loads every
-  pointer for the member, then loops in memory. Invisible at ten threads, not at a thousand.
-- **Messages accumulate forever.** Nothing prunes them, and the Online Safety Act work deliberately
-  hides rather than deletes, so hidden content accumulates too.
+Messages accumulate forever. Nothing prunes them, and the Online Safety Act work deliberately hides
+rather than deletes, so hidden content accumulates too.
 
 The storage choice itself is not the debt — a relational store is correct for booking correspondence
 that must be transactional with the booking flow and queryable for a regulator, and the specialised
-stores chat products use would trade away exactly the properties this needs. The debt is the missing
-aggregate and the missing lifecycle.
+stores chat products use would trade away exactly the properties this needs.
 
-**Resolves when:** a thread aggregate exists with a per-thread paged read, the read-pointer advance is
-a set-based update rather than a per-pair loop, and a retention policy is implemented — the last of
-which is gated on the solicitor-owned retention artifact in the OSA compliance pack, so it cannot be
-invented here.
+**Resolves when:** a retention policy is implemented. Its duration remains gated on the solicitor-owned
+retention artifact in the OSA compliance pack, so it cannot be invented here.
 
 ---
 
@@ -413,30 +402,14 @@ attaches to **user-generated content**, and this platform has more of it: venue 
 concert descriptions, uploaded images, and customer reviews. The Customer/marketplace OSA scope is
 explicitly deferred with the marketplace, which is when those become in-scope.
 
-The entity will not stretch to cover them. It carries a typed `MessageId` and a `ThreadId`, and is
-reached through the thread's access grants. A report against a venue profile belongs to no thread, so
+The entity will not stretch to cover them. It carries a typed `MessageId` and a `ConversationId`, and is
+reached through the conversation's access grants. A report against a venue profile belongs to no conversation, so
 neither the foreign key nor the access shape fits.
 
 **Resolves when:** a second reportable content type is actually required, at which point choose
 deliberately between a polymorphic `(ContentType, ContentId)` report with per-type tenancy resolution,
 or a per-module report entity behind a shared triage view. Do not pre-build either before the second
 case exists.
-
-### `MessageRepository` owns `ThreadReadStateEntity`, which has no repository of its own
-
-`Concertable.B2B.Conversations.Infrastructure/Repositories/MessageRepository.cs:27`, `:46`, `:55` join,
-read and `AddAsync` `context.ThreadReadStates`. That is the anti-pattern
-the `persistence` skill names in its own heading - "never fold a
-satellite entity into another entity's repository" - and the doc cites Conversations as the *precedent*
-for the rule it breaks. `Concert/ConcertImageEntity` is the same shape (a `DbSet` with no repository).
-
-Either give each its own repository, or state the exception the rule needs for an owned child collection
-that is never queried independently. Do not leave the rule absolute while the code contradicts it.
-
-Resolves when: `grep -n "ThreadReadStates" MessageRepository.cs` returns nothing, or the rule in
-`CODE_PATTERNS.md` states the child-collection exception explicitly.
-
----
 
 ### `app/web/shared` still hands B2B a Stripe payment-method id
 
