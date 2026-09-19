@@ -113,17 +113,31 @@ Tenant deletion removes owned activity rows first.
 - Deleted `ApplicationSide`, generic response variants and the unrelated-tenant venue fallback. One action
   response computes each link from the corresponding principal and permission policy.
 
-## Next steps
+## Next Steps
 
+Transfer: Refactor the authorization permission vocabulary into a behavioral value type before continuing P1.
+Transfer to: A fresh Codex context in the current worktree.
+Resume stage: P1 4.1 authorization DDD polish.
+Resume when: The new context has read this plan and ledger and inspected the current Authorization contracts.
 Continue in this order. Each slice ends with a solution build, unit/architecture gate and local commit.
 
-1. **4.7 — Conversation.** Complete `Thread` → `Conversation`, address create/send by `ConversationId`, add
+1. **4.1 — DDD permission value.** Replace the static string-only `TenantPermission` vocabulary with a closed
+   `readonly record struct TenantPermission` whose private construction, declared instances, `Value`,
+   `TryParse`, equality and formatting own permission identity. Convert `IPermissionCatalog`,
+   `IMembershipContext`, `PermissionRequirement`, `PermissionPolicy` and every domain/application caller to
+   that type; the catalog owns typed role grants and audiences. Keep strings only at serialization and ASP.NET
+   policy-name edges. Because attribute arguments cannot be record-struct instances, co-locate compile-time
+   `*Name` constants with their typed instances for `[HasPermission]`; the attribute must parse immediately,
+   reject undeclared names and expose no string-based authorization API downstream. Delete obsolete string
+   overloads/helpers rather than retaining compatibility. Add value parsing/closure tests, update catalog and
+   policy tests, run Authorization unit tests, architecture tests and the solution build, then commit locally.
+2. **4.7 — Conversation.** Complete `Thread` → `Conversation`, address create/send by `ConversationId`, add
    request receipts, immutable initial audience, message sequence, monotonic read position, Tenant display
    projections and safe delivery.
-2. **4.8/4.9 — neutral lifecycle and clients.** Finish `TenantBusinessActivity`, neutral onboarding,
+3. **4.8/4.9 — neutral lifecycle and clients.** Finish `TenantBusinessActivity`, neutral onboarding,
    contact/activity administration, invitation role policy, deletion and admin verification contracts, then
    implement the real Business web/mobile journeys and tenant-switch isolation.
-3. **4.10 — qualification.** Replace textual resource-filter tests with model/provider coverage and run every
+4. **4.10 — qualification.** Replace textual resource-filter tests with model/provider coverage and run every
    module integration tier, provider race/revocation cases, workers, contract/invoice access, external summary
    denial, browser and native evidence. Run the canonical review over the completed P1 candidate.
 
