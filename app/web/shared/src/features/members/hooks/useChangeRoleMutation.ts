@@ -14,6 +14,6 @@ export function useChangeRoleMutation() {
       request: ChangeMemberRoleRequest;
     }) => membersApi.changeRole(userId, request),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: membersQueryKey }),
+      queryClient.invalidateQueries({ queryKey: membersQueryKey() }),
   });
 }

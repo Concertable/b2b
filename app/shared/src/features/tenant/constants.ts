@@ -10,7 +10,7 @@ export const TENANT_ROLES = [
   "restrictedParticipant",
 ] as const;
 
-export const TENANT_BUSINESS_PROFILES = [
+export const TENANT_BUSINESS_ACTIVITIES = [
   "venueOperator",
   "artist",
   "promoter",

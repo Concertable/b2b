@@ -1,32 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { currentPrivateQueryKey } from "@concertable/b2b/features/tenant";
 import type { ESignatureRequest } from "@concertable/shared/features/concerts/types";
 import applicationApi from "../api/applicationApi";
 import type { ApplicationProposal } from "../types";
 
 export function useApplicationsByOpportunityQuery(opportunityId: number) {
   return useQuery({
-    queryKey: ["applications", "opportunity", opportunityId],
+    queryKey: currentPrivateQueryKey("applications", "opportunity", opportunityId),
     queryFn: () => applicationApi.getApplicationsByOpportunityId(opportunityId),
   });
 }
 
 export function useApplicationQuery(applicationId: number) {
   return useQuery({
-    queryKey: ["applications", applicationId],
+    queryKey: currentPrivateQueryKey("applications", applicationId),
     queryFn: () => applicationApi.getProposal(applicationId),
   });
 }
 
 export function useAcceptCheckoutQuery(applicationId: number) {
   return useQuery({
-    queryKey: ["applications", applicationId, "checkout"],
+    queryKey: currentPrivateQueryKey("applications", applicationId, "checkout"),
     queryFn: () => applicationApi.acceptCheckout(applicationId),
   });
 }
 
 export function useApplyCheckoutQuery(opportunityId: number) {
   return useQuery({
-    queryKey: ["opportunities", opportunityId, "apply-checkout"],
+    queryKey: currentPrivateQueryKey("opportunities", opportunityId, "apply-checkout"),
     queryFn: () => applicationApi.applyCheckout(opportunityId),
   });
 }
@@ -44,12 +45,12 @@ export function useAcceptApplicationMutation(opportunityId: number) {
     }) => applicationApi.acceptApplication(applicationId, eSignature),
     onSuccess: (_data, { applicationId }) => {
       queryClient.setQueryData<ApplicationProposal>(
-        ["applications", applicationId],
+        currentPrivateQueryKey("applications", applicationId),
         (application) =>
           application ? { ...application, status: "accepted" } : application,
       );
       queryClient.invalidateQueries({
-        queryKey: ["applications", "opportunity", opportunityId],
+        queryKey: currentPrivateQueryKey("applications", "opportunity", opportunityId),
       });
     },
   });
@@ -57,14 +58,14 @@ export function useAcceptApplicationMutation(opportunityId: number) {
 
 export function usePendingApplicationsQuery() {
   return useQuery({
-    queryKey: ["applications", "artist", "pending"],
+    queryKey: currentPrivateQueryKey("applications", "artist", "pending"),
     queryFn: () => applicationApi.getPendingForArtist(),
   });
 }
 
 export function useRecentDeniedApplicationsQuery() {
   return useQuery({
-    queryKey: ["applications", "artist", "recently-denied"],
+    queryKey: currentPrivateQueryKey("applications", "artist", "recently-denied"),
     queryFn: () => applicationApi.getRecentDeniedForArtist(),
   });
 }
@@ -76,7 +77,9 @@ export function useWithdrawApplicationMutation() {
     mutationFn: (applicationId: number) =>
       applicationApi.withdrawApplication(applicationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({
+        queryKey: currentPrivateQueryKey("applications"),
+      });
     },
   });
 }
@@ -89,7 +92,7 @@ export function useRejectApplicationMutation(opportunityId: number) {
       applicationApi.rejectApplication(applicationId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["applications", "opportunity", opportunityId],
+        queryKey: currentPrivateQueryKey("applications", "opportunity", opportunityId),
       });
     },
   });
@@ -103,7 +106,7 @@ export function useCancelApplicationMutation(opportunityId: number) {
       applicationApi.cancelApplication(applicationId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["applications", "opportunity", opportunityId],
+        queryKey: currentPrivateQueryKey("applications", "opportunity", opportunityId),
       });
     },
   });

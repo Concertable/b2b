@@ -18,9 +18,11 @@ export type ArtistTabParamList = {
 };
 
 export type BusinessTabParamList = {
-  Home: undefined;
+  Operations: undefined;
+  Venue: NavigatorScreenParams<MyVenueStackParamList>;
+  Artist: NavigatorScreenParams<MyArtistStackParamList>;
   Messages: undefined;
-  ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
+  Organization: undefined;
 };
 
 export type VenueTabParamList = {

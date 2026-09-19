@@ -7,7 +7,7 @@ import {
   identityApi,
   tenantSession,
 } from "@concertable/b2b/features/tenant";
-import type { TenantBusinessProfile } from "@concertable/b2b/features/tenant/types";
+import type { TenantBusinessActivity } from "@concertable/b2b/features/tenant/types";
 import { tenantSessionReady } from "./webTenantSession";
 
 function requireB2bAuth(): Promise<void> {
@@ -23,10 +23,10 @@ export function requireLocalB2bAuth({
 }
 
 export async function resolveTenantRoute(
-  businessProfile: TenantBusinessProfile,
+  businessActivity?: TenantBusinessActivity,
 ): Promise<{ selectionRequired: boolean }> {
   await Promise.all([requireB2bAuth(), tenantSessionReady]);
-  const resolution = await tenantSession.resolve(businessProfile);
+  const resolution = await tenantSession.resolve(businessActivity);
   if (resolution.memberships.length === 0) return redirectToBusiness();
   return { selectionRequired: resolution.selectionRequired };
 }

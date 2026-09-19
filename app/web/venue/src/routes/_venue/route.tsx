@@ -25,14 +25,14 @@ const profileItems: ProfileMenuItem[] = [
 ];
 
 function VenueLayout() {
-  useVenueNotifications();
-  const { selectionRequired } = useTenant("venueOperator");
-  if (selectionRequired) return <TenantChooser businessProfile="venueOperator" />;
+  const { selectionRequired, session } = useTenant("venueOperator");
+  useVenueNotifications(session);
+  if (selectionRequired) return <TenantChooser businessActivity="venueOperator" />;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher businessProfile="venueOperator" />}
+      headerSlot={<TenantSwitcher businessActivity="venueOperator" />}
       messagingSlot={<Mailbox />}
     />
   );

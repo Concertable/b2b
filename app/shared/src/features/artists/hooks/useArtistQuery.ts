@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { currentPrivateQueryKey } from "../../tenant/queryKeys";
 import artistApi from "../api/artistApi";
 
 export const artistKeys = {
-  all: () => ["artist"] as const,
-  my: () => ["artist", "my"] as const,
+  all: () => currentPrivateQueryKey("artist"),
+  my: () => currentPrivateQueryKey("artist", "my"),
   myForTenant: (tenantId: string | undefined) =>
-    ["artist", "my", tenantId] as const,
+    currentPrivateQueryKey("artist", "my", tenantId),
   byId: (id: number) => ["artist", id] as const,
 };
 

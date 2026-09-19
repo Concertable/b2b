@@ -4,7 +4,7 @@ export type {
   Membership,
   TenantPermission,
   TenantRole,
-  TenantBusinessProfile,
+  TenantBusinessActivity,
 } from "@concertable/b2b/features/tenant/types";
 export { TENANT_ROLE_LABELS } from "./constants";
 export { useTenant, useTenantIdentity } from "./hooks/useTenant";

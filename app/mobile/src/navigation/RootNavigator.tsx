@@ -3,10 +3,12 @@ import { NavigationContainer } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { ActivityIndicator, View } from "react-native";
 import {
+  isPrivateQuery,
+  settlePendingMutations,
+  tenantSession,
   useB2bIdentityQuery,
   useTenant,
 } from "@concertable/b2b/features/tenant";
-import type { TenantBusinessProfile } from "@concertable/b2b/features/tenant/types";
 import { useAuthInit } from "@concertable/mobile/auth/useAuthInit";
 import { useCurrentUser } from "@concertable/mobile/auth/useCurrentUser";
 import { Text } from "@concertable/mobile/components/ui/text";
@@ -17,8 +19,7 @@ import { TenantChooser } from "../features/tenant/components/TenantChooser";
 import { TenantSwitcher } from "../features/tenant/components/TenantSwitcher";
 import { initializeTenantSession } from "../lib/b2bClient";
 import { ArtistTabs } from "./ArtistTabs";
-import { BusinessTabs } from "./BusinessTabs";
-import { VenueTabs } from "./VenueTabs";
+import { BusinessNavigator } from "./BusinessNavigator";
 
 function LoadingScreen() {
   return (
@@ -26,21 +27,6 @@ function LoadingScreen() {
       <ActivityIndicator size="large" />
     </View>
   );
-}
-
-/**
- * Tabs follow what the business has activated, and a business that has activated nothing still gets the
- * neutral surface. A business holding both profiles sees the venue tabs; choosing between them per session
- * is its own piece of work.
- */
-function TabsForProfiles({
-  businessProfiles,
-}: {
-  businessProfiles: ReadonlyArray<TenantBusinessProfile>;
-}) {
-  if (businessProfiles.includes("venueOperator")) return <VenueTabs />;
-  if (businessProfiles.includes("artist")) return <ArtistTabs />;
-  return <BusinessTabs />;
 }
 
 function AuthenticatedNavigator() {
@@ -52,13 +38,18 @@ function AuthenticatedNavigator() {
     async (tenantId: string) => {
       setSelectionError(false);
       try {
-        await tenant.selectTenant(tenantId);
-        await queryClient.invalidateQueries();
+        await tenantSession.switchTo(tenantId, {
+          prepare: async () => {
+            await queryClient.cancelQueries({ predicate: isPrivateQuery });
+            await settlePendingMutations(queryClient);
+            queryClient.removeQueries({ predicate: isPrivateQuery });
+          },
+        });
       } catch {
         setSelectionError(true);
       }
     },
-    [queryClient, tenant.selectTenant],
+    [queryClient],
   );
 
   if (identityQuery.isLoading) return <LoadingScreen />;
@@ -76,13 +67,17 @@ function AuthenticatedNavigator() {
     return (
       <View className="flex-1 items-center justify-center bg-background px-6">
         <Text className="text-center text-muted-foreground">
-          You do not have an active artist or venue membership.
+          You do not have an active organization membership.
         </Text>
       </View>
     );
   }
 
-  if (tenant.selectionRequired || tenant.activeMembership === undefined) {
+  if (
+    tenant.isSelectionPending ||
+    tenant.selectionRequired ||
+    tenant.activeMembership === undefined
+  ) {
     return (
       <TenantChooser
         memberships={tenant.memberships}
@@ -107,8 +102,9 @@ function AuthenticatedNavigator() {
       ) : null}
       <ActiveTenantProvider tenantId={tenant.activeMembership.tenantId}>
         <NavigationContainer key={tenant.activeMembership.tenantId}>
-          <TabsForProfiles
-            businessProfiles={tenant.activeMembership.businessProfiles}
+          <BusinessNavigator
+            activities={tenant.activeMembership.businessActivities}
+            permissions={tenant.permissions}
           />
         </NavigationContainer>
       </ActiveTenantProvider>

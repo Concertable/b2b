@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  filterMembershipsByProfile,
+  filterMembershipsByActivity,
   hasPendingTenantChoice,
   resolveActiveMembership,
   resolveTenant,
@@ -9,28 +9,37 @@ import type { Membership } from "./types";
 
 const memberships: ReadonlyArray<Membership> = [
   {
+    membershipId: "membership-venue-one",
     tenantId: "venue-one",
     legalName: "Venue One",
-    businessProfiles: ["venueOperator"],
+    businessActivities: ["venueOperator"],
     role: "owner",
+    permissionVersion: 1,
+    permissions: ["tenant.settings.edit"],
   },
   {
+    membershipId: "membership-venue-two",
     tenantId: "venue-two",
     legalName: "Venue Two",
-    businessProfiles: ["venueOperator"],
+    businessActivities: ["venueOperator"],
     role: "manager",
+    permissionVersion: 2,
+    permissions: ["operations.view"],
   },
   {
+    membershipId: "membership-artist-one",
     tenantId: "artist-one",
     legalName: "Artist One",
-    businessProfiles: ["artist"],
+    businessActivities: ["artist"],
     role: "staff",
+    permissionVersion: 3,
+    permissions: ["operations.view"],
   },
 ];
 
 describe("tenant membership resolution", () => {
-  it("filters memberships by tenant type", () => {
-    expect(filterMembershipsByProfile(memberships, "venueOperator")).toEqual(
+  it("filters memberships by active business activity", () => {
+    expect(filterMembershipsByActivity(memberships, "venueOperator")).toEqual(
       memberships.slice(0, 2),
     );
   });

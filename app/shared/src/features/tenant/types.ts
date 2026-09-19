@@ -1,8 +1,8 @@
 import type { User } from "@concertable/shared/features/auth/types";
-import type { TENANT_BUSINESS_PROFILES, TENANT_ROLES } from "./constants";
+import type { TENANT_BUSINESS_ACTIVITIES, TENANT_ROLES } from "./constants";
 
 /** A kind of marketplace work a business has activated. A business holds zero or more. */
-export type TenantBusinessProfile = (typeof TENANT_BUSINESS_PROFILES)[number];
+export type TenantBusinessActivity = (typeof TENANT_BUSINESS_ACTIVITIES)[number];
 export type TenantRole = (typeof TENANT_ROLES)[number];
 
 export type TenantPermission =
@@ -27,11 +27,25 @@ export type TenantPermission =
   | "resources.share";
 
 export interface Membership {
+  readonly membershipId: string;
   readonly tenantId: string;
   readonly legalName: string;
   readonly role: TenantRole;
-  readonly businessProfiles: ReadonlyArray<TenantBusinessProfile>;
+  readonly permissionVersion: number;
+  readonly businessActivities: ReadonlyArray<TenantBusinessActivity>;
   readonly permissions: ReadonlyArray<TenantPermission>;
+}
+
+export interface TenantSession {
+  readonly generation: number;
+  readonly tenantId: string;
+  readonly membershipId: string;
+  readonly permissionVersion: number;
+}
+
+export interface TenantSwitchBoundary {
+  readonly prepare: (previous: TenantSession | undefined) => Promise<void> | void;
+  readonly activate?: (session: TenantSession) => Promise<void> | void;
 }
 
 export interface B2bIdentity extends User {

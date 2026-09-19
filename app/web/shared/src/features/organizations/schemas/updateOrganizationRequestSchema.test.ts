@@ -3,6 +3,8 @@ import { updateOrganizationRequestSchema } from "./updateOrganizationRequestSche
 
 const validForm = {
   legalName: " Concertable Ltd ",
+  contactEmail: "contact@concertable.test",
+  expectedVersion: 4,
   vatRegistered: false,
   vatNumber: " ",
   sellerIdentifier: " GB-123 ",
@@ -19,6 +21,8 @@ describe("updateOrganizationRequestSchema", () => {
   it("normalizes form values into the nested request", () => {
     expect(updateOrganizationRequestSchema.parse(validForm)).toEqual({
       legalName: "Concertable Ltd",
+      contactEmail: "contact@concertable.test",
+      expectedVersion: 4,
       taxCompliance: {
         vatNumber: undefined,
         sellerIdentifier: "GB-123",

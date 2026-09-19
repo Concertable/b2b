@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { currentPrivateQueryKey } from "@concertable/b2b/features/tenant";
 import myConcertApi from "../api/myConcertApi";
 
 export const myConcertKeys = {
-  all: ["concert", "private"] as const,
-  operations: (id: number) => [...myConcertKeys.all, id, "operations"] as const,
-  finance: (id: number) => [...myConcertKeys.all, id, "finance"] as const,
+  all: () => currentPrivateQueryKey("concert"),
+  operations: (id: number) => currentPrivateQueryKey("concert", id, "operations"),
+  finance: (id: number) => currentPrivateQueryKey("concert", id, "finance"),
 };
 
 export function useMyConcertQuery(id: number) {

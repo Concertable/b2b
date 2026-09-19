@@ -3,20 +3,25 @@ import { useTenant } from "./useTenant";
 
 const mocks = vi.hoisted(() => ({
   fetchQuery: vi.fn(),
+  cancelQueries: vi.fn(),
   getMe: vi.fn(),
   identity: {
     memberships: [
       {
+        membershipId: "existing-membership",
         tenantId: "existing-tenant",
         legalName: "Existing Venue",
-        businessProfiles: ["venueOperator"] as const,
+        businessActivities: ["venueOperator"] as const,
         role: "staff" as const,
+        permissionVersion: 1,
+        permissions: ["operations.view"] as const,
       },
     ],
   },
-  invalidateQueries: vi.fn(),
+  removeQueries: vi.fn(),
   invalidateRouter: vi.fn(),
-  selectTenant: vi.fn(),
+  settlePendingMutations: vi.fn(),
+  switchTenant: vi.fn(),
   startNotifications: vi.fn(),
   stopNotifications: vi.fn(),
 }));
@@ -27,7 +32,8 @@ vi.mock("react", () => ({
 vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({
     fetchQuery: mocks.fetchQuery,
-    invalidateQueries: mocks.invalidateQueries,
+    cancelQueries: mocks.cancelQueries,
+    removeQueries: mocks.removeQueries,
   }),
 }));
 vi.mock("@tanstack/react-router", () => ({
@@ -36,7 +42,9 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("@concertable/b2b/features/tenant", () => ({
   b2bIdentityKeys: { all: () => ["auth", "me"] },
   identityApi: { getMe: mocks.getMe },
-  tenantSession: { select: mocks.selectTenant },
+  isPrivateQuery: vi.fn(),
+  settlePendingMutations: mocks.settlePendingMutations,
+  tenantSession: { switchTo: mocks.switchTenant },
   useB2bIdentityQuery: () => ({ data: mocks.identity }),
   useTenant: () => ({
     activeMembership: undefined,
@@ -56,8 +64,12 @@ describe("web tenant selection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.fetchQuery.mockResolvedValue(undefined);
-    mocks.selectTenant.mockResolvedValue(undefined);
-    mocks.invalidateQueries.mockResolvedValue(undefined);
+    mocks.cancelQueries.mockResolvedValue(undefined);
+    mocks.settlePendingMutations.mockResolvedValue(undefined);
+    mocks.switchTenant.mockImplementation(async (_tenantId, boundary) => {
+      await boundary.prepare();
+      await boundary.activate?.();
+    });
     mocks.invalidateRouter.mockResolvedValue(undefined);
     mocks.startNotifications.mockResolvedValue(undefined);
     mocks.stopNotifications.mockResolvedValue(undefined);
@@ -68,14 +80,13 @@ describe("web tenant selection", () => {
     mocks.fetchQuery.mockImplementation(async () => {
       order.push("refresh");
     });
-    mocks.selectTenant.mockImplementation(async () => {
+    mocks.switchTenant.mockImplementation(async (_tenantId, boundary) => {
+      await boundary.prepare();
       order.push("select");
+      await boundary.activate?.();
     });
     mocks.invalidateRouter.mockImplementation(async () => {
       order.push("router");
-    });
-    mocks.invalidateQueries.mockImplementation(async () => {
-      order.push("queries");
     });
 
     const { selectTenant } = useTenant("venueOperator");
@@ -87,14 +98,18 @@ describe("web tenant selection", () => {
       staleTime: 0,
     });
     expect(order[0]).toBe("refresh");
-    expect(order[1]).toBe("select");
-    expect(order.slice(2)).toEqual(expect.arrayContaining(["router", "queries"]));
+    expect(order).toContain("select");
+    expect(order.at(-1)).toBe("router");
   });
 
   it("restarts notifications around a tenant switch", async () => {
     const order: string[] = [];
     mocks.stopNotifications.mockImplementation(async () => order.push("stop"));
-    mocks.selectTenant.mockImplementation(async () => order.push("select"));
+    mocks.switchTenant.mockImplementation(async (_tenantId, boundary) => {
+      await boundary.prepare();
+      order.push("select");
+      await boundary.activate?.();
+    });
     mocks.startNotifications.mockImplementation(async () => order.push("start"));
 
     const { selectTenant } = useTenant("venueOperator");

@@ -6,6 +6,13 @@ export {
 } from "./hooks/useB2bIdentityQuery";
 export { useTenant } from "./hooks/useTenant";
 export { tenantSession } from "./tenantSession";
+export {
+  currentPrivateQueryKey,
+  isPrivateQuery,
+  privateQueryKey,
+  settlePendingMutations,
+} from "./queryKeys";
+export { installTenantSessionInterceptors } from "./tenantHttp";
 export type {
   B2bIdentity,
   Membership,
@@ -13,5 +20,7 @@ export type {
   TenantRole,
   TenantSessionConfiguration,
   TenantStorage,
-  TenantBusinessProfile,
+  TenantSession,
+  TenantSwitchBoundary,
+  TenantBusinessActivity,
 } from "./types";

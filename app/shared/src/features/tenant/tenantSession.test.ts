@@ -1,20 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTenantSession } from "./tenantSession";
+import {
+  createTenantSession,
+  TenantSwitchInProgressError,
+} from "./tenantSession";
 import { useTenantStore } from "./store/useTenantStore";
 import type { Membership, TenantStorage } from "./types";
 
 const venueMemberships: ReadonlyArray<Membership> = [
   {
+    membershipId: "membership-venue-one",
     tenantId: "venue-one",
     legalName: "Venue One",
-    businessProfiles: ["venueOperator"],
+    businessActivities: ["venueOperator"],
     role: "owner",
+    permissionVersion: 1,
+    permissions: ["tenant.settings.edit"],
   },
   {
+    membershipId: "membership-venue-two",
     tenantId: "venue-two",
     legalName: "Venue Two",
-    businessProfiles: ["venueOperator"],
+    businessActivities: ["venueOperator"],
     role: "staff",
+    permissionVersion: 2,
+    permissions: ["operations.view"],
   },
 ];
 
@@ -183,10 +192,13 @@ describe("tenant session", () => {
     const memberships: ReadonlyArray<Membership> = [
       ...venueMemberships,
       {
+        membershipId: "membership-artist-one",
         tenantId: "artist-one",
         legalName: "Artist One",
-        businessProfiles: ["artist"],
+        businessActivities: ["artist"],
         role: "manager",
+        permissionVersion: 3,
+        permissions: ["operations.view"],
       },
     ];
     const { session } = await createSession(memberships);
@@ -208,5 +220,32 @@ describe("tenant session", () => {
     expect(session.tenantIdForRequest()).toBeUndefined();
     expect(storage.clearActiveTenantId).toHaveBeenCalledOnce();
     expect(clearMemberships).toHaveBeenCalledOnce();
+  });
+
+  it("fences old responses and new mutations across a switch generation", async () => {
+    const { session } = await createSession(venueMemberships, "venue-one");
+    const previous = session.captureRequest();
+    let releasePreparation: (() => void) | undefined;
+    const preparation = new Promise<void>((resolve) => {
+      releasePreparation = resolve;
+    });
+
+    const switching = session.switchTo("venue-two", {
+      prepare: () => preparation,
+    });
+
+    expect(() => session.captureRequest(true)).toThrow(
+      TenantSwitchInProgressError,
+    );
+    releasePreparation?.();
+    const selected = await switching;
+
+    expect(previous && session.isCurrent(previous)).toBe(false);
+    expect(session.isCurrent(selected)).toBe(true);
+    expect(selected).toMatchObject({
+      tenantId: "venue-two",
+      membershipId: "membership-venue-two",
+      permissionVersion: 2,
+    });
   });
 });

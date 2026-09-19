@@ -17,11 +17,17 @@ export interface TaxCompliance {
 export interface Organization {
   id: string;
   legalName: string;
+  contactEmail: string;
+  version: number;
+  eligibilityVersion: number;
+  businessActivities: ReadonlyArray<string>;
   taxCompliance?: TaxCompliance;
 }
 
 export interface OrganizationFormValues {
   legalName: string;
+  contactEmail: string;
+  expectedVersion: number;
   vatRegistered: boolean;
   vatNumber: string;
   sellerIdentifier: string;
@@ -36,6 +42,8 @@ export interface OrganizationFormValues {
 
 export interface UpdateOrganizationRequest {
   legalName: string;
+  contactEmail: string;
+  expectedVersion: number;
   taxCompliance: TaxCompliance;
 }
 
@@ -44,6 +52,8 @@ export const Organization = {
     const tax = organization.taxCompliance;
     return {
       legalName: organization.legalName,
+      contactEmail: organization.contactEmail,
+      expectedVersion: organization.version,
       vatRegistered: tax?.vatNumber !== undefined,
       vatNumber: tax?.vatNumber ?? "",
       sellerIdentifier: tax?.sellerIdentifier ?? "",

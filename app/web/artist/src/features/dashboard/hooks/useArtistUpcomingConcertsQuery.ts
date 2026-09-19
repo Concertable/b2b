@@ -1,10 +1,11 @@
+import { artistDashboardKey } from "../queryKeys";
 import { useQuery } from "@tanstack/react-query";
 import { DASHBOARD_POLLING } from "@concertable/shared/features/dashboard";
 import dashboardApi from "../dashboardApi";
 
 export function useArtistUpcomingConcertsQuery() {
   return useQuery({
-    queryKey: ["dashboard", "artist", "upcoming-concerts"],
+    queryKey: artistDashboardKey("upcoming-concerts"),
     queryFn: dashboardApi.getUpcomingConcerts,
     refetchInterval: DASHBOARD_POLLING.normal,
   });
