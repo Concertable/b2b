@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `8eacaf0130a88e265d604f224fdf462d80eeb936`  `(2026-09-20)`
-**Security-reviewed up to commit:** `8eacaf0130a88e265d604f224fdf462d80eeb936`  `(2026-09-20)`
+**Reviewed up to commit:** `b8fe9c6f70b9652cc0359d433b40565bb7687bd6`  `(2026-09-20)`
+**Security-reviewed up to commit:** `b8fe9c6f70b9652cc0359d433b40565bb7687bd6`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -517,7 +517,7 @@ Both lenses found one medium regression gap: the cited same-concert race seriali
 and does not prove the new duplicate-key recovery branch. Deterministic PostgreSQL barrier coverage and exact
 recovery-mapping tests are required before R7 can close.
 
-- [ ] **R8 — medium — `ResourceCommandReceipt.HashPayload` is not injective and is not `DateTimeKind`- or
+- [x] **R8 — medium — `ResourceCommandReceipt.HashPayload` is not injective and is not `DateTimeKind`- or
   culture-stable.** `ResourceCommandReceipt.cs:42-54`: the `U+001F` separator is neither escaped nor
   length-prefixed, so `("aU+001Fb","c")` and `("a","bU+001Fc")` collide; the `null` sentinel `"U+0000"`
   collides with a literal `"U+0000"`; `part.ToString()` uses the current culture; and `DateTime.ToString("O")`
@@ -525,6 +525,11 @@ recovery-mapping tests are required before R7 can close.
   `RequestConflict`. The last case is reachable today through `request.ValidUntil`.
   **Fix:** length-prefix each part, normalise `DateTime` with `ToUniversalTime()`, and format every
   `IFormattable` with `CultureInfo.InvariantCulture`.
+  **Disposition:** payload hashing now streams a signed big-endian length before each UTF-8 part, reserves `-1`
+  for null, normalizes `DateTime` to UTC round-trip text, and formats every other `IFormattable` invariantly.
+  Focused tests prove separator partitions and null/literal-null cannot collide, decimal formatting is stable
+  across British and French cultures, and UTC/local representations of one instant hash equally. DataAccess unit
+  tests pass 9/9, Conversations idempotency integrations pass 7/7, and Concert access integrations pass 8/8.
 
 - [ ] **R9 — medium — replay maps a server-side inconsistency to `ConcertNotFound` for a concert it just
   loaded, permanently.** `ConcertService.cs:369-376` returns `ConcertNotFound` (404) after the concert loaded
@@ -1211,3 +1216,22 @@ remaining failure-cleanup issue.
   connection. A forced server-observed failure registers a throwing cancellation callback and proves the original
   exception instance/stack survives while the trigger and function are absent. Both exact regressions pass 2/2 and
   the full access class passes 8/8.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `317604893224387a1975f2b0177a648380eecdca`
+**Candidate head:** `b8fe9c6f70b9652cc0359d433b40565bb7687bd6`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:913e66c4b0c195825b9cae12159cb4c67a9f7f0eb64955855059dc9a93198f20` `(3 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\37b8b0a069d8ea28acf66074c131bd755c0046efe846b0efc7998c4c755d3381`
+**Candidate bundle identity:** `sha256:2c6fc941a4d0b065e7628330eb2c6cded4b68a1174fa1f5e46de7436c2755b5f`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security/concurrency lenses approved N25. Cancellation, aggregate request observation,
+advisory-lock release, bounded DDL teardown, exception precedence, and database-object removal are all verified.
+No actionable findings.

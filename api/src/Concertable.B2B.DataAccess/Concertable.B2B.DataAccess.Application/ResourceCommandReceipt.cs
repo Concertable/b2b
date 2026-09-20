@@ -1,5 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using System.Buffers.Binary;
+using System.Globalization;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.DataAccess.Application;
@@ -32,15 +34,29 @@ public abstract class ResourceCommandReceipt : IGuidEntity
 
     public static string HashPayload(params ReadOnlySpan<object?> parts)
     {
-        var builder = new StringBuilder();
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        Span<byte> length = stackalloc byte[sizeof(int)];
         foreach (var part in parts)
-            builder.Append(part switch
+        {
+            if (part is null)
             {
-                null => "\u0000",
-                DateTime value => value.ToString("O"),
-                _ => part.ToString(),
-            }).Append('\u001f');
+                BinaryPrimitives.WriteInt32BigEndian(length, -1);
+                hash.AppendData(length);
+                continue;
+            }
 
-        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())));
+            var value = part switch
+            {
+                DateTime dateTime => dateTime.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture),
+                IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
+                _ => part.ToString() ?? string.Empty,
+            };
+            var bytes = Encoding.UTF8.GetBytes(value);
+            BinaryPrimitives.WriteInt32BigEndian(length, bytes.Length);
+            hash.AppendData(length);
+            hash.AppendData(bytes);
+        }
+
+        return Convert.ToHexStringLower(hash.GetHashAndReset());
     }
 }
