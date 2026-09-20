@@ -60,8 +60,10 @@ internal sealed class ConcertController : ControllerBase
     public async Task<IActionResult> RemoveMemberAssignment(
         int id,
         Guid membershipId,
+        [FromQuery] long expectedVersion,
         CancellationToken ct) =>
-        (await concertService.RemoveMemberAssignmentAsync(id, membershipId, ct)).ToNoContentOrProblem();
+        (await concertService.RemoveMemberAssignmentAsync(id, membershipId, expectedVersion, ct))
+        .ToNoContentOrProblem();
 
     [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet("{id:int}/summary")]

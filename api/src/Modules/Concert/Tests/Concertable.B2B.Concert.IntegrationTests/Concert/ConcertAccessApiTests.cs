@@ -165,8 +165,10 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
 
         await assign.ShouldBe(HttpStatusCode.NoContent);
         var assigned = await fixture.Concerts
+            .AsNoTracking()
             .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(concert.AccessVersion + 1, assigned.AccessVersion);
         Assert.Equal(
             [ConcertAccessScope.Summary, ConcertAccessScope.Operations],
             assigned.AccessGrants
@@ -177,18 +179,44 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
                 .Order()
                 .ToArray());
 
+        var staleRemove = await client.DeleteAsync(
+            $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={concert.AccessVersion}");
+
+        await staleRemove.ShouldBe(HttpStatusCode.Conflict);
+        var unchanged = await fixture.Concerts
+            .AsNoTracking()
+            .Include(value => value.AccessGrants)
+            .SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(assigned.AccessVersion, unchanged.AccessVersion);
+        Assert.Contains(
+            unchanged.AccessGrants,
+            grant => grant.Kind == ResourceGrantKind.MemberAssignment
+                     && grant.MembershipId == membership.Id
+                     && grant.RevokedAt is null);
+
         var remove = await client.DeleteAsync(
-            $"/api/concert/{concert.Id}/member-assignments/{membership.Id}");
+            $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={assigned.AccessVersion}");
 
         await remove.ShouldBe(HttpStatusCode.NoContent);
         var removed = await fixture.Concerts
+            .AsNoTracking()
             .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(assigned.AccessVersion + 1, removed.AccessVersion);
         Assert.DoesNotContain(
             removed.AccessGrants,
             grant => grant.Kind == ResourceGrantKind.MemberAssignment
                      && grant.MembershipId == membership.Id
                      && grant.RevokedAt is null);
+
+        var repeatedRemove = await client.DeleteAsync(
+            $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={removed.AccessVersion}");
+
+        await repeatedRemove.ShouldBe(HttpStatusCode.NotFound);
+        var afterRepeatedRemove = await fixture.Concerts
+            .AsNoTracking()
+            .SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(removed.AccessVersion, afterRepeatedRemove.AccessVersion);
     }
 
     private Guid TenantOf(Guid userId) =>

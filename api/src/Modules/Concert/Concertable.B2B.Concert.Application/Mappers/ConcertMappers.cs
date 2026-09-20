@@ -56,7 +56,9 @@ internal static class ConcertMappers
             ConcertMemberAssignmentError.NotPermitted =>
                 new AssignConcertMemberError.NotPermitted(),
             ConcertMemberAssignmentError.AlreadyAssigned =>
-                new AssignConcertMemberError.AlreadyAssigned()
+                new AssignConcertMemberError.AlreadyAssigned(),
+            ConcertMemberAssignmentError.NotAssigned =>
+                new AssignConcertMemberError.NotAssigned()
         };
     }
 

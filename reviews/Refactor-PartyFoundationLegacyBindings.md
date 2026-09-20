@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `368900e9492d9c6b166ba66df9161c2c2e055609`  `(2026-09-20)`
-**Security-reviewed up to commit:** `368900e9492d9c6b166ba66df9161c2c2e055609`  `(2026-09-20)`
+**Reviewed up to commit:** `3ffe856c77a59c960218e9816f6b591a04cd7712`  `(2026-09-20)`
+**Security-reviewed up to commit:** `3ffe856c77a59c960218e9816f6b591a04cd7712`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -351,7 +351,7 @@ but missed `DevController` (R2).
   **Fix:** register the endpoint only when `!IsProduction`, or delete it. Do not rely on the doc comment.
   **Disposition:** deleted `DevController`; the Concert API builds cleanly and the production route no longer exists.
 
-- [ ] **R3 — high — `RemoveMemberAssignment` reports success when it revokes nothing.**
+- [x] **R3 — high — `RemoveMemberAssignment` reports success when it revokes nothing.**
   `ConcertEntity.cs:210-227`: zero matches is indistinguishable from a revocation, the controller returns 204
   (`ConcertController.cs:61-67`), and `AccessVersion++` sits outside the loop so it bumps on a no-op —
   invalidating every other caller's expected version for a change that did not happen. Contrast
@@ -360,6 +360,11 @@ but missed `DevController` (R2).
   call: an operator removing a member's access is told it worked while the grants stay live.
   **Fix:** add an explicit `NotAssigned` arm, bump `AccessVersion` only when a row was revoked, and take and
   check `ExpectedAccessVersion` as the other three commands do.
+  **Disposition:** member removal now requires and checks `expectedVersion`, returns the typed
+  `concert.member_assignment.not_assigned` 404 when no live assignment exists, and increments `AccessVersion`
+  only after revoking the matching grants. The access-control integration test proves stale removal leaves
+  grants/version unchanged, valid removal revokes both scopes and bumps once, and a repeated removal returns
+  404 without another bump. The focused graph builds warning-free and all five access API tests pass.
 
 - [ ] **R4 — high — `Concertable.B2B.Authorization.UnitTests` is not in the solution and does not compile.**
   The project is absent from `Concertable.B2B.slnx` (only `.Contracts` and `.Infrastructure` are listed) and
@@ -1015,3 +1020,21 @@ accepted the PID, observer-connection, and PostgreSQL visibility semantics, but 
   **Disposition:** the helper now gives the competitor its own cancellation token, preserves any failure from
   the first handler, and always cancels plus bounded-awaits the competitor in `finally` before rethrowing that
   original failure with its stack intact. The exact six-test suite passes and the build is warning-free.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `368900e9492d9c6b166ba66df9161c2c2e055609`
+**Candidate head:** `3ffe856c77a59c960218e9816f6b591a04cd7712`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:000db31e054a6cadc3d4be61b58814a67f30c6010473d1813dd3a17121dd97b0` `(2 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-3ffe856c77a59c960218e9816f6b591a04cd7712`
+**Candidate bundle identity:** `sha256:c1fc9472cbccb599a052e60b4095a7771b61a5574bcea179247ea7fae139fb8d`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security/concurrency lenses found no actionable issue. N23 is closed without weakening
+the server-observed contention proof.

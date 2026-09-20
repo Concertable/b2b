@@ -729,6 +729,7 @@ internal sealed class ConcertService : IConcertService
     public async Task<UnitResult<AssignConcertMemberError>> RemoveMemberAssignmentAsync(
         int id,
         Guid membershipId,
+        long expectedAccessVersion,
         CancellationToken ct = default)
     {
         if (membership.Membership is not { } actor)
@@ -737,7 +738,8 @@ internal sealed class ConcertService : IConcertService
         try
         {
             return await commandExecutor.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
-                (service, token) => service.RemoveMemberAssignmentCommandAsync(id, membershipId, actor, token),
+                (service, token) => service.RemoveMemberAssignmentCommandAsync(
+                    id, membershipId, expectedAccessVersion, actor, token),
                 (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
                 () => new AssignConcertMemberError.NotPermitted(),
                 ct);
@@ -751,15 +753,17 @@ internal sealed class ConcertService : IConcertService
     private Task<UnitResult<AssignConcertMemberError>> RemoveMemberAssignmentCommandAsync(
         int id,
         Guid membershipId,
+        long expectedAccessVersion,
         MembershipSnapshot actor,
         CancellationToken ct) =>
         privilegedOutboxUnitOfWorkBehavior.ExecuteAsync(
-            () => RemoveMemberAssignmentCoreAsync(id, membershipId, actor, ct),
+            () => RemoveMemberAssignmentCoreAsync(id, membershipId, expectedAccessVersion, actor, ct),
             ct);
 
     private async Task<UnitResult<AssignConcertMemberError>> RemoveMemberAssignmentCoreAsync(
         int id,
         Guid membershipId,
+        long expectedAccessVersion,
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
@@ -774,6 +778,8 @@ internal sealed class ConcertService : IConcertService
             return new AssignConcertMemberError.ConcertNotFound(id);
         if (!await CanShareAsync(id, facts.Actor, ct))
             return new AssignConcertMemberError.NotPermitted();
+        if (concert.AccessVersion != expectedAccessVersion)
+            return new AssignConcertMemberError.Superseded(id);
         if (concert.RemoveMemberAssignment(facts.Actor.TenantId, membershipId, resourceAccess.UtcNow)
             .TryGetError(out var assignmentError))
             return assignmentError.ToAssignConcertMemberError();

@@ -211,14 +211,18 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         if (!IsPrincipal(actorTenantId))
             return new ConcertMemberAssignmentError.NotPermitted();
 
-        foreach (var grant in accessGrants.Where(grant =>
-                     grant.Kind == ResourceGrantKind.MemberAssignment
-                     && grant.IssuedByTenantId == actorTenantId
-                     && grant.MembershipId == membershipId
-                     && grant.RevokedAt == null))
-        {
+        var assignments = accessGrants
+            .Where(grant =>
+                grant.Kind == ResourceGrantKind.MemberAssignment
+                && grant.IssuedByTenantId == actorTenantId
+                && grant.MembershipId == membershipId
+                && grant.RevokedAt == null)
+            .ToArray();
+        if (assignments.Length == 0)
+            return new ConcertMemberAssignmentError.NotAssigned();
+
+        foreach (var grant in assignments)
             grant.Revoke(at);
-        }
 
         AccessVersion++;
         return new Success();

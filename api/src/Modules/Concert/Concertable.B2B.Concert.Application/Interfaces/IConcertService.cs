@@ -55,6 +55,7 @@ internal interface IConcertService
     Task<UnitResult<AssignConcertMemberError>> RemoveMemberAssignmentAsync(
         int id,
         Guid membershipId,
+        long expectedAccessVersion,
         CancellationToken ct = default);
     Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,
