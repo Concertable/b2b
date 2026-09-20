@@ -6,23 +6,29 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Testing.Integration;
 using Concertable.Kernel.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Reunion;
 
 namespace Concertable.B2B.Concert.IntegrationTests;
 
 public sealed class ConcertApiFixture : ApiFixture
 {
+    private const long ReceiptInsertBarrierKey = 638_457_219;
+
     private IConcertReadDbContext readDbContext = null!;
     private ConcertPrivilegedDbContext dbContext = null!;
     private IScoped<IConcertWorkflow> workflow = null!;
     private ICompletionRunner completionRunner = null!;
     private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
     private TimeProvider timeProvider = null!;
+    private string connectionString = null!;
 
     internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
 
@@ -159,6 +165,81 @@ public sealed class ConcertApiFixture : ApiFixture
         return (grant.Id, concert.AccessVersion, now);
     }
 
+    internal async Task<T> RunWithReceiptInsertBarrierAsync<T>(Func<Task<T>> action)
+    {
+        await using var control = new NpgsqlConnection(connectionString);
+        await control.OpenAsync();
+        await ExecuteAsync(control, """
+            CREATE OR REPLACE FUNCTION concert.block_receipt_insert_for_test()
+            RETURNS trigger
+            LANGUAGE plpgsql
+            AS $$
+            BEGIN
+                PERFORM pg_advisory_xact_lock_shared(638457219);
+                RETURN NEW;
+            END;
+            $$;
+            DROP TRIGGER IF EXISTS block_receipt_insert_for_test
+                ON concert."ConcertCommandReceipts";
+            CREATE TRIGGER block_receipt_insert_for_test
+                BEFORE INSERT ON concert."ConcertCommandReceipts"
+                FOR EACH ROW EXECUTE FUNCTION concert.block_receipt_insert_for_test();
+            """);
+        await ExecuteAsync(control, $"SELECT pg_advisory_lock({ReceiptInsertBarrierKey})");
+        var lockHeld = true;
+
+        try
+        {
+            var result = action();
+            await WaitForReceiptInsertWaitersAsync(connectionString);
+            await ExecuteAsync(control, $"SELECT pg_advisory_unlock({ReceiptInsertBarrierKey})");
+            lockHeld = false;
+            return await result;
+        }
+        finally
+        {
+            if (lockHeld)
+                await ExecuteAsync(control, $"SELECT pg_advisory_unlock({ReceiptInsertBarrierKey})");
+            await ExecuteAsync(control, """
+                DROP TRIGGER IF EXISTS block_receipt_insert_for_test
+                    ON concert."ConcertCommandReceipts";
+                DROP FUNCTION IF EXISTS concert.block_receipt_insert_for_test();
+                """);
+        }
+    }
+
+    private static async Task WaitForReceiptInsertWaitersAsync(string connectionString)
+    {
+        await using var observer = new NpgsqlConnection(connectionString);
+        await observer.OpenAsync();
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
+        do
+        {
+            await using var command = observer.CreateCommand();
+            command.CommandText = """
+                SELECT count(*)
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid <> pg_backend_pid()
+                  AND wait_event_type = 'Lock'
+                  AND query LIKE '%ConcertCommandReceipts%'
+                """;
+            if ((long)(await command.ExecuteScalarAsync() ?? 0L) >= 2)
+                return;
+            await Task.Delay(20);
+        }
+        while (DateTimeOffset.UtcNow < deadline);
+
+        throw new TimeoutException("Two receipt inserts did not reach the database barrier.");
+    }
+
+    private static async Task ExecuteAsync(NpgsqlConnection connection, string sql)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await command.ExecuteNonQueryAsync();
+    }
+
     protected override void OnConfigureServices(IServiceCollection services)
     {
     }
@@ -172,6 +253,10 @@ public sealed class ConcertApiFixture : ApiFixture
         selfBillingAgreementRepository = scope.ServiceProvider
             .GetRequiredService<ISelfBillingAgreementRepository>();
         timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
+        connectionString = scope.ServiceProvider
+            .GetRequiredService<IConfiguration>()
+            .GetConnectionString(B2BDb.Name)
+            ?? throw new InvalidOperationException($"Connection string '{B2BDb.Name}' is required.");
     }
 
     internal async Task EnsureSupplierSelfBillingAgreementAsync(int concertId)

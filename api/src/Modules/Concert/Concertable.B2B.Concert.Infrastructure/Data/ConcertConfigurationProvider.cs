@@ -21,5 +21,6 @@ internal sealed class ConcertConfigurationProvider : IEntityTypeConfigurationPro
         modelBuilder.ApplyConfiguration(new VenueReadModelConfiguration());
         modelBuilder.ApplyConfiguration(new ConcertAccessGrantConfiguration());
         modelBuilder.ApplyConfiguration(new InvoiceAccessGrantConfiguration());
+        modelBuilder.ApplyConfiguration(new ConcertCommandReceiptConfiguration());
     }
 }

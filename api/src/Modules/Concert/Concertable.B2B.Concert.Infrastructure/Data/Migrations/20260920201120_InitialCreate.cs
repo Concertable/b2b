@@ -46,10 +46,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     IssuedByTenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Operation = table.Column<string>(type: "text", nullable: false),
+                    Operation = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     RequestId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PayloadHash = table.Column<string>(type: "text", nullable: false),
-                    Outcome = table.Column<string>(type: "text", nullable: false),
+                    PayloadHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Outcome = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     RecordedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -379,6 +379,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                 columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId" },
                 unique: true,
                 filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_ConcertCommandReceipts_Request",
+                schema: "concert",
+                table: "ConcertCommandReceipts",
+                columns: new[] { "IssuedByTenantId", "Operation", "RequestId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ConcertImages_ConcertId",

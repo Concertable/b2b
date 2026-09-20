@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.DataAccess.Application;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using Xunit.Abstractions;
@@ -179,6 +180,60 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
                      && grant.IssuedByTenantId == concert.VenueTenantId
                      && grant.TenantId == request.recipientTenantId
                      && grant.RevokedAt is null);
+    }
+
+    [Fact]
+    public async Task ConcurrentSummaryShares_WithOneRequestAcrossConcerts_RecoversReceiptConflict()
+    {
+        var concerts = fixture.SeedState.Concerts
+            .GroupBy(value => value.VenueTenantId)
+            .First(group => group.Count() >= 2)
+            .Take(2)
+            .ToArray();
+        var client = CreateOwningVenueClient(concerts[0].VenueId);
+        var competitor = CreateOwningVenueClient(concerts[1].VenueId);
+        var requestId = Guid.NewGuid();
+        var recipientTenantId = fixture.SeedState.Tenants
+            .First(value => value.Id != concerts[0].VenueTenantId)
+            .Id;
+
+        Task<HttpResponseMessage> ShareAsync(HttpClient sender, ConcertEntity concert) =>
+            sender.PostAsync(
+                $"/api/concert/{concert.Id}/summary-shares",
+                new
+                {
+                    requestId,
+                    recipientTenantId,
+                    recipientMembershipId = (Guid?)null,
+                    expectedAccessVersion = concert.AccessVersion,
+                    validUntil = (DateTime?)null,
+                });
+
+        var responses = await fixture.RunWithReceiptInsertBarrierAsync(
+            () => RaceAsync(
+                () => ShareAsync(client, concerts[0]),
+                () => ShareAsync(competitor, concerts[1])));
+
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.OK);
+        var conflictIndex = Array.FindIndex(
+            responses,
+            response => response.StatusCode == HttpStatusCode.Conflict);
+        Assert.NotEqual(-1, conflictIndex);
+        var problem = await responses[conflictIndex].Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("concert.summary_share.request_conflict", problem.Extensions["code"]?.ToString());
+
+        var subsequent = await (conflictIndex == 0 ? client : competitor).PostAsync(
+            $"/api/concert/{concerts[conflictIndex].Id}/summary-shares",
+            new
+            {
+                requestId = Guid.NewGuid(),
+                recipientTenantId,
+                recipientMembershipId = (Guid?)null,
+                expectedAccessVersion = concerts[conflictIndex].AccessVersion,
+                validUntil = (DateTime?)null,
+            });
+        await subsequent.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]

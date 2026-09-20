@@ -117,15 +117,18 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
                     b.Property<string>("Operation")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("Outcome")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("PayloadHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTime>("RecordedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -134,6 +137,10 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IssuedByTenantId", "Operation", "RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ConcertCommandReceipts_Request");
 
                     b.ToTable("ConcertCommandReceipts", "concert");
                 });

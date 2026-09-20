@@ -491,8 +491,31 @@ that the row lock and one command transaction span both saves, and that typed fa
   **Disposition:** duplicate-key persistence failures are now recovered only after the failed command
   transaction rolls back. A fresh command scope revalidates authority, locks and reloads the concert and
   receipt, replays a matching receipt, returns `RequestConflict` for a mismatched replay, and maps the remaining
-  duplicate-grant case to `AlreadyShared`. Focused replay/concurrency tests pass 2/2; the access class passes 6/6
-  and Concert unit tests pass 90/90.
+  duplicate-grant case to `AlreadyShared`. The existing receipt configuration is now registered so its
+  tenant/operation/request unique index is present in the re-scaffolded InitialCreate. A PostgreSQL advisory-lock
+  barrier forces two independent concert commands to reach the receipt insert together; it proves one success,
+  one recovered `RequestConflict`, and successful database work from the recovered scope afterward. The exact
+  barrier regression passes twice, the three recovery mappings pass, the access class passes 7/7, Concert unit
+  tests pass 93/93, and all eleven migration snapshots have no drift.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `8eacaf0130a88e265d604f224fdf462d80eeb936`
+**Candidate head:** `a412723de9060b65e5c715f3350d4ead634f032b`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:fe507895ad3f94aaff14f0bb39bf58e20a8b9e9e5aef115d20535af2f45ee742` `(2 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-a412723de9060b65e5c715f3350d4ead634f032b`
+**Candidate bundle identity:** `sha256:2b99ba112d46feb0f6106f2263cd88f88fcb2dea68ddcec384e9fe116693aff9`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+Both lenses found one medium regression gap: the cited same-concert race serializes on the concert row lock
+and does not prove the new duplicate-key recovery branch. Deterministic PostgreSQL barrier coverage and exact
+recovery-mapping tests are required before R7 can close.
 
 - [ ] **R8 — medium — `ResourceCommandReceipt.HashPayload` is not injective and is not `DateTimeKind`- or
   culture-stable.** `ResourceCommandReceipt.cs:42-54`: the `U+001F` separator is neither escaped nor

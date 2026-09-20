@@ -650,16 +650,21 @@ internal sealed class ConcertService : IConcertService
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);
-        if (receipt is null)
-            return new ShareConcertSummaryError.AlreadyShared();
-
         var payloadHash = ResourceCommandReceipt.HashPayload(
             id,
             request.RecipientTenantId,
             request.RecipientMembershipId,
             request.ValidUntil);
-        return ReplaySummaryShare(concert, receipt, payloadHash);
+        return RecoverSummaryShareDuplicate(concert, receipt, payloadHash);
     }
+
+    internal static Result<ConcertSummaryShare, ShareConcertSummaryError> RecoverSummaryShareDuplicate(
+        ConcertEntity concert,
+        ConcertCommandReceipt? receipt,
+        string payloadHash) =>
+        receipt is null
+            ? new ShareConcertSummaryError.AlreadyShared()
+            : ReplaySummaryShare(concert, receipt, payloadHash);
 
     public async Task<UnitResult<RevokeConcertSummaryShareError>> RevokeSummaryShareAsync(
         int id,
