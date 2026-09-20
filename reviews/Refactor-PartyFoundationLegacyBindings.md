@@ -1417,3 +1417,31 @@ receipt identity, and specific diagnostic. No actionable findings.
 Both native/general and security lenses approved R10. Unauthorized callers now receive the concert authority
 decision before any caller-controlled recipient lookup, durable replay remains classified from persisted state,
 and the focused regression proves the ordering through a nonexistent recipient. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `f4a953ddd6765a0a68358f8d11dde1f9a6ef348f`
+**Candidate head:** `634f71548f44bdb4ab35606480bda39400b0b61c`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:b05d9e974785926d2746912da6ac6e9483625464bed8b1f4ff9ac60304631571` `(4 paths)`
+**Candidate patch:** `sha256:48287503a468d831610ed67e868b4fa79352eefd99b59cc416f4163c4d97de2c`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\d33be697896f45cc54ed7eb5928f19f51c409ff8526461d283a1113be4a2105f`
+**Candidate bundle identity:** `sha256:747067838b9472d9846deb31d3975be24ccba100f498cc616ab5652250085e2b`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The security lens approved R11's authenticated parsing boundary, handler specificity and fixed safe response.
+The native lens approved the production mapping and accepted one response-contract test gap.
+
+- [x] **N26 — MEDIUM — test-contract — tenant-header regressions assert only the HTTP status.**
+  `ActiveTenantResolutionTests.cs:93-110` detects the prior 500 and handler-order regressions, but an empty 400
+  or the wrong Problem Details media type, status, title or detail remains green.
+  **Fix:** deserialize both responses as `ProblemDetails` and assert `application/problem+json`, status 400,
+  title `Bad Request`, and the fixed safe `X-Tenant-Id` detail.
+  **Disposition:** both authenticated requests now assert the response media type and deserialize the complete
+  fixed Problem Details contract. The exact regressions pass 2/2 and the Tenant integration project passes
+  92/92 after a warning-free rebuild.
