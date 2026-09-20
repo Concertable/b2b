@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `04659a2d11f60d615406d443ad24a8f05647735c`  `(2026-09-21)`
-**Security-reviewed up to commit:** `04659a2d11f60d615406d443ad24a8f05647735c`  `(2026-09-21)`
+**Reviewed up to commit:** `bd9e45558b67b088fdd5f7bfe0eb9e223817e422`  `(2026-09-21)`
+**Security-reviewed up to commit:** `bd9e45558b67b088fdd5f7bfe0eb9e223817e422`  `(2026-09-21)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -664,7 +664,7 @@ recovery-mapping tests are required before R7 can close.
   was removed from `ConcertServiceCreateTests.cs`. A full Concert unit-test source scan reports zero U+FEFF
   matches and the complete Concert unit suite passes 98/98.
 
-- [ ] **R20 — critical — posting a concert returns 500. Proven by test, not predicted.**
+- [x] **R20 — critical — posting a concert returns 500. Proven by test, not predicted.**
   Slice 3 rebound three Concert pre-commit domain-event handlers to `IConcertPrivilegedRepository`, so they
   now re-read the aggregate through a *different* `DbContext` instance than the one mid-save.
   `ConcertEntity.Post` (`ConcertEntity.cs:289-302`) sets `DatePosted` in memory and raises the event;
@@ -685,6 +685,10 @@ recovery-mapping tests are required before R7 can close.
   `IDbContextAccessor.Context` (both interceptors set it for the duration of dispatch), or carry the
   projection on the domain event — `ConcertChangedDomainEvent` already does this for `Price`, `Period` and
   `DatePosted` — and delete the re-read. The second also removes the latent explicit-transaction hazard.
+  **Disposition:** the post command and pre-commit handler now resolve the same scoped
+  `IConcertPrivilegedRepository`, so the handler observes the tracked aggregate after `Post` and before commit.
+  Both `ConcertPostingLifecycleTests` pass, including the outbox-drain and VenueHire payee paths; the full
+  Concert integration suite also passes 83/83.
 
 - [ ] **R21 — high — unsettled — adding a filter to the grant *entity* may have emptied three Conversations
   participant queries.** Before this candidate `ThreadAccessGrant` had no filter of its own; the conditions were
@@ -1663,3 +1667,23 @@ audiences remain dynamic and the provider-translatable composition contains no `
 The native/general and security/docs lenses approved R18. Active source and operative guidance consistently use
 `ResourceScopedDbContext`; the old name remains only in explicitly historical plan/review records. The security
 lens runner could not recompute bundle hashes, but found no actionable issue in the supplied immutable evidence.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `04659a2d11f60d615406d443ad24a8f05647735c`
+**Candidate head:** `bd9e45558b67b088fdd5f7bfe0eb9e223817e422`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:e739d9eaa3bb818235cad013bdac1ff5170256dd4f04a02b6a74c7c10dd4b9fa` `(2 paths)`
+**Candidate patch:** `sha256:78f9e57e08f2e823bd0de41ab19a75be40d9ece6d6527df29e41b199b71ccaa7`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\c5bcccc76614d2dfff2e12a274dcab530d672e62f66d69336f625df7c7e6d583`
+**Candidate bundle identity:** `sha256:8061f3f3ffe9f360c535a3591312243636e9fb11604577f8262efbad657f95d4`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/text lenses approved R19. The only source hunk removes the remaining mid-file
+U+FEFF without semantic change; the Concert unit source scan is clean and its full suite passes. No actionable
+findings.
