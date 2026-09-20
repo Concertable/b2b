@@ -93,7 +93,8 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
     public async Task HandleAsync_CancellationBeforeAcceptance_DoesNotFill()
     {
         const int applicationId = 1;
-        var opportunity = await fixture.Opportunities.FirstAsync();
+        var opportunity = await fixture.Opportunities
+            .FirstAsync(value => value.State == OpportunityState.Open);
 
         await CancelAsync(opportunity.Id, applicationId);
         await AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId);
@@ -105,14 +106,32 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
     }
 
     [Fact]
-    public async Task HandleAsync_ConcurrentCancellationAndAcceptance_DoesNotFill()
+    public async Task HandleAsync_CancellationHoldsLockUntilCompetingAcceptanceCanObserveIt()
     {
         const int applicationId = 1;
-        var opportunity = await fixture.Opportunities.FirstAsync();
+        var opportunity = await fixture.Opportunities
+            .FirstAsync(value => value.State == OpportunityState.Open);
 
-        await Task.WhenAll(
-            CancelAsync(opportunity.Id, applicationId),
-            AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId));
+        await AssertCompetingHandlerBlocksAsync(
+            () => CancelAsync(opportunity.Id, applicationId),
+            () => AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId));
+
+        var current = await ReadAsync(opportunity.Id);
+        Assert.Equal(OpportunityState.Open, current.State);
+        Assert.Null(current.FilledByApplicationId);
+        Assert.Contains(applicationId, current.CancelledApplicationIds);
+    }
+
+    [Fact]
+    public async Task HandleAsync_AcceptanceHoldsLockUntilCompetingCancellationCanReopenIt()
+    {
+        const int applicationId = 1;
+        var opportunity = await fixture.Opportunities
+            .FirstAsync(value => value.State == OpportunityState.Open);
+
+        await AssertCompetingHandlerBlocksAsync(
+            () => AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId),
+            () => CancelAsync(opportunity.Id, applicationId));
 
         var current = await ReadAsync(opportunity.Id);
         Assert.Equal(OpportunityState.Open, current.State);
@@ -156,6 +175,23 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
         await handler.HandleAsync(
             new ApplicationAcceptedEvent(applicationId, opportunityId, tenantId),
             MessageEnvelope.Create<ApplicationAcceptedEvent>(DateTimeOffset.UtcNow));
+    }
+
+    private async Task AssertCompetingHandlerBlocksAsync(
+        Func<Task> first,
+        Func<Task> competing)
+    {
+        Task? competingTask = null;
+        fixture.ArmOpportunitySave(async () =>
+        {
+            competingTask = competing();
+            var completed = await Task.WhenAny(competingTask, Task.Delay(TimeSpan.FromSeconds(1)));
+            Assert.NotSame(competingTask, completed);
+        });
+
+        await first();
+        Assert.NotNull(competingTask);
+        await competingTask;
     }
 
     private async Task<OpportunityEntity> ReadAsync(int opportunityId)

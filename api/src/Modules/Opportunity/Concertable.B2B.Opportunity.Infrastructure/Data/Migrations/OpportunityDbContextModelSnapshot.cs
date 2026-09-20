@@ -55,6 +55,12 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
                     b.Property<int>("VenueId")
                         .HasColumnType("integer");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Period", "Concertable.B2B.Opportunity.Domain.Entities.OpportunityEntity.Period#DateRange", b1 =>
                         {
                             b1.IsRequired();

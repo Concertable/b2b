@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(OpportunityDbContext))]
-    [Migration("20260920175522_InitialCreate")]
+    [Migration("20260920181626_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -57,6 +57,12 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
 
                     b.Property<int>("VenueId")
                         .HasColumnType("integer");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Period", "Concertable.B2B.Opportunity.Domain.Entities.OpportunityEntity.Period#DateRange", b1 =>
                         {

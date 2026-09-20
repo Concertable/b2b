@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `d28e3412514c42568a6d3ab90abd01f321012334`  `(2026-09-20)`
-**Security-reviewed up to commit:** `d28e3412514c42568a6d3ab90abd01f321012334`  `(2026-09-20)`
+**Reviewed up to commit:** `692aff71828f7b6be69182bd99b5d6ef7e6a170e`  `(2026-09-20)`
+**Security-reviewed up to commit:** `692aff71828f7b6be69182bd99b5d6ef7e6a170e`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -892,3 +892,34 @@ or delayed-cancellation regression. The security lens accepted one residual life
   those application IDs, and both handlers lock the same opportunity row before applying the transition.
   The re-scaffolded InitialCreate has no model drift, the focused graph builds with zero warnings/errors, and
   all five cancellation-handler integration tests pass, including reversed and concurrent delivery.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `d28e3412514c42568a6d3ab90abd01f321012334`
+**Candidate head:** `692aff71828f7b6be69182bd99b5d6ef7e6a170e`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:60f393196cb1e29a2490fb13658f0384fbf0ad567696228fa960ad33acd5d578` `(9 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-692aff71828f7b6be69182bd99b5d6ef7e6a170e`
+**Candidate bundle identity:** `sha256:1f74766eb5568472ec204928ffa133952f3fe67057bcb3cb8716763175197c59`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+Both lenses accepted the same test-quality finding and found no production, authority, inbox, transaction,
+or migration defect.
+
+- [x] **N19 — MEDIUM — test-quality — the concurrent lifecycle regression does not force overlap.**
+  `Task.WhenAll` permits either handler to finish before the other reaches its row lock. Both serial orders
+  produce the expected final state, so the test can stay green if the locks regress and the lost-update window
+  returns.
+  **Fix:** pause the first handler after it has read and mutated under its transaction, start the competing
+  handler on another scope/connection, prove it cannot complete until the first operation is released, then
+  assert the final terminal state.
+  **Disposition:** Opportunity now carries the repository-standard PostgreSQL `xmin` concurrency token. The
+  integration fixture's conflict interceptor pauses each first handler immediately after its locked entity
+  read, starts the inverse handler on a separate scope, and asserts it remains blocked until release. Both
+  orderings converge to the cancelled/open state; all six focused tests pass, the build is warning-free, and
+  the re-scaffolded InitialCreate has no model drift.
