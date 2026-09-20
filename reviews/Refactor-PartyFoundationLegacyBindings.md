@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `59f83bae674b585fd580957666387be6297e09b9`  `(2026-09-20)`
-**Security-reviewed up to commit:** `59f83bae674b585fd580957666387be6297e09b9`  `(2026-09-20)`
+**Reviewed up to commit:** `6b980063785c1f6f3aaa232137fdd6662743e695`  `(2026-09-20)`
+**Security-reviewed up to commit:** `6b980063785c1f6f3aaa232137fdd6662743e695`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -650,7 +650,7 @@ judgment stays changes-requested until address-review resolves every accepted it
 
 ### Findings
 
-- [ ] **N1 — HIGH — security/native — automatic retry can replay a committed command after an ambiguous commit acknowledgement.**
+- [x] **N1 — HIGH — security/native — automatic retry can replay a committed command after an ambiguous commit acknowledgement.**
   `api/src/Concertable.B2B.DataAccess/Concertable.B2B.DataAccess.Infrastructure/CommandExecutor.cs:33-39`
   enables the Npgsql retry strategy around the whole command transaction, while `:66-76` flushes and calls a
   plain `CommitAsync`. If PostgreSQL commits but the acknowledgement fails transiently, the strategy may run
@@ -659,6 +659,9 @@ judgment stays changes-requested until address-review resolves every accepted it
   **Fix:** resolve ambiguous commit success through a durable operation key and verification callback before
   replay, or require a durable idempotency key for every executor mutation; add a lost-commit-acknowledgement
   integration test.
+  **Disposition:** removed whole-command automatic retries so an ambiguous or transient failure is propagated
+  without replay. The real-database DataAccess regression proves a transient commit-style failure invokes the
+  command once, and the focused unit and integration suites pass (5/5 and 1/1).
 
 - [ ] **N2 — MEDIUM — native/security — concurrent first-tenant creation can escape as an unhandled unique-key failure.**
   `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Repositories/TenantRepository.cs:39-54`
@@ -768,3 +771,21 @@ All 757 manifest paths were covered serially. Accepted new findings: 15 (2 high,
 Historical findings still open after current-head validation: R2, R3, R4, R6, R7, R8, R10, R11, R12,
 R13, R16, R17 and R19. Historical findings validated fixed: R1, R5, R9, R14, R15, R18, R20, R21, R22
 and R23. Address-review owns the next state transition.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `59f83bae674b585fd580957666387be6297e09b9`
+**Candidate head:** `6b980063785c1f6f3aaa232137fdd6662743e695`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:9193afd91a05755d82e4499762281f1fc79d22c125a10d813a1e696d7446bf2e` `(2 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-6b980063785c1f6f3aaa232137fdd6662743e695`
+**Candidate bundle identity:** `sha256:f69bda228c1d7f230bb0695e04f0847a134bc9f1d1cf606aee22d13333bcb5d6`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+No new findings. Native and security lenses verified the exact two-path frozen delta and found no replacement
+HTTP reachability for concert completion.

@@ -1,5 +1,4 @@
 using Concertable.Messaging.Infrastructure.Outbox;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
@@ -30,71 +29,62 @@ internal sealed class CommandExecutor(
         CancellationToken ct)
         where TService : notnull
     {
-        var options = new DbContextOptionsBuilder()
-            .UseNpgsql(dataSource, npgsql => npgsql.EnableRetryOnFailure())
-            .Options;
-        await using var strategyContext = new DbContext(options);
-        var strategy = strategyContext.Database.CreateExecutionStrategy();
+        var scope = scopeFactory.CreateAsyncScope();
+        CommandTransaction? transaction = null;
+        CommandTransactionAccessor? accessor = null;
 
-        return await strategy.ExecuteAsync(async () =>
+        try
         {
-            var scope = scopeFactory.CreateAsyncScope();
-            CommandTransaction? transaction = null;
-            CommandTransactionAccessor? accessor = null;
+            var services = scope.ServiceProvider;
+            accessor = services.GetRequiredService<CommandTransactionAccessor>();
+            transaction = await CommandTransaction.BeginAsync(
+                dataSource,
+                services.GetRequiredService<IDbContextAccessor>(),
+                ct);
+            accessor.Current = transaction;
 
-            try
+            var service = services.GetRequiredService<TService>();
+            var result = await command(service, ct);
+            if (CommandOutcome.IsFailure(result))
+                transaction.MarkFailed();
+
+            if (transaction.HasFailed)
             {
-                var services = scope.ServiceProvider;
-                accessor = services.GetRequiredService<CommandTransactionAccessor>();
-                transaction = await CommandTransaction.BeginAsync(
-                    dataSource,
-                    services.GetRequiredService<IDbContextAccessor>(),
-                    ct);
-                accessor.Current = transaction;
-
-                var service = services.GetRequiredService<TService>();
-                var result = await command(service, ct);
-                if (CommandOutcome.IsFailure(result))
-                    transaction.MarkFailed();
-
-                if (transaction.HasFailed)
-                {
-                    await transaction.RollbackAsync(ct);
-                    return result;
-                }
-
-                await transaction.FlushAsync(ct);
-                await transaction.ValidateAuthorityAsync(ct);
-                if (validateAuthority is not null
-                    && !await validateAuthority(service, result, ct))
-                {
-                    await transaction.RollbackAsync(ct);
-                    return (authorityFailure
-                        ?? throw new InvalidOperationException("An authority failure result is required."))();
-                }
-                await transaction.CommitAsync(ct);
+                await transaction.RollbackAsync(ct);
                 return result;
             }
-            catch
+
+            await transaction.FlushAsync(ct);
+            await transaction.ValidateAuthorityAsync(ct);
+            if (validateAuthority is not null
+                && !await validateAuthority(service, result, ct))
             {
-                if (transaction is not null)
-                    await transaction.RollbackAsync(ct);
-                throw;
+                await transaction.RollbackAsync(ct);
+                return (authorityFailure
+                    ?? throw new InvalidOperationException("An authority failure result is required."))();
+            }
+            await transaction.CommitAsync(ct);
+            return result;
+        }
+        catch
+        {
+            if (transaction is not null)
+                await transaction.RollbackAsync(ct);
+            throw;
+        }
+        finally
+        {
+            if (accessor is not null)
+                accessor.Current = null;
+            try
+            {
+                await scope.DisposeAsync();
             }
             finally
             {
-                if (accessor is not null)
-                    accessor.Current = null;
-                try
-                {
-                    await scope.DisposeAsync();
-                }
-                finally
-                {
-                    if (transaction is not null)
-                        await transaction.DisposeAsync();
-                }
+                if (transaction is not null)
+                    await transaction.DisposeAsync();
             }
-        });
+        }
     }
 }
