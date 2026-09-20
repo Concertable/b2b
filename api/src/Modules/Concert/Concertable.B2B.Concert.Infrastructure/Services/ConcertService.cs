@@ -789,7 +789,6 @@ internal sealed class ConcertService : IConcertService
         var assignment = concert.AssignMember(
                 facts.Actor.TenantId,
                 facts.TargetMembership.MembershipId,
-                facts.Actor.TenantId,
                 resourceAccess.UtcNow);
         if (assignment.TryGetError(out var assignmentError))
             return assignmentError.ToAssignConcertMemberError();

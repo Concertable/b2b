@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `9fb6c0827539d43482ad59c21ffa6c6c7f0c24ff`  `(2026-09-20)`
-**Security-reviewed up to commit:** `9fb6c0827539d43482ad59c21ffa6c6c7f0c24ff`  `(2026-09-20)`
+**Reviewed up to commit:** `ae5e6717e899e57fefad6a4d60bb3d35d0720655`  `(2026-09-20)`
+**Security-reviewed up to commit:** `ae5e6717e899e57fefad6a4d60bb3d35d0720655`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -622,11 +622,15 @@ recovery-mapping tests are required before R7 can close.
   entity and active tenant ids, and Concert action predicates require actual party ownership. All four
   `ResourceAccessGuardTests` and all nine `ConcertAccessApiTests` pass on the current graph.
 
-- [ ] **R16 — low — `AssignMember`'s tenant guard is vacuous.** `ConcertEntity.cs:181-185` compares
+- [x] **R16 — low — `AssignMember`'s tenant guard is vacuous.** `ConcertEntity.cs:181-185` compares
   `membershipTenantId != actorTenantId`, and the sole caller passes `actor.TenantId` for both
   (`ConcertService.cs:423`). The real check is `IsCurrentMembershipAsync` at `:413`; the domain guard looks
   like a second barrier and is not.
   **Fix:** drop the parameter and the comparison, or pass the membership's actual owning tenant.
+  **Disposition:** removed the redundant `membershipTenantId` parameter and comparison from the domain method
+  and its sole caller. Target membership validity remains established by `TenantCommandFactsResolver` for the
+  actor tenant before the domain call. The full Concert unit suite passes 98/98 and all nine
+  `ConcertAccessApiTests` pass.
 
 - [ ] **R17 — low — the shared audience predicate is copy-pasted ten times across four contexts.**
   `ConcertDbContext.cs:43-46,48-51,57-60`; `BookingDbContext.cs:29-32,38-41`;
@@ -1568,3 +1572,23 @@ locking, allocation and caller-owned commit behavior are unchanged. No actionabl
 The native/general and security/data lenses approved the R14 reconciliation. Both repository abstractions are
 registered, injected and used for every invoice existence, sequence-lock and staging operation, with no direct
 `ConcertDbContext` dependency in `InvoiceIssuer`. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `9fb6c0827539d43482ad59c21ffa6c6c7f0c24ff`
+**Candidate head:** `ae5e6717e899e57fefad6a4d60bb3d35d0720655`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:62c49ac442ae133f6a5a04b2f79222809e4cb4d05d016d8580ed1ce4d6cb546b` `(1 path)`
+**Candidate patch:** `sha256:4150140f426819ed1eca327e97a8bbba12c7b837c87b9e8a0e17576b8f632c15`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\231b2eb1eecb84793eedf1c0eb0f98d90e48e1e6f5e5f8f53f7abe4356d35b94`
+**Candidate bundle identity:** `sha256:6b8154750d519ff43b44058bcf3596ba8a22b05006995e1f3debb4fcee8e428a`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/authority lenses approved the R15 reconciliation. No `IsHost` reference remains,
+single-owner filtering is exact active-tenant equality, and Concert actions retain explicit party ownership
+checks. No actionable findings.

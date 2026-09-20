@@ -186,9 +186,9 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
     }
 
     public Result<IReadOnlyList<ConcertAccessGrant>, ConcertMemberAssignmentError> AssignMember(
-        Guid actorTenantId, Guid membershipId, Guid membershipTenantId, DateTime at)
+        Guid actorTenantId, Guid membershipId, DateTime at)
     {
-        if (!IsPrincipal(actorTenantId) || membershipTenantId != actorTenantId)
+        if (!IsPrincipal(actorTenantId))
             return new ConcertMemberAssignmentError.NotPermitted();
 
         if (accessGrants.Any(grant =>
