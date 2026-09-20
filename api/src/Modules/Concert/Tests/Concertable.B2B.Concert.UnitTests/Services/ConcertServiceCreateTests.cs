@@ -1,6 +1,6 @@
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Contracts;
-﻿using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Application.Interfaces;

@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `89f4a7810dd3ef21fe6a920e0704d1ff19aa412a`  `(2026-09-20)`
-**Security-reviewed up to commit:** `89f4a7810dd3ef21fe6a920e0704d1ff19aa412a`  `(2026-09-20)`
+**Reviewed up to commit:** `04659a2d11f60d615406d443ad24a8f05647735c`  `(2026-09-21)`
+**Security-reviewed up to commit:** `04659a2d11f60d615406d443ad24a8f05647735c`  `(2026-09-21)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -656,10 +656,13 @@ recovery-mapping tests are required before R7 can close.
   both the grant-reached roster and inheritance relationship. `AccessScopedDbContext` remains only in the
   historical plan rename table and this finding record, not in live source or guidance.
 
-- [ ] **R19 — low — stray U+FEFF mid-file.** `ConcertServiceTests.cs:3` and `ConcertServiceCreateTests.cs:3`
+- [x] **R19 — low — stray U+FEFF mid-file.** `ConcertServiceTests.cs:3` and `ConcertServiceCreateTests.cs:3`
   (byte offset 87 in both) carry a BOM in the middle of the file, from prepending `using` lines above a
   BOM-bearing first line. Compiles, but is junk.
   **Fix:** strip both.
+  **Disposition:** `ConcertServiceTests.cs` no longer exists after the test split; the remaining mid-file BOM
+  was removed from `ConcertServiceCreateTests.cs`. A full Concert unit-test source scan reports zero U+FEFF
+  matches and the complete Concert unit suite passes 98/98.
 
 - [ ] **R20 — critical — posting a concert returns 500. Proven by test, not predicted.**
   Slice 3 rebound three Concert pre-commit domain-event handlers to `IConcertPrivilegedRepository`, so they
@@ -1640,3 +1643,23 @@ fail-closed, and the aggregate still requires the actor tenant to be a concert p
 The native/general and security/data lenses approved R17. The shared expression preserves every live-authority,
 tenant, membership-incarnation, revocation, validity, scope and audience predicate; concrete context-member
 audiences remain dynamic and the provider-translatable composition contains no `Invoke`. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `89f4a7810dd3ef21fe6a920e0704d1ff19aa412a`
+**Candidate head:** `04659a2d11f60d615406d443ad24a8f05647735c`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:62c49ac442ae133f6a5a04b2f79222809e4cb4d05d016d8580ed1ce4d6cb546b` `(1 path)`
+**Candidate patch:** `sha256:0ea717072c2653ebdbe0e4f66b7e9e07941cf2d32420c541a2bd76acf2b30a28`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\315dfdc004e0cd0324fb5cd76de70bc0e56fa86b4e9b95f7b7dc5dcb722d0747`
+**Candidate bundle identity:** `sha256:e07e82259a88bbaec83ada2289b845e06010f65e02663ef58ffafae0ffd57894`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/docs lenses approved R18. Active source and operative guidance consistently use
+`ResourceScopedDbContext`; the old name remains only in explicitly historical plan/review records. The security
+lens runner could not recompute bundle hashes, but found no actionable issue in the supplied immutable evidence.
