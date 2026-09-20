@@ -10,27 +10,32 @@ public sealed class CommandTransaction : IAsyncDisposable
     private readonly NpgsqlDataSource dataSource;
     private readonly NpgsqlConnection connection;
     private readonly NpgsqlTransaction transaction;
+    private readonly ICommandTransactionCommitter committer;
     private readonly IDbContextAccessor outboxAccessor;
     private readonly List<DbContext> participants = [];
     private readonly List<Func<CancellationToken, Task>> authorityValidators = [];
     private bool failed;
+    private bool commitAttempted;
     private bool completed;
 
     private CommandTransaction(
         NpgsqlDataSource dataSource,
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
+        ICommandTransactionCommitter committer,
         IDbContextAccessor outboxAccessor)
     {
         this.dataSource = dataSource;
         this.connection = connection;
         this.transaction = transaction;
+        this.committer = committer;
         this.outboxAccessor = outboxAccessor;
     }
 
-    public static async Task<CommandTransaction> BeginAsync(
+    internal static async Task<CommandTransaction> BeginAsync(
         NpgsqlDataSource dataSource,
         IDbContextAccessor outboxAccessor,
+        ICommandTransactionCommitter committer,
         CancellationToken ct = default)
     {
         var connection = await dataSource.OpenConnectionAsync(ct);
@@ -38,7 +43,7 @@ public sealed class CommandTransaction : IAsyncDisposable
             IsolationLevel.ReadCommitted,
             ct);
 
-        return new CommandTransaction(dataSource, connection, transaction, outboxAccessor);
+        return new CommandTransaction(dataSource, connection, transaction, committer, outboxAccessor);
     }
 
     public async Task EnlistAsync(DbContext context, CancellationToken ct = default)
@@ -95,14 +100,26 @@ public sealed class CommandTransaction : IAsyncDisposable
 
     public async Task CommitAsync(CancellationToken ct = default)
     {
-        await this.transaction.CommitAsync(ct);
-        await this.ReleaseParticipantsAsync();
-        this.completed = true;
+        this.commitAttempted = true;
+        try
+        {
+            await this.committer.CommitAsync(this.transaction, ct);
+            await this.ReleaseParticipantsAsync();
+        }
+        catch
+        {
+            await this.TryReleaseParticipantsAsync();
+            throw;
+        }
+        finally
+        {
+            this.completed = true;
+        }
     }
 
     public async Task RollbackAsync(CancellationToken ct = default)
     {
-        if (this.completed)
+        if (this.completed || this.commitAttempted)
             return;
 
         await this.transaction.RollbackAsync(ct);
@@ -127,12 +144,43 @@ public sealed class CommandTransaction : IAsyncDisposable
                 contextOwnsConnection: true);
     }
 
+    private async Task TryReleaseParticipantsAsync()
+    {
+        try
+        {
+            await this.ReleaseParticipantsAsync();
+        }
+        catch
+        {
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
-        if (!this.completed)
+        if (!this.completed && !this.commitAttempted)
             await this.transaction.RollbackAsync();
 
-        await this.transaction.DisposeAsync();
-        await this.connection.DisposeAsync();
+        if (!this.commitAttempted)
+        {
+            await this.transaction.DisposeAsync();
+            await this.connection.DisposeAsync();
+            return;
+        }
+
+        try
+        {
+            await this.transaction.DisposeAsync();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            await this.connection.DisposeAsync();
+        }
+        catch
+        {
+        }
     }
 }

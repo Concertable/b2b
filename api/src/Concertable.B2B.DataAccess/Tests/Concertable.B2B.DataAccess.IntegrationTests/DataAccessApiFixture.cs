@@ -57,7 +57,7 @@ internal sealed class AmbiguousCommitTransactionCommitter : ICommandTransactionC
 
     internal void FailNextCommit() => Interlocked.Exchange(ref this.failNextCommit, 1);
 
-    public async Task CommitAsync(CommandTransaction transaction, CancellationToken ct)
+    public async Task CommitAsync(NpgsqlTransaction transaction, CancellationToken ct)
     {
         await transaction.CommitAsync(ct);
         if (Interlocked.Exchange(ref this.failNextCommit, 0) == 1)

@@ -9,15 +9,18 @@ public sealed class CommandTransactionFactory
     private readonly NpgsqlDataSource dataSource;
     private readonly CommandTransactionAccessor accessor;
     private readonly IDbContextAccessor outboxAccessor;
+    private readonly ICommandTransactionCommitter committer;
 
-    public CommandTransactionFactory(
+    internal CommandTransactionFactory(
         NpgsqlDataSource dataSource,
         CommandTransactionAccessor accessor,
-        IDbContextAccessor outboxAccessor)
+        IDbContextAccessor outboxAccessor,
+        ICommandTransactionCommitter committer)
     {
         this.dataSource = dataSource;
         this.accessor = accessor;
         this.outboxAccessor = outboxAccessor;
+        this.committer = committer;
     }
 
     public async Task<TResult> ExecuteAsync<TContext, TResult>(
@@ -38,6 +41,7 @@ public sealed class CommandTransactionFactory
         await using var command = await CommandTransaction.BeginAsync(
             this.dataSource,
             this.outboxAccessor,
+            this.committer,
             ct);
         this.accessor.Current = command;
         try

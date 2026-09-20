@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `a3aeb23668404ccee4997c41d20f239c3af3b39c`  `(2026-09-20)`
-**Security-reviewed up to commit:** `a3aeb23668404ccee4997c41d20f239c3af3b39c`  `(2026-09-20)`
+**Reviewed up to commit:** `026f9892163df302262d915f54165e0c825034c0`  `(2026-09-20)`
+**Security-reviewed up to commit:** `026f9892163df302262d915f54165e0c825034c0`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -814,3 +814,31 @@ HTTP reachability for concert completion.
   **Disposition:** added an internal commit coordinator and a fixture-owned implementation that commits a real
   PostgreSQL probe row before throwing the lost acknowledgement. The regression passes and proves one command
   invocation, one durable row, and the surfaced transient exception.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `a3aeb23668404ccee4997c41d20f239c3af3b39c`
+**Candidate head:** `026f9892163df302262d915f54165e0c825034c0`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:a1226262b64561ba1f464e668489dbaa08f4a97e7606c2e0e2f98f77e6cb86ec` `(7 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-026f9892163df302262d915f54165e0c825034c0`
+**Candidate bundle identity:** `sha256:851fbe50eacc90c06ec10f326829e2e30dba931285b7dd80fd061acb1525ffb0`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+- [x] **N17 — MEDIUM — security — ambiguous physical commit failure can be masked by rollback cleanup.**
+  The fixture fault runs only after `CommandTransaction.CommitAsync` has released participants and set
+  `completed`. A real lost acknowledgement throws from the inner Npgsql commit before those state changes, so
+  `CommandExecutor` attempts rollback and disposal can replace the original exception on an already committed
+  or broken transaction.
+  **Fix:** fault the physical commit boundary, track commit-attempted separately from completed, never roll back
+  after commit begins, preserve the original exception through best-effort cleanup, and retain the one-command,
+  one-durable-row regression.
+  **Disposition:** the fault seam now wraps the physical Npgsql commit. `CommandTransaction` records commit
+  attempted before I/O, suppresses rollback thereafter, and makes participant and connection cleanup
+  best-effort so the original ambiguity survives. The real-database regression and DataAccess unit suite pass
+  (1/1 and 5/5).

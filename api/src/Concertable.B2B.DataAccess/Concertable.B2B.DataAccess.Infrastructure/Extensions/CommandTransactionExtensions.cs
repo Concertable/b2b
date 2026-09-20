@@ -25,7 +25,8 @@ public static class CommandTransactionExtensions
         services.AddScoped(provider => new CommandTransactionFactory(
             provider.GetRequiredService<NpgsqlDataSource>(),
             provider.GetRequiredService<CommandTransactionAccessor>(),
-            provider.GetRequiredService<Concertable.Messaging.Infrastructure.Outbox.IDbContextAccessor>()));
+            provider.GetRequiredService<Concertable.Messaging.Infrastructure.Outbox.IDbContextAccessor>(),
+            provider.GetRequiredService<ICommandTransactionCommitter>()));
         services.AddTransient<IDbConnection>(provider =>
             provider.GetRequiredService<NpgsqlDataSource>().CreateConnection());
 

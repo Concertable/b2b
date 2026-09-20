@@ -41,6 +41,7 @@ internal sealed class CommandExecutor(
             transaction = await CommandTransaction.BeginAsync(
                 dataSource,
                 services.GetRequiredService<IDbContextAccessor>(),
+                committer,
                 ct);
             accessor.Current = transaction;
 
@@ -64,7 +65,7 @@ internal sealed class CommandExecutor(
                 return (authorityFailure
                     ?? throw new InvalidOperationException("An authority failure result is required."))();
             }
-            await committer.CommitAsync(transaction, ct);
+            await transaction.CommitAsync(ct);
             return result;
         }
         catch
