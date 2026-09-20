@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `1860be515d4cd69eb57754163d087cceb82ac4fa`  `(2026-09-20)`
-**Security-reviewed up to commit:** `1860be515d4cd69eb57754163d087cceb82ac4fa`  `(2026-09-20)`
+**Reviewed up to commit:** `89f4a7810dd3ef21fe6a920e0704d1ff19aa412a`  `(2026-09-20)`
+**Security-reviewed up to commit:** `89f4a7810dd3ef21fe6a920e0704d1ff19aa412a`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -646,12 +646,15 @@ recovery-mapping tests are required before R7 can close.
   resource-access architecture tests pass 4/4; the Application, Booking, Concert and Conversations integration
   suites pass 76/76, 24/24, 83/83 and 17/17.
 
-- [ ] **R18 — low — dangling doc references to the deleted `AccessScopedDbContext`.**
+- [x] **R18 — low — dangling doc references to the deleted `AccessScopedDbContext`.**
   `TenantScopedDbContext.cs:13,53`, `TenantFilters.cs:10` and `CODE_PATTERNS.md:14,20` still name the type this
   candidate deletes. The two source files are outside the changed-path set, so the candidate broke references
   in unchanged files — the rename's grep gate was not run.
   **Fix:** rename all five to `ResourceScopedDbContext` and run `grep -rniE "accessscopeddbcontext|accesscontext"`
   to zero.
+  **Disposition:** current source and guidance use `ResourceScopedDbContext`; `CODE_PATTERNS.md` names it for
+  both the grant-reached roster and inheritance relationship. `AccessScopedDbContext` remains only in the
+  historical plan rename table and this finding record, not in live source or guidance.
 
 - [ ] **R19 — low — stray U+FEFF mid-file.** `ConcertServiceTests.cs:3` and `ConcertServiceCreateTests.cs:3`
   (byte offset 87 in both) carry a BOM in the middle of the file, from prepending `using` lines above a
@@ -1617,3 +1620,23 @@ checks. No actionable findings.
 The native/general and security/authority lenses approved R16. The removed argument was tautological at the
 sole caller; target membership remains resolved under the actor tenant, null/cross-tenant targets remain
 fail-closed, and the aggregate still requires the actor tenant to be a concert principal. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `1860be515d4cd69eb57754163d087cceb82ac4fa`
+**Candidate head:** `89f4a7810dd3ef21fe6a920e0704d1ff19aa412a`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:dd85d7cbe5392f1585a4ca7ad5fe09cb5854afa3fc122cb2fe38980fef086731` `(6 paths)`
+**Candidate patch:** `sha256:062ca4d55c400e9e11a373ada23abe0ad13f57ec099576b5cbc516cda402bb31`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\0632c80ac20b3fc17dafae24921ba43891375b4d750b9854c74f0eff5b2755f3`
+**Candidate bundle identity:** `sha256:521223c27fa4fae16914c86484c582e7a89416121dcc940bdc0824b306e4dad7`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/data lenses approved R17. The shared expression preserves every live-authority,
+tenant, membership-incarnation, revocation, validity, scope and audience predicate; concrete context-member
+audiences remain dynamic and the provider-translatable composition contains no `Invoke`. No actionable findings.
