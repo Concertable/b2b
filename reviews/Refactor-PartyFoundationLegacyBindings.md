@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `909a1ae1e9f2d3d82f2641fc8a5e632310834338`  `(2026-09-20)`
-**Security-reviewed up to commit:** `909a1ae1e9f2d3d82f2641fc8a5e632310834338`  `(2026-09-20)`
+**Reviewed up to commit:** `89952b7e987e7bf2e41f0b0a551ecfe4f682656e`  `(2026-09-20)`
+**Security-reviewed up to commit:** `89952b7e987e7bf2e41f0b0a551ecfe4f682656e`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -538,13 +538,18 @@ recovery-mapping tests are required before R7 can close.
   across British and French cultures, and UTC/local representations of one instant hash equally. DataAccess unit
   tests pass 9/9, Conversations idempotency integrations pass 7/7, and Concert access integrations pass 8/8.
 
-- [ ] **R9 — medium — replay maps a server-side inconsistency to `ConcertNotFound` for a concert it just
+- [x] **R9 — medium — replay maps a server-side inconsistency to `ConcertNotFound` for a concert it just
   loaded, permanently.** `ConcertService.cs:369-376` returns `ConcertNotFound` (404) after the concert loaded
   successfully, when the receipt's recorded grant cannot be resolved. Because the receipt is durable, every
   later retry of that `RequestId` takes the same branch.
   **Fix:** treat an unresolvable recorded outcome as an invariant violation (throw, as
   `SettlementPaymentProcessor.cs:51-59` does) or give it its own error arm. Decide separately what a replay
   should report when the grant was since revoked.
+  **Disposition:** replay now returns the dedicated `RequestConflict` arm when the payload differs, the stored
+  outcome is not a grant id, or the recorded grant cannot be resolved from the complete ACL. A focused unit
+  regression supplies a matching durable receipt whose grant is absent and proves the result is
+  `RequestConflict`, not `ConcertNotFound`. The exact regression passes 1/1 and the full Concert unit suite
+  passes 97/97.
 
 - [ ] **R10 — medium — cross-tenant existence probes run before the caller's authority over the concert is
   established.** `ConcertService.cs:313-318` calls `tenantModule.GetByIdAsync` and `IsCurrentMembershipAsync`
@@ -1302,3 +1307,22 @@ Both lenses approved the production R1 ordering, shared privileged transaction/c
 They independently found that the new HTTP regression only asserted 403 responses and would also pass before
 the repair, when the ACL was loaded before denial. R1 remained open until repository-spy coverage could prove
 the unfiltered ACL load is never called when resource authority is absent.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `86d78b7605ae1da1bfd5af18b7022a6ef5410cd2`
+**Candidate head:** `89952b7e987e7bf2e41f0b0a551ecfe4f682656e`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:315a1dd97bcfe381ce36d956caf7fe002b0108e16bfeaa0d88af7791a3e85154` `(2 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\1a278489e1e358e55788e28de249e0e703318cc04fce4f9a6a5bbd89592ce649`
+**Candidate bundle identity:** `sha256:db39d40e2165bc5e56b2bd721506eb9fc1555f8e2b3a2d29508364db7cea8e79`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security lenses approved the R1 repository-spy coverage. The tests execute the real
+command and unit-of-work delegates, satisfy every preliminary fact and permission check, force resource
+authority denial, and prove the full privileged ACL load is never invoked. No actionable findings.

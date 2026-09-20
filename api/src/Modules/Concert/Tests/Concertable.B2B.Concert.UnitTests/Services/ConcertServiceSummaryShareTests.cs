@@ -41,6 +41,24 @@ public sealed class ConcertServiceSummaryShareTests
     }
 
     [Fact]
+    public void RecoverSummaryShareDuplicate_MatchingReceiptWithoutRecordedGrant_ReturnsRequestConflict()
+    {
+        var recovery = CreateRecovery();
+        var concert = ConcertEntity.CreateDraft(
+            ConfirmedBookings.FlatFee(),
+            new ConcertDraft("Concert", "About", [Genre.Rock]),
+            DateTime.UnixEpoch);
+
+        var result = ConcertService.RecoverSummaryShareDuplicate(
+            concert,
+            recovery.Receipt,
+            recovery.PayloadHash);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<ShareConcertSummaryError.RequestConflict>(error);
+    }
+
+    [Fact]
     public void RecoverSummaryShareDuplicate_MissingReceipt_ReturnsAlreadyShared()
     {
         var recovery = CreateRecovery();
