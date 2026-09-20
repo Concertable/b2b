@@ -690,7 +690,7 @@ recovery-mapping tests are required before R7 can close.
   Both `ConcertPostingLifecycleTests` pass, including the outbox-drain and VenueHire payee paths; the full
   Concert integration suite also passes 83/83.
 
-- [ ] **R21 — high — unsettled — adding a filter to the grant *entity* may have emptied three Conversations
+- [x] **R21 — high — settled — adding a filter to the grant *entity* may have emptied three Conversations
   participant queries.** Before this candidate `ThreadAccessGrant` had no filter of its own; the conditions were
   inlined into each parent's `Any(...)` (patch 7254-7269). The candidate moves them onto the grant entity
   (`ConversationsDbContext.cs:32-44`), which restricts grants to `grant.TenantId == ActiveTenantId`. Three
@@ -709,6 +709,10 @@ recovery-mapping tests are required before R7 can close.
   serve participant/counterparty lookups from `ConversationsPrivilegedDbContext`, or keep the grant conditions
   inlined in the parent filters as before. Plan §4.7 deletes `GetByParticipantsAsync` and `CounterpartTenantId`
   anyway, but the candidate as frozen ships these call sites live.
+  **Disposition:** the historical filtered participant queries are gone. Current reads first establish caller
+  visibility through the filtered repository, then expand all principal read grants and tenant displays through
+  `IConversationPrivilegedRepository`. The exact conversation and preview participant regressions pass 2/2 on
+  PostgreSQL; the full Conversations integration suite passes 17/17 on the same current graph.
 
 - [ ] **R22 — medium — the permission catalog grants Staff a permission it can never exercise.**
   Every principal grant is issued tenant-wide (`membershipId: null` at `ConcertEntity.cs:98`,
