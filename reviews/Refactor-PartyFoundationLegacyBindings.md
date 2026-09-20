@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `77da6bb794521778b4454b0354a68373f37e2a25`  `(2026-09-20)`
-**Security-reviewed up to commit:** `77da6bb794521778b4454b0354a68373f37e2a25`  `(2026-09-20)`
+**Reviewed up to commit:** `368900e9492d9c6b166ba66df9161c2c2e055609`  `(2026-09-20)`
+**Security-reviewed up to commit:** `368900e9492d9c6b166ba66df9161c2c2e055609`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -987,3 +987,31 @@ or migration defect. They independently identified the same remaining weakness i
   `pg_stat_activity` through an independent data-source connection until PostgreSQL reports `wait_event_type =
   'Lock'`. Only that server-side observation releases the first update. Both race orderings pass in the exact
   six-test suite, and the focused build remains warning-free.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `77da6bb794521778b4454b0354a68373f37e2a25`
+**Candidate head:** `368900e9492d9c6b166ba66df9161c2c2e055609`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:e11d7e7af99d8654ab89fe99befdcd52cafbe4b4948435dd227d97d2e44b4d90` `(4 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-368900e9492d9c6b166ba66df9161c2c2e055609`
+**Candidate bundle identity:** `sha256:c978b84ecd237668f559e6194f850ef78148427e364e7970a0761f729074dbd7`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The native/general lens was clean. The security/concurrency lens confirmed the server-observed lock proof and
+accepted the PID, observer-connection, and PostgreSQL visibility semantics, but found one cleanup gap.
+
+- [x] **N23 — LOW — test-isolation — a failed contention assertion can leak the detached competitor.**
+  The helper awaits the competitor only after the first handler succeeds. If the server observation times out
+  or the first handler fails, its transaction rolls back and the unobserved competitor can resume during the
+  next fixture reset.
+  **Fix:** preserve the first failure, cancel the competitor, and always bounded-await/observe it in `finally`
+  after the first transaction unwinds before rethrowing the original failure.
+  **Disposition:** the helper now gives the competitor its own cancellation token, preserves any failure from
+  the first handler, and always cancels plus bounded-awaits the competitor in `finally` before rethrowing that
+  original failure with its stack intact. The exact six-test suite passes and the build is warning-free.
