@@ -45,10 +45,10 @@ internal sealed class ConcertEntityConfiguration : IEntityTypeConfiguration<Conc
         builder.HasIndex(e => e.BookingId).IsUnique();
         builder.HasIndex(e => e.CancellationOperationId)
             .IsUnique()
-            .HasFilter("[CancellationOperationId] IS NOT NULL");
+            .HasFilter("\"CancellationOperationId\" IS NOT NULL");
         builder.HasIndex(e => e.SettlementOperationId)
             .IsUnique()
-            .HasFilter("[SettlementOperationId] IS NOT NULL");
+            .HasFilter("\"SettlementOperationId\" IS NOT NULL");
 
         builder.HasOne(e => e.Artist)
             .WithMany()

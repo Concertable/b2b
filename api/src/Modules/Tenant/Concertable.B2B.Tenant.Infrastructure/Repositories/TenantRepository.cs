@@ -28,8 +28,9 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM tenant.Tenants WITH (UPDLOCK, HOLDLOCK)
-             WHERE Id = {tenantId}
+             FROM tenant."Tenants"
+             WHERE "Id" = {tenantId}
+             FOR UPDATE
              """,
             ct);
         return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.Id == tenantId, ct);
@@ -45,8 +46,9 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM tenant.Tenants WITH (UPDLOCK, HOLDLOCK, INDEX(IX_Tenants_CreatedByUserId))
-             WHERE CreatedByUserId = {userId}
+             FROM tenant."Tenants"
+             WHERE "CreatedByUserId" = {userId}
+             FOR UPDATE
              """,
             ct);
         return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.CreatedByUserId == userId, ct);

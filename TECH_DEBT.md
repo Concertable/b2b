@@ -52,6 +52,21 @@ before the entities are migrated.
 
 ## HIGH
 
+### The backend CI category filter silently skips untagged test projects
+
+The backend workflow runs the solution with `--filter
+"Category=Unit|Category=Integration|Category=Architecture|Category=Startup"`. Several projects contain
+tests but no matching category traits, so `dotnet test` reports "No test matches" and exits successfully.
+The affected non-E2E projects observed during the PostgreSQL cut-over are DataAccess unit, Application unit,
+Artist unit, Booking unit, Conversations integration, Conversations unit, User unit, and Venue unit. The
+workflow therefore presents a green backend gate without executing those assemblies.
+
+**Resolves when:** every intended backend test project either supplies a matching assembly/test category or
+the workflow selects projects by an explicit tier manifest, and CI fails when any intended project discovers
+zero selected tests.
+
+---
+
 ### Authorization code is homed by accident-of-ownership, not by a real module
 
 `PermissionAuthorizationHandler` / `PermissionRequirement` / `IMembershipContext` (request-time policy
@@ -102,23 +117,6 @@ the then-live `TransactionTypes.Ticket` key, which v1 deleted. B2B had no other 
 **Resolves when:** the venue revenue widgets read the `ConcertSalesProjection` below instead of Payment, or Payment keys
 its transaction recorder on the operation kind rather than a `type` string no producer emits (and adds `AmountMinor` to
 `PaymentSessionProviderRequest.MetadataOf`, which the recorder reads and nothing writes).
-
----
-
-### Accept checkout mints a throwaway authorization operation id
-
-`ApplicationCheckoutService` passes `Guid.CreateVersion7()` as the FlatFee authorization's `OperationId`, so
-every GET of the accept checkout page mints a fresh id. Every other operation-id site in B2B is `??=`-stable
-and uniquely indexed, and the accept path itself reuses `application.AcceptanceOperationId`.
-
-It does not double-charge today only because Payment's `ReserveInitialAsync` catches the duplicate key on
-`(OperationType, ClientReference)` and re-resolves the existing operation by reference. Correctness therefore
-rests on Payment's fallback rather than on the reference B2B already owns and freezes.
-
-Found by independent review during PR #633 (finding IR37).
-
-**Resolves when:** the accept checkout passes the application's own acceptance operation id rather than a
-fresh GUID, so the id is stable across reloads without relying on Payment's duplicate-key recovery.
 
 ---
 

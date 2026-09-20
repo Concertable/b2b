@@ -41,7 +41,9 @@ public static class ServiceCollectionExtensions
         {
             services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
             services.AddDbContext<ApplicationDbContext>((provider, options) =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
@@ -49,14 +51,16 @@ public static class ServiceCollectionExtensions
                     .UseSeedingSupport(provider));
 
             services.AddDbContext<ApplicationPrivilegedDbContext>((provider, options) =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(provider));
 
-            services.AddDbContext<ApplicationReadDbContext>((provider, options) =>
-                options.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            services.AddDbContext<ApplicationReadDbContext>(options =>
+                options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IApplicationReadDbContext>(provider =>
                 provider.GetRequiredService<ApplicationReadDbContext>());

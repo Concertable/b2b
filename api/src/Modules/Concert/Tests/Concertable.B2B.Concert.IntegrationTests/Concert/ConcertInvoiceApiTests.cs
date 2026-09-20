@@ -1,6 +1,7 @@
 using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Concertable.B2B.Concert.Api.Responses;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
@@ -39,9 +40,14 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 
     private async Task SetVatNumberAsync(Guid tenantId, string vatNumber)
     {
-        var response = await ClientOfTenant(tenantId).PutAsync("/api/organization", new
+        var client = ClientOfTenant(tenantId);
+        var current = await (await client.GetAsync("/api/organization"))
+            .Content.ReadAsync<JsonElement>();
+        var response = await client.PutAsync("/api/organization", new
         {
             legalName = "Registered Supplier Ltd",
+            contactEmail = current.GetProperty("contactEmail").GetString(),
+            expectedVersion = current.GetProperty("version").GetInt64(),
             taxCompliance = new
             {
                 vatNumber,

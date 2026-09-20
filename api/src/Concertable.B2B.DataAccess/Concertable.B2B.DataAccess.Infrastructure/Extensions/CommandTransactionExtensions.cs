@@ -1,7 +1,7 @@
 using System.Data;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
@@ -10,15 +10,22 @@ public static class CommandTransactionExtensions
     public static IServiceCollection AddCommandTransactions(
         this IServiceCollection services)
     {
+        services.AddSingleton(provider =>
+        {
+            var builder = new NpgsqlDataSourceBuilder(GetConnectionString(provider));
+            builder.UseNetTopologySuite();
+            return builder.Build();
+        });
         services.AddScoped<CommandTransactionAccessor>();
         services.AddSingleton<ICommandExecutor>(provider => new CommandExecutor(
             provider.GetRequiredService<IServiceScopeFactory>(),
-            GetConnectionString(provider)));
+            provider.GetRequiredService<NpgsqlDataSource>()));
         services.AddScoped(provider => new CommandTransactionFactory(
-            GetConnectionString(provider),
+            provider.GetRequiredService<NpgsqlDataSource>(),
             provider.GetRequiredService<CommandTransactionAccessor>(),
             provider.GetRequiredService<Concertable.Messaging.Infrastructure.Outbox.IDbContextAccessor>()));
-        services.AddTransient<IDbConnection>(provider => new SqlConnection(GetConnectionString(provider)));
+        services.AddTransient<IDbConnection>(provider =>
+            provider.GetRequiredService<NpgsqlDataSource>().CreateConnection());
 
         return services;
     }

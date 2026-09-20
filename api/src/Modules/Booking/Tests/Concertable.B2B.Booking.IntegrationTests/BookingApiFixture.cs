@@ -15,14 +15,19 @@ public sealed class BookingApiFixture : ApiFixture
     private IBookingReadDbContext readDbContext = null!;
     private BookingDbContext dbContext = null!;
 
+    internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
+
     internal IQueryable<BookingEntity> Bookings => readDbContext.Bookings;
     internal IQueryable<ContractEntity> Contracts => readDbContext.Contracts;
     internal IQueryable<InboxMessageEntity> InboxMessages => dbContext.Set<InboxMessageEntity>().AsNoTracking();
 
-    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause, and SQL
-    // Server rejects OUTPUT against a table that has an enabled trigger. It must name a column every booking
-    // update writes -- SQL Server skips constraints whose columns the UPDATE leaves alone -- and NOCHECK
-    // keeps the rows already seeded valid.
+    /// <summary>
+    /// Commits <paramref name="competingChange"/> between the next booking transition's read and its
+    /// update, so that transition loses the race and has to rerun against the winner's state.
+    /// </summary>
+    internal void ArmBookingConflict(Func<Task> competingChange) =>
+        Conflicts.ArmOnce<BookingEntity>(competingChange);
+
     internal Task FailBookingUpdatesAsync()
     {
         var state = dbContext.Database.DelimitIdentifier("State");
@@ -41,9 +46,9 @@ public sealed class BookingApiFixture : ApiFixture
 
     internal Task<int> GetConcertCountAsync(int bookingId) =>
         dbContext.Database.SqlQuery<int>($"""
-                SELECT COUNT(*) AS [Value]
-                FROM [concert].[Concerts]
-                WHERE [BookingId] = {bookingId}
+                SELECT COUNT(*)::int AS "Value"
+                FROM concert."Concerts"
+                WHERE "BookingId" = {bookingId}
                 """)
             .SingleAsync();
 
@@ -60,6 +65,13 @@ public sealed class BookingApiFixture : ApiFixture
                 foreach (var handler in handlers.OfType<IPreCommitDomainEventHandler<TEvent>>())
                     await handler.HandleAsync(@event);
             });
+
+    protected override void OnConfigureServices(IServiceCollection services)
+    {
+        services.AddResettables(Conflicts);
+        services.ConfigureDbContext<BookingDbContext>(
+            (_, options) => options.AddInterceptors(Conflicts));
+    }
 
     protected override void OnReset(IServiceScope scope)
     {

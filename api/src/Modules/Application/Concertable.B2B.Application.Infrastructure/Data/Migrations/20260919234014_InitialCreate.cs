@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -19,23 +20,23 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 schema: "application",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Version = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false),
-                    VenueTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ArtistTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    State = table.Column<int>(type: "int", nullable: false),
-                    OpportunityId = table.Column<int>(type: "int", nullable: false),
-                    ArtistId = table.Column<int>(type: "int", nullable: false),
-                    DealType = table.Column<int>(type: "int", nullable: false),
-                    AcceptanceOperationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    TermsFingerprint = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ArtistESignature_AtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ArtistESignature_DrawnSignatureImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ArtistESignature_Ip = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: false),
-                    ArtistESignature_SignatoryName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ArtistESignature_UserAgent = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
-                    ArtistESignature_UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    VenueTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ArtistTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    State = table.Column<int>(type: "integer", nullable: false),
+                    OpportunityId = table.Column<int>(type: "integer", nullable: false),
+                    ArtistId = table.Column<int>(type: "integer", nullable: false),
+                    DealType = table.Column<int>(type: "integer", nullable: false),
+                    AcceptanceOperationId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TermsFingerprint = table.Column<string>(type: "text", nullable: false),
+                    ArtistESignature_AtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ArtistESignature_DrawnSignatureImage = table.Column<string>(type: "text", nullable: true),
+                    ArtistESignature_Ip = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: false),
+                    ArtistESignature_SignatoryName = table.Column<string>(type: "text", nullable: false),
+                    ArtistESignature_UserAgent = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    ArtistESignature_UserId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -47,11 +48,11 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 schema: "application",
                 columns: table => new
                 {
-                    ConcertId = table.Column<int>(type: "int", nullable: false),
-                    OpportunityId = table.Column<int>(type: "int", nullable: false),
-                    ArtistId = table.Column<int>(type: "int", nullable: false),
-                    VenueId = table.Column<int>(type: "int", nullable: false),
-                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    ConcertId = table.Column<int>(type: "integer", nullable: false),
+                    OpportunityId = table.Column<int>(type: "integer", nullable: false),
+                    ArtistId = table.Column<int>(type: "integer", nullable: false),
+                    VenueId = table.Column<int>(type: "integer", nullable: false),
+                    StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -63,17 +64,17 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 schema: "application",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ResourceId = table.Column<int>(type: "int", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    MembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Scope = table.Column<int>(type: "int", nullable: false),
-                    ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ValidUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RevokedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IssuedByTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    IssuedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Kind = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResourceId = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MembershipId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Scope = table.Column<int>(type: "integer", nullable: false),
+                    ValidFrom = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ValidUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RevokedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IssuedByTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IssuedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Kind = table.Column<int>(type: "integer", nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -93,12 +94,12 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 schema: "application",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ApplicationId = table.Column<int>(type: "int", nullable: false),
-                    Discriminator = table.Column<string>(type: "nvarchar(34)", maxLength: 34, nullable: false),
-                    Code = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Message = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ApplicationId = table.Column<int>(type: "integer", nullable: false),
+                    Discriminator = table.Column<string>(type: "character varying(34)", maxLength: 34, nullable: false),
+                    Code = table.Column<string>(type: "text", nullable: true),
+                    Message = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -113,18 +114,18 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ApplicationAccessGrants_ResourceId_TenantId_Scope_MembershipId",
+                name: "IX_ApplicationAccessGrants_ResourceId_TenantId_Scope_Membershi~",
                 schema: "application",
                 table: "ApplicationAccessGrants",
                 columns: new[] { "ResourceId", "TenantId", "Scope", "MembershipId" },
-                filter: "[RevokedAt] IS NULL");
+                filter: "\"RevokedAt\" IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ApplicationAccessGrants_TenantId_Scope_ResourceId_MembershipId",
+                name: "IX_ApplicationAccessGrants_TenantId_Scope_ResourceId_Membershi~",
                 schema: "application",
                 table: "ApplicationAccessGrants",
                 columns: new[] { "TenantId", "Scope", "ResourceId", "MembershipId" },
-                filter: "[RevokedAt] IS NULL");
+                filter: "\"RevokedAt\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "UX_ApplicationAccessGrants_Membership",
@@ -132,7 +133,7 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 table: "ApplicationAccessGrants",
                 columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId" },
                 unique: true,
-                filter: "[RevokedAt] IS NULL AND [MembershipId] IS NOT NULL");
+                filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "UX_ApplicationAccessGrants_Tenant",
@@ -140,7 +141,7 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 table: "ApplicationAccessGrants",
                 columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId" },
                 unique: true,
-                filter: "[RevokedAt] IS NULL AND [MembershipId] IS NULL");
+                filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Applications_AcceptanceOperationId",
@@ -148,7 +149,7 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 table: "Applications",
                 column: "AcceptanceOperationId",
                 unique: true,
-                filter: "[AcceptanceOperationId] IS NOT NULL");
+                filter: "\"AcceptanceOperationId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Applications_OpportunityId",
@@ -156,7 +157,7 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 table: "Applications",
                 column: "OpportunityId",
                 unique: true,
-                filter: "[State] = 1");
+                filter: "\"State\" = 1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Applications_OpportunityId_ArtistId",

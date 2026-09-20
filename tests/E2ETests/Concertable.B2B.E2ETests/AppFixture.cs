@@ -1,4 +1,4 @@
-﻿using Aspire.Hosting;
+using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Azure;
 using Aspire.Hosting.Testing;
@@ -126,7 +126,7 @@ public sealed class AppFixture : IAsyncLifetime
             .WaitForCompletion(searchMigrations);
 
         var b2bWeb = builder.Resources.OfType<ProjectResource>()
-            .Single(resource => resource.Name == B2BConstants.WebResource);
+            .Single(resource => resource.Name == B2BWeb.Name);
         var paymentWeb = builder.Resources.OfType<ServiceContainerResource>()
             .Single(resource => resource.Name == PaymentConstants.WebResource);
         builder.CreateResourceBuilder(paymentWeb)

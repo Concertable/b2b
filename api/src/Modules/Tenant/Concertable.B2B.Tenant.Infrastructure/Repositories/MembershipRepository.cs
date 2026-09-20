@@ -30,17 +30,19 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM tenant.Tenants WITH (HOLDLOCK)
-             WHERE Id = {expected.TenantId}
+             FROM tenant."Tenants"
+             WHERE "Id" = {expected.TenantId}
+             FOR SHARE
              """,
             ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM tenant.Memberships WITH (HOLDLOCK)
-             WHERE Id = {expected.MembershipId}
-               AND TenantId = {expected.TenantId}
-               AND UserId = {expected.UserId}
+             FROM tenant."Memberships"
+             WHERE "Id" = {expected.MembershipId}
+               AND "TenantId" = {expected.TenantId}
+               AND "UserId" = {expected.UserId}
+             FOR SHARE
              """,
             ct);
 
@@ -79,8 +81,9 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             await context.Database.ExecuteSqlInterpolatedAsync(
                 $"""
                  SELECT 1
-                 FROM tenant.Tenants WITH (HOLDLOCK)
-                 WHERE Id = {tenantId}
+                 FROM tenant."Tenants"
+                 WHERE "Id" = {tenantId}
+                 FOR SHARE
                  """,
                 ct);
         }
@@ -93,8 +96,9 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             await context.Database.ExecuteSqlInterpolatedAsync(
                 $"""
                  SELECT 1
-                 FROM tenant.Memberships WITH (HOLDLOCK)
-                 WHERE Id = {membershipId}
+                 FROM tenant."Memberships"
+                 WHERE "Id" = {membershipId}
+                 FOR SHARE
                  """,
                 ct);
         }
@@ -151,8 +155,9 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             await context.Database.ExecuteSqlInterpolatedAsync(
                 $"""
                  SELECT 1
-                 FROM tenant.Tenants WITH (HOLDLOCK)
-                 WHERE Id = {tenantId}
+                 FROM tenant."Tenants"
+                 WHERE "Id" = {tenantId}
+                 FOR SHARE
                  """,
                 ct);
         }
@@ -160,8 +165,9 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM tenant.Memberships WITH (HOLDLOCK)
-             WHERE Id = {expectedActor.MembershipId}
+             FROM tenant."Memberships"
+             WHERE "Id" = {expectedActor.MembershipId}
+             FOR SHARE
              """,
             ct);
 

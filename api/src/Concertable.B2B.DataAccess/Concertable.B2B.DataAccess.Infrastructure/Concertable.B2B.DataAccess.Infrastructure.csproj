@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" />
     <PackageReference Include="Reunion" />
   </ItemGroup>
 
@@ -23,6 +25,7 @@
 
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
+    <PackageReference Include="Concertable.Messaging.Infrastructure" />
     <PackageReference Include="Concertable.DataAccess.Infrastructure" />
   </ItemGroup>
 

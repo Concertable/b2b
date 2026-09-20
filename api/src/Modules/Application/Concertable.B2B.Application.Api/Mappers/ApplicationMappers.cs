@@ -86,7 +86,9 @@ internal static class ApplicationMappers
         bool checkoutCapable) =>
         booking?.Status switch
         {
-            BookingStatus.AwaitingConfirmation or BookingStatus.ConfirmationFailed when checkoutCapable =>
+            BookingStatus.ConfirmationFailed =>
+                ApplicationStatus.AwaitingPayment,
+            BookingStatus.AwaitingConfirmation when checkoutCapable =>
                 ApplicationStatus.AwaitingPayment,
             BookingStatus.Confirmed or BookingStatus.CancellationPending or BookingStatus.CancellationFailed =>
                 ApplicationStatus.Confirmed,

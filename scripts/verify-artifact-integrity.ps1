@@ -29,6 +29,7 @@ $expectedPackageIds = @(
     'Concertable.B2B.Venue.Contracts'
 )
 $expectedImageNames = @(
+    'b2b-migrations.tar.gz'
     'b2b-seeding-simulator.tar.gz'
     'b2b-web.tar.gz'
     'b2b-workers.tar.gz'

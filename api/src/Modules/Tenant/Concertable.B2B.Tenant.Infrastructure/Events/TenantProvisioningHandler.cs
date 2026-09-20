@@ -47,8 +47,9 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
             await context.Database.ExecuteSqlInterpolatedAsync(
                 $"""
                  SELECT 1
-                 FROM tenant.Tenants WITH (UPDLOCK, HOLDLOCK)
-                 WHERE Id = {tenantId}
+                 FROM tenant."Tenants"
+                 WHERE "Id" = {tenantId}
+                 FOR UPDATE
                  """,
                 ct);
         }

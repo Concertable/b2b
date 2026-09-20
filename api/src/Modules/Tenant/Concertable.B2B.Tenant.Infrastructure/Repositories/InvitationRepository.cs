@@ -27,8 +27,9 @@ internal sealed class InvitationRepository : Repository<TenantInvitationEntity>,
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM tenant.Invitations WITH (UPDLOCK, HOLDLOCK)
-             WHERE Id = {invitationId}
+             FROM tenant."Invitations"
+             WHERE "Id" = {invitationId}
+             FOR UPDATE
              """,
             ct);
         return await context.Invitations.SingleOrDefaultAsync(invitation => invitation.Id == invitationId, ct);

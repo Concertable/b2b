@@ -55,7 +55,7 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 
 public class ApiFixture : IAsyncLifetime
 {
-    private SqlServerFixture sqlFixture = null!;
+    private B2BPostgresFixture postgresFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
     private readonly List<WebApplicationFactory<Program>> customFactories = [];
@@ -86,8 +86,8 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        sqlFixture = new SqlServerFixture();
-        await sqlFixture.InitializeAsync();
+        postgresFixture = new B2BPostgresFixture();
+        await postgresFixture.InitializeAsync();
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment(Environments.Integration);
@@ -95,7 +95,7 @@ public class ApiFixture : IAsyncLifetime
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:B2BDb"] = sqlFixture.ConnectionString,
+                    [$"ConnectionStrings:{B2BDb.Name}"] = postgresFixture.ConnectionString,
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",
@@ -158,7 +158,7 @@ public class ApiFixture : IAsyncLifetime
         _ = factory.Services;
         PaymentTransport.Connect(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
-        await sqlFixture.InitializeRespawnerAsync();
+        await postgresFixture.InitializeRespawnerAsync(B2BDb.Schemas);
         PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
     }
 
@@ -166,14 +166,14 @@ public class ApiFixture : IAsyncLifetime
     {
         scope?.Dispose();
         await factory.DisposeAsync();
-        await sqlFixture.DisposeAsync();
+        await postgresFixture.DisposeAsync();
     }
 
     public async Task ResetAsync()
     {
         await StopBackgroundDispatchAsync();
 
-        await sqlFixture.ResetAsync();
+        await postgresFixture.ResetAsync();
         foreach (var resettable in factory.Services.GetServices<IResettable>())
             resettable.Reset();
         PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
@@ -182,6 +182,9 @@ public class ApiFixture : IAsyncLifetime
         scope = factory.Services.CreateScope();
         var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
         await initializer.InitializeAsync();
+        await PostgresIdentitySequences.SynchronizeAsync(
+            postgresFixture.ConnectionString,
+            B2BDb.Schemas);
         SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
         OnReset(scope);
 

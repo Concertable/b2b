@@ -28,18 +28,20 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddArtistModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ArtistPrivilegedDbContext>((sp, opt) =>
-            opt.UseSqlServer(
+            opt.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
-                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)
+                        .UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(sp));
 
         services.AddDbContext<ArtistDbContext>((sp, opt) =>
-            opt.UseSqlServer(
+            opt.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
-                    sqlOpt => sqlOpt.UseNetTopologySuite())
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)
+                        .UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
@@ -47,7 +49,7 @@ public static class ServiceCollectionExtensions
                 .UseSeedingSupport(sp));
 
         services.AddDbContext<ArtistReadDbContext>((sp, opt) =>
-            opt.UseSqlServer(
+            opt.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
                     sqlOpt => sqlOpt.UseNetTopologySuite())
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));

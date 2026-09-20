@@ -20,7 +20,7 @@ public sealed class BookingEntity : IIdEntity, IConcurrencyVersioned, IEventRais
     private static readonly BookingStateMachine stateMachine = new();
 
     public int Id { get; private set; }
-    public byte[] Version { get; private set; } = null!;
+    public uint Version { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public Guid OperationId { get; private set; }

@@ -164,13 +164,15 @@ internal sealed class ConcertPrivilegedRepository : PrivilegedRepository<Concert
     {
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
-            FROM concert.Concerts WITH (UPDLOCK, HOLDLOCK)
-            WHERE Id = {concertId}
+            FROM concert."Concerts"
+            WHERE "Id" = {concertId}
+            FOR UPDATE
             """, ct);
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
-            FROM concert.ConcertAccessGrants WITH (UPDLOCK, HOLDLOCK)
-            WHERE ResourceId = {concertId}
+            FROM concert."ConcertAccessGrants"
+            WHERE "ResourceId" = {concertId}
+            FOR UPDATE
             """, ct);
     }
 }

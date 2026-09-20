@@ -25,10 +25,11 @@ internal sealed class ConcertCommandReceiptRepository
     {
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
-            FROM concert.ConcertCommandReceipts WITH (UPDLOCK, HOLDLOCK)
-            WHERE IssuedByTenantId = {issuedByTenantId}
-              AND Operation = {operation}
-              AND RequestId = {requestId}
+            FROM concert."ConcertCommandReceipts"
+            WHERE "IssuedByTenantId" = {issuedByTenantId}
+              AND "Operation" = {operation}
+              AND "RequestId" = {requestId}
+            FOR UPDATE
             """, ct);
         return await context.ConcertCommandReceipts.SingleOrDefaultAsync(
             receipt => receipt.IssuedByTenantId == issuedByTenantId

@@ -4,16 +4,16 @@ using System.Collections.Generic;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260917224325_InitialCreate")]
+    [Migration("20260919234014_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -22,46 +22,46 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("application")
-                .HasAnnotation("ProductVersion", "10.0.3")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.ApplicationAccessGrant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("IssuedByTenantId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("IssuedByUserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Kind")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid?>("MembershipId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("ResourceId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Scope")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("ValidFrom")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("ValidUntil")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -70,20 +70,20 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ResourceId", "TenantId", "Scope", "MembershipId")
-                        .HasFilter("[RevokedAt] IS NULL");
+                        .HasFilter("\"RevokedAt\" IS NULL");
 
                     b.HasIndex("TenantId", "Scope", "ResourceId", "MembershipId")
-                        .HasFilter("[RevokedAt] IS NULL");
+                        .HasFilter("\"RevokedAt\" IS NULL");
 
                     b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId")
                         .IsUnique()
                         .HasDatabaseName("UX_ApplicationAccessGrants_Tenant")
-                        .HasFilter("[RevokedAt] IS NULL AND [MembershipId] IS NULL");
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
 
                     b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId")
                         .IsUnique()
                         .HasDatabaseName("UX_ApplicationAccessGrants_Membership")
-                        .HasFilter("[RevokedAt] IS NULL AND [MembershipId] IS NOT NULL");
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
 
                     b.ToTable("ApplicationAccessGrants", "application");
                 });
@@ -92,78 +92,78 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<Guid?>("AcceptanceOperationId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("ArtistId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("DealType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("OpportunityId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("State")
                         .IsConcurrencyToken()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("TermsFingerprint")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("VenueTenantId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
-                    b.Property<byte[]>("Version")
+                    b.Property<uint>("Version")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "ArtistESignature", "Concertable.B2B.Application.Domain.Entities.ApplicationEntity.ArtistESignature#ContractSignature", b1 =>
                         {
                             b1.IsRequired();
 
                             b1.Property<DateTime>("AtUtc")
-                                .HasColumnType("datetime2");
+                                .HasColumnType("timestamp with time zone");
 
                             b1.Property<string>("DrawnSignatureImage")
-                                .HasColumnType("nvarchar(max)");
+                                .HasColumnType("text");
 
                             b1.Property<string>("Ip")
                                 .IsRequired()
                                 .HasMaxLength(45)
-                                .HasColumnType("nvarchar(45)");
+                                .HasColumnType("character varying(45)");
 
                             b1.Property<string>("SignatoryName")
                                 .IsRequired()
-                                .HasColumnType("nvarchar(max)");
+                                .HasColumnType("text");
 
                             b1.Property<string>("UserAgent")
                                 .HasMaxLength(512)
-                                .HasColumnType("nvarchar(512)");
+                                .HasColumnType("character varying(512)");
 
                             b1.Property<Guid>("UserId")
-                                .HasColumnType("uniqueidentifier");
+                                .HasColumnType("uuid");
                         });
 
                     b.HasKey("Id");
 
                     b.HasIndex("AcceptanceOperationId")
                         .IsUnique()
-                        .HasFilter("[AcceptanceOperationId] IS NOT NULL");
+                        .HasFilter("\"AcceptanceOperationId\" IS NOT NULL");
 
                     b.HasIndex("OpportunityId")
                         .IsUnique()
-                        .HasFilter("[State] = 1");
+                        .HasFilter("\"State\" = 1");
 
                     b.HasIndex("OpportunityId", "ArtistId")
                         .IsUnique();
@@ -174,19 +174,19 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.ConcertAvailabilityEntity", b =>
                 {
                     b.Property<int>("ConcertId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ArtistId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("OpportunityId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("VenueId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ConcertId");
 
@@ -204,17 +204,17 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("ApplicationId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
                         .HasMaxLength(34)
-                        .HasColumnType("nvarchar(34)");
+                        .HasColumnType("character varying(34)");
 
                     b.HasKey("Id");
 
@@ -231,16 +231,16 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.B2B.DataAccess.Application.MembershipAuthority", b =>
                 {
                     b.Property<Guid>("MembershipId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<long>("PermissionVersion")
                         .HasColumnType("bigint");
 
                     b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.ToTable((string)null);
 
@@ -250,18 +250,19 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ConsumerName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("MessageType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
 
                     b.Property<DateTimeOffset>("ReceivedAt")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("MessageId", "ConsumerName");
 
@@ -274,41 +275,47 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.Messaging.Domain.OutboxMessageEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Attempts")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("CorrelationId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
 
                     b.Property<DateTimeOffset?>("DispatchedAtUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Kind")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("LastError")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("MessageType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
 
                     b.Property<DateTimeOffset?>("NextRetryAtUtc")
-                        .HasColumnType("datetimeoffset");
+                        .IsConcurrencyToken()
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("OccurredAtUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Payload")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<int>("Status")
-                        .HasColumnType("int");
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Status", "OccurredAtUtc");
 
                     b.ToTable("Outbox", "messaging", t =>
                         {
@@ -322,11 +329,11 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.HasDiscriminator().HasValue("FailedVerifyPaymentEntity");
                 });

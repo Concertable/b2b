@@ -13,18 +13,12 @@ internal sealed class ConversationReadPositionRepository(
         long throughSequence,
         CancellationToken ct = default) =>
         await context.Database.ExecuteSqlInterpolatedAsync($"""
-            DECLARE @Current bigint;
-            SELECT @Current = LastReadSequence
-            FROM conversations.ConversationReadPositions WITH (UPDLOCK, HOLDLOCK)
-            WHERE ConversationId = {conversationId} AND MembershipId = {membershipId};
-
-            IF @Current IS NULL
-                INSERT conversations.ConversationReadPositions
-                    (ConversationId, TenantId, MembershipId, LastReadSequence)
-                VALUES ({conversationId}, {tenantId}, {membershipId}, {throughSequence});
-            ELSE IF @Current < {throughSequence}
-                UPDATE conversations.ConversationReadPositions
-                SET LastReadSequence = {throughSequence}
-                WHERE ConversationId = {conversationId} AND MembershipId = {membershipId};
+            INSERT INTO conversations."ConversationReadPositions"
+                ("ConversationId", "TenantId", "MembershipId", "LastReadSequence")
+            VALUES ({conversationId}, {tenantId}, {membershipId}, {throughSequence})
+            ON CONFLICT ("ConversationId", "MembershipId")
+            DO UPDATE SET "LastReadSequence" = GREATEST(
+                conversations."ConversationReadPositions"."LastReadSequence",
+                EXCLUDED."LastReadSequence");
             """, ct);
 }

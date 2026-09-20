@@ -51,9 +51,10 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddConcertModule(IConfiguration configuration)
         {
             services.AddDbContextFactory<ConcertDbContext>((sp, opts) =>
-                opts.UseSqlServer(
+                opts.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
-                        sql => sql.UseNetTopologySuite())
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)
+                            .UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
                         sp.GetRequiredService<TenantInterceptor>(),
@@ -61,16 +62,17 @@ public static class ServiceCollectionExtensions
                     .UseSeedingSupport(sp), ServiceLifetime.Scoped);
 
             services.AddDbContextFactory<ConcertPrivilegedDbContext>((sp, opts) =>
-                opts.UseSqlServer(
+                opts.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
-                        sql => sql.UseNetTopologySuite())
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)
+                            .UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
                         sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                     .UseSeedingSupport(sp), ServiceLifetime.Scoped);
 
             services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
-                opts.UseSqlServer(
+                opts.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
                         sql => sql.UseNetTopologySuite())
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));

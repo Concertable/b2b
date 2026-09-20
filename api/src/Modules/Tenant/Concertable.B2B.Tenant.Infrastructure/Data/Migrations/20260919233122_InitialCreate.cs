@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -19,14 +20,14 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SourceKey = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    At = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
-                    Subject = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Detail = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    Url = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    SourceKey = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    At = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Subject = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Detail = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Url = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -38,18 +39,18 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    InviterMembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    InviterMembershipId = table.Column<Guid>(type: "uuid", nullable: false),
                     InviterPermissionVersion = table.Column<long>(type: "bigint", nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AcceptedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    AcceptedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    AcceptedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AcceptedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -61,13 +62,13 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false),
                     PermissionVersion = table.Column<long>(type: "bigint", nullable: false),
-                    InvitedByMembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    InvitedByMembershipId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -79,24 +80,24 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    LegalName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    DisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    LegalName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    DisplayName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     DisplayVersion = table.Column<long>(type: "bigint", nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false),
-                    ContactEmail = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: false),
-                    CreatedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ContactEmail = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
+                    CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     EligibilityVersion = table.Column<long>(type: "bigint", nullable: false),
-                    TaxCompliance_VatNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    TaxCompliance_SellerIdentifier = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    TaxCompliance_RegisteredAddress_Line1 = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    TaxCompliance_RegisteredAddress_Line2 = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    TaxCompliance_RegisteredAddress_City = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TaxCompliance_RegisteredAddress_Postcode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    TaxCompliance_RegisteredAddress_Country = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    TaxCompliance_BankReference = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    TaxCompliance_HoldsMusicLicence = table.Column<bool>(type: "bit", nullable: true)
+                    TaxCompliance_VatNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    TaxCompliance_SellerIdentifier = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    TaxCompliance_RegisteredAddress_Line1 = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    TaxCompliance_RegisteredAddress_Line2 = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    TaxCompliance_RegisteredAddress_City = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    TaxCompliance_RegisteredAddress_Postcode = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    TaxCompliance_RegisteredAddress_Country = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    TaxCompliance_BankReference = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    TaxCompliance_HoldsMusicLicence = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -108,13 +109,13 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    RejectionReason = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    ReviewedByAdminSub = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    SubmittedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    RejectionReason = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    ReviewedByAdminSub = table.Column<Guid>(type: "uuid", nullable: true),
+                    ReviewedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    SubmittedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -126,11 +127,11 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Kind = table.Column<int>(type: "int", nullable: false),
-                    ActivatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RetiredAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Kind = table.Column<int>(type: "integer", nullable: false),
+                    ActivatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RetiredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -149,12 +150,12 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TenantVerificationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DocumentType = table.Column<int>(type: "int", nullable: false),
-                    BlobName = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TenantVerificationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DocumentType = table.Column<int>(type: "integer", nullable: false),
+                    BlobName = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    UploadedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -200,7 +201,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 table: "Invitations",
                 columns: new[] { "TenantId", "Email" },
                 unique: true,
-                filter: "[Status] = 1");
+                filter: "\"Status\" = 1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Memberships_TenantId_UserId",
@@ -234,11 +235,24 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 table: "Verifications",
                 column: "TenantId",
                 unique: true);
+
+            migrationBuilder.Sql(
+                """
+                CREATE VIEW tenant."MembershipAuthority" AS
+                SELECT
+                    "Id" AS "MembershipId",
+                    "TenantId",
+                    "UserId",
+                    "PermissionVersion"
+                FROM tenant."Memberships";
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("""DROP VIEW tenant."MembershipAuthority";""");
+
             migrationBuilder.DropTable(
                 name: "Activities",
                 schema: "tenant");

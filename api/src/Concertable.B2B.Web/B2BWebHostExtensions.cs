@@ -193,8 +193,12 @@ public static class B2BWebHostExtensions
                     reg.HandleCommand<NotifyConcertDraftCreatedCommand>();
                 });
             services.AddDirectBusKeyed("webhook");
-            services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
-            services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
+            services.AddOutbox(opt => opt.UseNpgsql(
+                builder.Configuration.GetConnectionString(B2BDb.Name),
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory_Outbox", "messaging")));
+            services.AddInbox(opt => opt.UseNpgsql(
+                builder.Configuration.GetConnectionString(B2BDb.Name),
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory_Inbox", "messaging")));
             services.AddInProcessEventDispatch();
             services.AddSeedingInfrastructure();
             if (!builder.Environment.IsIntegration())

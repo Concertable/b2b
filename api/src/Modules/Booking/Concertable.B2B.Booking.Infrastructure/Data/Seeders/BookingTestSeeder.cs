@@ -25,11 +25,7 @@ internal sealed class BookingTestSeeder : ITestSeeder
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Bookings.SeedIfEmptyAsync(async () =>
         {
-            await using var transaction = await context.Database.BeginTransactionAsync(ct);
             context.Bookings.AddRange(seed.Bookings);
             await context.SaveChangesAsync(ct);
-            context.Contracts.AddRange(seed.Contracts);
-            await context.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
         });
 }

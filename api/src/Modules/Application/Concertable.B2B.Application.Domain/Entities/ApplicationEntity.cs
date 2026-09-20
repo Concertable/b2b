@@ -17,7 +17,7 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
     private static readonly ApplicationStateMachine stateMachine = new();
 
     public int Id { get; private set; }
-    public byte[] Version { get; private set; } = null!;
+    public uint Version { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     internal ApplicationState State { get; private set; } = ApplicationState.Applied;
@@ -78,7 +78,7 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
         }
     }
 
-    public Guid BeginAcceptance() => BeginAcceptance(Guid.NewGuid());
+    public Guid BeginAcceptance() => AcceptanceOperationId ??= Guid.NewGuid();
 
     public Guid BeginAcceptance(Guid operationId)
     {

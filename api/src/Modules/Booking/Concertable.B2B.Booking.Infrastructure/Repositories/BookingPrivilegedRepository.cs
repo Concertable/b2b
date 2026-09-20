@@ -84,15 +84,17 @@ internal sealed class BookingPrivilegedRepository(BookingPrivilegedDbContext con
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM booking.Bookings WITH (UPDLOCK, HOLDLOCK)
-             WHERE Id = {bookingId}
+             FROM booking."Bookings"
+             WHERE "Id" = {bookingId}
+             FOR UPDATE
              """,
             ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM booking.BookingAccessGrants WITH (UPDLOCK, HOLDLOCK)
-             WHERE ResourceId = {bookingId}
+             FROM booking."BookingAccessGrants"
+             WHERE "ResourceId" = {bookingId}
+             FOR UPDATE
              """,
             ct);
     }

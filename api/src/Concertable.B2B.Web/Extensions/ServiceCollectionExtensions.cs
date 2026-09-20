@@ -1,9 +1,11 @@
 using Concertable.Auth.Contracts;
+using System.Data;
 using Concertable.Kernel.Serializers;
 using Concertable.DataAccess.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Concertable.DataAccess.Application;
@@ -95,6 +97,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();
+
+        services.AddScoped<IDbConnection>(_ =>
+            new NpgsqlConnection(configuration.GetConnectionString(B2BDb.Name)));
         return services;
     }
 }

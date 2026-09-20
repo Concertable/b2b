@@ -33,6 +33,15 @@ Query classes split by stance: `XRepository` (tenant-bound), `XReadRepository` (
 injects both stances of its own aggregate. A domain fact that is not naturally an entity repository may get
 its own purpose-named abstraction over the read context — `IConcertAvailability`.
 
+## Owned child collections without their own repository
+
+The `persistence` skill's "one repository per entity" rule has one sanctioned exception: an entity that is
+always read or written jointly with one owning aggregate, and never queried independently, stays a `DbSet` on
+the owning repository rather than gaining a repository of its own. `ThreadReadStateEntity`
+(`MessageRepository`, joined against `Messages` for unread counts and previews, and advanced alongside a
+tenant's inbox) and `ConcertImageEntity` are the two current cases. The moment a consumer needs one of these
+independently of its owner, that need earns it a real repository — do not pre-build one on spec.
+
 ## Which entities are filtered
 
 - **Unfiltered by design:** `Opportunity` (the applying artist reads the venue's opportunity to stamp the

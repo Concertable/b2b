@@ -47,8 +47,8 @@ public sealed class DbContextStanceTests
     private static DbContextOptions<TContext> CreateOptions<TContext>()
         where TContext : DbContext =>
         new DbContextOptionsBuilder<TContext>()
-            .UseSqlServer(
-                "Server=localhost;Database=ContextStanceTests;User Id=sa;Password=Password123!;TrustServerCertificate=True",
-                sql => sql.UseNetTopologySuite())
+            .UseNpgsql(
+                "Host=localhost;Database=ContextStanceTests;Username=postgres;Password=postgres",
+                npgsql => npgsql.UseNetTopologySuite())
             .Options;
 }

@@ -28,10 +28,10 @@ internal sealed class ModerationService : IModerationService
         (await reportRepository.GetQueueAsync(pageParams)).Map(r => r.ToDto());
 
     public Task<UnitResult<ModerationError>> HideMessageAsync(int messageId) =>
-        MutateMessageAsync(messageId, message => message.Hide(currentUser.GetId(), timeProvider.GetUtcNow().DateTime));
+        MutateMessageAsync(messageId, message => message.Hide(currentUser.GetId(), timeProvider.GetUtcNow().UtcDateTime));
 
     public Task<UnitResult<ModerationError>> RestoreMessageAsync(int messageId) =>
-        MutateMessageAsync(messageId, message => message.Restore(currentUser.GetId(), timeProvider.GetUtcNow().DateTime));
+        MutateMessageAsync(messageId, message => message.Restore(currentUser.GetId(), timeProvider.GetUtcNow().UtcDateTime));
 
     public async Task<UnitResult<ModerationError>> ResolveReportAsync(int reportId, ResolveReportRequest request)
     {
@@ -42,7 +42,7 @@ internal sealed class ModerationService : IModerationService
         if (report.Outcome is not null)
             return new ModerationError.AlreadyResolved();
 
-        report.Resolve(request.Outcome, currentUser.GetId(), request.Notes, timeProvider.GetUtcNow().DateTime);
+        report.Resolve(request.Outcome, currentUser.GetId(), request.Notes, timeProvider.GetUtcNow().UtcDateTime);
         await reportRepository.SaveChangesAsync();
 
         return new Success();

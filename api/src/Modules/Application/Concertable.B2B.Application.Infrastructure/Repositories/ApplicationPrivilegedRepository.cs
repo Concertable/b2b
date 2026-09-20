@@ -197,15 +197,17 @@ internal sealed class ApplicationPrivilegedRepository(ApplicationPrivilegedDbCon
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM application.Applications WITH (UPDLOCK, HOLDLOCK)
-             WHERE Id = {applicationId}
+             FROM application."Applications"
+             WHERE "Id" = {applicationId}
+             FOR UPDATE
              """,
             ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
-             FROM application.ApplicationAccessGrants WITH (UPDLOCK, HOLDLOCK)
-             WHERE ResourceId = {applicationId}
+             FROM application."ApplicationAccessGrants"
+             WHERE "ResourceId" = {applicationId}
+             FOR UPDATE
              """,
             ct);
     }

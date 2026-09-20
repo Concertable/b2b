@@ -32,25 +32,23 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddOpportunityModule(IConfiguration configuration)
         {
             services.AddDbContext<OpportunityPrivilegedDbContext>((sp, options) =>
-                options.UseSqlServer(
+                options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
-                        sql => sql.UseNetTopologySuite())
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(sp.GetRequiredService<AuditInterceptor>())
                     .UseSeedingSupport(sp));
 
             services.AddDbContext<OpportunityDbContext>((sp, options) =>
-                options.UseSqlServer(
+                options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
-                        sql => sql.UseNetTopologySuite())
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
                         sp.GetRequiredService<TenantInterceptor>())
                     .UseSeedingSupport(sp));
 
-            services.AddDbContext<OpportunityReadDbContext>((provider, options) =>
-                options.UseSqlServer(
-                        configuration.GetConnectionString(B2BDb.Name),
-                        sql => sql.UseNetTopologySuite())
+            services.AddDbContext<OpportunityReadDbContext>(options =>
+                options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IOpportunityReadDbContext>(
                 sp => sp.GetRequiredService<OpportunityReadDbContext>());

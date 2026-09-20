@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Hosting.Frontend;
+using Concertable.B2B.Hosting.Frontend;
 using Aspire.Hosting;
 using Concertable.Auth.Hosting;
 using Concertable.B2B.Hosting;
@@ -29,8 +29,11 @@ public static class AppHost
     private static IDistributedApplicationBuilder ConfigureBuilder<TWebProject>(IDistributedApplicationBuilder builder)
         where TWebProject : IProjectMetadata, new()
     {
+        var postgres = builder.AddPostgresContainer("concertable-b2b-postgres-data")
+            .WithPostGis()
+            .WithArgs("-c", "max_prepared_transactions=100");
+        var b2bDb = postgres.AddDatabase(B2BDatabase.Name);
         var sql = builder.AddSqlServerContainer("concertable-b2b-sql-data");
-        var b2bDb = sql.AddDatabase(B2BConstants.Database);
         var authDb = sql.AddDatabase(AuthConstants.Database);
         var paymentDb = sql.AddDatabase(PaymentConstants.Database);
         var (storage, blobs) = builder.AddAzureStorage();
@@ -41,10 +44,13 @@ public static class AppHost
                           .WithHttpEndpoint(targetPort: AuthConstants.ContainerPort, name: "https");
         auth.WithSpaClients(B2BLocalSpaSurfaces.AuthClients);
         var paymentWeb = builder.AddPaymentWeb(PaymentWebImage, PaymentWebDigest, auth, paymentDb, asb);
-        var api = builder.AddB2BWeb<TWebProject>(b2bDb, auth, storage, blobs, asb, paymentWeb);
+        var migrations = builder.AddB2BMigrations<Projects.Concertable_B2B_Migrations>(b2bDb);
+        var api = builder.AddB2BWeb<TWebProject>(b2bDb, auth, storage, blobs, asb, paymentWeb)
+            .WaitForCompletion(migrations);
         auth.WithEnvironment("Services__B2BApiUrl", api.GetEndpoint("https"));
         auth.WithEnvironment("ServiceAuth__AuthClientId", "concertable-auth");
-        var workers = builder.AddB2BWorkers<Projects.Concertable_B2B_Workers>(b2bDb, paymentWeb, auth);
+        var workers = builder.AddB2BWorkers<Projects.Concertable_B2B_Workers>(b2bDb, paymentWeb, auth)
+            .WaitForCompletion(migrations);
         if (builder.ExecutionContext.IsRunMode)
         {
             api.WithEnvironment(PaymentConstants.AllowInsecureHttpClientEnvironmentVariable, bool.TrueString);

@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -19,21 +20,21 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    MessageId = table.Column<int>(type: "int", nullable: false),
-                    ConversationId = table.Column<int>(type: "int", nullable: false),
-                    ReporterTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReporterUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReportedTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Details = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    MessageExcerpt = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    SubmittedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Outcome = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ResolvedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ResolvedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    ResolutionNotes = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MessageId = table.Column<int>(type: "integer", nullable: false),
+                    ConversationId = table.Column<int>(type: "integer", nullable: false),
+                    ReporterTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReporterUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReportedTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Category = table.Column<string>(type: "text", nullable: false),
+                    Details = table.Column<string>(type: "text", nullable: true),
+                    MessageExcerpt = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    SubmittedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Outcome = table.Column<string>(type: "text", nullable: true),
+                    ResolvedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ResolvedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ResolutionNotes = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -45,9 +46,9 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     LastMessageSequence = table.Column<long>(type: "bigint", nullable: false),
                     AccessVersion = table.Column<long>(type: "bigint", nullable: false)
                 },
@@ -61,9 +62,9 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     DisplayVersion = table.Column<long>(type: "bigint", nullable: false),
-                    DisplayName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false)
+                    DisplayName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -75,17 +76,17 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ResourceId = table.Column<int>(type: "int", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    MembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Scope = table.Column<int>(type: "int", nullable: false),
-                    ValidFrom = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ValidUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RevokedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IssuedByTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    IssuedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Kind = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResourceId = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MembershipId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Scope = table.Column<int>(type: "integer", nullable: false),
+                    ValidFrom = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ValidUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RevokedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IssuedByTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IssuedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Kind = table.Column<int>(type: "integer", nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -105,13 +106,13 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ConversationId = table.Column<int>(type: "int", nullable: false),
-                    CreatorTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedByMembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RequestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PayloadHash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ConversationId = table.Column<int>(type: "integer", nullable: false),
+                    CreatorTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedByMembershipId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RequestId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PayloadHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -130,11 +131,11 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ConversationId = table.Column<int>(type: "int", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    MembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ConversationId = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MembershipId = table.Column<Guid>(type: "uuid", nullable: false),
                     LastReadSequence = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -154,22 +155,22 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 schema: "conversations",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ConversationId = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ConversationId = table.Column<int>(type: "integer", nullable: false),
                     Sequence = table.Column<long>(type: "bigint", nullable: false),
-                    RequestId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PayloadHash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    SenderTenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SentByMembershipId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SentByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Action = table.Column<int>(type: "int", nullable: true),
-                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    HiddenAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    HiddenByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    RestoredAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RestoredByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    RequestId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PayloadHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    SenderTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SentByMembershipId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SentByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Action = table.Column<int>(type: "integer", nullable: true),
+                    SentAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    HiddenAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    HiddenByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    RestoredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RestoredByUserId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -184,7 +185,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ContentReports_ConversationId_ReporterTenantId_ReporterUserId",
+                name: "IX_ContentReports_ConversationId_ReporterTenantId_ReporterUser~",
                 schema: "conversations",
                 table: "ContentReports",
                 columns: new[] { "ConversationId", "ReporterTenantId", "ReporterUserId" });
@@ -196,18 +197,18 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 column: "MessageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ConversationAccessGrants_ResourceId_TenantId_Scope_MembershipId",
+                name: "IX_ConversationAccessGrants_ResourceId_TenantId_Scope_Membersh~",
                 schema: "conversations",
                 table: "ConversationAccessGrants",
                 columns: new[] { "ResourceId", "TenantId", "Scope", "MembershipId" },
-                filter: "[RevokedAt] IS NULL");
+                filter: "\"RevokedAt\" IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ConversationAccessGrants_TenantId_Scope_ResourceId_MembershipId",
+                name: "IX_ConversationAccessGrants_TenantId_Scope_ResourceId_Membersh~",
                 schema: "conversations",
                 table: "ConversationAccessGrants",
                 columns: new[] { "TenantId", "Scope", "ResourceId", "MembershipId" },
-                filter: "[RevokedAt] IS NULL");
+                filter: "\"RevokedAt\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "UX_ConversationAccessGrants_Membership",
@@ -215,7 +216,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 table: "ConversationAccessGrants",
                 columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId" },
                 unique: true,
-                filter: "[RevokedAt] IS NULL AND [MembershipId] IS NOT NULL");
+                filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "UX_ConversationAccessGrants_Tenant",
@@ -223,7 +224,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 table: "ConversationAccessGrants",
                 columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId" },
                 unique: true,
-                filter: "[RevokedAt] IS NULL AND [MembershipId] IS NULL");
+                filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ConversationCreationReceipts_ConversationId",
@@ -232,7 +233,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                 column: "ConversationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ConversationCreationReceipts_CreatorTenantId_CreatedByMembershipId_RequestId",
+                name: "IX_ConversationCreationReceipts_CreatorTenantId_CreatedByMembe~",
                 schema: "conversations",
                 table: "ConversationCreationReceipts",
                 columns: new[] { "CreatorTenantId", "CreatedByMembershipId", "RequestId" },

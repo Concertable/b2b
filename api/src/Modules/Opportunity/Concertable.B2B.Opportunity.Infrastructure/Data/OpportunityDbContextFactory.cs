@@ -5,6 +5,8 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data;
 
 internal sealed class OpportunityDbContextFactory : B2BDesignTimeDbContextFactory<OpportunityDbContext>
 {
+    protected override string MigrationsSchema => Schema.Name;
+
     protected override OpportunityDbContext Create(DbContextOptions<OpportunityDbContext> options) =>
         new(options, DefaultOutboxOptions, new OpportunityConfigurationProvider(), DesignTimeTenantContext.Instance);
 }

@@ -21,7 +21,7 @@ public static class B2BTopology
     {
         public AsbTopology AddB2BTopology()
         {
-            topology.WithService(B2BConstants.ServiceName)
+            topology.WithService(B2BService.Name)
                     .Publish<ArtistChangedEvent>()
                     .Publish<ArtistRatingUpdatedEvent>()
                     .Publish<VenueChangedEvent>()

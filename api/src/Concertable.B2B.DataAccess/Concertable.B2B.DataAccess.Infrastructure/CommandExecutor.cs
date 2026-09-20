@@ -1,12 +1,13 @@
 using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
 internal sealed class CommandExecutor(
     IServiceScopeFactory scopeFactory,
-    string connectionString) : ICommandExecutor
+    NpgsqlDataSource dataSource) : ICommandExecutor
 {
     public async Task<TResult> ExecuteAsync<TService, TResult>(
         Func<TService, CancellationToken, Task<TResult>> command,
@@ -30,7 +31,7 @@ internal sealed class CommandExecutor(
         where TService : notnull
     {
         var options = new DbContextOptionsBuilder()
-            .UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure())
+            .UseNpgsql(dataSource, npgsql => npgsql.EnableRetryOnFailure())
             .Options;
         await using var strategyContext = new DbContext(options);
         var strategy = strategyContext.Database.CreateExecutionStrategy();
@@ -46,7 +47,7 @@ internal sealed class CommandExecutor(
                 var services = scope.ServiceProvider;
                 accessor = services.GetRequiredService<CommandTransactionAccessor>();
                 transaction = await CommandTransaction.BeginAsync(
-                    connectionString,
+                    dataSource,
                     services.GetRequiredService<IDbContextAccessor>(),
                     ct);
                 accessor.Current = transaction;

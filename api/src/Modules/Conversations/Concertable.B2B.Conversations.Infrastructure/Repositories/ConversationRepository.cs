@@ -37,8 +37,9 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
     {
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
-            FROM conversations.Conversations WITH (UPDLOCK, HOLDLOCK)
-            WHERE Id = {conversationId}
+            FROM conversations."Conversations"
+            WHERE "Id" = {conversationId}
+            FOR UPDATE
             """, ct);
         return await context.Conversations
             .Include(conversation => conversation.AccessGrants)
@@ -53,10 +54,11 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
     {
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
-            FROM conversations.ConversationCreationReceipts WITH (UPDLOCK, HOLDLOCK)
-            WHERE CreatorTenantId = {creatorTenantId}
-              AND CreatedByMembershipId = {createdByMembershipId}
-              AND RequestId = {requestId}
+            FROM conversations."ConversationCreationReceipts"
+            WHERE "CreatorTenantId" = {creatorTenantId}
+              AND "CreatedByMembershipId" = {createdByMembershipId}
+              AND "RequestId" = {requestId}
+            FOR UPDATE
             """, ct);
         return await context.ConversationCreationReceipts.SingleOrDefaultAsync(
             receipt => receipt.CreatorTenantId == creatorTenantId
@@ -73,10 +75,11 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
     {
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
-            FROM conversations.Messages WITH (UPDLOCK, HOLDLOCK)
-            WHERE ConversationId = {conversationId}
-              AND SentByMembershipId = {sentByMembershipId}
-              AND RequestId = {requestId}
+            FROM conversations."Messages"
+            WHERE "ConversationId" = {conversationId}
+              AND "SentByMembershipId" = {sentByMembershipId}
+              AND "RequestId" = {requestId}
+            FOR UPDATE
             """, ct);
         return await context.Messages.SingleOrDefaultAsync(
             message => message.ConversationId == conversationId

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Azure.ServiceBus" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Concertable.Payment.Contracts" />
     <PackageReference Include="Concertable.AppHost.Shared" />
     <PackageReference Include="Concertable.Frontend.Hosting" />

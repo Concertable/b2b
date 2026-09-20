@@ -19,8 +19,9 @@ internal sealed class InvoiceSequenceRepository : IInvoiceSequenceRepository
     {
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
-            FROM concert.InvoiceSequences WITH (UPDLOCK, HOLDLOCK)
-            WHERE TenantId = {tenantId}
+            FROM concert."InvoiceSequences"
+            WHERE "TenantId" = {tenantId}
+            FOR UPDATE
             """, ct);
         return await context.InvoiceSequences.SingleOrDefaultAsync(
             sequence => sequence.TenantId == tenantId,

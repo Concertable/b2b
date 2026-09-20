@@ -1,14 +1,15 @@
 using System.Data;
 using Concertable.Messaging.Infrastructure.Outbox;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
 public sealed class CommandTransaction : IAsyncDisposable
 {
-    private readonly SqlConnection connection;
-    private readonly SqlTransaction transaction;
+    private readonly NpgsqlDataSource dataSource;
+    private readonly NpgsqlConnection connection;
+    private readonly NpgsqlTransaction transaction;
     private readonly IDbContextAccessor outboxAccessor;
     private readonly List<DbContext> participants = [];
     private readonly List<Func<CancellationToken, Task>> authorityValidators = [];
@@ -16,27 +17,28 @@ public sealed class CommandTransaction : IAsyncDisposable
     private bool completed;
 
     private CommandTransaction(
-        SqlConnection connection,
-        SqlTransaction transaction,
+        NpgsqlDataSource dataSource,
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
         IDbContextAccessor outboxAccessor)
     {
+        this.dataSource = dataSource;
         this.connection = connection;
         this.transaction = transaction;
         this.outboxAccessor = outboxAccessor;
     }
 
     public static async Task<CommandTransaction> BeginAsync(
-        string connectionString,
+        NpgsqlDataSource dataSource,
         IDbContextAccessor outboxAccessor,
         CancellationToken ct = default)
     {
-        var connection = new SqlConnection(connectionString);
-        await connection.OpenAsync(ct);
-        var transaction = (SqlTransaction)await connection.BeginTransactionAsync(
+        var connection = await dataSource.OpenConnectionAsync(ct);
+        var transaction = await connection.BeginTransactionAsync(
             IsolationLevel.ReadCommitted,
             ct);
 
-        return new CommandTransaction(connection, transaction, outboxAccessor);
+        return new CommandTransaction(dataSource, connection, transaction, outboxAccessor);
     }
 
     public async Task EnlistAsync(DbContext context, CancellationToken ct = default)
@@ -117,6 +119,12 @@ public sealed class CommandTransaction : IAsyncDisposable
             if (participant.Database.CurrentTransaction is { } enlistedTransaction)
                 await enlistedTransaction.DisposeAsync();
         }
+
+        await this.connection.CloseAsync();
+        foreach (var participant in this.participants)
+            participant.Database.SetDbConnection(
+                this.dataSource.CreateConnection(),
+                contextOwnsConnection: true);
     }
 
     public async ValueTask DisposeAsync()

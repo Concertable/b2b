@@ -23,27 +23,22 @@ public abstract class ResourceAccessGrantConfiguration<TGrant, TScope> : IEntity
         builder.Property(g => g.Kind).IsRequired();
         builder.Property(g => g.Version).IsRequired().IsConcurrencyToken();
 
-        /* Both directions are read constantly: the resource-first index serves "may this membership reach this
-           row", the tenant-first one serves "what may this tenant reach". Expiry stays out of the index
-           condition — a moving predicate would make the index depend on the clock. */
         builder.HasIndex(g => new { g.ResourceId, g.TenantId, g.Scope, g.MembershipId })
-            .HasFilter($"[{nameof(ResourceAccessGrant<TScope>.RevokedAt)}] IS NULL");
+            .HasFilter($"\"{nameof(ResourceAccessGrant<TScope>.RevokedAt)}\" IS NULL");
         builder.HasIndex(g => new { g.TenantId, g.Scope, g.ResourceId, g.MembershipId })
-            .HasFilter($"[{nameof(ResourceAccessGrant<TScope>.RevokedAt)}] IS NULL");
+            .HasFilter($"\"{nameof(ResourceAccessGrant<TScope>.RevokedAt)}\" IS NULL");
 
-        /* Two rules rather than one over a nullable column: SQL Server treats NULLs as equal in a unique
-           index, so a single index would let one member-specific grant block every other member's. */
         builder.HasIndex(g => new { g.ResourceId, g.TenantId, g.Scope, g.Kind, g.IssuedByTenantId })
             .IsUnique()
             .HasFilter(
-                $"[{nameof(ResourceAccessGrant<TScope>.RevokedAt)}] IS NULL AND " +
-                $"[{nameof(ResourceAccessGrant<TScope>.MembershipId)}] IS NULL")
+                $"\"{nameof(ResourceAccessGrant<TScope>.RevokedAt)}\" IS NULL AND " +
+                $"\"{nameof(ResourceAccessGrant<TScope>.MembershipId)}\" IS NULL")
             .HasDatabaseName($"UX_{TableName}_Tenant");
         builder.HasIndex(g => new { g.ResourceId, g.TenantId, g.Scope, g.Kind, g.IssuedByTenantId, g.MembershipId })
             .IsUnique()
             .HasFilter(
-                $"[{nameof(ResourceAccessGrant<TScope>.RevokedAt)}] IS NULL AND " +
-                $"[{nameof(ResourceAccessGrant<TScope>.MembershipId)}] IS NOT NULL")
+                $"\"{nameof(ResourceAccessGrant<TScope>.RevokedAt)}\" IS NULL AND " +
+                $"\"{nameof(ResourceAccessGrant<TScope>.MembershipId)}\" IS NOT NULL")
             .HasDatabaseName($"UX_{TableName}_Membership");
     }
 }

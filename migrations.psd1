@@ -1,6 +1,6 @@
 @{
     Environment = @{
-        ConnectionStrings__B2BDb = 'Server=localhost;Database=concertable-b2b;Trusted_Connection=True;TrustServerCertificate=True'
+        ConnectionStrings__B2BDb = 'Host=localhost;Port=5432;Database=concertable-b2b;Username=postgres;Password=postgres'
     }
     Migrations = @(
         @{ Context = 'UserDbContext'; Project = 'api/src/Modules/User/Concertable.B2B.User.Infrastructure'; StartupProject = 'api/src/Concertable.B2B.Web'; OutputDir = 'Data/Migrations' }

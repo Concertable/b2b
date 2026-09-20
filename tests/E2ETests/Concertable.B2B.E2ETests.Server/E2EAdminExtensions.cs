@@ -1,6 +1,7 @@
-﻿using System.Data;
+using System.Data;
 using System.Security.Cryptography;
 using System.Text;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.DataAccess.Application;
@@ -10,7 +11,7 @@ using Concertable.Payment.Contracts;
 using Dapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -35,8 +36,8 @@ public static class E2EAdminExtensions
 
             services.AddSingleton(new E2EAdminOptions(
                 adminKey,
-                configuration.GetConnectionString("B2BDb")
-                    ?? throw new InvalidOperationException("Connection string 'B2BDb' is required by the B2B E2E host.")));
+                configuration.GetConnectionString(B2BDb.Name)
+                    ?? throw new InvalidOperationException($"Connection string '{B2BDb.Name}' is required by the B2B E2E host.")));
             services.AddHttpContextAccessor();
             services.AddScoped<B2BDatabaseResetter>();
             services.AddScoped<B2BHostInitializer>();
@@ -123,7 +124,7 @@ public static class E2EAdminExtensions
         IDbConnection connection,
         Concertable.B2B.Application.Domain.Entities.ApplicationEntity application) =>
         connection.QuerySingleAsync<int>(
-            "SELECT Id FROM application.Applications WHERE ArtistId = @ArtistId AND OpportunityId = @OpportunityId",
+            "SELECT \"Id\" FROM application.\"Applications\" WHERE \"ArtistId\" = @ArtistId AND \"OpportunityId\" = @OpportunityId",
             new { application.ArtistId, application.OpportunityId });
 
     private static async Task<object> BookingAsync(
@@ -136,7 +137,7 @@ public static class E2EAdminExtensions
         {
             booking.Id,
             ApplicationId = await connection.QuerySingleAsync<int>(
-                "SELECT ApplicationId FROM booking.Bookings WHERE Id = @Id",
+                "SELECT \"ApplicationId\" FROM booking.\"Bookings\" WHERE \"Id\" = @Id",
                 new { booking.Id }),
             Concert = new
             {
@@ -150,14 +151,14 @@ public static class E2EAdminExtensions
         int applicationId,
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
-            "SELECT Id FROM booking.Bookings WHERE ApplicationId = @applicationId",
+            "SELECT \"Id\" FROM booking.\"Bookings\" WHERE \"ApplicationId\" = @applicationId",
             new { applicationId }));
 
     private static async Task<IResult> GetApplicationStateAsync(
         int applicationId,
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
-            "SELECT State FROM application.Applications WHERE Id = @applicationId",
+            "SELECT \"State\" FROM application.\"Applications\" WHERE \"Id\" = @applicationId",
             new { applicationId }));
 
     private static async Task<IResult> GetConcertStateAsync(
@@ -165,10 +166,10 @@ public static class E2EAdminExtensions
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
             """
-            SELECT concerts.State
-            FROM concert.Concerts AS concerts
-            INNER JOIN booking.Bookings AS bookings ON bookings.Id = concerts.BookingId
-            WHERE bookings.ApplicationId = @applicationId
+            SELECT concerts."State"
+            FROM concert."Concerts" AS concerts
+            INNER JOIN booking."Bookings" AS bookings ON bookings."Id" = concerts."BookingId"
+            WHERE bookings."ApplicationId" = @applicationId
             """,
             new { applicationId }));
 
@@ -189,7 +190,7 @@ public static class E2EAdminExtensions
         IConfiguration configuration)
     {
         var venueTenantId = await connection.QuerySingleAsync<Guid>(
-            "SELECT VenueTenantId FROM application.Applications WHERE Id = @applicationId",
+            "SELECT \"VenueTenantId\" FROM application.\"Applications\" WHERE \"Id\" = @applicationId",
             new { applicationId });
 
         var setup = await paymentSessions.SetupPaymentMethodAsync(
@@ -197,7 +198,8 @@ public static class E2EAdminExtensions
                 PaymentOperationReferences.MethodVerification(applicationId),
                 PaymentSessionKind.PaymentMethodVerification,
                 venueTenantId,
-                configuration["Legal:MandateTermsVersion"]));
+                configuration["Legal:MandateTermsVersion"]
+                    ?? throw new InvalidOperationException("Legal:MandateTermsVersion is required by the B2B E2E host.")));
 
         if (!setup.TryGetValue(out var session))
         {
@@ -212,7 +214,7 @@ public static class E2EAdminExtensions
         int venueId,
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
-            "SELECT MAX(Id) FROM opportunity.Opportunities WHERE VenueId = @venueId",
+            "SELECT MAX(\"Id\") FROM opportunity.\"Opportunities\" WHERE \"VenueId\" = @venueId",
             new { venueId }));
 
     private static async Task<IResult> DeclareDoorRevenueAsync(
@@ -221,7 +223,7 @@ public static class E2EAdminExtensions
         IDbConnection connection)
     {
         await connection.ExecuteAsync(
-            "UPDATE concert.Concerts SET DoorRevenue = @doorRevenue WHERE Id = @concertId",
+            "UPDATE concert.\"Concerts\" SET \"DoorRevenue\" = @doorRevenue WHERE \"Id\" = @concertId",
             new { concertId, request.DoorRevenue });
         return Results.NoContent();
     }
@@ -303,7 +305,7 @@ internal sealed class B2BDatabaseResetter
 
     public async Task ResetAsync(CancellationToken cancellationToken)
     {
-        await using var connection = new SqlConnection(options.ConnectionString);
+        await using var connection = new NpgsqlConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
         var respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
         {
@@ -314,7 +316,7 @@ internal sealed class B2BDatabaseResetter
                 new Table("admin", "AdminProfiles"),
                 new Table("messaging", "Inbox"),
             ],
-            DbAdapter = DbAdapter.SqlServer,
+            DbAdapter = DbAdapter.Postgres,
             WithReseed = true,
         });
         await respawner.ResetAsync(connection);

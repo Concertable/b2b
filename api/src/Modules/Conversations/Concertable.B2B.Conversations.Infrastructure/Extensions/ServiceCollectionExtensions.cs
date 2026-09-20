@@ -27,7 +27,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddConversationsModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ConversationsDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
@@ -35,7 +37,9 @@ public static class ServiceCollectionExtensions
                 .UseSeedingSupport(sp));
 
         services.AddDbContext<ConversationsPrivilegedDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())

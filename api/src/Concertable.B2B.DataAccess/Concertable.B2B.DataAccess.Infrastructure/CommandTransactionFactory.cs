@@ -1,20 +1,21 @@
 using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
 public sealed class CommandTransactionFactory
 {
-    private readonly string connectionString;
+    private readonly NpgsqlDataSource dataSource;
     private readonly CommandTransactionAccessor accessor;
     private readonly IDbContextAccessor outboxAccessor;
 
     public CommandTransactionFactory(
-        string connectionString,
+        NpgsqlDataSource dataSource,
         CommandTransactionAccessor accessor,
         IDbContextAccessor outboxAccessor)
     {
-        this.connectionString = connectionString;
+        this.dataSource = dataSource;
         this.accessor = accessor;
         this.outboxAccessor = outboxAccessor;
     }
@@ -35,7 +36,7 @@ public sealed class CommandTransactionFactory
         }
 
         await using var command = await CommandTransaction.BeginAsync(
-            this.connectionString,
+            this.dataSource,
             this.outboxAccessor,
             ct);
         this.accessor.Current = command;
