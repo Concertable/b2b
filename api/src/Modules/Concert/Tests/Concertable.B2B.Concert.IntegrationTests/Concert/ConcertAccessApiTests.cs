@@ -113,6 +113,32 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AccessMutations_WhenCallerIsNotPrincipal_ReturnForbidden()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
+        var membership = fixture.SeedState.Memberships.Single(value =>
+            value.TenantId == TenantOf(fixture.SeedState.VenueManager2.Id)
+            && value.UserId == fixture.SeedState.VenueManager2.Id);
+
+        var revoke = await client.DeleteAsync(
+            $"/api/concert/{concert.Id}/summary-shares/{Guid.NewGuid()}?expectedVersion={concert.AccessVersion}");
+        var assign = await client.PostAsync(
+            $"/api/concert/{concert.Id}/member-assignments",
+            new
+            {
+                membershipId = membership.Id,
+                expectedAccessVersion = concert.AccessVersion,
+            });
+        var remove = await client.DeleteAsync(
+            $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={concert.AccessVersion}");
+
+        await revoke.ShouldBe(HttpStatusCode.Forbidden);
+        await assign.ShouldBe(HttpStatusCode.Forbidden);
+        await remove.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task ShareSummary_WithInvalidValidity_DoesNotRevokeExpiredShare()
     {
         var issuer = fixture.SeedState.VenueManager1;

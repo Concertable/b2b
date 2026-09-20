@@ -338,12 +338,11 @@ but missed `DevController` (R2).
   **Fix:** inject `IConcertPrivilegedRepository` into `ConcertService` and route those five paths through it,
   using `GetIdentityByIdForUpdateAsync` for the pre-load authority check; the domain already fences the write
   (`IsPrincipal`, `IssuedByTenantId`). The receipt repository and unit of work must move to the same context.
-  **Disposition:** the current command paths already satisfy the requested repair: summary share and recovery
-  perform the authority check through `GetIdentityByIdForUpdateAsync`, and share, recovery, revocation, member
-  assignment, and member removal all load the complete ACL through the privileged repository under an update
-  lock. The receipt repository, privileged unit of work, and grant writes share `ConcertPrivilegedDbContext`.
-  The full eight-test access-control integration class passes, including replay, expired-share handling,
-  revocation, and member assignment/removal coverage.
+  **Disposition:** all five command paths now lock and load the minimal concert identity, establish resource
+  authority, and only then load the complete ACL through the privileged repository under the same transaction.
+  The receipt repository, privileged unit of work, and grant writes share `ConcertPrivilegedDbContext`. A new
+  integration regression exercises revoke, assign, and remove against a concert the caller does not own and
+  proves all three return 403; the exact regression passes 1/1 and the full access-control class passes 9/9.
 
 - [x] **R2 — critical — an authenticated caller can trigger settlement on any concert.**
   `DevController.Complete` (`DevController.cs:19-27`) is `[Authorize]`-only, takes `concertId` from the query
@@ -1261,3 +1260,23 @@ Both native/general and security lenses approved R8. Signed big-endian length fr
 sequence unambiguous, null uses a reserved frame, formatting is culture-invariant, and equivalent UTC/local
 instants normalize identically. The collision and normalization regressions and affected integration suites
 all pass. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `909a1ae1e9f2d3d82f2641fc8a5e632310834338`
+**Candidate head:** `39265a9d8cb89f091666cca9776e0a20c6a4d924`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:62c49ac442ae133f6a5a04b2f79222809e4cb4d05d016d8580ed1ce4d6cb546b` `(1 path)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\6d2bf307d8991c3d97eda404e3ec865f3d028cc2e6b3a46d68d7739d2244f45f`
+**Candidate bundle identity:** `sha256:84179ef2fa2a2de9c22e72d6f821f75245e1c6c74c1511ba6c3d53f1d95b5fdf`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The security lens approved the shared privileged-context and transaction claims. The native lens found that
+revoke, assign, and remove still loaded the unfiltered ACL before `CanShareAsync`; actor facts and a generic
+permission did not establish resource authority. R1 remained open until those three paths adopted the same
+identity-lock, authority-check, full-ACL-load order already used by share and duplicate recovery.

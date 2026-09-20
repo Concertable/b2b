@@ -712,11 +712,12 @@ internal sealed class ConcertService : IConcertService
             || !permissionCatalog.Grants(facts.Actor.Role, TenantPermission.ResourcesShare))
             return new RevokeConcertSummaryShareError.NotPermitted();
 
-        var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct);
-        if (concert is null)
+        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
             return new RevokeConcertSummaryShareError.ConcertNotFound(id);
         if (!await CanShareAsync(id, facts.Actor, ct))
             return new RevokeConcertSummaryShareError.NotPermitted();
+        var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
+            ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
         if (concert.AccessVersion != expectedAccessVersion)
             return new RevokeConcertSummaryShareError.Superseded(id);
         if (concert.RevokeSummaryShare(grantId, facts.Actor.TenantId, resourceAccess.UtcNow)
@@ -772,11 +773,12 @@ internal sealed class ConcertService : IConcertService
         if (facts.TargetMembership is null)
             return new AssignConcertMemberError.InvalidMembership();
 
-        var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct);
-        if (concert is null)
+        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
             return new AssignConcertMemberError.ConcertNotFound(id);
         if (!await CanShareAsync(id, facts.Actor, ct))
             return new AssignConcertMemberError.NotPermitted();
+        var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
+            ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
         if (concert.AccessVersion != request.ExpectedAccessVersion)
             return new AssignConcertMemberError.Superseded(id);
         var assignment = concert.AssignMember(
@@ -841,11 +843,12 @@ internal sealed class ConcertService : IConcertService
             || !permissionCatalog.Grants(facts.Actor.Role, TenantPermission.ResourcesShare))
             return new AssignConcertMemberError.NotPermitted();
 
-        var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct);
-        if (concert is null)
+        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
             return new AssignConcertMemberError.ConcertNotFound(id);
         if (!await CanShareAsync(id, facts.Actor, ct))
             return new AssignConcertMemberError.NotPermitted();
+        var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
+            ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
         if (concert.AccessVersion != expectedAccessVersion)
             return new AssignConcertMemberError.Superseded(id);
         if (concert.RemoveMemberAssignment(facts.Actor.TenantId, membershipId, resourceAccess.UtcNow)
