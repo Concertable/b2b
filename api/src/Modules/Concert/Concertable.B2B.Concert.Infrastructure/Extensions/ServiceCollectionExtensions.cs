@@ -79,6 +79,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IConcertReadDbContext>(sp => sp.GetRequiredService<ConcertReadDbContext>());
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IPrivilegedUnitOfWork, PrivilegedUnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();

@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `bd13e9bb5e93b5c5a68ec9698bba08b0e31ea336`  `(2026-09-20)`
-**Security-reviewed up to commit:** `bd13e9bb5e93b5c5a68ec9698bba08b0e31ea336`  `(2026-09-20)`
+**Reviewed up to commit:** `c5150e7cd7f2bda0fe371e9b1925fd631942268b`  `(2026-09-20)`
+**Security-reviewed up to commit:** `c5150e7cd7f2bda0fe371e9b1925fd631942268b`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -432,7 +432,25 @@ Authorization unit tier now present in the solution and current-graph evidence.
   a posted concert returns 200 and an unpublished draft returns 404. The stale finding is reconciled without a
   further code change.
 
-- [ ] **R6 — medium — the mid-command flush throws where every sibling returns a typed error, and commits a
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `bd13e9bb5e93b5c5a68ec9698bba08b0e31ea336`
+**Candidate head:** `c5150e7cd7f2bda0fe371e9b1925fd631942268b`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:0f8265121c3f273d86be4af1d16b5791ff1dbf1659f57f488b35f2023bf0d460` `(1 path)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-c5150e7cd7f2bda0fe371e9b1925fd631942268b`
+**Candidate bundle identity:** `sha256:3f10d41712f88084942f2813ba979b8a4af7c801943fcb66e30a63bdd0048e65`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security lenses approved the frozen one-path ledger delta with no actionable
+findings. R5 is closed on the exact published-only call chain and focused posted/unpublished regression.
+
+- [x] **R6 — medium — the mid-command flush throws where every sibling returns a typed error, and commits a
   revocation before the command's guards run.** `ConcertService.cs:333` is the one bare `SaveChangesAsync` among
   the command paths; it carries the concert rowversion mutated by `RevokeExpiredSummaryShares`, so a lost race
   escapes as `DbUpdateConcurrencyException` (500) instead of `Superseded`. It also commits the revocation
@@ -440,6 +458,10 @@ Authorization unit tier now present in the solution and current-graph evidence.
   `NotPermitted`/`InvalidValidity` rejection leaves a committed revocation behind.
   **Fix:** use `TrySaveChangesAsync(... => e is DbUpdateConcurrencyException, ct)` → `Superseded`, and run the
   pure guards before the revocation.
+  **Disposition:** added a pure domain validation step before expiry revocation and moved the intermediate
+  flush through the privileged unit of work's tolerant save, mapping a lost concurrency race to `Superseded`.
+  The focused invalid-validity regression proves the existing expired share and access version remain
+  unchanged; the full access class passes 6/6 and Concert unit tests pass 90/90.
 
 - [ ] **R7 — medium — a duplicate-key violation escapes as a 500 on the very path the receipt exists to make
   idempotent.** `ConcertService.cs:360` tolerates only `DbUpdateConcurrencyException`. Two concurrent copies of

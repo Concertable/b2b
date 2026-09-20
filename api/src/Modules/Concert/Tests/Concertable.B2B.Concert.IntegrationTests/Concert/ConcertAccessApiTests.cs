@@ -111,6 +111,42 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ShareSummary_WithInvalidValidity_DoesNotRevokeExpiredShare()
+    {
+        var issuer = fixture.SeedState.VenueManager1;
+        var issuerTenantId = TenantOf(issuer.Id);
+        var concert = fixture.SeedState.Concerts.First(value => value.VenueTenantId == issuerTenantId);
+        var recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var seeded = await fixture.AddExpiredSummaryShareAsync(
+            concert.Id,
+            issuerTenantId,
+            issuer.Id,
+            recipientTenantId);
+        var client = CreateOwningVenueClient(concert.VenueId);
+
+        var response = await client.PostAsync(
+            $"/api/concert/{concert.Id}/summary-shares",
+            new
+            {
+                requestId = Guid.NewGuid(),
+                recipientTenantId,
+                recipientMembershipId = (Guid?)null,
+                expectedAccessVersion = seeded.AccessVersion,
+                validUntil = seeded.Now,
+            });
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        var persisted = await fixture.Concerts
+            .AsNoTracking()
+            .Include(value => value.AccessGrants)
+            .SingleAsync(value => value.Id == concert.Id);
+        Assert.Equal(seeded.AccessVersion, persisted.AccessVersion);
+        Assert.Contains(
+            persisted.AccessGrants,
+            grant => grant.Id == seeded.GrantId && grant.RevokedAt is null);
+    }
+
+    [Fact]
     public async Task ConcurrentSummaryShares_SerializeToOneGrant()
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);

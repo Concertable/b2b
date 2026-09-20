@@ -22,6 +22,7 @@ public sealed class ConcertApiFixture : ApiFixture
     private IScoped<IConcertWorkflow> workflow = null!;
     private ICompletionRunner completionRunner = null!;
     private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
+    private TimeProvider timeProvider = null!;
 
     internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
 
@@ -132,6 +133,32 @@ public sealed class ConcertApiFixture : ApiFixture
     internal Task AddSelfBillingAgreementAsync(Guid tenantId, DateTime acceptedAtUtc) =>
         AddSelfBillingAgreementsAsync(CreateAgreement(tenantId, acceptedAtUtc));
 
+    internal async Task<(Guid GrantId, long AccessVersion, DateTime Now)> AddExpiredSummaryShareAsync(
+        int concertId,
+        Guid issuerTenantId,
+        Guid issuerUserId,
+        Guid recipientTenantId)
+    {
+        dbContext.ChangeTracker.Clear();
+        var concert = await dbContext.Concerts
+            .Include(value => value.AccessGrants)
+            .SingleAsync(value => value.Id == concertId);
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var share = concert.ShareSummary(
+            issuerTenantId,
+            issuerUserId,
+            recipientTenantId,
+            null,
+            now.AddDays(-2),
+            now.AddDays(-1));
+        if (!share.TryGetValue(out var grant))
+            throw new InvalidOperationException("Could not seed an expired summary share.");
+
+        dbContext.Add(grant);
+        await dbContext.SaveChangesAsync();
+        return (grant.Id, concert.AccessVersion, now);
+    }
+
     protected override void OnConfigureServices(IServiceCollection services)
     {
     }
@@ -144,6 +171,7 @@ public sealed class ConcertApiFixture : ApiFixture
         completionRunner = scope.ServiceProvider.GetRequiredService<ICompletionRunner>();
         selfBillingAgreementRepository = scope.ServiceProvider
             .GetRequiredService<ISelfBillingAgreementRepository>();
+        timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
     }
 
     internal async Task EnsureSupplierSelfBillingAgreementAsync(int concertId)

@@ -76,6 +76,7 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IBookingConfirmationEmailSender>(),
             Mock.Of<IBus>(),
             Mock.Of<IUnitOfWork>(),
+            Mock.Of<IPrivilegedUnitOfWork>(),
             TimeProvider.System,
             Mock.Of<IConcertCommandReceiptRepository>(),
             Mock.Of<ITenantCommandFacts>(),

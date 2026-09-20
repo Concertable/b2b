@@ -108,11 +108,9 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         DateTime at,
         DateTime? validUntil)
     {
-        if (!IsPrincipal(issuerTenantId))
-            return new ConcertSummaryShareError.NotPermitted();
-
-        if (validUntil is { } until && until <= at)
-            return new ConcertSummaryShareError.InvalidValidity();
+        var validation = ValidateSummaryShare(issuerTenantId, at, validUntil);
+        if (validation.TryGetError(out var validationError))
+            return validationError;
 
         if (accessGrants.Any(grant =>
                 grant.Kind == ResourceGrantKind.SharedSummary
@@ -136,6 +134,20 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
         accessGrants.Add(grant);
         AccessVersion++;
         return grant;
+    }
+
+    public UnitResult<ConcertSummaryShareError> ValidateSummaryShare(
+        Guid issuerTenantId,
+        DateTime at,
+        DateTime? validUntil)
+    {
+        if (!IsPrincipal(issuerTenantId))
+            return new ConcertSummaryShareError.NotPermitted();
+
+        if (validUntil is { } until && until <= at)
+            return new ConcertSummaryShareError.InvalidValidity();
+
+        return new Success();
     }
 
     // Retire before reissue: the caller must flush between the two or the insert collides with the row it

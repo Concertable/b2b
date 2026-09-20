@@ -35,6 +35,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IBookingConfirmationEmailSender bookingConfirmationEmailSender;
     private readonly IBus bus;
     private readonly IUnitOfWork unitOfWork;
+    private readonly IPrivilegedUnitOfWork privilegedUnitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly IConcertCommandReceiptRepository receiptRepository;
     private readonly ITenantCommandFacts tenantCommandFacts;
@@ -58,6 +59,7 @@ internal sealed class ConcertService : IConcertService
         IBookingConfirmationEmailSender bookingConfirmationEmailSender,
         IBus bus,
         IUnitOfWork unitOfWork,
+        IPrivilegedUnitOfWork privilegedUnitOfWork,
         TimeProvider timeProvider,
         IConcertCommandReceiptRepository receiptRepository,
         ITenantCommandFacts tenantCommandFacts,
@@ -80,6 +82,7 @@ internal sealed class ConcertService : IConcertService
         this.bookingConfirmationEmailSender = bookingConfirmationEmailSender;
         this.bus = bus;
         this.unitOfWork = unitOfWork;
+        this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.timeProvider = timeProvider;
         this.receiptRepository = receiptRepository;
         this.tenantCommandFacts = tenantCommandFacts;
@@ -555,12 +558,23 @@ internal sealed class ConcertService : IConcertService
             return new ShareConcertSummaryError.Superseded(id);
 
         var decidedAt = resourceAccess.UtcNow;
+        var validation = concert.ValidateSummaryShare(
+                facts.Actor.TenantId,
+                decidedAt,
+                request.ValidUntil)
+            .MapError(static error => error.ToShareConcertSummaryError());
+        if (validation.TryGetError(out var validationError))
+            return validationError;
+
         concert.RevokeExpiredSummaryShares(
             facts.Actor.TenantId,
             request.RecipientTenantId,
             request.RecipientMembershipId,
             decidedAt);
-        await privilegedRepository.SaveChangesAsync(ct);
+        if (!await privilegedUnitOfWork.TrySaveChangesAsync(
+                static exception => exception is DbUpdateConcurrencyException,
+                ct))
+            return new ShareConcertSummaryError.Superseded(id);
 
         var share = concert.ShareSummary(
             facts.Actor.TenantId,
