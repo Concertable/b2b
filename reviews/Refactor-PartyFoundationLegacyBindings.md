@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `a6e72b6f0864c35a895cc4f3337fe46bc5a9235e`  `(2026-09-20)`
-**Security-reviewed up to commit:** `a6e72b6f0864c35a895cc4f3337fe46bc5a9235e`  `(2026-09-20)`
+**Reviewed up to commit:** `f4a953ddd6765a0a68358f8d11dde1f9a6ef348f`  `(2026-09-20)`
+**Security-reviewed up to commit:** `f4a953ddd6765a0a68358f8d11dde1f9a6ef348f`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -566,7 +566,7 @@ recovery-mapping tests are required before R7 can close.
   the caller does not control and now returns 403 instead of disclosing recipient validity; it passes 1/1 and
   the full access-control class passes 9/9.
 
-- [ ] **R11 — medium — `MalformedTenantHeaderException` is mapped nowhere.**
+- [x] **R11 — medium — `MalformedTenantHeaderException` is mapped nowhere.**
   `MembershipContext.cs:71-72` throws it from `TenantResolutionMiddleware`, which runs for the whole pipeline
   (`B2BWebHostExtensions.cs:256`). The only two references in the tree are the throw and the declaration — no
   handler, no `ProblemDetails` arm — so it conventionally surfaces as 500 for what is a client error. It also
@@ -574,6 +574,10 @@ recovery-mapping tests are required before R7 can close.
   (`MembershipContext.cs:84-86`), which comma-joins. Not reachable pre-authentication:
   `MembershipContext.cs:51-55` returns for an anonymous caller before any header parsing.
   **Fix:** map it to 400 at the Web host, or short-circuit in the middleware.
+  **Disposition:** a Web exception handler registered before the global fallback now maps only
+  `MalformedTenantHeaderException` to a 400 Problem Details response. Real-pipeline regressions prove both an
+  invalid value and duplicate `X-Tenant-Id` values return 400. The focused regressions pass 2/2, the full
+  active-tenant resolution class passes 7/7, and the Tenant integration project passes 92/92.
 
 - [ ] **R12 — medium — `IsCurrentMembershipAsync` materialises every membership of a tenant to answer one
   boolean, on a request path.** `TenantService.cs:57-61` calls `ListMembershipsByTenantAsync` (tracked entities,
@@ -1393,3 +1397,23 @@ exception-type coverage.
 Both native/general and security lenses approved the malformed-outcome regression and final R9 evidence. The
 test cannot exit through payload mismatch or missing-grant classification and verifies the invariant exception,
 receipt identity, and specific diagnostic. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `a6e72b6f0864c35a895cc4f3337fe46bc5a9235e`
+**Candidate head:** `f4a953ddd6765a0a68358f8d11dde1f9a6ef348f`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:bd071b517b929e260dfed3316e4b07b3e528d481e7fe8daf4e227a031d47c0d5` `(3 paths)`
+**Candidate patch:** `sha256:a602a3880b28e0193f69c8769d7544ec511212867ec567146f6ed70b6386fb34`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\51ede098bcebdaa0359456b7f385f03415261767e451e74653d410c3f37c493b`
+**Candidate bundle identity:** `sha256:645dad3a7ac4eb8a1f042d4f179c80d0fb2c0f4953cc52c63e551c56c43ec8d3`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security lenses approved R10. Unauthorized callers now receive the concert authority
+decision before any caller-controlled recipient lookup, durable replay remains classified from persisted state,
+and the focused regression proves the ordering through a nonexistent recipient. No actionable findings.

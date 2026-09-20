@@ -31,6 +31,7 @@ using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Api.Extensions;
 using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.B2B.Web.Extensions;
+using Concertable.B2B.Web.Exceptions;
 using Concertable.B2B.Web.Middleware;
 using Concertable.B2B.Web.Routing;
 using Concertable.Customer.Review.Contracts.Events;
@@ -239,6 +240,7 @@ public static class B2BWebHostExtensions
             services.AddUserApi(builder.Configuration);
             services.AddAuth(builder.Configuration, builder.Environment);
             services.AddValidation();
+            services.AddExceptionHandler<MalformedTenantHeaderExceptionHandler>();
             services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddScoped<TenantResolutionMiddleware>();
             services.Configure<ForwardedHeadersOptions>(options =>

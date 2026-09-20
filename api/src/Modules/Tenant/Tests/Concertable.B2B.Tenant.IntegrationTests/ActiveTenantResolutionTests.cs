@@ -87,6 +87,30 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task MalformedTenantHeader_ReturnsBadRequest()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        client.DefaultRequestHeaders.Add(TenantHeaders.TenantId, "not-a-tenant-id");
+
+        var response = await client.GetAsync("/api/organization");
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task DuplicateTenantHeaders_ReturnBadRequest()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        client.DefaultRequestHeaders.TryAddWithoutValidation(
+            TenantHeaders.TenantId,
+            [Guid.NewGuid().ToString(), Guid.NewGuid().ToString()]);
+
+        var response = await client.GetAsync("/api/organization");
+
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task Me_ReturnsCallerMemberships()
     {
         var manager = fixture.SeedState.VenueManager1;
