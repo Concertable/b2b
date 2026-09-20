@@ -6,7 +6,8 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 
 internal sealed class CommandExecutor(
     IServiceScopeFactory scopeFactory,
-    NpgsqlDataSource dataSource) : ICommandExecutor
+    NpgsqlDataSource dataSource,
+    ICommandTransactionCommitter committer) : ICommandExecutor
 {
     public async Task<TResult> ExecuteAsync<TService, TResult>(
         Func<TService, CancellationToken, Task<TResult>> command,
@@ -63,7 +64,7 @@ internal sealed class CommandExecutor(
                 return (authorityFailure
                     ?? throw new InvalidOperationException("An authority failure result is required."))();
             }
-            await transaction.CommitAsync(ct);
+            await committer.CommitAsync(transaction, ct);
             return result;
         }
         catch

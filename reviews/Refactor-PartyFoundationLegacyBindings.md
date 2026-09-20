@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `6b980063785c1f6f3aaa232137fdd6662743e695`  `(2026-09-20)`
-**Security-reviewed up to commit:** `6b980063785c1f6f3aaa232137fdd6662743e695`  `(2026-09-20)`
+**Reviewed up to commit:** `a3aeb23668404ccee4997c41d20f239c3af3b39c`  `(2026-09-20)`
+**Security-reviewed up to commit:** `a3aeb23668404ccee4997c41d20f239c3af3b39c`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -660,8 +660,8 @@ judgment stays changes-requested until address-review resolves every accepted it
   replay, or require a durable idempotency key for every executor mutation; add a lost-commit-acknowledgement
   integration test.
   **Disposition:** removed whole-command automatic retries so an ambiguous or transient failure is propagated
-  without replay. The real-database DataAccess regression proves a transient commit-style failure invokes the
-  command once, and the focused unit and integration suites pass (5/5 and 1/1).
+  without replay. The focused unit and integration suites pass (5/5 and 1/1); N16 owns the missing
+  commit-boundary fault coverage identified by the incremental review.
 
 - [ ] **N2 — MEDIUM — native/security — concurrent first-tenant creation can escape as an unhandled unique-key failure.**
   `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Repositories/TenantRepository.cs:39-54`
@@ -789,3 +789,28 @@ and R23. Address-review owns the next state transition.
 
 No new findings. Native and security lenses verified the exact two-path frozen delta and found no replacement
 HTTP reachability for concert completion.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `6b980063785c1f6f3aaa232137fdd6662743e695`
+**Candidate head:** `a3aeb23668404ccee4997c41d20f239c3af3b39c`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:6536254f1e6566ee9123139bc73b62f58ff1dc2ac8ea475b6d697a0e8a422a55` `(8 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-a3aeb23668404ccee4997c41d20f239c3af3b39c`
+**Candidate bundle identity:** `sha256:82c3795b687f33e2ea60ead95ede1a9a0373b56ad8ca5860990cdc58277e867e`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+- [x] **N16 — MEDIUM — native/security — the N1 regression does not exercise an ambiguous commit acknowledgement.**
+  `CommandExecutionApiTests.cs:32-39` throws its transient `NpgsqlException` from the command delegate, before
+  `CommandExecutor` reaches flush, authority validation, or `CommitAsync`. It proves only that a command-body
+  failure is not retried, while the N1 disposition claimed commit-boundary coverage.
+  **Fix:** fault the actual commit acknowledgement after a real durable write, assert the command ran once and
+  its durable effect exists once, and verify the ambiguous exception is surfaced.
+  **Disposition:** added an internal commit coordinator and a fixture-owned implementation that commits a real
+  PostgreSQL probe row before throwing the lost acknowledgement. The regression passes and proves one command
+  invocation, one durable row, and the surfaced transient exception.

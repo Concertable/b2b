@@ -1,6 +1,5 @@
 using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.DataAccess.IntegrationTests;
@@ -25,21 +24,25 @@ public sealed class CommandExecutionApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExecuteAsync_TransientFailure_DoesNotReplayCommand()
+    public async Task ExecuteAsync_LostCommitAcknowledgement_DoesNotReplayCommittedCommand()
     {
+        await this.fixture.PrepareCommitProbeAsync();
         var executor = this.fixture.Services.GetRequiredService<ICommandExecutor>();
+        var probeId = Guid.NewGuid();
         var attempts = 0;
-        var failure = new NpgsqlException("The commit acknowledgement was lost.", new TimeoutException());
+        this.fixture.Committer.FailNextCommit();
 
-        var exception = await Assert.ThrowsAsync<NpgsqlException>(() =>
-            executor.ExecuteAsync<IServiceScopeFactory, int>((_, _) =>
+        var exception = await Assert.ThrowsAsync<Npgsql.NpgsqlException>(() =>
+            executor.ExecuteAsync<CommitProbeCommand, int>(async (command, ct) =>
             {
                 attempts++;
-                return Task.FromException<int>(failure);
+                await command.StageAsync(probeId, ct);
+                return attempts;
             }));
 
         Assert.True(exception.IsTransient);
-        Assert.Same(failure, exception);
+        Assert.Same(this.fixture.Committer.Failure, exception);
         Assert.Equal(1, attempts);
+        Assert.Equal(1, await this.fixture.CountCommitProbesAsync(probeId));
     }
 }
