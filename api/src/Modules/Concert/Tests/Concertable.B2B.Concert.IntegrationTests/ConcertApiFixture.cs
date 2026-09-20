@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Runtime.ExceptionServices;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
@@ -165,47 +166,104 @@ public sealed class ConcertApiFixture : ApiFixture
         return (grant.Id, concert.AccessVersion, now);
     }
 
-    internal async Task<T> RunWithReceiptInsertBarrierAsync<T>(Func<Task<T>> action)
+    internal async Task<T> RunWithReceiptInsertBarrierAsync<T>(
+        Func<CancellationToken, Task<T>> action)
     {
+        using var cancellation = new CancellationTokenSource();
         await using var control = new NpgsqlConnection(connectionString);
-        await control.OpenAsync();
-        await ExecuteAsync(control, """
-            CREATE OR REPLACE FUNCTION concert.block_receipt_insert_for_test()
-            RETURNS trigger
-            LANGUAGE plpgsql
-            AS $$
-            BEGIN
-                PERFORM pg_advisory_xact_lock_shared(638457219);
-                RETURN NEW;
-            END;
-            $$;
-            DROP TRIGGER IF EXISTS block_receipt_insert_for_test
-                ON concert."ConcertCommandReceipts";
-            CREATE TRIGGER block_receipt_insert_for_test
-                BEFORE INSERT ON concert."ConcertCommandReceipts"
-                FOR EACH ROW EXECUTE FUNCTION concert.block_receipt_insert_for_test();
-            """);
-        await ExecuteAsync(control, $"SELECT pg_advisory_lock({ReceiptInsertBarrierKey})");
-        var lockHeld = true;
+        Task<T>? result = null;
+        ExceptionDispatchInfo? failure = null;
+        T? outcome = default;
+        var completed = false;
+        var lockHeld = false;
 
         try
         {
-            var result = action();
+            await control.OpenAsync();
+            await ExecuteAsync(control, """
+                CREATE OR REPLACE FUNCTION concert.block_receipt_insert_for_test()
+                RETURNS trigger
+                LANGUAGE plpgsql
+                AS $$
+                BEGIN
+                    PERFORM pg_advisory_xact_lock_shared(638457219);
+                    RETURN NEW;
+                END;
+                $$;
+                DROP TRIGGER IF EXISTS block_receipt_insert_for_test
+                    ON concert."ConcertCommandReceipts";
+                CREATE TRIGGER block_receipt_insert_for_test
+                    BEFORE INSERT ON concert."ConcertCommandReceipts"
+                    FOR EACH ROW EXECUTE FUNCTION concert.block_receipt_insert_for_test();
+                """);
+            await ExecuteAsync(control, $"SELECT pg_advisory_lock({ReceiptInsertBarrierKey})");
+            lockHeld = true;
+            result = action(cancellation.Token);
             await WaitForReceiptInsertWaitersAsync(connectionString);
             await ExecuteAsync(control, $"SELECT pg_advisory_unlock({ReceiptInsertBarrierKey})");
             lockHeld = false;
-            return await result;
+            outcome = await result;
+            completed = true;
         }
-        finally
+        catch (Exception exception)
         {
-            if (lockHeld)
+            failure = ExceptionDispatchInfo.Capture(exception);
+            cancellation.Cancel();
+        }
+
+        if (lockHeld)
+        {
+            try
+            {
                 await ExecuteAsync(control, $"SELECT pg_advisory_unlock({ReceiptInsertBarrierKey})");
-            await ExecuteAsync(control, """
+                lockHeld = false;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+                try
+                {
+                    await control.CloseAsync();
+                }
+                catch (Exception closeException)
+                {
+                    failure ??= ExceptionDispatchInfo.Capture(closeException);
+                }
+            }
+        }
+
+        if (result is not null && !completed)
+        {
+            try
+            {
+                outcome = await result.WaitAsync(TimeSpan.FromSeconds(10));
+                completed = true;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+        }
+
+        try
+        {
+            await using var cleanup = new NpgsqlConnection(connectionString);
+            await cleanup.OpenAsync();
+            await ExecuteAsync(cleanup, """
                 DROP TRIGGER IF EXISTS block_receipt_insert_for_test
                     ON concert."ConcertCommandReceipts";
                 DROP FUNCTION IF EXISTS concert.block_receipt_insert_for_test();
                 """);
         }
+        catch (Exception exception)
+        {
+            failure ??= ExceptionDispatchInfo.Capture(exception);
+        }
+
+        failure?.Throw();
+        if (!completed)
+            throw new InvalidOperationException("The receipt insert barrier action did not complete.");
+        return outcome!;
     }
 
     private static async Task WaitForReceiptInsertWaitersAsync(string connectionString)

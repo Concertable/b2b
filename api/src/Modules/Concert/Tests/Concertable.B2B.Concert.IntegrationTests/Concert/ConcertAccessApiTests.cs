@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Contracts.Enums;
@@ -197,8 +198,11 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
             .First(value => value.Id != concerts[0].VenueTenantId)
             .Id;
 
-        Task<HttpResponseMessage> ShareAsync(HttpClient sender, ConcertEntity concert) =>
-            sender.PostAsync(
+        Task<HttpResponseMessage> ShareAsync(
+            HttpClient sender,
+            ConcertEntity concert,
+            CancellationToken cancellationToken) =>
+            sender.PostAsJsonAsync(
                 $"/api/concert/{concert.Id}/summary-shares",
                 new
                 {
@@ -207,12 +211,13 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
                     recipientMembershipId = (Guid?)null,
                     expectedAccessVersion = concert.AccessVersion,
                     validUntil = (DateTime?)null,
-                });
+                },
+                cancellationToken);
 
         var responses = await fixture.RunWithReceiptInsertBarrierAsync(
-            () => RaceAsync(
-                () => ShareAsync(client, concerts[0]),
-                () => ShareAsync(competitor, concerts[1])));
+            cancellationToken => RaceAsync(
+                () => ShareAsync(client, concerts[0], cancellationToken),
+                () => ShareAsync(competitor, concerts[1], cancellationToken)));
 
         Assert.Single(responses, response => response.StatusCode == HttpStatusCode.OK);
         var conflictIndex = Array.FindIndex(

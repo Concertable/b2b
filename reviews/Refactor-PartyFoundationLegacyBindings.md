@@ -1151,3 +1151,33 @@ accepted the PID, observer-connection, and PostgreSQL visibility semantics, but 
 
 Both native/general and security/concurrency lenses found no actionable issue. N23 is closed without weakening
 the server-observed contention proof.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `a412723de9060b65e5c715f3350d4ead634f032b`
+**Candidate head:** `e173633404b52ce1ff08738388b969d7f1c48652`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:7775b989fb15ea53a682aabe7dd463158e88fc4090de3fd7f4826f48841a0e33` `(9 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\5bcc570928f28759aca9358ece16275fa29e8be21a8592d5f42faf39f951b5d0`
+**Candidate bundle identity:** `sha256:e3e1c682a2562b68bc96cc7b0a485d97bf90691c978ed6b555bbfac074c04f42`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The native/general lens approved the deterministic duplicate-key recovery, configuration roster, replacement
+InitialCreate, mapping tests, and post-recovery database-health proof. The security/data-migration lens approved
+the production and schema changes and accepted one test-isolation finding.
+
+- [x] **N24 — MEDIUM — test-isolation — receipt-barrier failure can leave detached HTTP requests.**
+  If waiter observation or advisory unlock fails after the concurrent HTTP task starts, the fixture drops its
+  trigger without cancelling or awaiting the requests. A late request can mutate after the failed test or fixture
+  reset, and a cleanup exception can replace the primary failure.
+  **Fix:** give the barrier ownership of a cancellation token, release or close its lock session, bounded-await
+  every started request, run DDL cleanup from a fresh connection, and preserve the original failure.
+  **Disposition:** the barrier now owns and threads cancellation into both HTTP requests, captures the primary
+  failure with its stack, releases the advisory lock or closes its session, bounded-drains the started race, and
+  drops the trigger/function through a fresh cleanup connection before rethrowing the original failure. The exact
+  server-observed race passes twice and the full access class passes 7/7.
