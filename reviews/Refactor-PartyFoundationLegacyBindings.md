@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `2adb9b942fb1263905387299b6dfd2f23ae146cf`  `(2026-09-20)`
-**Security-reviewed up to commit:** `2adb9b942fb1263905387299b6dfd2f23ae146cf`  `(2026-09-20)`
+**Reviewed up to commit:** `9fb6c0827539d43482ad59c21ffa6c6c7f0c24ff`  `(2026-09-20)`
+**Security-reviewed up to commit:** `9fb6c0827539d43482ad59c21ffa6c6c7f0c24ff`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -610,7 +610,7 @@ recovery-mapping tests are required before R7 can close.
   it no longer accepts or uses `ConcertDbContext`. The Concert integration project builds cleanly and all 13
   `ConcertInvoiceApiTests` pass.
 
-- [ ] **R15 — medium — the `IsHost` bypass shape survives on two live predicates.**
+- [x] **R15 — medium — the `IsHost` bypass shape survives on two live predicates.**
   `TenantFilters.cs:24` still ORs `context.TenantContext.IsHost` into every single-owner filter, and
   `ConcertService.cs:273` still ANDs `!tenantContext.IsHost`. Both are inert only because both implementations
   hard-code `false` (`MembershipContext.cs:36`, `DesignTimeTenantContext.cs:12`). `ITenantContext` is a
@@ -618,6 +618,9 @@ recovery-mapping tests are required before R7 can close.
   already mock it `true` (`ConcertServiceTests.cs:117,157`), asserting through a bypass production cannot
   reach.
   **Fix:** drop both local disjuncts and the two `true` mocks.
+  **Disposition:** no `IsHost` reference remains in the repository. Single-owner filters now compare only the
+  entity and active tenant ids, and Concert action predicates require actual party ownership. All four
+  `ResourceAccessGuardTests` and all nine `ConcertAccessApiTests` pass on the current graph.
 
 - [ ] **R16 — low — `AssignMember`'s tenant guard is vacuous.** `ConcertEntity.cs:181-185` compares
   `membershipTenantId != actorTenantId`, and the sole caller passes `actor.TenantId` for both
@@ -1545,3 +1548,23 @@ references and retains all four live tenant-wide member-list consumers. No actio
 The native/general and security/data lenses approved R13. The renamed contract now accurately states its
 stage-only behavior, the sole caller and implementation agree, the old name is absent, and supplier-tenant
 locking, allocation and caller-owned commit behavior are unchanged. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `2adb9b942fb1263905387299b6dfd2f23ae146cf`
+**Candidate head:** `9fb6c0827539d43482ad59c21ffa6c6c7f0c24ff`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:62c49ac442ae133f6a5a04b2f79222809e4cb4d05d016d8580ed1ce4d6cb546b` `(1 path)`
+**Candidate patch:** `sha256:0ec2a3037c98b48dc6a534e8166a40e9c34e1f93c62a6b9fe632c79081650faf`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\aa96b0bf8bbe354e32fe17e26d3fa140ba8faa919f40c492ce7a1785ff940dc5`
+**Candidate bundle identity:** `sha256:2c3c81f903be291e4020ad7ec392d1ca2acd80b1ea38ed003648905db5c4c3f7`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/data lenses approved the R14 reconciliation. Both repository abstractions are
+registered, injected and used for every invoice existence, sequence-lock and staging operation, with no direct
+`ConcertDbContext` dependency in `InvoiceIssuer`. No actionable findings.
