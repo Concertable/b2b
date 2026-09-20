@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `553314378a76c6a24e472c0c0f8db811d0d9ac7e`  `(2026-09-20)`
-**Security-reviewed up to commit:** `553314378a76c6a24e472c0c0f8db811d0d9ac7e`  `(2026-09-20)`
+**Reviewed up to commit:** `bd13e9bb5e93b5c5a68ec9698bba08b0e31ea336`  `(2026-09-20)`
+**Security-reviewed up to commit:** `bd13e9bb5e93b5c5a68ec9698bba08b0e31ea336`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -403,12 +403,34 @@ application, HTTP, authorization, concurrency, and regression coverage.
   current-graph restore moved it to alpha.0.14. All 46 Authorization unit tests now pass, and the full solution
   builds with zero warnings and errors while including the project.
 
-- [ ] **R5 — high — F10 is not fixed: the published projection has no caller.**
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `553314378a76c6a24e472c0c0f8db811d0d9ac7e`
+**Candidate head:** `bd13e9bb5e93b5c5a68ec9698bba08b0e31ea336`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:4607e44fc1a193e12801385647ef622a1543ecd638d9b4df8c3b6ac503db144a` `(2 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-bd13e9bb5e93b5c5a68ec9698bba08b0e31ea336`
+**Candidate bundle identity:** `sha256:fdd37bb8b1bb67222a5a78425427e108aeaea0483d077936275c0fe8d8a03d1a`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security/test-inclusion lenses found no actionable issue. R4 is closed with the
+Authorization unit tier now present in the solution and current-graph evidence.
+
+- [x] **R5 — high — F10 is not fixed: the published projection has no caller.**
   `IConcertReadRepository.GetPublishedByIdAsync` (`ConcertReadRepository.cs:29-41`) is referenced only by its
   own interface and implementation. `ConcertController.GetDetailsById` (`ConcertController.cs:29-34`) still
   calls `GetDetailsByIdAsync`, which carries no `DatePosted` predicate. An unpublished draft remains reachable
   by direct id. The slice-2 commit message and the ledger both claim F10 closed.
   **Fix:** route the public read to the published projection, and correct the ledger.
+  **Disposition:** the current controller already routes `GET /api/concert/{id}` to `GetPublishedAsync`, which
+  calls `GetPublishedByIdAsync` and filters on `DatePosted != null`. The focused integration regression passes:
+  a posted concert returns 200 and an unpublished draft returns 404. The stale finding is reconciled without a
+  further code change.
 
 - [ ] **R6 — medium — the mid-command flush throws where every sibling returns a typed error, and commits a
   revocation before the command's guards run.** `ConcertService.cs:333` is the one bare `SaveChangesAsync` among
