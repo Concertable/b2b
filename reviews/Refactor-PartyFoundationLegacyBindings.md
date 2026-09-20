@@ -342,7 +342,9 @@ but missed `DevController` (R2).
   authority, and only then load the complete ACL through the privileged repository under the same transaction.
   The receipt repository, privileged unit of work, and grant writes share `ConcertPrivilegedDbContext`. A new
   integration regression exercises revoke, assign, and remove against a concert the caller does not own and
-  proves all three return 403; the exact regression passes 1/1 and the full access-control class passes 9/9.
+  proves all three return 403. Three service-level repository-spy regressions additionally prove the full ACL
+  load is never invoked after `CanShareAsync` denies authority. Those tests pass 3/3, the full Concert unit suite
+  passes 96/96, and the full access-control integration class passes 9/9.
 
 - [x] **R2 — critical — an authenticated caller can trigger settlement on any concert.**
   `DevController.Complete` (`DevController.cs:19-27`) is `[Authorize]`-only, takes `concertId` from the query
@@ -1280,3 +1282,23 @@ The security lens approved the shared privileged-context and transaction claims.
 revoke, assign, and remove still loaded the unfiltered ACL before `CanShareAsync`; actor facts and a generic
 permission did not establish resource authority. R1 remained open until those three paths adopted the same
 identity-lock, authority-check, full-ACL-load order already used by share and duplicate recovery.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `39265a9d8cb89f091666cca9776e0a20c6a4d924`
+**Candidate head:** `86d78b7605ae1da1bfd5af18b7022a6ef5410cd2`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:bd071b517b929e260dfed3316e4b07b3e528d481e7fe8daf4e227a031d47c0d5` `(3 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\6c60bb4b57ccb1311d99f98c3bf9082346b0c7af35364b487c3611c8163569a6`
+**Candidate bundle identity:** `sha256:41f571854c130977ae17f7dcf69aa361e0b619caa818e52a5ba26fa8b6b0acc0`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+Both lenses approved the production R1 ordering, shared privileged transaction/context, and error semantics.
+They independently found that the new HTTP regression only asserted 403 responses and would also pass before
+the repair, when the ACL was loaded before denial. R1 remained open until repository-spy coverage could prove
+the unfiltered ACL load is never called when resource authority is absent.
