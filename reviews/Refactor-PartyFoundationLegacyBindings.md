@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `bc820580013cd3ce227e2144ce40abdd79b16eee`  `(2026-09-20)`
-**Security-reviewed up to commit:** `bc820580013cd3ce227e2144ce40abdd79b16eee`  `(2026-09-20)`
+**Reviewed up to commit:** `77da6bb794521778b4454b0354a68373f37e2a25`  `(2026-09-20)`
+**Security-reviewed up to commit:** `77da6bb794521778b4454b0354a68373f37e2a25`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -958,3 +958,32 @@ production lifecycle lock or persisted terminal-state implementation.
   **Fix:** keep the lifecycle synchronization seam test-only and remove the new production concurrency token.
   **Disposition:** removed the Opportunity concurrency interface, version property, mapping, and dependency. The
   re-scaffolded initial migration has no `xmin` column, and the Opportunity pending-model-change gate is clean.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `bc820580013cd3ce227e2144ce40abdd79b16eee`
+**Candidate head:** `77da6bb794521778b4454b0354a68373f37e2a25`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:7e0d518eb5c358f46ca043118590596c59c8d8d7a0d00647195d2bde3ceb90a1` `(10 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-77da6bb794521778b4454b0354a68373f37e2a25`
+**Candidate bundle identity:** `sha256:7bc6ddd0b0b2c503ca249df17f76e12288b39fa6115bdd8291d629d53551e245`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+Both lenses accepted the production `xmin` rollback and found no production, privilege/isolation, reset,
+or migration defect. They independently identified the same remaining weakness in the contention proof.
+
+- [x] **N22 — MEDIUM — test-quality — the lock signal fires before PostgreSQL can observe contention.**
+  EF's `ReaderExecutingAsync` and `NonQueryExecutingAsync` callbacks run before ADO sends the command, so the
+  immediate incomplete-task assertion is tautological at interception time and does not prove a database lock
+  wait occurred.
+  **Fix:** keep the first transaction paused until an independent connection observes the competing backend in
+  a PostgreSQL `Lock` wait, then assert the competing task remains incomplete, release, and verify final state.
+  **Disposition:** the interceptor now captures the competing connection's backend process id, then polls
+  `pg_stat_activity` through an independent data-source connection until PostgreSQL reports `wait_event_type =
+  'Lock'`. Only that server-side observation releases the first update. Both race orderings pass in the exact
+  six-test suite, and the focused build remains warning-free.

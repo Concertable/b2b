@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Concertable.Testing.Integration;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Npgsql;
 
 namespace Concertable.B2B.Opportunity.IntegrationTests;
 
@@ -8,20 +9,50 @@ internal sealed class OpportunityLifecycleRaceInterceptor : DbCommandInterceptor
 {
     private readonly Lock gate = new();
     private Func<Task>? competingChange;
-    private TaskCompletionSource lockSubmitted = NewSignal();
+    private TaskCompletionSource<int> competingBackend = NewSignal<int>();
+    private NpgsqlDataSource? dataSource;
     private bool awaitingCompetingLock;
+
+    public void UseDataSource(NpgsqlDataSource value)
+    {
+        lock (gate)
+            dataSource = value;
+    }
 
     public void ArmOnce(Func<Task> change)
     {
         lock (gate)
         {
             competingChange = change;
-            lockSubmitted = NewSignal();
+            competingBackend = NewSignal<int>();
         }
     }
 
-    public Task WaitForCompetingLockSubmissionAsync() =>
-        lockSubmitted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    public async Task WaitForCompetingLockWaitAsync(CancellationToken ct = default)
+    {
+        var processId = await competingBackend.Task.WaitAsync(TimeSpan.FromSeconds(5), ct);
+        NpgsqlDataSource observer;
+        lock (gate)
+            observer = dataSource ?? throw new InvalidOperationException("The database observer is not configured.");
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        try
+        {
+            await using var connection = await observer.OpenConnectionAsync(timeout.Token);
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE pid = @processId AND wait_event_type = 'Lock')";
+            command.Parameters.AddWithValue("processId", processId);
+
+            while (await command.ExecuteScalarAsync(timeout.Token) is not true)
+                await Task.Delay(TimeSpan.FromMilliseconds(10), timeout.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new TimeoutException("The competing Opportunity command did not enter a PostgreSQL lock wait.");
+        }
+    }
 
     public void Reset()
     {
@@ -29,8 +60,8 @@ internal sealed class OpportunityLifecycleRaceInterceptor : DbCommandInterceptor
         {
             competingChange = null;
             awaitingCompetingLock = false;
-            lockSubmitted.TrySetCanceled();
-            lockSubmitted = NewSignal();
+            competingBackend.TrySetCanceled();
+            competingBackend = NewSignal<int>();
         }
     }
 
@@ -43,8 +74,7 @@ internal sealed class OpportunityLifecycleRaceInterceptor : DbCommandInterceptor
         Func<Task>? change = null;
         lock (gate)
         {
-            if (awaitingCompetingLock && IsOpportunityLock(command))
-                lockSubmitted.TrySetResult();
+            CaptureCompetingBackend(command);
 
             if (competingChange is not null && IsOpportunityUpdate(command))
             {
@@ -79,8 +109,7 @@ internal sealed class OpportunityLifecycleRaceInterceptor : DbCommandInterceptor
     {
         lock (gate)
         {
-            if (awaitingCompetingLock && IsOpportunityLock(command))
-                lockSubmitted.TrySetResult();
+            CaptureCompetingBackend(command);
         }
 
         return ValueTask.FromResult(result);
@@ -93,12 +122,20 @@ internal sealed class OpportunityLifecycleRaceInterceptor : DbCommandInterceptor
         command.CommandText.Contains("FROM opportunity.\"Opportunities\"", StringComparison.Ordinal)
         && command.CommandText.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase);
 
+    private void CaptureCompetingBackend(DbCommand command)
+    {
+        if (awaitingCompetingLock
+            && IsOpportunityLock(command)
+            && command.Connection is NpgsqlConnection connection)
+            competingBackend.TrySetResult(connection.ProcessID);
+    }
+
     private static Task RunDetachedAsync(Func<Task> change)
     {
         using (ExecutionContext.SuppressFlow())
             return Task.Run(change);
     }
 
-    private static TaskCompletionSource NewSignal() =>
+    private static TaskCompletionSource<T> NewSignal<T>() =>
         new(TaskCreationOptions.RunContinuationsAsynchronously);
 }

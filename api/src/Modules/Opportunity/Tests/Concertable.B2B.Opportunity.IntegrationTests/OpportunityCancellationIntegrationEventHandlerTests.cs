@@ -185,7 +185,7 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
         fixture.ArmOpportunitySave(async () =>
         {
             competingTask = competing();
-            await fixture.LifecycleRace.WaitForCompetingLockSubmissionAsync();
+            await fixture.LifecycleRace.WaitForCompetingLockWaitAsync();
             Assert.False(competingTask.IsCompleted);
         });
 

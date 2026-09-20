@@ -4,6 +4,7 @@ using Concertable.B2B.Opportunity.Infrastructure.Data;
 using Concertable.Testing.Integration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace Concertable.B2B.Opportunity.IntegrationTests;
 
@@ -27,5 +28,6 @@ public sealed class OpportunityApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<IOpportunityReadDbContext>();
+        LifecycleRace.UseDataSource(scope.ServiceProvider.GetRequiredService<NpgsqlDataSource>());
     }
 }
