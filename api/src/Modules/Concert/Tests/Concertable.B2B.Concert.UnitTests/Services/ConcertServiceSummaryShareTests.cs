@@ -60,6 +60,28 @@ public sealed class ConcertServiceSummaryShareTests
     }
 
     [Fact]
+    public void RecoverSummaryShareDuplicate_MatchingReceiptWithMalformedOutcome_Throws()
+    {
+        var recovery = CreateRecovery();
+        var receipt = ConcertCommandReceipt.Record(
+            ConfirmedBookings.VenueTenantId,
+            ConcertCommandReceipt.ShareSummaryOperation,
+            Guid.NewGuid(),
+            recovery.PayloadHash,
+            "not-a-grant-id",
+            DateTime.UnixEpoch);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            ConcertService.RecoverSummaryShareDuplicate(
+                recovery.Concert,
+                receipt,
+                recovery.PayloadHash));
+
+        Assert.Contains(receipt.Id.ToString(), exception.Message);
+        Assert.Contains("invalid grant outcome", exception.Message);
+    }
+
+    [Fact]
     public void RecoverSummaryShareDuplicate_MissingReceipt_ReturnsAlreadyShared()
     {
         var recovery = CreateRecovery();

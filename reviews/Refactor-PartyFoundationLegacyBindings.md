@@ -549,8 +549,9 @@ recovery-mapping tests are required before R7 can close.
   receipt with a malformed outcome or a grant that cannot be resolved from the complete ACL now raises an
   invariant failure instead of blaming the client or reporting the concert missing. A focused unit regression
   supplies a matching receipt whose recorded grant is absent and asserts the receipt and grant identities are
-  preserved in the thrown diagnostic. The replay-classification tests pass 4/4, all Concert unit tests pass
-  97/97, and the full access-control integration class passes 9/9.
+  preserved in the thrown diagnostic; a second regression covers the malformed-outcome invariant and receipt
+  identity. The replay-classification tests pass 5/5, all Concert unit tests pass 98/98, and the full
+  access-control integration class passes 9/9.
 
 - [ ] **R10 — medium — cross-tenant existence probes run before the caller's authority over the concert is
   established.** `ConcertService.cs:313-318` calls `tenantModule.GetByIdAsync` and `IsCurrentMembershipAsync`
@@ -1347,3 +1348,23 @@ The native lens approved the isolated missing-grant branch coverage. The securit
 `RequestConflict` says the caller reused an idempotency key for a different payload, so returning it for a
 matching receipt with corrupt or missing server outcome state was false attribution. R9 remained open until
 matching inconsistent outcomes became invariant failures while genuine payload mismatches retained 409.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `6ef6538236a29b69f17ed3ab8647b91866813d0c`
+**Candidate head:** `b40ec4a9e5db42ce6d02b98bcf5d2b13cde44da8`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:da503956f14fa49c1b7b2ec16aa4b97a5cbc634b5f7379fe584cf9e7ec42ce01` `(3 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\6cbc35b4ee22473a09adf29288fefde03c5800e2ce3cb78743f74ee8d8354b10`
+**Candidate bundle identity:** `sha256:f69d71ff87885985b6b111706b52e07407c99de28b318d8fba05f13829e701fc`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+Both lenses approved the corrected production replay semantics. The security lens found one remaining test gap:
+the focused suite covered matching replay, payload mismatch, missing receipt, and missing recorded grant, but not
+the newly introduced malformed-outcome invariant. R9 remained open until that branch had direct diagnostic and
+exception-type coverage.
