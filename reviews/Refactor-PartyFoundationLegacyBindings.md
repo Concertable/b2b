@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `b8fe9c6f70b9652cc0359d433b40565bb7687bd6`  `(2026-09-20)`
-**Security-reviewed up to commit:** `b8fe9c6f70b9652cc0359d433b40565bb7687bd6`  `(2026-09-20)`
+**Reviewed up to commit:** `909a1ae1e9f2d3d82f2641fc8a5e632310834338`  `(2026-09-20)`
+**Security-reviewed up to commit:** `909a1ae1e9f2d3d82f2641fc8a5e632310834338`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -320,7 +320,7 @@ but missed `DevController` (R2).
 
 ### Findings
 
-- [ ] **R1 — critical — every Concert ACL command decides against the caller-visible grant subset, not the ACL.**
+- [x] **R1 — critical — every Concert ACL command decides against the caller-visible grant subset, not the ACL.**
   `ConcertService.cs:320, 369, 388, 416, 441` all load through `IConcertRepository.GetWithGrantsByIdAsync`
   (`ConcertRepository.cs:31-34`), whose `Include(c => c.AccessGrants)` runs on the filtered `ConcertDbContext`.
   The grant filter (`ConcertDbContext.cs:39-51` via `ResourceAccessExpressions.cs:21-31`) admits only
@@ -338,6 +338,12 @@ but missed `DevController` (R2).
   **Fix:** inject `IConcertPrivilegedRepository` into `ConcertService` and route those five paths through it,
   using `GetIdentityByIdForUpdateAsync` for the pre-load authority check; the domain already fences the write
   (`IsPrincipal`, `IssuedByTenantId`). The receipt repository and unit of work must move to the same context.
+  **Disposition:** the current command paths already satisfy the requested repair: summary share and recovery
+  perform the authority check through `GetIdentityByIdForUpdateAsync`, and share, recovery, revocation, member
+  assignment, and member removal all load the complete ACL through the privileged repository under an update
+  lock. The receipt repository, privileged unit of work, and grant writes share `ConcertPrivilegedDbContext`.
+  The full eight-test access-control integration class passes, including replay, expired-share handling,
+  revocation, and member assignment/removal coverage.
 
 - [x] **R2 — critical — an authenticated caller can trigger settlement on any concert.**
   `DevController.Complete` (`DevController.cs:19-27`) is `[Authorize]`-only, takes `concertId` from the query
@@ -1235,3 +1241,23 @@ remaining failure-cleanup issue.
 Both native/general and security/concurrency lenses approved N25. Cancellation, aggregate request observation,
 advisory-lock release, bounded DDL teardown, exception precedence, and database-object removal are all verified.
 No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `b8fe9c6f70b9652cc0359d433b40565bb7687bd6`
+**Candidate head:** `909a1ae1e9f2d3d82f2641fc8a5e632310834338`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:2c39c3025aec2a4f2aadb0c140fca8b8ddbe06ef328ca4bfaa1adf8f70c68721` `(3 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\34dd25016fe447a1be69cf996ebe311f0aaf36e3fe6e0fc83038d257cfbd6d3f`
+**Candidate bundle identity:** `sha256:4b3df7b5f2504605db97421b12a1c0f87f64000979b8181f0adbdeed152ed3a2`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security lenses approved R8. Signed big-endian length framing makes the payload
+sequence unambiguous, null uses a reserved frame, formatting is culture-invariant, and equivalent UTC/local
+instants normalize identically. The collision and normalization regressions and affected integration suites
+all pass. No actionable findings.
