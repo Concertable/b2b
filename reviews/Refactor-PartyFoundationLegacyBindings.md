@@ -4,9 +4,9 @@
 > findings directly and report what changed. Tick each `[x]` as you land it. Pause only for a genuinely
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
-**Review status:** `complete`
-**Reviewed up to commit:** `b4e4dcc3e3c26f606956d7135fcce3483fce8631`  `(2026-09-20)`
-**Security-reviewed up to commit:** `b4e4dcc3e3c26f606956d7135fcce3483fce8631`  `(2026-09-20)`
+**Review status:** `in-progress`
+**Reviewed up to commit:** `d28e3412514c42568a6d3ab90abd01f321012334`  `(2026-09-20)`
+**Security-reviewed up to commit:** `d28e3412514c42568a6d3ab90abd01f321012334`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -863,3 +863,32 @@ HTTP reachability for concert completion.
 
 No new findings. Native and security lenses verified that the physical-commit state machine closes N17 and
 that the original ambiguous exception survives best-effort cleanup without replay or rollback.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `b4e4dcc3e3c26f606956d7135fcce3483fce8631`
+**Candidate head:** `d28e3412514c42568a6d3ab90abd01f321012334`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:55cc34e425477165a69052e14c9423fa94f934f323af12f34ce6a16dc4fb2c31` `(10 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-d28e3412514c42568a6d3ab90abd01f321012334`
+**Candidate bundle identity:** `sha256:38f482feed261fc8fbc7522679142f04becd0c37ee79134a1aa929a7e37b07f5`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The native lens found no issues with the application correlation, guarded reopen transition, migration,
+or delayed-cancellation regression. The security lens accepted one residual lifecycle-ordering finding.
+
+- [x] **N18 — HIGH — security — cancellation before acceptance can refill a cancelled application.**
+  A fresh cancellation envelope is durably inboxed while an open opportunity forgets the application-level
+  cancellation. A delayed or concurrently committed acceptance envelope can then fill the opportunity for
+  that cancelled application.
+  **Fix:** retain per-application cancellation state, serialize both lifecycle handlers on the opportunity
+  row, and add reversed-order and concurrent real-database regressions.
+  **Disposition:** the opportunity now persists a distinct cancelled-application history; acceptance refuses
+  those application IDs, and both handlers lock the same opportunity row before applying the transition.
+  The re-scaffolded InitialCreate has no model drift, the focused graph builds with zero warnings/errors, and
+  all five cancellation-handler integration tests pass, including reversed and concurrent delivery.

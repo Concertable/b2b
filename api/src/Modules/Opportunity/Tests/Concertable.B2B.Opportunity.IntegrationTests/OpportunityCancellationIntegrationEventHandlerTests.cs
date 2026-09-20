@@ -1,5 +1,6 @@
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.B2B.Application.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
@@ -88,6 +89,37 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
         Assert.Equal(currentApplicationId, stillFilled.FilledByApplicationId);
     }
 
+    [Fact]
+    public async Task HandleAsync_CancellationBeforeAcceptance_DoesNotFill()
+    {
+        const int applicationId = 1;
+        var opportunity = await fixture.Opportunities.FirstAsync();
+
+        await CancelAsync(opportunity.Id, applicationId);
+        await AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId);
+
+        var current = await ReadAsync(opportunity.Id);
+        Assert.Equal(OpportunityState.Open, current.State);
+        Assert.Null(current.FilledByApplicationId);
+        Assert.Contains(applicationId, current.CancelledApplicationIds);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ConcurrentCancellationAndAcceptance_DoesNotFill()
+    {
+        const int applicationId = 1;
+        var opportunity = await fixture.Opportunities.FirstAsync();
+
+        await Task.WhenAll(
+            CancelAsync(opportunity.Id, applicationId),
+            AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId));
+
+        var current = await ReadAsync(opportunity.Id);
+        Assert.Equal(OpportunityState.Open, current.State);
+        Assert.Null(current.FilledByApplicationId);
+        Assert.Contains(applicationId, current.CancelledApplicationIds);
+    }
+
     private async Task<int> MarkFilledAsync(int applicationId)
     {
         var opportunityId = await fixture.Opportunities.Select(value => value.Id).FirstAsync();
@@ -102,6 +134,28 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
         var opportunity = await context.Opportunities.SingleAsync(value => value.Id == opportunityId);
         opportunity.MarkFilled(applicationId);
         await context.SaveChangesAsync();
+    }
+
+    private async Task CancelAsync(int opportunityId, int applicationId)
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider
+            .GetServices<IIntegrationEventHandler<BookingCancelledEvent>>()
+            .Single(value => value.GetType().Name == "OpportunityCancellationIntegrationEventHandler");
+        await handler.HandleAsync(
+            new BookingCancelledEvent(1, applicationId, opportunityId),
+            MessageEnvelope.Create<BookingCancelledEvent>(DateTimeOffset.UtcNow));
+    }
+
+    private async Task AcceptAsync(int opportunityId, int applicationId, Guid tenantId)
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider
+            .GetServices<IIntegrationEventHandler<ApplicationAcceptedEvent>>()
+            .Single(value => value.GetType().Name == "ApplicationAcceptedIntegrationEventHandler");
+        await handler.HandleAsync(
+            new ApplicationAcceptedEvent(applicationId, opportunityId, tenantId),
+            MessageEnvelope.Create<ApplicationAcceptedEvent>(DateTimeOffset.UtcNow));
     }
 
     private async Task<OpportunityEntity> ReadAsync(int opportunityId)
