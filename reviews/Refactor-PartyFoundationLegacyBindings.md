@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `735eae64af97d8431ed93b2270234ac39bfb4b94`  `(2026-09-18)`
-**Security-reviewed up to commit:** `735eae64af97d8431ed93b2270234ac39bfb4b94`  `(2026-09-18)`
+**Reviewed up to commit:** `59f83bae674b585fd580957666387be6297e09b9`  `(2026-09-20)`
+**Security-reviewed up to commit:** `59f83bae674b585fd580957666387be6297e09b9`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -339,7 +339,7 @@ but missed `DevController` (R2).
   using `GetIdentityByIdForUpdateAsync` for the pre-load authority check; the domain already fences the write
   (`IsPrincipal`, `IssuedByTenantId`). The receipt repository and unit of work must move to the same context.
 
-- [ ] **R2 — critical — an authenticated caller can trigger settlement on any concert.**
+- [x] **R2 — critical — an authenticated caller can trigger settlement on any concert.**
   `DevController.Complete` (`DevController.cs:19-27`) is `[Authorize]`-only, takes `concertId` from the query
   string, and has no environment gate — the host's only environment conditionals are Swagger and seeding
   (`B2BWebHostExtensions.cs:281,287`). It calls `IConcertWorkflow.CompleteAsync`
@@ -349,6 +349,7 @@ but missed `DevController` (R2).
   see; it no longer does. The `[Authorize]`-only trigger predates this candidate, the removal of its
   containment does not.
   **Fix:** register the endpoint only when `!IsProduction`, or delete it. Do not rely on the doc comment.
+  **Disposition:** deleted `DevController`; the Concert API builds cleanly and the production route no longer exists.
 
 - [ ] **R3 — high — `RemoveMemberAssignment` reports success when it revokes nothing.**
   `ConcertEntity.cs:210-227`: zero matches is indistinguishable from a revocation, the controller returns 204
@@ -590,3 +591,180 @@ Artist, Admin and Process integration tiers: not run.
 **Pass judgment:** `changes-requested`. Two critical findings are reachable in production (R2, R20), one
 critical finding makes the candidate's headline feature silently non-functional (R1), and the verification
 this candidate was committed on was narrower than reported (R4).
+
+## Review pass — 2026-09-20 — full staged review
+
+**Candidate base:** `7fd22b46b2270a3ab9421c2653306ed4d2c5222c`
+**Candidate head:** `59f83bae674b585fd580957666387be6297e09b9`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:ee371cc90583f8e2c37ff31e70cf7d06304b64fd374ecb1b95ba6058f0f2bbf4` `(757 paths)`
+**Candidate patch:** `sha256:769c5868315c4a561d621ecd4cc4dec21f93262d56b1fcecc7ed07b10a4cead1`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-review-20260920\review\8c2ecc9249680c3af1b50c8fd7ac6df1b07ea9b8141fa7443fa9993316526744`
+**Candidate bundle identity:** `sha256:9dc91b45749a31c6371e9e14c8e51ed18ba1a559000469dd8012354f5f37f24c`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Staged coverage
+
+Path assignment is by the first matching row, so every frozen manifest path belongs to exactly one stage.
+
+- [x] **S1 — DataAccess + Authorization (70 paths):** `api/src/Concertable.B2B.DataAccess/**`, then `api/src/Modules/Authorization/**`. Native and security lenses complete; parent accepted one new finding and reconfirmed R4, R8, and R11.
+- [x] **S2 — Tenant (119 paths):** `api/src/Modules/Tenant/**`. Native and security/data lenses complete; parent accepted two new findings and reconfirmed R12.
+- [x] **S3 — Application + Booking + Deal + Opportunity (141 paths):** those four module roots. Native and workflow/security lenses complete; parent accepted two findings.
+- [x] **S4 — Concert (109 paths):** `api/src/Modules/Concert/**`. Native and security/workflow lenses complete; parent accepted one new finding, reconfirmed R2, R3, R6, R7, R10, R13, R16 and R19, and validated R1, R5, R9, R14, R15, R20 and R23 as fixed.
+- [x] **S5 — Conversations (86 paths):** `api/src/Modules/Conversations/**`. Native and security/concurrency lenses complete; parent accepted two findings and validated R21 and R22 as fixed.
+- [x] **S6 — remaining backend, hosting, and tests (80 paths):** Admin, Artist, Dashboard, User, Venue, Seed, and every remaining `api/**`, `local/**`, and `tests/**` path not claimed above. Native/data and security/composition/test-impact subscopes complete; parent accepted two findings.
+- [x] **S7 — shared and business clients (84 paths):** `app/shared/**`, `app/web/shared/**`, `app/web/business/**`. Native/frontend and frontend/security lenses complete; parent accepted two findings.
+- [x] **S8 — profile, admin, and mobile clients (57 paths):** `app/web/admin/**`, `app/web/artist/**`, `app/web/venue/**`, `app/mobile/**`. Native/frontend and frontend/security lenses complete; parent accepted two findings.
+- [x] **S9 — docs, plans, review metadata, and remaining files (11 paths):** every manifest path not claimed above. Native/docs and workflow/security lenses complete; parent reconfirmed R4 and accepted one documentation finding. Router deny hits produced no independent content finding.
+
+### Review rules manifest
+
+The frozen path manifest was routed through the installed Concertable skill router against the exact clean
+candidate head. Applicable owners loaded by the parent reviewer: always-on instructions; package, plan,
+documentation and review lifecycle; C# style/naming; result carriers/errors/terminals; module structure,
+persistence, multitenancy, dependency injection, HTTP, keyed strategies, domain events, validation,
+seeding, migrations, composition, unit/integration/E2E testing; TypeScript, client/server state, HTTP,
+contract naming, routing, write boundaries, frontend tests and tiered sharing; the corresponding
+Concertable-specific rosters; and the frozen root and nearest changed-path `AGENTS.md` files.
+
+The router's four deny hits (`package-lock.json`, the authorization model, the party-foundation ledger,
+and this review work order) remain evidence to validate in their owning stages, not automatic findings.
+
+### Cross-area notes
+
+Historical R1-R23 remain open until the current candidate is checked against each acceptance condition
+through the address-review lifecycle. S1 reconfirmed R4 (Authorization unit-test project omitted from the
+solution), R8 (non-canonical idempotency hash), and R11 (malformed tenant headers surface as 500).
+S2 reconfirmed R12 (tenant-wide materialization for a membership existence test).
+S4 reconfirmed R2, R3, R6, R7, R10, R13, R16 and R19. It validated R1, R5, R9, R14,
+R15, R20 and R23 as fixed. R8 remains open based on the direct S1 source trace despite one S4 lens
+classifying the shared implementation as repaired.
+S5 validated R21 and R22 as fixed: participant expansion now uses a privileged full-ACL repository only
+after filtered caller visibility succeeds, and Conversations now issues member-specific read/send grants.
+Parent inspection reconfirmed R17's repeated audience predicate and validated R18 as fixed. S9's frozen
+review-marker concern was discharged by this pass: the marker now names the exact reviewed head, while the
+judgment stays changes-requested until address-review resolves every accepted item.
+
+### Findings
+
+- [ ] **N1 — HIGH — security/native — automatic retry can replay a committed command after an ambiguous commit acknowledgement.**
+  `api/src/Concertable.B2B.DataAccess/Concertable.B2B.DataAccess.Infrastructure/CommandExecutor.cs:33-39`
+  enables the Npgsql retry strategy around the whole command transaction, while `:66-76` flushes and calls a
+  plain `CommitAsync`. If PostgreSQL commits but the acknowledgement fails transiently, the strategy may run
+  the mutation again. Several executor callers have no durable request receipt, so the retry can duplicate a
+  mutation or outbox effect, or report a conflict after a successful write.
+  **Fix:** resolve ambiguous commit success through a durable operation key and verification callback before
+  replay, or require a durable idempotency key for every executor mutation; add a lost-commit-acknowledgement
+  integration test.
+
+- [ ] **N2 — MEDIUM — native/security — concurrent first-tenant creation can escape as an unhandled unique-key failure.**
+  `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Repositories/TenantRepository.cs:39-54`
+  selects by `CreatedByUserId FOR UPDATE`, but PostgreSQL locks no row when no tenant exists. Two first-create
+  requests can therefore both pass `TenantService.cs:114-127`; the unique index at
+  `TenantEntityConfiguration.cs:19` rejects one insert without translating it to the declared
+  `AlreadyOwnsTenant` outcome.
+  **Fix:** serialize on a stable per-user/advisory lock or classify the exact unique violation after rollback;
+  add a deterministic two-request race proving one creation and stable typed/HTTP outcomes for both calls.
+
+- [ ] **N3 — MEDIUM — native — concurrent verification reviews can both succeed and publish conflicting decisions.**
+  `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Services/VerificationService.cs:118-125`
+  performs an unlocked pending-state read, transition, and save, while
+  `TenantVerificationEntityConfiguration.cs:12-17` configures no concurrency token. Approve and reject can
+  both observe `Pending`, both return success and notify, and the last update wins.
+  **Fix:** lock the verification row for review or use optimistic concurrency and translate the loser to
+  `VerificationReviewError.NotPending`; add an approve-versus-reject integration race asserting one durable
+  decision and one notification.
+
+- [ ] **N4 — HIGH — workflow/security — a delayed cancellation can reopen an opportunity filled by a newer lifecycle.**
+  `api/src/Modules/Opportunity/Concertable.B2B.Opportunity.Infrastructure/Events/OpportunityCancellationIntegrationEventHandler.cs:24-49`
+  discards the booking/application/concert correlation and deduplicates only by envelope message id before
+  unconditionally reopening the current `Filled` opportunity. `OpportunityEntity.cs:13-50` stores no fill
+  incarnation. A distinct delayed cancellation from lifecycle A can therefore arrive after lifecycle B
+  refills the opportunity and reopen B's live slot.
+  **Fix:** persist the current fill's application/lifecycle correlation when `MarkFilled` runs and reopen only
+  when the cancellation matches it; test cancel A, refill with B, then deliver a fresh-message-id cancellation
+  for A and assert the opportunity remains filled.
+
+- [ ] **N5 — LOW — native — Application read paths drop request cancellation before database and cross-module I/O.**
+  `api/src/Modules/Application/Concertable.B2B.Application.Infrastructure/Services/ApplicationService.cs:75-160`
+  exposes summary, proposal, opportunity, and dashboard reads without a cancellation token and calls
+  repositories/modules without one.
+  **Fix:** thread `CancellationToken ct = default` through interface, implementation and controller actions,
+  pass it to every supporting I/O call, and cover propagation on a representative endpoint.
+
+- [ ] **N6 — MEDIUM — security — concurrent first invoice-number allocation is not serialized.**
+  `api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Repositories/InvoiceSequenceRepository.cs:20-28`
+  selects the supplier sequence `FOR UPDATE`, but PostgreSQL locks no row when the sequence does not exist;
+  `InvoiceIssuer.cs:53-58` then creates it. Two first invoices for one supplier can both allocate `000001`,
+  with one later failing a constraint and aborting settlement processing.
+  **Fix:** serialize on a stable supplier/advisory key or pre-provision the sequence, or classify and retry the
+  exact creation race; add a two-concert first-invoice concurrency test proving unique monotonic numbers.
+
+- [ ] **N7 — MEDIUM — native/security — concurrent first conversation creation can violate request-id replay semantics.**
+  `api/src/Modules/Conversations/Concertable.B2B.Conversations.Infrastructure/Repositories/ConversationRepository.cs:49-67`
+  locks an absent receipt key, which PostgreSQL cannot serialize. Two same-actor/same-request calls can both
+  create before the unique receipt constraint rejects one; `ConversationService.cs:102-128` has no duplicate
+  classification/replay path, so the loser receives a database error.
+  **Fix:** serialize on a stable actor/request key or classify the exact duplicate after rollback, re-read the
+  winning receipt, and return replay/`RequestConflict`; add a genuinely concurrent integration race.
+
+- [ ] **N8 — LOW — test-impact/security — assigned-member messaging authority lacks integration coverage.**
+  `ConversationEntity.cs:43-74` and `ConversationService.cs:264-345` add security-sensitive assignment and
+  removal behavior, but only aggregate unit coverage exists.
+  **Fix:** add API coverage for assigned Staff read/send access, unassigned denial, removal, cross-tenant
+  rejection, stale access version, and membership removal/rejoin not inheriting the old grant.
+
+- [ ] **N9 — MEDIUM — seeding/composition — integration setup still inserts B2B users directly.**
+  `api/src/Modules/User/Concertable.B2B.User.Infrastructure/Extensions/ServiceCollectionExtensions.cs:62-65`
+  registers `UserTestSeeder`, which inserts `SeedState.Users` directly at `UserTestSeeder.cs:23-29` even
+  though production creates users only through `CredentialRegisteredEvent`. This can keep integration startup
+  green while credential registration or same-flow admin provisioning is broken.
+  **Fix:** provision test identity through the real registration handler, preserve the resulting rows across
+  Respawn, and assert registration produces both the B2B user and eligible admin profile.
+
+- [ ] **N10 — MEDIUM — E2E — the admin concert-id query uses unquoted PostgreSQL identifiers.**
+  `tests/E2ETests/Concertable.B2B.E2ETests.Server/E2EAdminExtensions.cs:176-181` queries
+  `SELECT Id FROM concert.Concerts WHERE ApplicationId = ...`, which PostgreSQL folds to lowercase and cannot
+  resolve against the quoted PascalCase schema used by the migration and adjacent queries.
+  **Fix:** quote schema objects and columns consistently and add an authenticated E2E-admin endpoint smoke
+  assertion against seeded data.
+
+- [ ] **N11 — MEDIUM — frontend — losing the final membership leaves a stale active tenant persisted.**
+  `app/shared/src/features/tenant/hooks/useTenant.ts:17-19` skips reconciliation when memberships becomes
+  empty, although `useTenantStore.ts:28-42` would clear an invalid selection. The stale tenant remains in
+  Zustand/local storage until another route resolution or logout.
+  **Fix:** reconcile or explicitly clear on the empty-membership transition and test one-membership-to-zero
+  behavior across store and persistence.
+
+- [ ] **N12 — MEDIUM — frontend contract — membership controls render an unsupported role.**
+  `app/shared/src/features/tenant/constants.ts:10` exports `restrictedParticipant`,
+  `app/web/shared/src/features/tenant/constants.ts:10` labels it, and `MembersRoster.tsx:68` renders it even
+  though the backend `TenantRole` enum has no such member. An authorized user can submit a role the API cannot
+  deserialize.
+  **Fix:** remove the stale role from the frontend catalog or implement it end-to-end, and prove every rendered
+  role is backend-supported.
+
+- [ ] **N13 — MEDIUM — mobile permissions — Operations is exposed without `operations.view`.**
+  `app/mobile/src/navigation/BusinessNavigator.tsx:33-41` registers the Operations tab for every tenant member
+  even though the navigator already receives the active permission set; the Messages tab is correctly gated.
+  **Fix:** register Operations only when `permissions.has("operations.view")` and test tab absence/presence.
+
+- [ ] **N14 — MEDIUM — mobile authentication — unauthenticated sessions mount account-owned navigation.**
+  `app/mobile/src/navigation/RootNavigator.tsx:148-153` sends `user === undefined` to `ArtistTabs`, which
+  unconditionally mounts My Artist, Messages, and Profile stacks at `ArtistTabs.tsx:35-59`.
+  **Fix:** use a dedicated public/auth navigator or gate every account-owned tab on authentication, and test
+  that private routes are absent for an unauthenticated session.
+
+- [ ] **N15 — MEDIUM — docs/workflow — the roadmap's status prose contradicts the progress ledger.**
+  `plans/party-foundation/PARTY_FOUNDATION_ROADMAP.md:6-10` says no implementation phase is delivered while
+  `PARTY_FOUNDATION_PROGRESS.md:16-18` records P1 implementation and qualification.
+  **Fix:** state that P1 is implemented and under review while later phases and the overall roadmap item
+  remain pending, so the durable index and ledger agree.
+
+All 757 manifest paths were covered serially. Accepted new findings: 15 (2 high, 11 medium, 2 low).
+Historical findings still open after current-head validation: R2, R3, R4, R6, R7, R8, R10, R11, R12,
+R13, R16, R17 and R19. Historical findings validated fixed: R1, R5, R9, R14, R15, R18, R20, R21, R22
+and R23. Address-review owns the next state transition.
