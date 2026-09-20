@@ -28,6 +28,6 @@ internal sealed class InvoiceSequenceRepository : IInvoiceSequenceRepository
             ct);
     }
 
-    public async Task InsertAsync(InvoiceSequenceEntity sequence, CancellationToken ct = default) =>
+    public async Task AddAsync(InvoiceSequenceEntity sequence, CancellationToken ct = default) =>
         await context.InvoiceSequences.AddAsync(sequence, ct);
 }

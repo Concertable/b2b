@@ -6,5 +6,5 @@ internal interface IInvoiceSequenceRepository
 {
     Task<InvoiceSequenceEntity?> GetByTenantIdForUpdateAsync(Guid tenantId, CancellationToken ct = default);
 
-    Task InsertAsync(InvoiceSequenceEntity sequence, CancellationToken ct = default);
+    Task AddAsync(InvoiceSequenceEntity sequence, CancellationToken ct = default);
 }

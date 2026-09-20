@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `f7f1950b543be692809546aa65bad09ac9eb0f79`  `(2026-09-20)`
-**Security-reviewed up to commit:** `f7f1950b543be692809546aa65bad09ac9eb0f79`  `(2026-09-20)`
+**Reviewed up to commit:** `9188aed877e23c1776eb9be92e7c610b4edd2984`  `(2026-09-20)`
+**Security-reviewed up to commit:** `9188aed877e23c1776eb9be92e7c610b4edd2984`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -590,10 +590,13 @@ recovery-mapping tests are required before R7 can close.
   The Tenant unit suite passes 153/153, the Concert access-control integration class passes 9/9, and both
   affected projects build with zero warnings and errors.
 
-- [ ] **R13 — medium — `IInvoiceSequenceRepository.InsertAsync` has `AddAsync` semantics.**
+- [x] **R13 — medium — `IInvoiceSequenceRepository.InsertAsync` has `AddAsync` semantics.**
   `InvoiceSequenceRepository.cs:19-20` stages without saving, while the persistence standard fixes
   `InsertAsync` as stage-and-save and every inherited implementation in the codebase saves.
   **Fix:** rename to `AddAsync` on interface and implementation.
+  **Disposition:** renamed the interface, implementation and `InvoiceIssuer` call site to `AddAsync`, preserving
+  the intended stage-only write inside the issuer's owning unit of work. The Concert integration project builds
+  with zero warnings and errors, and all 13 `ConcertInvoiceApiTests` pass.
 
 - [ ] **R14 — medium — two registered services have no consumer and the code they replace is unchanged.**
   `IInvoicePrivilegedRepository` and `IInvoiceSequenceRepository` are registered
@@ -1498,3 +1501,23 @@ found that R10 had already removed the capability's last business consumer.
   tenant-wide list used by real member-management behavior.
   **Disposition:** the complete dead chain is deleted and a whole-source search has no remaining
   `IsCurrentMembershipAsync` or `ExistsByTenantIdAndIdAsync` reference.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `8ec01a563fc45d9b04b1549ee5e75d35b454bfaa`
+**Candidate head:** `9188aed877e23c1776eb9be92e7c610b4edd2984`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:2b841dbb1c384b18fdd386b494c721d3f3c354be5db1d60a18b9269d658bd284` `(7 paths)`
+**Candidate patch:** `sha256:ddd9b7f504625f2a8ee6dec4d734130553250be11439962f0f8587ac63dbd3d3`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\678ea644707353a00f48e8ea18227442d73295451658c426fa9433bf1a61ddcc`
+**Candidate bundle identity:** `sha256:b8ab2675f8ed0fb2971009005679a9e153859c8a558107139501486ee5f7cb6b`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general lens approved N27. The security/API-contract dispatch timed out after one bounded follow-up;
+the parent fallback verified the same frozen deletion reduces the arbitrary existence surface, leaves no
+references and retains all four live tenant-wide member-list consumers. No actionable findings.

@@ -54,7 +54,7 @@ internal sealed class InvoiceIssuer
         if (sequence is null)
         {
             sequence = InvoiceSequenceEntity.Create(supplierTenantId);
-            await this.sequenceRepository.InsertAsync(sequence, ct);
+            await this.sequenceRepository.AddAsync(sequence, ct);
         }
         var sequenceNumber = sequence.Allocate();
         var invoiceNumber = $"INV-{supplierTax.SellerIdentifier}-{sequenceNumber:D6}";
