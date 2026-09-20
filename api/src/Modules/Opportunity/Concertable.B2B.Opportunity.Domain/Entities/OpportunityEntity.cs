@@ -1,23 +1,16 @@
 using System.ComponentModel;
 using Concertable.B2B.Opportunity.Contracts;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Opportunity.Domain.Entities;
 
 [DisplayName(DisplayNames.Opportunity)]
-public sealed class OpportunityEntity :
-    IIdEntity,
-    IHasDateRange,
-    IEquatable<OpportunityEntity>,
-    ITenantScoped,
-    IConcurrencyVersioned
+public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<OpportunityEntity>, ITenantScoped
 {
     private OpportunityEntity() { }
 
     public int Id { get; private set; }
-    public uint Version { get; private set; }
     public Guid TenantId { get; set; }
     public int VenueId { get; set; }
     public DateRange Period { get; private set; } = null!;

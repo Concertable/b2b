@@ -1,5 +1,4 @@
 using Concertable.B2B.Opportunity.Domain.Entities;
-using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,7 +9,6 @@ internal sealed class OpportunityEntityConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<OpportunityEntity> builder)
     {
         builder.ToTable(Schema.Tables.Opportunities, Schema.Name);
-        builder.HasConcurrencyVersion();
         builder.ComplexProperty(o => o.Period, p =>
         {
             p.Property(x => x.Start).HasColumnName("StartDate");

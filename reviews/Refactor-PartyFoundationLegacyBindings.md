@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `692aff71828f7b6be69182bd99b5d6ef7e6a170e`  `(2026-09-20)`
-**Security-reviewed up to commit:** `692aff71828f7b6be69182bd99b5d6ef7e6a170e`  `(2026-09-20)`
+**Reviewed up to commit:** `bc820580013cd3ce227e2144ce40abdd79b16eee`  `(2026-09-20)`
+**Security-reviewed up to commit:** `bc820580013cd3ce227e2144ce40abdd79b16eee`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -923,3 +923,38 @@ or migration defect.
   read, starts the inverse handler on a separate scope, and asserts it remains blocked until release. Both
   orderings converge to the cancelled/open state; all six focused tests pass, the build is warning-free, and
   the re-scaffolded InitialCreate has no model drift.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `692aff71828f7b6be69182bd99b5d6ef7e6a170e`
+**Candidate head:** `bc820580013cd3ce227e2144ce40abdd79b16eee`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:4e1aa9c23e6e319b29f16f3c4d3077d4946a592938a6eb440662283e20ff1f5d` `(9 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-bc820580013cd3ce227e2144ce40abdd79b16eee`
+**Candidate bundle identity:** `sha256:a005d10b903a7edc64f94e5b9062648c3320ec5528fafa54543c577bc7b7e579`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The lenses accepted two coupled defects in the concurrency-test mechanism. Neither found a defect in the
+production lifecycle lock or persisted terminal-state implementation.
+
+- [x] **N20 — MEDIUM — test-quality — timeout alone does not prove the competing lock was submitted.**
+  A cold runner can spend the timeout resolving the competing handler or opening its connection. The test can
+  then pass through serial execution even without `FOR UPDATE` because both serial orders reach the asserted
+  final state.
+  **Fix:** signal from the competing connection when its `FOR UPDATE` command is submitted, assert the handler
+  remains incomplete only after that signal, then release the first operation and verify completion/state.
+  **Disposition:** added a test-only command interceptor that starts the competitor after the first handler owns
+  the row lock, signals from the competing raw lock command's non-query interception path, and verifies that the
+  competing handler is incomplete only after command submission. Both race orderings pass deterministically.
+
+- [x] **N21 — MEDIUM — correctness — adding Opportunity `xmin` broadens concurrency without a stable edit terminal.**
+  The ordinary venue edit reads before its unit of work and has no typed conflict translation or retry. A
+  concurrent lifecycle event can therefore surface an unhandled `DbUpdateConcurrencyException` as a 500.
+  **Fix:** keep the lifecycle synchronization seam test-only and remove the new production concurrency token.
+  **Disposition:** removed the Opportunity concurrency interface, version property, mapping, and dependency. The
+  re-scaffolded initial migration has no `xmin` column, and the Opportunity pending-model-change gate is clean.

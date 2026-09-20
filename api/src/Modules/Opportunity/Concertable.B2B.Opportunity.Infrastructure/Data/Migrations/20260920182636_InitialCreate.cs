@@ -23,7 +23,6 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     VenueId = table.Column<int>(type: "integer", nullable: false),
                     DealId = table.Column<int>(type: "integer", nullable: false),

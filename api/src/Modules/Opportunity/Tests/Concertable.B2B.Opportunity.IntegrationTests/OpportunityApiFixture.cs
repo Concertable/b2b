@@ -10,18 +10,18 @@ namespace Concertable.B2B.Opportunity.IntegrationTests;
 public sealed class OpportunityApiFixture : ApiFixture
 {
     private IOpportunityReadDbContext dbContext = null!;
-    internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
+    internal OpportunityLifecycleRaceInterceptor LifecycleRace { get; } = new();
 
     internal IQueryable<OpportunityEntity> Opportunities => dbContext.Opportunities;
 
     internal void ArmOpportunitySave(Func<Task> competingChange) =>
-        Conflicts.ArmOnce<OpportunityEntity>(competingChange);
+        LifecycleRace.ArmOnce(competingChange);
 
     protected override void OnConfigureServices(IServiceCollection services)
     {
-        services.AddResettables(Conflicts);
+        services.AddResettables(LifecycleRace);
         services.ConfigureDbContext<OpportunityPrivilegedDbContext>(
-            (_, options) => options.AddInterceptors(Conflicts));
+            (_, options) => options.AddInterceptors(LifecycleRace));
     }
 
     protected override void OnReset(IServiceScope scope)
