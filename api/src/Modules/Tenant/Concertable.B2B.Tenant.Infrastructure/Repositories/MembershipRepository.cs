@@ -224,11 +224,6 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
     public async Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Memberships.Where(m => m.TenantId == tenantId).ToListAsync(ct);
 
-    public Task<bool> ExistsByTenantIdAndIdAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default) =>
-        context.Memberships.AnyAsync(membership =>
-            membership.TenantId == tenantId && membership.Id == membershipId,
-            ct);
-
     public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default) =>

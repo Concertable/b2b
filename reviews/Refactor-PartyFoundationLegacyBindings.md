@@ -584,8 +584,9 @@ recovery-mapping tests are required before R7 can close.
   `MembershipRepository.cs:43-44`) then filters in memory. It runs before every share and every member
   assignment (`ConcertService.cs:317,413`). The same repository already shows the right shape at `:52-53`.
   **Fix:** add `ExistsByTenantIdAndIdAsync` as an `AnyAsync` and call it.
-  **Disposition:** `IsCurrentMembershipAsync` now delegates to a repository query that executes `AnyAsync`
-  against the tenant and membership composite predicate, without tracking or materialising membership rows.
+  **Disposition:** R10 removed the final Concert share and member-assignment consumers, so incremental review
+  rejected an optimized implementation of this now-dead API. The unused module/service contract and forwarding
+  chain is deleted instead; the tenant-wide tracked query remains only for actual members-management lists.
   The Tenant unit suite passes 153/153, the Concert access-control integration class passes 9/9, and both
   affected projects build with zero warnings and errors.
 
@@ -1469,3 +1470,31 @@ The native lens approved the production mapping and accepted one response-contra
 Both native/general and security lenses approved N26. The authenticated malformed and duplicate-header
 requests exercise the production handler and assert the complete fixed, non-reflective Problem Details
 contract. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `f7f1950b543be692809546aa65bad09ac9eb0f79`
+**Candidate head:** `8ec01a563fc45d9b04b1549ee5e75d35b454bfaa`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:eb28997054c4bb932ba4f20299393b410e9d5601859dd86aaeeb36fc0d592a0d` `(4 paths)`
+**Candidate patch:** `sha256:f578440ebcb9a781d9b913c41d19e4d25e75a333ce946620cef84f063debe6ca`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\fe4382e67a726ed116dc75a388cb1b56a7498600841b0bf9a603a6fb5faf8418`
+**Candidate bundle identity:** `sha256:180abcc6295b34b145be137226dc8d989d63fc6d2ade9ff32550086e7f254c0e`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+Both lenses confirmed the new tenant-and-membership predicate was query-correct and cancellation-safe, but
+found that R10 had already removed the capability's last business consumer.
+
+- [x] **N27 — MEDIUM — simplification/security — R12 optimizes a dead cross-module API.**
+  `ITenantModule.IsCurrentMembershipAsync` and `ITenantService.IsCurrentMembershipAsync` are referenced only
+  by their forwarding implementations. The new repository query therefore preserves an unused arbitrary
+  tenant/membership existence capability without a behavior-level consumer.
+  **Fix:** delete the unused module/service contracts, forwarders and repository query while retaining the
+  tenant-wide list used by real member-management behavior.
+  **Disposition:** the complete dead chain is deleted and a whole-source search has no remaining
+  `IsCurrentMembershipAsync` or `ExistsByTenantIdAndIdAsync` reference.

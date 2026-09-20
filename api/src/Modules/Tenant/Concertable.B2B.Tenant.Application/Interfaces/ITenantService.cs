@@ -14,8 +14,6 @@ internal interface ITenantService
     Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default);
-    Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default);
-
     Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default);
 
     Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(

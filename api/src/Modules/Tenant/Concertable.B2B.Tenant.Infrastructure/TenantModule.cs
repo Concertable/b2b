@@ -30,9 +30,6 @@ internal sealed class TenantModule : ITenantModule
         CancellationToken ct = default) =>
         service.GetCurrentMembershipsAsync(tenantIds, ct);
 
-    public Task<bool> IsCurrentMembershipAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default) =>
-        service.IsCurrentMembershipAsync(tenantId, membershipId, ct);
-
     public Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default) =>
         service.GetTenantBusinessDetailsAsync(tenantId, ct);
 
