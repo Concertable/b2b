@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `026f9892163df302262d915f54165e0c825034c0`  `(2026-09-20)`
-**Security-reviewed up to commit:** `026f9892163df302262d915f54165e0c825034c0`  `(2026-09-20)`
+**Reviewed up to commit:** `b4e4dcc3e3c26f606956d7135fcce3483fce8631`  `(2026-09-20)`
+**Security-reviewed up to commit:** `b4e4dcc3e3c26f606956d7135fcce3483fce8631`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -681,7 +681,7 @@ judgment stays changes-requested until address-review resolves every accepted it
   `VerificationReviewError.NotPending`; add an approve-versus-reject integration race asserting one durable
   decision and one notification.
 
-- [ ] **N4 — HIGH — workflow/security — a delayed cancellation can reopen an opportunity filled by a newer lifecycle.**
+- [x] **N4 — HIGH — workflow/security — a delayed cancellation can reopen an opportunity filled by a newer lifecycle.**
   `api/src/Modules/Opportunity/Concertable.B2B.Opportunity.Infrastructure/Events/OpportunityCancellationIntegrationEventHandler.cs:24-49`
   discards the booking/application/concert correlation and deduplicates only by envelope message id before
   unconditionally reopening the current `Filled` opportunity. `OpportunityEntity.cs:13-50` stores no fill
@@ -690,6 +690,9 @@ judgment stays changes-requested until address-review resolves every accepted it
   **Fix:** persist the current fill's application/lifecycle correlation when `MarkFilled` runs and reopen only
   when the cancellation matches it; test cancel A, refill with B, then deliver a fresh-message-id cancellation
   for A and assert the opportunity remains filled.
+  **Disposition:** accepted events now carry `ApplicationId`, Opportunity persists it for the active fill, and
+  both cancellation event types reopen only a matching fill. The refreshed Opportunity migration has no drift,
+  the project builds cleanly, and all three focused integration regressions pass, including delayed A after B.
 
 - [ ] **N5 — LOW — native — Application read paths drop request cancellation before database and cross-module I/O.**
   `api/src/Modules/Application/Concertable.B2B.Application.Infrastructure/Services/ApplicationService.cs:75-160`
@@ -842,3 +845,21 @@ HTTP reachability for concert completion.
   attempted before I/O, suppresses rollback thereafter, and makes participant and connection cleanup
   best-effort so the original ambiguity survives. The real-database regression and DataAccess unit suite pass
   (1/1 and 5/5).
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `026f9892163df302262d915f54165e0c825034c0`
+**Candidate head:** `b4e4dcc3e3c26f606956d7135fcce3483fce8631`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:0ce65e0b1082fc6f7d1a37225ecdde3657363d592e6883aa636e81352eb1ecb7` `(7 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-b4e4dcc3e3c26f606956d7135fcce3483fce8631`
+**Candidate bundle identity:** `sha256:4813fb36b4aef8c981bf15b1fc961ac592b0a0d5a328bb7bd82d165a7b321aa2`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+No new findings. Native and security lenses verified that the physical-commit state machine closes N17 and
+that the original ambiguous exception survives best-effort cleanup without replay or rollback.

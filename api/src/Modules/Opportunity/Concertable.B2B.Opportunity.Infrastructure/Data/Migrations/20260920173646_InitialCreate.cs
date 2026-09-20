@@ -27,6 +27,7 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
                     DealId = table.Column<int>(type: "integer", nullable: false),
                     Genres = table.Column<int[]>(type: "integer[]", nullable: false),
                     State = table.Column<int>(type: "integer", nullable: false),
+                    FilledByApplicationId = table.Column<int>(type: "integer", nullable: true),
                     EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },

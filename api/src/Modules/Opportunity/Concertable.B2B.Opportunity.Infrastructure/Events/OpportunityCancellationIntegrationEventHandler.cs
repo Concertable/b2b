@@ -25,16 +25,17 @@ internal sealed class OpportunityCancellationIntegrationEventHandler :
         BookingCancelledEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        ProcessAsync(@event.OpportunityId, envelope, ct);
+        ProcessAsync(@event.OpportunityId, @event.ApplicationId, envelope, ct);
 
     public Task HandleAsync(
         ConcertCancelledEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
-        ProcessAsync(@event.OpportunityId, envelope, ct);
+        ProcessAsync(@event.OpportunityId, @event.ApplicationId, envelope, ct);
 
     private Task ProcessAsync(
         int opportunityId,
+        int applicationId,
         MessageEnvelope envelope,
         CancellationToken ct) =>
         unitOfWorkBehavior.ExecuteAsync(async () =>
@@ -46,6 +47,6 @@ internal sealed class OpportunityCancellationIntegrationEventHandler :
             context.AddInboxMessage(envelope, handler);
             var opportunity = await context.Opportunities
                 .SingleOrDefaultAsync(value => value.Id == opportunityId, ct);
-            opportunity?.Reopen();
+            opportunity?.Reopen(applicationId);
         }, ct);
 }

@@ -35,6 +35,9 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
                     b.Property<int>("DealId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("FilledByApplicationId")
+                        .HasColumnType("integer");
+
                     b.PrimitiveCollection<int[]>("Genres")
                         .IsRequired()
                         .HasColumnType("integer[]");

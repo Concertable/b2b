@@ -31,6 +31,6 @@ internal sealed class ApplicationAcceptedIntegrationEventHandler : IIntegrationE
             context.AddInboxMessage(envelope, handler);
             var opportunity = await context.Opportunities
                 .SingleOrDefaultAsync(value => value.Id == @event.OpportunityId, ct);
-            opportunity?.MarkFilled();
+            opportunity?.MarkFilled(@event.ApplicationId);
         }, ct);
 }
