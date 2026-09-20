@@ -84,8 +84,10 @@ internal sealed class ConversationsController : ControllerBase
     public async Task<IActionResult> RemoveMemberAssignment(
         int conversationId,
         Guid membershipId,
+        [FromQuery] long expectedVersion,
         CancellationToken ct) =>
-        (await conversationService.RemoveMemberAssignmentAsync(conversationId, membershipId, ct))
+        (await conversationService.RemoveMemberAssignmentAsync(
+            conversationId, membershipId, expectedVersion, ct))
             .ToNoContentOrProblem();
 
     [HasPermission(TenantPermission.MessagesReadName)]

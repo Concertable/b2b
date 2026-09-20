@@ -40,14 +40,18 @@ public sealed class ConversationEntity : IIdEntity
 
     public long AllocateMessageSequence() => ++LastMessageSequence;
 
-    public bool AssignMember(Guid actorTenantId, Guid membershipId, Guid membershipTenantId, DateTime at)
+    public IReadOnlyList<ConversationAccessGrant> AssignMember(
+        Guid actorTenantId,
+        Guid membershipId,
+        Guid membershipTenantId,
+        DateTime at)
     {
         if (membershipId == Guid.Empty
             || membershipTenantId != actorTenantId
             || !IsPrincipal(actorTenantId, at))
-            return false;
+            return [];
 
-        var changed = false;
+        var grants = new List<ConversationAccessGrant>();
         foreach (var scope in new[] { ConversationAccessScope.Read, ConversationAccessScope.SendMessages })
         {
             if (accessGrants.Exists(grant =>
@@ -57,7 +61,7 @@ public sealed class ConversationEntity : IIdEntity
                     && grant.IsLiveAt(at)))
                 continue;
 
-            accessGrants.Add(ConversationAccessGrant.Issue(
+            var grant = ConversationAccessGrant.Issue(
                 Id,
                 actorTenantId,
                 membershipId,
@@ -65,13 +69,14 @@ public sealed class ConversationEntity : IIdEntity
                 issuedByTenantId: actorTenantId,
                 issuedByUserId: null,
                 ResourceGrantKind.MemberAssignment,
-                at));
-            changed = true;
+                at);
+            accessGrants.Add(grant);
+            grants.Add(grant);
         }
 
-        if (changed)
+        if (grants.Count > 0)
             AccessVersion++;
-        return changed;
+        return grants;
     }
 
     public bool RemoveMemberAssignment(Guid actorTenantId, Guid membershipId, DateTime at)

@@ -23,6 +23,7 @@ internal interface IConversationPrivilegedRepository
         IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default);
     void Add(ConversationEntity conversation);
+    void AddAccessGrants(IEnumerable<ConversationAccessGrant> grants);
     void Add(ConversationCreationReceipt receipt);
     void Add(MessageEntity message);
     Task SaveChangesAsync(CancellationToken ct = default);

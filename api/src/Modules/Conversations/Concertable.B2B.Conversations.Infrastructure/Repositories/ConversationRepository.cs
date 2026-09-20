@@ -97,6 +97,8 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
             .ToDictionaryAsync(display => display.TenantId, ct);
 
     public void Add(ConversationEntity conversation) => context.Conversations.Add(conversation);
+    public void AddAccessGrants(IEnumerable<ConversationAccessGrant> grants) =>
+        context.ConversationAccessGrants.AddRange(grants);
     public void Add(ConversationCreationReceipt receipt) => context.ConversationCreationReceipts.Add(receipt);
     public void Add(MessageEntity message) => context.Messages.Add(message);
 

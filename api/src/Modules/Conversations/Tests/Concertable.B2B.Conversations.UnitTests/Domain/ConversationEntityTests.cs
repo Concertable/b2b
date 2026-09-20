@@ -56,8 +56,8 @@ public sealed class ConversationEntityTests
         var conversation = ConversationEntity.Create(
             [creatorTenantId, Guid.NewGuid()], creatorTenantId, Guid.NewGuid(), at);
 
-        Assert.False(conversation.AssignMember(creatorTenantId, membershipId, Guid.NewGuid(), at));
-        Assert.True(conversation.AssignMember(creatorTenantId, membershipId, creatorTenantId, at));
+        Assert.Empty(conversation.AssignMember(creatorTenantId, membershipId, Guid.NewGuid(), at));
+        Assert.Equal(2, conversation.AssignMember(creatorTenantId, membershipId, creatorTenantId, at).Count);
 
         var assignments = conversation.AccessGrants
             .Where(grant => grant.MembershipId == membershipId).ToList();

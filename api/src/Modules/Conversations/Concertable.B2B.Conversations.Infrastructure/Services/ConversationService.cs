@@ -270,13 +270,14 @@ internal sealed class ConversationService : IConversationService
     public Task<UnitResult<AssignConversationMemberError>> RemoveMemberAssignmentAsync(
         int conversationId,
         Guid membershipId,
+        long expectedAccessVersion,
         CancellationToken ct = default) =>
-        ChangeAssignmentAsync(conversationId, membershipId, null, false, ct);
+        ChangeAssignmentAsync(conversationId, membershipId, expectedAccessVersion, false, ct);
 
     private Task<UnitResult<AssignConversationMemberError>> ChangeAssignmentAsync(
         int conversationId,
         Guid membershipId,
-        long? expectedAccessVersion,
+        long expectedAccessVersion,
         bool assign,
         CancellationToken ct)
     {
@@ -294,7 +295,7 @@ internal sealed class ConversationService : IConversationService
     private Task<UnitResult<AssignConversationMemberError>> ChangeAssignmentCommandAsync(
         int conversationId,
         Guid membershipId,
-        long? expectedAccessVersion,
+        long expectedAccessVersion,
         bool assign,
         MembershipSnapshot expectedActor,
         CancellationToken ct) =>
@@ -306,7 +307,7 @@ internal sealed class ConversationService : IConversationService
     private async Task<UnitResult<AssignConversationMemberError>> ChangeAssignmentCoreAsync(
         int conversationId,
         Guid membershipId,
-        long? expectedAccessVersion,
+        long expectedAccessVersion,
         bool assign,
         MembershipSnapshot expectedActor,
         CancellationToken ct)
@@ -323,15 +324,18 @@ internal sealed class ConversationService : IConversationService
             return new AssignConversationMemberError.NotFound(conversationId);
         if (!IsPrincipal(conversation, facts.Actor.TenantId))
             return new AssignConversationMemberError.NotPermitted();
-        if (expectedAccessVersion is { } version && conversation.AccessVersion != version)
+        if (conversation.AccessVersion != expectedAccessVersion)
             return new AssignConversationMemberError.Superseded(conversationId);
 
-        var changed = assign
+        var grants = assign
             ? conversation.AssignMember(
                 facts.Actor.TenantId,
                 membershipId,
                 facts.TargetMembership!.TenantId,
                 timeProvider.GetUtcNow().UtcDateTime)
+            : [];
+        var changed = assign
+            ? grants.Count > 0
             : conversation.RemoveMemberAssignment(
                 facts.Actor.TenantId,
                 membershipId,
@@ -340,6 +344,8 @@ internal sealed class ConversationService : IConversationService
             return assign
                 ? new AssignConversationMemberError.AlreadyAssigned()
                 : new AssignConversationMemberError.InvalidMembership();
+        if (assign)
+            privilegedRepository.AddAccessGrants(grants);
         await privilegedRepository.SaveChangesAsync(ct);
         await bus.PublishAsync(new ConversationChanged(conversationId), ct);
         return new Success();

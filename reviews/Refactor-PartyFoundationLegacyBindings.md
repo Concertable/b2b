@@ -727,7 +727,8 @@ recovery-mapping tests are required before R7 can close.
   **Disposition:** conversations now expose explicit assign/remove-member commands and `ConversationEntity`
   issues live member-specific Read and SendMessages grants only within the principal tenant. Staff retains the
   corresponding catalog permissions, so the assigned-resource predicate can authorize both operations. The
-  focused aggregate tests pass 4/4; N8 separately owns end-to-end coverage of assignment lifecycle edges.
+  focused aggregate tests pass 4/4, and the API regression proves assigned Staff read/send access, stale-removal
+  conflict, grant preservation and final removal. N8 retains its remaining cross-tenant and rejoin coverage.
 
 - [ ] **R23 — low — the settlement succeeded/failed processors now disagree on the same condition.**
   `SettlementPaymentProcessor.cs:48-53` throws for an outcome naming an unknown concert;
@@ -1695,3 +1696,74 @@ lens runner could not recompute bundle hashes, but found no actionable issue in 
 The native/general and security/text lenses approved R19. The only source hunk removes the remaining mid-file
 U+FEFF without semantic change; the Concert unit source scan is clean and its full suite passes. No actionable
 findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `bd9e45558b67b088fdd5f7bfe0eb9e223817e422`
+**Candidate head:** `48ded735908dd6eb68f1051c60c613be9c788ecd`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:62c49ac442ae133f6a5a04b2f79222809e4cb4d05d016d8580ed1ce4d6cb546b` `(1 path)`
+**Candidate patch:** `sha256:3a2806f6f0c27336e55a9d1cc9efe4d3686dad82c930de405619a88ae05fe923`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\502a304ad3b451e2da0236f67eabedb847222e502f4a613f12d4575484403d3b`
+**Candidate bundle identity:** `sha256:283705578d67e820364f85f459f2b09247553a89ede1f2a15676d22529b31008`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/data lenses approved R20. Posting and both pre-commit handlers share the same
+scoped privileged repository and tracked aggregate, so EF identity resolution exposes post-mutation state. The
+exact lifecycle tests pass 2/2 and the full Concert integration suite passes 83/83. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `48ded735908dd6eb68f1051c60c613be9c788ecd`
+**Candidate head:** `e8f6f8cf9ff7fdab045d3b1319c2980842de773a`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:62c49ac442ae133f6a5a04b2f79222809e4cb4d05d016d8580ed1ce4d6cb546b` `(1 path)`
+**Candidate patch:** `sha256:869bb12c5906790183963baa226a7a413265661bc1500881a5f075c36113fcc0`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\06ffb96590173d9f0e954b9e02c6298cab430e99e4be7ece06671ac8924f4154`
+**Candidate bundle identity:** `sha256:8f9af9db63854bb768f846012a22ced28f22243d923f880e489fa44e0075c1cd`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/authorization lenses approved R21. Filtered caller visibility precedes
+privileged full-ACL participant expansion, historical filtered counterparty queries are absent, the exact
+participant regressions pass 2/2 and the full Conversations suite passes 17/17. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `e8f6f8cf9ff7fdab045d3b1319c2980842de773a`
+**Candidate head:** `99c473f823ad7a19a1fbeefbf98a81a540af4537`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:62c49ac442ae133f6a5a04b2f79222809e4cb4d05d016d8580ed1ce4d6cb546b` `(1 path)`
+**Candidate patch:** `sha256:4935882760bb0d2ad85d5ca7e7c487650eecfb37081fd1afa23af07d26eb66f4`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\3543b1f86fd4c3962e9dfd782e67947c550888df4cbc99b7d8f93bd8be734042`
+**Candidate bundle identity:** `sha256:e12e381c5689ec5f54ef1da81a4b89523c969c65d5556cf3e68d09254f5e261b`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The native/general lens approved R22's member-specific Read and SendMessages grants. The security lens found
+that removal omitted the access-version precondition and could revoke a newer re-created assignment.
+
+- [x] **N28 — MEDIUM — security/data — conversation assignment removal is not version-fenced.**
+  The DELETE contract passed no expected version, and the locked command skipped its version check when
+  removing a member assignment. A stale principal could therefore revoke a grant created after the request's
+  read. The acceptance regression also exposed that newly issued GUID-keyed grants were discovered as existing
+  entities and sent as concurrency-checked updates rather than inserts.
+  **Fix:** require `expectedVersion` on DELETE, compare it after the aggregate lock, return `Superseded` on a
+  mismatch, explicitly stage newly issued grants as Added, and prove the Staff assignment lifecycle over HTTP.
+  **Disposition:** DELETE now threads a required version through the service and checks it after `FOR UPDATE`.
+  Assignment returns its issued grants and the privileged repository explicitly adds them, matching the Concert
+  aggregate pattern. The exact Staff assignment/stale-removal regression passes 1/1, Conversations unit tests
+  pass 38/38 and the full Conversations integration suite passes 18/18.

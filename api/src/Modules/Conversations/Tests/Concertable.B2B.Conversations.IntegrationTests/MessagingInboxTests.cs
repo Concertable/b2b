@@ -1,4 +1,6 @@
 using System.Net;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.Seed.Identity;
 using Xunit.Abstractions;
 
@@ -163,6 +165,55 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         Assert.False(visible.Unread);
     }
 
+    [Fact]
+    public async Task AssignedStaff_StaleRemovalPreservesTheNewerGrant()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var staff = fixture.SeedState.VenueManager3;
+        var tenantId = TenantSeedIds.For(owner.Id);
+        var membership = fixture.SeedState.Memberships.Single(value =>
+            value.TenantId == tenantId && value.UserId == staff.Id);
+        var ownerClient = fixture.CreateClient(owner);
+        var staffClient = fixture.CreateClient(staff);
+        staffClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
+
+        await (await ownerClient.PutAsync(
+                $"/api/organization/members/{staff.Id}/role",
+                new { role = TenantRole.Staff.ToString() }))
+            .ShouldBe(HttpStatusCode.NoContent);
+
+        var preview = Assert.Single(await GetPreviewsAsync(ownerClient));
+        var before = await GetConversationAsync(ownerClient, preview.ConversationId);
+        await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
+            .ShouldBe(HttpStatusCode.NotFound);
+
+        await (await ownerClient.PostAsync(
+                $"/api/conversations/{preview.ConversationId}/member-assignments",
+                new
+                {
+                    membershipId = membership.Id,
+                    expectedAccessVersion = before.AccessVersion
+                }))
+            .ShouldBe(HttpStatusCode.NoContent);
+
+        var assigned = await GetConversationAsync(ownerClient, preview.ConversationId);
+        await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
+            .ShouldBe(HttpStatusCode.OK);
+        await SendAsync(staffClient, preview.ConversationId, Guid.NewGuid(), "Assigned staff message");
+
+        await (await ownerClient.DeleteAsync(
+                $"/api/conversations/{preview.ConversationId}/member-assignments/{membership.Id}?expectedVersion={before.AccessVersion}"))
+            .ShouldBe(HttpStatusCode.Conflict);
+        await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
+            .ShouldBe(HttpStatusCode.OK);
+
+        await (await ownerClient.DeleteAsync(
+                $"/api/conversations/{preview.ConversationId}/member-assignments/{membership.Id}?expectedVersion={assigned.AccessVersion}"))
+            .ShouldBe(HttpStatusCode.NoContent);
+        await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
+            .ShouldBe(HttpStatusCode.NotFound);
+    }
+
     private static async Task<Conversation> CreateAsync(
         HttpClient client,
         Guid requestId,
@@ -193,6 +244,10 @@ public sealed class MessagingInboxTests : IAsyncLifetime
     private static async Task<List<Message>> GetMessagesAsync(HttpClient client, int conversationId) =>
         (await (await client.GetAsync($"/api/conversations/{conversationId}/messages"))
             .Content.ReadAsync<List<Message>>())!;
+
+    private static async Task<Conversation> GetConversationAsync(HttpClient client, int conversationId) =>
+        (await (await client.GetAsync($"/api/conversations/{conversationId}"))
+            .Content.ReadAsync<Conversation>())!;
 
     private static async Task<int> GetUnreadCountAsync(HttpClient client) =>
         await (await client.GetAsync("/api/conversations/unread-count")).Content.ReadAsync<int>();

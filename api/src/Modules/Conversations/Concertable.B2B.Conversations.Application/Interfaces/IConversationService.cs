@@ -37,6 +37,7 @@ internal interface IConversationService
     Task<UnitResult<AssignConversationMemberError>> RemoveMemberAssignmentAsync(
         int conversationId,
         Guid membershipId,
+        long expectedAccessVersion,
         CancellationToken ct = default);
 
     Task<int> GetUnreadCountAsync(CancellationToken ct = default);
