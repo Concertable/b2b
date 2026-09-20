@@ -24,6 +24,8 @@ internal interface IMembershipRepository : IRepository<TenantMembershipEntity, G
     /// <summary>Every membership row of a tenant — the members-management list (mapped to emails via <c>IUserModule</c>).</summary>
     Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default);
 
+    Task<bool> ExistsByTenantIdAndIdAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default);
+
     Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default);

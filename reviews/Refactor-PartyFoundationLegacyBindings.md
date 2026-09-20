@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `f4a953ddd6765a0a68358f8d11dde1f9a6ef348f`  `(2026-09-20)`
-**Security-reviewed up to commit:** `f4a953ddd6765a0a68358f8d11dde1f9a6ef348f`  `(2026-09-20)`
+**Reviewed up to commit:** `f7f1950b543be692809546aa65bad09ac9eb0f79`  `(2026-09-20)`
+**Security-reviewed up to commit:** `f7f1950b543be692809546aa65bad09ac9eb0f79`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -579,7 +579,7 @@ recovery-mapping tests are required before R7 can close.
   invalid value and duplicate `X-Tenant-Id` values return 400. The focused regressions pass 2/2, the full
   active-tenant resolution class passes 7/7, and the Tenant integration project passes 92/92.
 
-- [ ] **R12 — medium — `IsCurrentMembershipAsync` materialises every membership of a tenant to answer one
+- [~] **R12 — medium — `IsCurrentMembershipAsync` materialises every membership of a tenant to answer one
   boolean, on a request path.** `TenantService.cs:57-61` calls `ListMembershipsByTenantAsync` (tracked entities,
   `MembershipRepository.cs:43-44`) then filters in memory. It runs before every share and every member
   assignment (`ConcertService.cs:317,413`). The same repository already shows the right shape at `:52-53`.
@@ -1445,3 +1445,23 @@ The native lens approved the production mapping and accepted one response-contra
   **Disposition:** both authenticated requests now assert the response media type and deserialize the complete
   fixed Problem Details contract. The exact regressions pass 2/2 and the Tenant integration project passes
   92/92 after a warning-free rebuild.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `634f71548f44bdb4ab35606480bda39400b0b61c`
+**Candidate head:** `f7f1950b543be692809546aa65bad09ac9eb0f79`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:d87f0b7d18d38251810b79f4b65e1f42d57e9908b8ebe863e0e401fb9b63731a` `(2 paths)`
+**Candidate patch:** `sha256:9c315603b80c0b35109ff999e7f6283e9f4ee3c5a72dc795b3c7f7075bfcc650`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\037b43042c42ae3d5c423cd377df097029a177b82f37825c363d4fcc52a78756`
+**Candidate bundle identity:** `sha256:462f594d0cbc64ac9e58f03aec94e8f9ade6da37298e3d6f6807ec572e24af15`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security lenses approved N26. The authenticated malformed and duplicate-header
+requests exercise the production handler and assert the complete fixed, non-reflective Problem Details
+contract. No actionable findings.
