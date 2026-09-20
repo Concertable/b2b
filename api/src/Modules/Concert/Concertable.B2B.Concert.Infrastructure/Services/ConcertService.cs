@@ -613,12 +613,19 @@ internal sealed class ConcertService : IConcertService
     private static Result<ConcertSummaryShare, ShareConcertSummaryError> ReplaySummaryShare(
         ConcertEntity concert,
         ConcertCommandReceipt receipt,
-        string payloadHash) =>
-        receipt.Matches(payloadHash)
-            && Guid.TryParse(receipt.Outcome, out var grantId)
-            && concert.AccessGrants.SingleOrDefault(grant => grant.Id == grantId) is { } issued
-            ? issued.ToSummaryShare(concert.AccessVersion)
-            : new ShareConcertSummaryError.RequestConflict();
+        string payloadHash)
+    {
+        if (!receipt.Matches(payloadHash))
+            return new ShareConcertSummaryError.RequestConflict();
+        if (!Guid.TryParse(receipt.Outcome, out var grantId))
+            throw new InvalidOperationException(
+                $"Concert command receipt {receipt.Id} has an invalid grant outcome.");
+
+        var issued = concert.AccessGrants.SingleOrDefault(grant => grant.Id == grantId)
+            ?? throw new InvalidOperationException(
+                $"Concert command receipt {receipt.Id} records missing grant {grantId}.");
+        return issued.ToSummaryShare(concert.AccessVersion);
+    }
 
     private async Task<Result<ConcertSummaryShare, ShareConcertSummaryError>> RecoverSummaryShareDuplicateAsync(
         int id,

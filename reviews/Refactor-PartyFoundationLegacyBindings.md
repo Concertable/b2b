@@ -545,11 +545,12 @@ recovery-mapping tests are required before R7 can close.
   **Fix:** treat an unresolvable recorded outcome as an invariant violation (throw, as
   `SettlementPaymentProcessor.cs:51-59` does) or give it its own error arm. Decide separately what a replay
   should report when the grant was since revoked.
-  **Disposition:** replay now returns the dedicated `RequestConflict` arm when the payload differs, the stored
-  outcome is not a grant id, or the recorded grant cannot be resolved from the complete ACL. A focused unit
-  regression supplies a matching durable receipt whose grant is absent and proves the result is
-  `RequestConflict`, not `ConcertNotFound`. The exact regression passes 1/1 and the full Concert unit suite
-  passes 97/97.
+  **Disposition:** replay returns `RequestConflict` only when the request payload differs. A matching durable
+  receipt with a malformed outcome or a grant that cannot be resolved from the complete ACL now raises an
+  invariant failure instead of blaming the client or reporting the concert missing. A focused unit regression
+  supplies a matching receipt whose recorded grant is absent and asserts the receipt and grant identities are
+  preserved in the thrown diagnostic. The replay-classification tests pass 4/4, all Concert unit tests pass
+  97/97, and the full access-control integration class passes 9/9.
 
 - [ ] **R10 — medium — cross-tenant existence probes run before the caller's authority over the concert is
   established.** `ConcertService.cs:313-318` calls `tenantModule.GetByIdAsync` and `IsCurrentMembershipAsync`
@@ -1326,3 +1327,23 @@ the unfiltered ACL load is never called when resource authority is absent.
 Both native/general and security lenses approved the R1 repository-spy coverage. The tests execute the real
 command and unit-of-work delegates, satisfy every preliminary fact and permission check, force resource
 authority denial, and prove the full privileged ACL load is never invoked. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `89952b7e987e7bf2e41f0b0a551ecfe4f682656e`
+**Candidate head:** `6ef6538236a29b69f17ed3ab8647b91866813d0c`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:9182404cf0a0b1ee6465f3f32f3e728c07a165c97398c9f721f8a1e515d59eeb` `(2 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\47209a6e088712180e92c68e47b1d5396141641e3954b91304fb30bd242b44a2`
+**Candidate bundle identity:** `sha256:f5761701c72178e9a8feecef808f39c59a4ed361b18a7e4a0b77ee0dd0ec877b`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The native lens approved the isolated missing-grant branch coverage. The security lens found that
+`RequestConflict` says the caller reused an idempotency key for a different payload, so returning it for a
+matching receipt with corrupt or missing server outcome state was false attribution. R9 remained open until
+matching inconsistent outcomes became invariant failures while genuine payload mismatches retained 409.

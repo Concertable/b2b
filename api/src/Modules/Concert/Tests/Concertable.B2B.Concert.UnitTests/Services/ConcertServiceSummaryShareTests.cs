@@ -41,7 +41,7 @@ public sealed class ConcertServiceSummaryShareTests
     }
 
     [Fact]
-    public void RecoverSummaryShareDuplicate_MatchingReceiptWithoutRecordedGrant_ReturnsRequestConflict()
+    public void RecoverSummaryShareDuplicate_MatchingReceiptWithoutRecordedGrant_Throws()
     {
         var recovery = CreateRecovery();
         var concert = ConcertEntity.CreateDraft(
@@ -49,13 +49,14 @@ public sealed class ConcertServiceSummaryShareTests
             new ConcertDraft("Concert", "About", [Genre.Rock]),
             DateTime.UnixEpoch);
 
-        var result = ConcertService.RecoverSummaryShareDuplicate(
-            concert,
-            recovery.Receipt,
-            recovery.PayloadHash);
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            ConcertService.RecoverSummaryShareDuplicate(
+                concert,
+                recovery.Receipt,
+                recovery.PayloadHash));
 
-        Assert.True(result.TryGetError(out var error));
-        Assert.IsType<ShareConcertSummaryError.RequestConflict>(error);
+        Assert.Contains(recovery.Receipt.Id.ToString(), exception.Message);
+        Assert.Contains(recovery.Grant.Id.ToString(), exception.Message);
     }
 
     [Fact]
