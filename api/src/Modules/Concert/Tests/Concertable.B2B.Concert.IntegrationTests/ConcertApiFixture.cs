@@ -167,7 +167,17 @@ public sealed class ConcertApiFixture : ApiFixture
     }
 
     internal async Task<T> RunWithReceiptInsertBarrierAsync<T>(
-        Func<CancellationToken, Task<T>> action)
+        Func<CancellationToken, Task<T>> action) =>
+        await RunWithReceiptInsertBarrierCoreAsync(action, null);
+
+    internal async Task<T> RunWithReceiptInsertBarrierAsync<T>(
+        Func<CancellationToken, Task<T>> action,
+        Exception injectedFailure) =>
+        await RunWithReceiptInsertBarrierCoreAsync(action, injectedFailure);
+
+    private async Task<T> RunWithReceiptInsertBarrierCoreAsync<T>(
+        Func<CancellationToken, Task<T>> action,
+        Exception? injectedFailure)
     {
         using var cancellation = new CancellationTokenSource();
         await using var control = new NpgsqlConnection(connectionString);
@@ -200,6 +210,8 @@ public sealed class ConcertApiFixture : ApiFixture
             lockHeld = true;
             result = action(cancellation.Token);
             await WaitForReceiptInsertWaitersAsync(connectionString);
+            if (injectedFailure is not null)
+                throw injectedFailure;
             await ExecuteAsync(control, $"SELECT pg_advisory_unlock({ReceiptInsertBarrierKey})");
             lockHeld = false;
             outcome = await result;
@@ -208,7 +220,14 @@ public sealed class ConcertApiFixture : ApiFixture
         catch (Exception exception)
         {
             failure = ExceptionDispatchInfo.Capture(exception);
-            cancellation.Cancel();
+            try
+            {
+                await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception cancellationException)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(cancellationException);
+            }
         }
 
         if (lockHeld)
@@ -247,13 +266,15 @@ public sealed class ConcertApiFixture : ApiFixture
 
         try
         {
+            using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await using var cleanup = new NpgsqlConnection(connectionString);
-            await cleanup.OpenAsync();
+            await cleanup.OpenAsync(cleanupCancellation.Token);
             await ExecuteAsync(cleanup, """
+                SET lock_timeout = '5s';
                 DROP TRIGGER IF EXISTS block_receipt_insert_for_test
                     ON concert."ConcertCommandReceipts";
                 DROP FUNCTION IF EXISTS concert.block_receipt_insert_for_test();
-                """);
+                """, cleanupCancellation.Token);
         }
         catch (Exception exception)
         {
@@ -264,6 +285,27 @@ public sealed class ConcertApiFixture : ApiFixture
         if (!completed)
             throw new InvalidOperationException("The receipt insert barrier action did not complete.");
         return outcome!;
+    }
+
+    internal async Task<bool> HasReceiptInsertBarrierAsync()
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM pg_trigger
+                WHERE tgname = 'block_receipt_insert_for_test'
+                  AND NOT tgisinternal)
+            OR EXISTS (
+                SELECT 1
+                FROM pg_proc AS procedure
+                INNER JOIN pg_namespace AS schema ON schema.oid = procedure.pronamespace
+                WHERE schema.nspname = 'concert'
+                  AND procedure.proname = 'block_receipt_insert_for_test')
+            """;
+        return (bool)(await command.ExecuteScalarAsync() ?? true);
     }
 
     private static async Task WaitForReceiptInsertWaitersAsync(string connectionString)
@@ -291,11 +333,14 @@ public sealed class ConcertApiFixture : ApiFixture
         throw new TimeoutException("Two receipt inserts did not reach the database barrier.");
     }
 
-    private static async Task ExecuteAsync(NpgsqlConnection connection, string sql)
+    private static async Task ExecuteAsync(
+        NpgsqlConnection connection,
+        string sql,
+        CancellationToken cancellationToken = default)
     {
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
-        await command.ExecuteNonQueryAsync();
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     protected override void OnConfigureServices(IServiceCollection services)

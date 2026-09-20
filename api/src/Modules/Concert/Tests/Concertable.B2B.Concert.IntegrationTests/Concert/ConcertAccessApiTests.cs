@@ -242,6 +242,64 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ReceiptInsertBarrier_FailurePreservesExceptionAndRemovesDatabaseObjects()
+    {
+        var concerts = fixture.SeedState.Concerts
+            .GroupBy(value => value.VenueTenantId)
+            .First(group => group.Count() >= 2)
+            .Take(2)
+            .ToArray();
+        var client = CreateOwningVenueClient(concerts[0].VenueId);
+        var competitor = CreateOwningVenueClient(concerts[1].VenueId);
+        var requestId = Guid.NewGuid();
+        var recipientTenantId = fixture.SeedState.Tenants
+            .First(value => value.Id != concerts[0].VenueTenantId)
+            .Id;
+        var injectedFailure = new InvalidOperationException("Injected receipt barrier failure.");
+        var cancellationRegistration = default(CancellationTokenRegistration);
+
+        Task<HttpResponseMessage> ShareAsync(
+            HttpClient sender,
+            ConcertEntity concert,
+            CancellationToken cancellationToken) =>
+            sender.PostAsJsonAsync(
+                $"/api/concert/{concert.Id}/summary-shares",
+                new
+                {
+                    requestId,
+                    recipientTenantId,
+                    recipientMembershipId = (Guid?)null,
+                    expectedAccessVersion = concert.AccessVersion,
+                    validUntil = (DateTime?)null,
+                },
+                cancellationToken);
+
+        try
+        {
+            var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                fixture.RunWithReceiptInsertBarrierAsync(
+                    cancellationToken =>
+                    {
+                        cancellationRegistration = cancellationToken.Register(
+                            static () => throw new ApplicationException("Injected cancellation failure."));
+                        return RaceAsync(
+                            () => ShareAsync(client, concerts[0], cancellationToken),
+                            () => ShareAsync(competitor, concerts[1], cancellationToken));
+                    },
+                    injectedFailure));
+
+            Assert.Same(injectedFailure, thrown);
+            Assert.Contains("RunWithReceiptInsertBarrierCoreAsync", thrown.StackTrace);
+        }
+        finally
+        {
+            await cancellationRegistration.DisposeAsync();
+        }
+
+        Assert.False(await fixture.HasReceiptInsertBarrierAsync());
+    }
+
+    [Fact]
     public async Task AssignAndRemoveMember_ChangesOnlyThePrincipalMembershipGrant()
     {
         var venueTenantId = TenantOf(fixture.SeedState.VenueManager1.Id);

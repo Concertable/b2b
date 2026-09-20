@@ -1181,3 +1181,33 @@ the production and schema changes and accepted one test-isolation finding.
   failure with its stack, releases the advisory lock or closes its session, bounded-drains the started race, and
   drops the trigger/function through a fresh cleanup connection before rethrowing the original failure. The exact
   server-observed race passes twice and the full access class passes 7/7.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `e173633404b52ce1ff08738388b969d7f1c48652`
+**Candidate head:** `317604893224387a1975f2b0177a648380eecdca`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:913e66c4b0c195825b9cae12159cb4c67a9f7f0eb64955855059dc9a93198f20` `(3 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\4cfd49045453117b7fb8275f350c1b4f3c42d395199a6be416ffdd7483284f27`
+**Candidate bundle identity:** `sha256:00177e03fb81e91189a13504aa4bc174a0085476f122e698c0f6faec7b329f83`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The security/concurrency lens approved N24. The native/general lens confirmed the success path and accepted one
+remaining failure-cleanup issue.
+
+- [x] **N25 — MEDIUM — test-isolation — cancellation and DDL teardown are not bounded end to end.**
+  Synchronous unguarded cancellation can block or throw from a callback and replace the captured primary failure.
+  If the aggregate HTTP task then exceeds its bounded wait, lock-taking DROP DDL has no helper-owned timeout and
+  can extend cleanup indefinitely behind the surviving backend.
+  **Fix:** guard and bound cancellation while preserving the first failure, bound PostgreSQL teardown, and prove
+  through a forced failure path that the original exception and stack win and the database objects are removed.
+  **Disposition:** cancellation now runs asynchronously behind a five-second bound and any callback failure is
+  secondary to the captured primary. Teardown uses a ten-second token plus PostgreSQL `lock_timeout` on its fresh
+  connection. A forced server-observed failure registers a throwing cancellation callback and proves the original
+  exception instance/stack survives while the trigger and function are absent. Both exact regressions pass 2/2 and
+  the full access class passes 8/8.
