@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `ae5e6717e899e57fefad6a4d60bb3d35d0720655`  `(2026-09-20)`
-**Security-reviewed up to commit:** `ae5e6717e899e57fefad6a4d60bb3d35d0720655`  `(2026-09-20)`
+**Reviewed up to commit:** `1860be515d4cd69eb57754163d087cceb82ac4fa`  `(2026-09-20)`
+**Security-reviewed up to commit:** `1860be515d4cd69eb57754163d087cceb82ac4fa`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -632,7 +632,7 @@ recovery-mapping tests are required before R7 can close.
   actor tenant before the domain call. The full Concert unit suite passes 98/98 and all nine
   `ConcertAccessApiTests` pass.
 
-- [ ] **R17 — low — the shared audience predicate is copy-pasted ten times across four contexts.**
+- [x] **R17 — low — the shared audience predicate is copy-pasted ten times across four contexts.**
   `ConcertDbContext.cs:43-46,48-51,57-60`; `BookingDbContext.cs:29-32,38-41`;
   `ApplicationDbContext.cs:31-34,36-39`; `ConversationsDbContext.cs:36-39,41-44`. Plan §4.2 requires the
   shared membership/audience/time expression to be expressed once in DataAccess's expression builder;
@@ -640,6 +640,11 @@ recovery-mapping tests are required before R7 can close.
   security-critical `MembershipId == null || == ActiveMembershipId` rule with ten edit sites.
   **Fix:** add an `Or` combinator and a `ReachableAtAudience<TGrant, TScope>(context, permission)` expression;
   each context then supplies only its scope test.
+  **Disposition:** added `LiveForAudience` and `Or` to the shared expression builder and reduced all four
+  contexts to their scope-to-audience mapping. No context retains a copied
+  `TenantResources`/`AssignedResources` clause. The clean solution build has zero warnings and errors;
+  resource-access architecture tests pass 4/4; the Application, Booking, Concert and Conversations integration
+  suites pass 76/76, 24/24, 83/83 and 17/17.
 
 - [ ] **R18 — low — dangling doc references to the deleted `AccessScopedDbContext`.**
   `TenantScopedDbContext.cs:13,53`, `TenantFilters.cs:10` and `CODE_PATTERNS.md:14,20` still name the type this
@@ -1592,3 +1597,23 @@ registered, injected and used for every invoice existence, sequence-lock and sta
 The native/general and security/authority lenses approved the R15 reconciliation. No `IsHost` reference remains,
 single-owner filtering is exact active-tenant equality, and Concert actions retain explicit party ownership
 checks. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `ae5e6717e899e57fefad6a4d60bb3d35d0720655`
+**Candidate head:** `1860be515d4cd69eb57754163d087cceb82ac4fa`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:44ba80be46546d1e2732aa7ef5329db0d051bc1358dce8f3316dd674ecb795c7` `(3 paths)`
+**Candidate patch:** `sha256:a2814ed4fccda6023e3719b783c18f5376df0194143d8f2ace25628a062faa4f`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\e6d73ba8cbf6ed7b014d903e819b28327f179612c3ef25719eef80075b60060d`
+**Candidate bundle identity:** `sha256:61f04685052ece40ba2f4fc5cc591a4e78ec1c3f0b5d28e64f35a1b50c561784`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/authority lenses approved R16. The removed argument was tautological at the
+sole caller; target membership remains resolved under the actor tenant, null/cross-tenant targets remain
+fail-closed, and the aggregate still requires the actor tenant to be a concert principal. No actionable findings.

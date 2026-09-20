@@ -28,18 +28,14 @@ internal sealed class ApplicationDbContext(
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ApplicationAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCurrentMember<ApplicationAccessGrant, ApplicationAccessScope>(this)
-                .And(grant =>
-                    grant.Scope == ApplicationAccessScope.Summary
-                        && (OperationsAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || OperationsAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)
-                    || grant.Scope == ApplicationAccessScope.Proposal
-                        && (TermsAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || TermsAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)));
+            ResourceAccessExpressions.LiveForAudience<ApplicationAccessGrant, ApplicationAccessScope>(
+                    this,
+                    _ => OperationsAudience,
+                    ApplicationAccessScope.Summary)
+                .Or(ResourceAccessExpressions.LiveForAudience<ApplicationAccessGrant, ApplicationAccessScope>(
+                    this,
+                    _ => TermsAudience,
+                    ApplicationAccessScope.Proposal)));
 
         modelBuilder.Entity<ApplicationEntity>().HasQueryFilter(TenantFilters.Key, application =>
             ApplicationAccessGrants.Any(grant =>

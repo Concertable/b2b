@@ -40,27 +40,21 @@ internal sealed class ConcertDbContext(
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ConcertAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCurrentMember<ConcertAccessGrant, ConcertAccessScope>(this)
-                .And(grant =>
-                    (grant.Scope == ConcertAccessScope.Summary || grant.Scope == ConcertAccessScope.Operations)
-                        && (OperationsAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || OperationsAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)
-                    || grant.Scope == ConcertAccessScope.Finance
-                        && (FinanceAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || FinanceAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)));
+            ResourceAccessExpressions.LiveForAudience<ConcertAccessGrant, ConcertAccessScope>(
+                    this,
+                    _ => OperationsAudience,
+                    ConcertAccessScope.Summary,
+                    ConcertAccessScope.Operations)
+                .Or(ResourceAccessExpressions.LiveForAudience<ConcertAccessGrant, ConcertAccessScope>(
+                    this,
+                    _ => FinanceAudience,
+                    ConcertAccessScope.Finance)));
 
         modelBuilder.Entity<InvoiceAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCurrentMember<InvoiceAccessGrant, InvoiceAccessScope>(this)
-                .And(grant =>
-                    grant.Scope == InvoiceAccessScope.Read
-                        && (FinanceAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || FinanceAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)));
+            ResourceAccessExpressions.LiveForAudience<InvoiceAccessGrant, InvoiceAccessScope>(
+                this,
+                _ => FinanceAudience,
+                InvoiceAccessScope.Read));
 
         modelBuilder.Entity<ConcertEntity>().HasQueryFilter(TenantFilters.Key, concert =>
             ConcertAccessGrants.Any(grant =>

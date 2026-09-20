@@ -26,22 +26,17 @@ internal sealed class BookingDbContext(
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<BookingAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCurrentMember<BookingAccessGrant, BookingAccessScope>(this)
-                .And(grant =>
-                    (grant.Scope == BookingAccessScope.Summary || grant.Scope == BookingAccessScope.Operations)
-                        && (OperationsAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || OperationsAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)));
+            ResourceAccessExpressions.LiveForAudience<BookingAccessGrant, BookingAccessScope>(
+                this,
+                _ => OperationsAudience,
+                BookingAccessScope.Summary,
+                BookingAccessScope.Operations));
 
         modelBuilder.Entity<ContractAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCurrentMember<ContractAccessGrant, ContractAccessScope>(this)
-                .And(grant =>
-                    grant.Scope == ContractAccessScope.Read
-                        && (TermsAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || TermsAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)));
+            ResourceAccessExpressions.LiveForAudience<ContractAccessGrant, ContractAccessScope>(
+                this,
+                _ => TermsAudience,
+                ContractAccessScope.Read));
 
         modelBuilder.Entity<BookingEntity>().HasQueryFilter(TenantFilters.Key, booking =>
             BookingAccessGrants.Any(grant =>

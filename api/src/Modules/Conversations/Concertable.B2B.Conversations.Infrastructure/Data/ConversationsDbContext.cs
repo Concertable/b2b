@@ -30,18 +30,14 @@ internal sealed class ConversationsDbContext(
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ConversationAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCurrentMember<ConversationAccessGrant, ConversationAccessScope>(this)
-                .And(grant =>
-                    grant.Scope == ConversationAccessScope.Read
-                        && (ReadAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || ReadAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)
-                    || grant.Scope == ConversationAccessScope.SendMessages
-                        && (SendAudience == ResourceAudience.TenantResources
-                                && (grant.MembershipId == null || grant.MembershipId == ActiveMembershipId)
-                            || SendAudience == ResourceAudience.AssignedResources
-                                && grant.MembershipId == ActiveMembershipId)));
+            ResourceAccessExpressions.LiveForAudience<ConversationAccessGrant, ConversationAccessScope>(
+                    this,
+                    _ => ReadAudience,
+                    ConversationAccessScope.Read)
+                .Or(ResourceAccessExpressions.LiveForAudience<ConversationAccessGrant, ConversationAccessScope>(
+                    this,
+                    _ => SendAudience,
+                    ConversationAccessScope.SendMessages)));
 
         modelBuilder.Entity<ConversationEntity>().HasQueryFilter(TenantFilters.Key, conversation =>
             ConversationAccessGrants.Any(grant =>
