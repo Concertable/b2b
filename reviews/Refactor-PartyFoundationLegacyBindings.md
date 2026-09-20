@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `c5150e7cd7f2bda0fe371e9b1925fd631942268b`  `(2026-09-20)`
-**Security-reviewed up to commit:** `c5150e7cd7f2bda0fe371e9b1925fd631942268b`  `(2026-09-20)`
+**Reviewed up to commit:** `8eacaf0130a88e265d604f224fdf462d80eeb936`  `(2026-09-20)`
+**Security-reviewed up to commit:** `8eacaf0130a88e265d604f224fdf462d80eeb936`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -463,13 +463,36 @@ findings. R5 is closed on the exact published-only call chain and focused posted
   The focused invalid-validity regression proves the existing expired share and access version remain
   unchanged; the full access class passes 6/6 and Concert unit tests pass 90/90.
 
-- [ ] **R7 — medium — a duplicate-key violation escapes as a 500 on the very path the receipt exists to make
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `c5150e7cd7f2bda0fe371e9b1925fd631942268b`
+**Candidate head:** `8eacaf0130a88e265d604f224fdf462d80eeb936`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:e430ba48b3561cc1b4bc619d122306bbfcf02b1b820a89d8a1cb8861a59e50dd` `(8 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-8eacaf0130a88e265d604f224fdf462d80eeb936`
+**Candidate bundle identity:** `sha256:3794d2a539ce913b366b24471495c7a3b1c970e7cc2adb381b68bcee699d1f72`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security/concurrency lenses approved the frozen eight-path R6 delta. They verified
+that the row lock and one command transaction span both saves, and that typed failure rolls back the flush.
+
+- [x] **R7 — medium — a duplicate-key violation escapes as a 500 on the very path the receipt exists to make
   idempotent.** `ConcertService.cs:360` tolerates only `DbUpdateConcurrencyException`. Two concurrent copies of
   the same `RequestId` both pass the receipt check at `:306` and the loser gets a duplicate-key
   `DbUpdateException`. An `IsDuplicateKey()` helper already exists and is used for exactly this at
   `AdminService.cs:149,160` and `WriteRepositoryExtensions.cs:21`.
   **Fix:** widen the predicate, and on a duplicate receipt re-read it and return the replay; a duplicate grant
   maps to `AlreadyShared`.
+  **Disposition:** duplicate-key persistence failures are now recovered only after the failed command
+  transaction rolls back. A fresh command scope revalidates authority, locks and reloads the concert and
+  receipt, replays a matching receipt, returns `RequestConflict` for a mismatched replay, and maps the remaining
+  duplicate-grant case to `AlreadyShared`. Focused replay/concurrency tests pass 2/2; the access class passes 6/6
+  and Concert unit tests pass 90/90.
 
 - [ ] **R8 — medium — `ResourceCommandReceipt.HashPayload` is not injective and is not `DateTimeKind`- or
   culture-stable.** `ResourceCommandReceipt.cs:42-54`: the `U+001F` separator is neither escaped nor
