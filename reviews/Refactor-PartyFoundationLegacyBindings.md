@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `3ffe856c77a59c960218e9816f6b591a04cd7712`  `(2026-09-20)`
-**Security-reviewed up to commit:** `3ffe856c77a59c960218e9816f6b591a04cd7712`  `(2026-09-20)`
+**Reviewed up to commit:** `553314378a76c6a24e472c0c0f8db811d0d9ac7e`  `(2026-09-20)`
+**Security-reviewed up to commit:** `553314378a76c6a24e472c0c0f8db811d0d9ac7e`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -366,7 +366,25 @@ but missed `DevController` (R2).
   grants/version unchanged, valid removal revokes both scopes and bumps once, and a repeated removal returns
   404 without another bump. The focused graph builds warning-free and all five access API tests pass.
 
-- [ ] **R4 — high — `Concertable.B2B.Authorization.UnitTests` is not in the solution and does not compile.**
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `3ffe856c77a59c960218e9816f6b591a04cd7712`
+**Candidate head:** `553314378a76c6a24e472c0c0f8db811d0d9ac7e`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:7601fb545f818cf44a83de4098da77f823a1d81142409862b580be564c89bdd9` `(9 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\incremental-553314378a76c6a24e472c0c0f8db811d0d9ac7e`
+**Candidate bundle identity:** `sha256:baff1dc48da9190e3ed4f5da6ff4501ac802b42a6b5956674449d33c35a6b44c`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security/concurrency lenses found no actionable issue. R3 is closed across domain,
+application, HTTP, authorization, concurrency, and regression coverage.
+
+- [x] **R4 — high — `Concertable.B2B.Authorization.UnitTests` is not in the solution and does not compile.**
   The project is absent from `Concertable.B2B.slnx` (only `.Contracts` and `.Infrastructure` are listed) and
   `git log -S` shows it was never listed. CI builds and tests through that solution
   (`.github/workflows/ci.yml:59,62,73`), so nothing has ever compiled or run it. It holds the only coverage of
@@ -379,6 +397,11 @@ but missed `DevController` (R2).
   **Fix:** add the project to `Concertable.B2B.slnx`, delete the five stale rows, and rewrite the
   malformed-header test to assert the throw. This invalidates the earlier "0 failed across 14 assemblies"
   claim, which silently excluded this assembly.
+  **Disposition:** the stale role/fact rows and malformed-header expectation were already corrected in the
+  current source; the missing Authorization test project is now in the solution. Its previously excluded
+  assets file still resolved Kernel alpha.0.5 and reproduced the `IsHost` `TypeLoadException`; an explicit
+  current-graph restore moved it to alpha.0.14. All 46 Authorization unit tests now pass, and the full solution
+  builds with zero warnings and errors while including the project.
 
 - [ ] **R5 — high — F10 is not fixed: the published projection has no caller.**
   `IConcertReadRepository.GetPublishedByIdAsync` (`ConcertReadRepository.cs:29-41`) is referenced only by its
