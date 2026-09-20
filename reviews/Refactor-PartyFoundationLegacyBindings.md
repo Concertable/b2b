@@ -714,7 +714,7 @@ recovery-mapping tests are required before R7 can close.
   `IConversationPrivilegedRepository`. The exact conversation and preview participant regressions pass 2/2 on
   PostgreSQL; the full Conversations integration suite passes 17/17 on the same current graph.
 
-- [ ] **R22 — medium — the permission catalog grants Staff a permission it can never exercise.**
+- [x] **R22 — medium — the permission catalog grants Staff a permission it can never exercise.**
   Every principal grant is issued tenant-wide (`membershipId: null` at `ConcertEntity.cs:98`,
   `ApplicationEntity.cs:65`, `InvoiceEntity.cs:81`, `ThreadEntity.cs:43`), and the `AssignedResources` arm
   requires `grant.MembershipId == ActiveMembershipId`. The only member-grant issuer is
@@ -724,6 +724,10 @@ recovery-mapping tests are required before R7 can close.
   **Fix:** either issue member-assignment grants on the conversation alongside the concert assignment, or
   remove the message permissions from the assigned-audience roles until P1 has a path that makes them usable.
   Whichever way, the catalog should not assert a capability the predicate forbids.
+  **Disposition:** conversations now expose explicit assign/remove-member commands and `ConversationEntity`
+  issues live member-specific Read and SendMessages grants only within the principal tenant. Staff retains the
+  corresponding catalog permissions, so the assigned-resource predicate can authorize both operations. The
+  focused aggregate tests pass 4/4; N8 separately owns end-to-end coverage of assignment lifecycle edges.
 
 - [ ] **R23 — low — the settlement succeeded/failed processors now disagree on the same condition.**
   `SettlementPaymentProcessor.cs:48-53` throws for an outcome naming an unknown concert;
