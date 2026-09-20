@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `9188aed877e23c1776eb9be92e7c610b4edd2984`  `(2026-09-20)`
-**Security-reviewed up to commit:** `9188aed877e23c1776eb9be92e7c610b4edd2984`  `(2026-09-20)`
+**Reviewed up to commit:** `2adb9b942fb1263905387299b6dfd2f23ae146cf`  `(2026-09-20)`
+**Security-reviewed up to commit:** `2adb9b942fb1263905387299b6dfd2f23ae146cf`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -598,13 +598,17 @@ recovery-mapping tests are required before R7 can close.
   the intended stage-only write inside the issuer's owning unit of work. The Concert integration project builds
   with zero warnings and errors, and all 13 `ConcertInvoiceApiTests` pass.
 
-- [ ] **R14 — medium — two registered services have no consumer and the code they replace is unchanged.**
+- [x] **R14 — medium — two registered services have no consumer and the code they replace is unchanged.**
   `IInvoicePrivilegedRepository` and `IInvoiceSequenceRepository` are registered
   (`ServiceCollectionExtensions.cs:84-85`) with no injection site, while `InvoiceIssuer` still does all three
   jobs against the context directly (`InvoiceIssuer.cs:26,50-51,55,70`). Plan §4.6 requires `InvoiceIssuer` to
   take those repositories and drop its `DbContext` parameter; this candidate created them and stopped.
   **Fix:** wire `InvoiceIssuer` to them (this is 4.5/4.6 work and may be deferred to that slice, but the
   registrations should not sit dead in the meantime).
+  **Disposition:** the current `InvoiceIssuer` constructor injects both repositories and uses them for the
+  booking existence check, supplier-scoped sequence lock/allocation, sequence staging and invoice staging;
+  it no longer accepts or uses `ConcertDbContext`. The Concert integration project builds cleanly and all 13
+  `ConcertInvoiceApiTests` pass.
 
 - [ ] **R15 — medium — the `IsHost` bypass shape survives on two live predicates.**
   `TenantFilters.cs:24` still ORs `context.TenantContext.IsHost` into every single-owner filter, and
@@ -1521,3 +1525,23 @@ found that R10 had already removed the capability's last business consumer.
 The native/general lens approved N27. The security/API-contract dispatch timed out after one bounded follow-up;
 the parent fallback verified the same frozen deletion reduces the arbitrary existence surface, leaves no
 references and retains all four live tenant-wide member-list consumers. No actionable findings.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `9188aed877e23c1776eb9be92e7c610b4edd2984`
+**Candidate head:** `2adb9b942fb1263905387299b6dfd2f23ae146cf`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:744d14cea5eb9e9cd0670efdfdbd7dce1e06f763a6ec4e1ebcf4027582379622` `(4 paths)`
+**Candidate patch:** `sha256:f425ed9bca97f0fa701ff87c18bbfd661f8cd22faf9c06eddc5b427c84001c3b`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\f86600437f3c179fea3f52332d6903b53a1a48fbea965f48efa7e6febd5c1afc`
+**Candidate bundle identity:** `sha256:b83f03061ae74594e7636a2aa4a105dfd2d23f68edbe47f7d58ccff27eaf1008`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/data lenses approved R13. The renamed contract now accurately states its
+stage-only behavior, the sole caller and implementation agree, the old name is absent, and supplier-tenant
+locking, allocation and caller-owned commit behavior are unchanged. No actionable findings.
