@@ -579,11 +579,15 @@ recovery-mapping tests are required before R7 can close.
   invalid value and duplicate `X-Tenant-Id` values return 400. The focused regressions pass 2/2, the full
   active-tenant resolution class passes 7/7, and the Tenant integration project passes 92/92.
 
-- [~] **R12 — medium — `IsCurrentMembershipAsync` materialises every membership of a tenant to answer one
+- [x] **R12 — medium — `IsCurrentMembershipAsync` materialises every membership of a tenant to answer one
   boolean, on a request path.** `TenantService.cs:57-61` calls `ListMembershipsByTenantAsync` (tracked entities,
   `MembershipRepository.cs:43-44`) then filters in memory. It runs before every share and every member
   assignment (`ConcertService.cs:317,413`). The same repository already shows the right shape at `:52-53`.
   **Fix:** add `ExistsByTenantIdAndIdAsync` as an `AnyAsync` and call it.
+  **Disposition:** `IsCurrentMembershipAsync` now delegates to a repository query that executes `AnyAsync`
+  against the tenant and membership composite predicate, without tracking or materialising membership rows.
+  The Tenant unit suite passes 153/153, the Concert access-control integration class passes 9/9, and both
+  affected projects build with zero warnings and errors.
 
 - [ ] **R13 — medium — `IInvoiceSequenceRepository.InsertAsync` has `AddAsync` semantics.**
   `InvoiceSequenceRepository.cs:19-20` stages without saving, while the persistence standard fixes
