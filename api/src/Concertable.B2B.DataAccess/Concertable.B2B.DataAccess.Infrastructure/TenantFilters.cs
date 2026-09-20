@@ -15,7 +15,9 @@ public static class TenantFilters
     public const string Key = "Tenant";
 
     /// <summary>
-    /// The two-party filter: a row is visible to its venue tenant, its artist tenant, and the host.
+    /// The two-party filter: a row is visible to its venue tenant and its artist tenant. A caller that has
+    /// to see across tenants composes an unfiltered stance — <c>ReadDbContext</c> to read, a module's
+    /// <c>PrivilegedDbContext</c> to write — rather than widening this predicate.
     /// The lambda reads the tenant THROUGH the context instance (<paramref name="context"/> is the
     /// DbContext): EF caches the model once and re-binds context references per query, so a captured
     /// scoped <c>ITenantContext</c> would freeze the first request's tenant forever.
@@ -23,18 +25,16 @@ public static class TenantFilters
     public static void ApplyVenueArtist<TEntity>(this ModelBuilder modelBuilder, IHasTenantContext context)
         where TEntity : class, IVenueArtistTenantScoped =>
         modelBuilder.Entity<TEntity>().HasQueryFilter(Key, e =>
-            context.TenantContext.IsHost
-            || e.VenueTenantId == context.TenantContext.TenantId
+            e.VenueTenantId == context.TenantContext.TenantId
             || e.ArtistTenantId == context.TenantContext.TenantId);
 
     /// <summary>
-    /// The single-owner filter: a row is visible to its owning tenant and the host. Same context-instance
+    /// The single-owner filter: a row is visible to its owning tenant. Same context-instance
     /// indirection as <see cref="ApplyVenueArtist{TEntity}"/> (the model is cached once, the tenant re-bound
     /// per query, so a captured scoped <c>ITenantContext</c> would freeze the first request's tenant forever).
     /// </summary>
     public static void ApplySingleOwner<TEntity>(this ModelBuilder modelBuilder, IHasTenantContext context)
         where TEntity : class, ITenantScoped =>
         modelBuilder.Entity<TEntity>().HasQueryFilter(Key, e =>
-            context.TenantContext.IsHost
-            || e.TenantId == context.TenantContext.TenantId);
+            e.TenantId == context.TenantContext.TenantId);
 }

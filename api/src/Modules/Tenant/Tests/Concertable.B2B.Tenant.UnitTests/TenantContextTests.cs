@@ -72,7 +72,6 @@ public sealed class TenantContextTests
         ITenantContext ctx = context;
         Assert.Equal(tenantId, ctx.TenantId);
         Assert.True(ctx.HasTenant);
-        Assert.False(ctx.IsHost);
         Assert.Equal(TenantRole.Owner, ((IMembershipContext)context).Role);
         Assert.Equal(TenantType.Venue, ((IMembershipContext)context).Type);
     }
@@ -158,7 +157,7 @@ public sealed class TenantContextTests
     }
 
     [Fact]
-    public async Task ResolveAsync_NoHttpRequest_IsHostAndResolvesNothing()
+    public async Task ResolveAsync_NoHttpRequest_ResolvesNothing()
     {
         WithoutHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns(Guid.NewGuid());
@@ -167,7 +166,6 @@ public sealed class TenantContextTests
         await context.ResolveAsync();
 
         ITenantContext ctx = context;
-        Assert.True(ctx.IsHost);
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         repository.Verify(
@@ -176,7 +174,7 @@ public sealed class TenantContextTests
     }
 
     [Fact]
-    public async Task ResolveAsync_AnonymousRequest_NotHostAndFailsClosed()
+    public async Task ResolveAsync_AnonymousRequest_FailsClosed()
     {
         WithHttpRequest();
         currentUser.SetupGet(u => u.Id).Returns((Guid?)null);
@@ -185,7 +183,6 @@ public sealed class TenantContextTests
         await context.ResolveAsync();
 
         ITenantContext ctx = context;
-        Assert.False(ctx.IsHost);
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
         repository.Verify(
@@ -206,7 +203,6 @@ public sealed class TenantContextTests
         await context.ResolveAsync();
 
         ITenantContext ctx = context;
-        Assert.False(ctx.IsHost);
         Assert.Null(ctx.TenantId);
         Assert.False(ctx.HasTenant);
 

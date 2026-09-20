@@ -251,7 +251,7 @@ internal sealed class ConcertService : IConcertService
         if (concert is null)
             return new DeclareDoorRevenueError.ConcertNotFound(id);
 
-        if (!tenantContext.IsHost && concert.VenueTenantId != tenantContext.TenantId)
+        if (concert.VenueTenantId != tenantContext.TenantId)
             return new DeclareDoorRevenueError.VenueForbidden();
 
         if (concert is not DoorRevenueConcert doorRevenueConcert)
