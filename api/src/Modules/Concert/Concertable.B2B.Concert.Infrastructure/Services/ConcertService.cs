@@ -534,6 +534,30 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ResourcesShare))
+            return new ShareConcertSummaryError.NotPermitted();
+
+        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
+            return new ShareConcertSummaryError.ConcertNotFound(id);
+        if (!await CanShareAsync(id, actor, ct))
+            return new ShareConcertSummaryError.NotPermitted();
+
+        var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
+            ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
+        var payloadHash = ResourceCommandReceipt.HashPayload(
+            id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
+        var receipt = await receiptRepository.GetByTenantIdAndOperationAndRequestIdForUpdateAsync(
+            actor.TenantId,
+            ConcertCommandReceipt.ShareSummaryOperation,
+            request.RequestId,
+            ct);
+        if (receipt is not null)
+            return ReplaySummaryShare(concert, receipt, payloadHash);
+        if (concert.AccessVersion != request.ExpectedAccessVersion)
+            return new ShareConcertSummaryError.Superseded(id);
+
         var facts = await tenantCommandFacts.ResolveAsync(
             expectedActor,
             request.RecipientTenantId,
@@ -545,25 +569,6 @@ internal sealed class ConcertService : IConcertService
         if (!facts.TargetTenantExists
             || request.RecipientMembershipId is not null && facts.TargetMembership is null)
             return new ShareConcertSummaryError.InvalidRecipient();
-
-        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
-            return new ShareConcertSummaryError.ConcertNotFound(id);
-        if (!await CanShareAsync(id, facts.Actor, ct))
-            return new ShareConcertSummaryError.NotPermitted();
-
-        var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
-            ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
-        var payloadHash = ResourceCommandReceipt.HashPayload(
-            id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
-        var receipt = await receiptRepository.GetByTenantIdAndOperationAndRequestIdForUpdateAsync(
-            facts.Actor.TenantId,
-            ConcertCommandReceipt.ShareSummaryOperation,
-            request.RequestId,
-            ct);
-        if (receipt is not null)
-            return ReplaySummaryShare(concert, receipt, payloadHash);
-        if (concert.AccessVersion != request.ExpectedAccessVersion)
-            return new ShareConcertSummaryError.Superseded(id);
 
         var decidedAt = resourceAccess.UtcNow;
         var validation = concert.ValidateSummaryShare(
@@ -633,27 +638,20 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var facts = await tenantCommandFacts.ResolveAsync(
-            expectedActor,
-            request.RecipientTenantId,
-            request.RecipientMembershipId,
-            ct);
-        if (facts is null
-            || !permissionCatalog.Grants(facts.Actor.Role, TenantPermission.ResourcesShare))
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
-        if (!facts.TargetTenantExists
-            || request.RecipientMembershipId is not null && facts.TargetMembership is null)
-            return new ShareConcertSummaryError.InvalidRecipient();
 
         if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
             return new ShareConcertSummaryError.ConcertNotFound(id);
-        if (!await CanShareAsync(id, facts.Actor, ct))
+        if (!await CanShareAsync(id, actor, ct))
             return new ShareConcertSummaryError.NotPermitted();
 
         var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
         var receipt = await receiptRepository.GetByTenantIdAndOperationAndRequestIdForUpdateAsync(
-            facts.Actor.TenantId,
+            actor.TenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);

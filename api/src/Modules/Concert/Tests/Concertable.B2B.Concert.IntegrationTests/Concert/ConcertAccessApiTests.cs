@@ -103,7 +103,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
             new
             {
                 requestId = Guid.NewGuid(),
-                recipientTenantId = TenantOf(fixture.SeedState.VenueManager3.Id),
+                recipientTenantId = Guid.NewGuid(),
                 recipientMembershipId = (Guid?)null,
                 expectedAccessVersion = concert.AccessVersion,
                 validUntil = (DateTime?)null,

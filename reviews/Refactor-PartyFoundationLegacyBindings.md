@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `in-progress`
-**Reviewed up to commit:** `89952b7e987e7bf2e41f0b0a551ecfe4f682656e`  `(2026-09-20)`
-**Security-reviewed up to commit:** `89952b7e987e7bf2e41f0b0a551ecfe4f682656e`  `(2026-09-20)`
+**Reviewed up to commit:** `a6e72b6f0864c35a895cc4f3337fe46bc5a9235e`  `(2026-09-20)`
+**Security-reviewed up to commit:** `a6e72b6f0864c35a895cc4f3337fe46bc5a9235e`  `(2026-09-20)`
 **Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -553,12 +553,18 @@ recovery-mapping tests are required before R7 can close.
   identity. The replay-classification tests pass 5/5, all Concert unit tests pass 98/98, and the full
   access-control integration class passes 9/9.
 
-- [ ] **R10 — medium — cross-tenant existence probes run before the caller's authority over the concert is
+- [x] **R10 — medium — cross-tenant existence probes run before the caller's authority over the concert is
   established.** `ConcertService.cs:313-318` calls `tenantModule.GetByIdAsync` and `IsCurrentMembershipAsync`
   on caller-supplied GUIDs before loading the concert at `:320`. Any holder of `resources.share` gets a
   distinguishable `InvalidRecipient` for a concert id they hold no grant on. Bounded by v4 GUID space, so an
   ordering defect rather than a usable oracle.
   **Fix:** load the concert and run its `NotFound`/`Superseded` checks first.
+  **Disposition:** summary sharing now revalidates the actor, locks the concert identity, establishes share
+  authority, loads the complete ACL, resolves any durable replay, and checks the expected access version before
+  probing recipient existence. Duplicate recovery no longer probes the recipient because it only classifies
+  already-persisted outcomes. The focused integration regression uses a nonexistent recipient against a concert
+  the caller does not control and now returns 403 instead of disclosing recipient validity; it passes 1/1 and
+  the full access-control class passes 9/9.
 
 - [ ] **R11 — medium — `MalformedTenantHeaderException` is mapped nowhere.**
   `MembershipContext.cs:71-72` throws it from `TenantResolutionMiddleware`, which runs for the whole pipeline
@@ -1368,3 +1374,22 @@ Both lenses approved the corrected production replay semantics. The security len
 the focused suite covered matching replay, payload mismatch, missing receipt, and missing recorded grant, but not
 the newly introduced malformed-outcome invariant. R9 remained open until that branch had direct diagnostic and
 exception-type coverage.
+
+## Review pass — 2026-09-20 — incremental
+
+**Candidate base:** `b40ec4a9e5db42ce6d02b98bcf5d2b13cde44da8`
+**Candidate head:** `a6e72b6f0864c35a895cc4f3337fe46bc5a9235e`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:9182404cf0a0b1ee6465f3f32f3e728c07a165c97398c9f721f8a1e515d59eeb` `(2 paths)`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\20254b4a2fc6b0d7e8b77193e3fa816f5795e89b4949fdb33a89fe4160dba22b`
+**Candidate bundle identity:** `sha256:f4973ccb21b1f5d8d8a54b197d7a82a85b2c0e360f818d3e73e086911be10cc8`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+Both native/general and security lenses approved the malformed-outcome regression and final R9 evidence. The
+test cannot exit through payload mismatch or missing-grant classification and verifies the invariant exception,
+receipt identity, and specific diagnostic. No actionable findings.
