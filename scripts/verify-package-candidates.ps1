@@ -7,22 +7,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$expectedPackageIds = @(
-    'Concertable.B2B.Admin.Contracts'
-    'Concertable.B2B.Application.Contracts'
-    'Concertable.B2B.Artist.Contracts'
-    'Concertable.B2B.Authorization.Contracts'
-    'Concertable.B2B.Booking.Contracts'
-    'Concertable.B2B.Concert.Contracts'
-    'Concertable.B2B.Conversations.Contracts'
-    'Concertable.B2B.Deal.Contracts'
-    'Concertable.B2B.Hosting'
-    'Concertable.B2B.Seed.Contracts'
-    'Concertable.B2B.Tenant.Contracts'
-    'Concertable.B2B.TestKit'
-    'Concertable.B2B.User.Contracts'
-    'Concertable.B2B.Venue.Contracts'
-)
+$manifestPath = Join-Path $PSScriptRoot '..' '.github' 'b2b-promotion-candidates.json'
+$promotion = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json -Depth 10
+$expectedPackageIds = @($promotion.nuget | ForEach-Object { $_.id })
+if ($expectedPackageIds.Count -eq 0) {
+    throw 'The B2B promotion manifest selects no NuGet candidates.'
+}
 
 $resolvedPackageDirectory = (Resolve-Path -LiteralPath $PackageDirectory).Path
 $packages = @(Get-ChildItem -LiteralPath $resolvedPackageDirectory -Filter '*.nupkg' -File |
