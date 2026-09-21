@@ -940,13 +940,18 @@ judgment stays changes-requested until address-review resolves every accepted it
   read/send coverage and omitted, stale and current-version removal assertions. The exact regression passes 1/1
   and the full Conversations integration suite passes 19/19.
 
-- [ ] **N9 — MEDIUM — seeding/composition — integration setup still inserts B2B users directly.**
+- [x] **N9 — MEDIUM — seeding/composition — integration setup still inserts B2B users directly.**
   `api/src/Modules/User/Concertable.B2B.User.Infrastructure/Extensions/ServiceCollectionExtensions.cs:62-65`
   registers `UserTestSeeder`, which inserts `SeedState.Users` directly at `UserTestSeeder.cs:23-29` even
   though production creates users only through `CredentialRegisteredEvent`. This can keep integration startup
   green while credential registration or same-flow admin provisioning is broken.
   **Fix:** provision test identity through the real registration handler, preserve the resulting rows across
   Respawn, and assert registration produces both the B2B user and eligible admin profile.
+  **Disposition:** the User test seeder now sends every baseline identity through the production
+  `CredentialRegisteredHandler`; Respawn preserves the resulting `user.Users` rows between resets. The eligible
+  admin integration flow explicitly proves registration created the B2B user before login grants its invited
+  admin profile. The exact flow passes 1/1, Admin integration passes 8/8, User integration passes 14/14 and the
+  affected graph builds with no warnings or errors.
 
 - [ ] **N10 — MEDIUM — E2E — the admin concert-id query uses unquoted PostgreSQL identifiers.**
   `tests/E2ETests/Concertable.B2B.E2ETests.Server/E2EAdminExtensions.cs:176-181` queries
@@ -2035,3 +2040,24 @@ The native/general and security/durability lenses approved N7. The dedicated tra
 resolved creator tenant, membership and request id before the absent receipt read and remains held through the
 winner's commit or rollback. The server-observed race proves two actual same-key waiters return the same durable
 conversation, with bounded cleanup and aggregate observation. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `dca9a2828ae040afa80597695b2cd7b61ba25fac`
+**Candidate head:** `81ced39caf109386290a3cb6756702286c47b2d5`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:705c3991dc69b4dcd9290421d025d1890e868131bab7bdb7e13dbdd277a31ab2` `(2 paths)`
+**Candidate patch:** `sha256:dd9ea89bb77e98b33488becf6e0e5959900fc6b57d8025355772115ad42928fc`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\dd00e0d57d60c9c4513f32bd4fbd72c96a829ac57ba0bd5bfc6cdafeca541f9e`
+**Candidate bundle identity:** `sha256:0c18c4c41f0acff7fb59fe81673a4a3f8c41b8ea3623ccaa70ceb82bccaca8ce`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security lenses approved N8. The real-API lifecycle proves exact member-scoped read/send
+authority, cross-tenant and version rejection without mutation, current-version removal, and that a newly
+accepted membership cannot inherit the deliberately live grant issued to its removed predecessor. No actionable
+findings.
