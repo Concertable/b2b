@@ -7,7 +7,6 @@ export const TENANT_ROLES = [
   "staff",
   "door",
   "sound",
-  "restrictedParticipant",
 ] as const;
 
 export const TENANT_BUSINESS_ACTIVITIES = [

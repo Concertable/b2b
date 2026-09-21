@@ -7,5 +7,4 @@ export const TENANT_ROLE_LABELS: Readonly<Record<TenantRole, string>> = {
   staff: "Staff",
   door: "Door",
   sound: "Sound",
-  restrictedParticipant: "Restricted participant",
 };

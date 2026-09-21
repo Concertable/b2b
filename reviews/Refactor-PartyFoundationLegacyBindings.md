@@ -977,13 +977,16 @@ judgment stays changes-requested until address-review resolves every accepted it
   A hook-level regression exercises that same one-to-zero rerender through `useTenant`, proving the store,
   request session and persisted selection clear exactly once. The shared package passes 39/39 tests and builds.
 
-- [ ] **N12 — MEDIUM — frontend contract — membership controls render an unsupported role.**
+- [x] **N12 — MEDIUM — frontend contract — membership controls render an unsupported role.**
   `app/shared/src/features/tenant/constants.ts:10` exports `restrictedParticipant`,
   `app/web/shared/src/features/tenant/constants.ts:10` labels it, and `MembersRoster.tsx:68` renders it even
   though the backend `TenantRole` enum has no such member. An authorized user can submit a role the API cannot
   deserialize.
   **Fix:** remove the stale role from the frontend catalog or implement it end-to-end, and prove every rendered
   role is backend-supported.
+  **Disposition:** The shared tenant role tuple and web label record now expose exactly the six backend
+  `TenantRole` values, so membership controls can no longer submit the unsupported role. Both frontend packages
+  pass their test suites and builds.
 
 - [ ] **N13 — MEDIUM — mobile permissions — Operations is exposed without `operations.view`.**
   `app/mobile/src/navigation/BusinessNavigator.tsx:33-41` registers the Operations tab for every tenant member
@@ -2113,3 +2116,24 @@ The native/general and security/durability lenses approved N10. The endpoint rem
 fixed-time key filter; its Dapper query now uses the exact quoted PostgreSQL schema/table/column identifiers with
 a bound application-id parameter. The real-PostgreSQL regression traverses the authenticated endpoint and retains
 the missing-key, blank-key and non-E2E denials. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `c29230da770f36fbc6e1c5538128b92922b73a53`
+**Candidate head:** `b569ec38271772035744deebbb3756d25b2eda54`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:56d42a400157de5ca3b9fcb5fcabd98ca976461c034b9e0dba2c4b1acd75b0be` `(2 paths)`
+**Candidate patch:** `sha256:4465a26bd3c28df55c839b8e41c685bd4d98fa09ddae8779b94b9da9d723f0fe`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\78fc4006599ab3c1c148a32271e73268a4daaa78f8ea93f976d3427e44f1a60e`
+**Candidate bundle identity:** `sha256:27cc23636e1af6addd0ee22779402a5696c7fef9555b3515d6343bc631ca0426`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N11's hook-level repair. The regression invokes the
+actual `useTenant` lifecycle across a one-membership-to-zero rerender with the production store initializer and
+real tenant session, then proves store, request-session and persistence clearing with exactly one save and clear.
+No actionable findings.
