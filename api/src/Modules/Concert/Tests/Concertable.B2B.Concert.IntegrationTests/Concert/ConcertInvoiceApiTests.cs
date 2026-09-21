@@ -208,6 +208,35 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal("INV-SEED000001-000002", second.InvoiceNumber);
     }
 
+    [Fact]
+    public async Task Finish_ConcurrentFirstInvoicesSameSupplier_AllocatesUniqueMonotonicNumbers()
+    {
+        var flatFee = fixture.SeedState.PastFlatFeeBooking;
+        var doorSplit = fixture.SeedState.PastDoorSplitBooking;
+        var flatFeeConcert = fixture.SeedState.ConcertFor(flatFee);
+        var doorSplitConcert = fixture.SeedState.ConcertFor(doorSplit);
+        Assert.Equal(flatFeeConcert.ArtistTenantId, doorSplitConcert.ArtistTenantId);
+        await fixture.DeclareDoorRevenueAsync(doorSplitConcert.Id, DoorRevenue);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(flatFeeConcert.Id);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(doorSplitConcert.Id);
+
+        var results = await fixture.RunWithInvoiceSequenceAllocationBarrierAsync(
+            flatFeeConcert.ArtistTenantId,
+            ct => Task.WhenAll(
+                fixture.CompleteConcertAsync(flatFeeConcert.Id, ct),
+                fixture.CompleteConcertAsync(doorSplitConcert.Id, ct)));
+
+        Assert.All(results, result => Assert.True(result.TryGetValue(out _)));
+        var bookingIds = new[] { flatFee.Id, doorSplit.Id };
+        var invoices = await fixture.Invoices
+            .Where(invoice => bookingIds.Contains(invoice.BookingId))
+            .OrderBy(invoice => invoice.SequenceNumber)
+            .ToListAsync();
+        Assert.Equal(2, invoices.Count);
+        Assert.Equal([1, 2], invoices.Select(invoice => invoice.SequenceNumber));
+        Assert.Equal(2, invoices.Select(invoice => invoice.InvoiceNumber).Distinct().Count());
+    }
+
     // --- Read surface: two-party scoped ---
 
     [Fact]

@@ -904,13 +904,16 @@ judgment stays changes-requested until address-review resolves every accepted it
   repository, application mapping and HTTP response mapping, including Artist, Opportunity and Booking module
   calls. A focused service test proves the exact token reaches the opportunity module, repository and mapper.
 
-- [ ] **N6 — MEDIUM — security — concurrent first invoice-number allocation is not serialized.**
+- [x] **N6 — MEDIUM — security — concurrent first invoice-number allocation is not serialized.**
   `api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Repositories/InvoiceSequenceRepository.cs:20-28`
   selects the supplier sequence `FOR UPDATE`, but PostgreSQL locks no row when the sequence does not exist;
   `InvoiceIssuer.cs:53-58` then creates it. Two first invoices for one supplier can both allocate `000001`,
   with one later failing a constraint and aborting settlement processing.
   **Fix:** serialize on a stable supplier/advisory key or pre-provision the sequence, or classify and retry the
   exact creation race; add a two-concert first-invoice concurrency test proving unique monotonic numbers.
+  **Disposition:** invoice allocation now takes a transaction-scoped PostgreSQL advisory lock derived from the
+  supplier tenant before reading or creating its sequence. A server-observed two-concert race holds that exact
+  lock until both settlement transactions are waiting, then proves successful unique monotonic allocation.
 
 - [ ] **N7 — MEDIUM — native/security — concurrent first conversation creation can violate request-id replay semantics.**
   `api/src/Modules/Conversations/Concertable.B2B.Conversations.Infrastructure/Repositories/ConversationRepository.cs:49-67`
@@ -1919,3 +1922,23 @@ The native/general and security/durability lenses approved N30. The barrier owns
 resolves the control transaction before bounded cancellation and aggregate observation, preserves the primary
 exception and stack, and deterministically exercises that cleanup after both server-observed waiters. No
 actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `d900d27dd89b9eae79c14a4acbc8991a6b5be29d`
+**Candidate head:** `5e5cd0db7b99f6e4dbc351b48e01a7eb1cec4739`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:b87f95ea36687232e8c18c8cb20d669af886c54fa7ef3920f452c67b9b39ec21` `(8 paths)`
+**Candidate patch:** `sha256:f5c78c457d74639fd70ae80f6378315850a188a22b0ad62aa96163fe879d3da5`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\ed6f312b0d0dbf51a4f2f915f0013b37388997650ecdf38c0407b9de432df1e4`
+**Candidate bundle identity:** `sha256:958b37f3f5427a15efdf1127d62493cb0d03587244aa00058331641cd31a82d6`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/API-contract and security/durability lenses approved N5. All seven Application read routes propagate
+the request token through controller, service, repository and cross-module mapping to the final EF operations.
+The exact-token regression is sensitive to token identity. No actionable findings.

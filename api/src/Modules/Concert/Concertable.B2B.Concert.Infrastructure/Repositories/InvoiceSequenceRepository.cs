@@ -18,10 +18,8 @@ internal sealed class InvoiceSequenceRepository : IInvoiceSequenceRepository
         CancellationToken ct = default)
     {
         await context.Database.ExecuteSqlInterpolatedAsync($"""
-            SELECT 1
-            FROM concert."InvoiceSequences"
-            WHERE "TenantId" = {tenantId}
-            FOR UPDATE
+            SELECT pg_advisory_xact_lock(
+                hashtextextended(CAST({tenantId} AS text), 0))
             """, ct);
         return await context.InvoiceSequences.SingleOrDefaultAsync(
             sequence => sequence.TenantId == tenantId,

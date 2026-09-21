@@ -65,6 +65,11 @@ public sealed class ConcertApiFixture : ApiFixture
     internal Task<Result<SettlementOutcome, FinishConcertError>> CompleteConcertAsync(int concertId) =>
         workflow.RunAsync(workflow => workflow.CompleteAsync(concertId));
 
+    internal Task<Result<SettlementOutcome, FinishConcertError>> CompleteConcertAsync(
+        int concertId,
+        CancellationToken ct) =>
+        workflow.RunAsync(workflow => workflow.CompleteAsync(concertId, ct));
+
     internal async Task DeclareDoorRevenueAsync(
         int concertId,
         decimal doorRevenue)
@@ -174,6 +179,83 @@ public sealed class ConcertApiFixture : ApiFixture
         Func<CancellationToken, Task<T>> action,
         Exception injectedFailure) =>
         await RunWithReceiptInsertBarrierCoreAsync(action, injectedFailure);
+
+    internal async Task<T> RunWithInvoiceSequenceAllocationBarrierAsync<T>(
+        Guid supplierTenantId,
+        Func<CancellationToken, Task<T>> action)
+    {
+        using var cancellation = new CancellationTokenSource();
+        await using var control = new NpgsqlConnection(connectionString);
+        Task<T>? result = null;
+        ExceptionDispatchInfo? failure = null;
+        T? outcome = default;
+        var completed = false;
+        var lockHeld = false;
+
+        try
+        {
+            await control.OpenAsync();
+            await SetInvoiceSequenceLockAsync(control, supplierTenantId, acquire: true);
+            lockHeld = true;
+            result = action(cancellation.Token);
+            await WaitForInvoiceSequenceLockWaitersAsync(connectionString);
+            await SetInvoiceSequenceLockAsync(control, supplierTenantId, acquire: false);
+            lockHeld = false;
+            outcome = await result;
+            completed = true;
+        }
+        catch (Exception exception)
+        {
+            failure = ExceptionDispatchInfo.Capture(exception);
+            try
+            {
+                await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception cancellationException)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(cancellationException);
+            }
+        }
+
+        if (lockHeld)
+        {
+            try
+            {
+                await SetInvoiceSequenceLockAsync(control, supplierTenantId, acquire: false);
+                lockHeld = false;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+                try
+                {
+                    await control.CloseAsync();
+                }
+                catch (Exception closeException)
+                {
+                    failure ??= ExceptionDispatchInfo.Capture(closeException);
+                }
+            }
+        }
+
+        if (result is not null && !completed)
+        {
+            try
+            {
+                outcome = await result.WaitAsync(TimeSpan.FromSeconds(10));
+                completed = true;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+        }
+
+        failure?.Throw();
+        if (!completed)
+            throw new InvalidOperationException("The invoice sequence allocation action did not complete.");
+        return outcome!;
+    }
 
     private async Task<T> RunWithReceiptInsertBarrierCoreAsync<T>(
         Func<CancellationToken, Task<T>> action,
@@ -331,6 +413,44 @@ public sealed class ConcertApiFixture : ApiFixture
         while (DateTimeOffset.UtcNow < deadline);
 
         throw new TimeoutException("Two receipt inserts did not reach the database barrier.");
+    }
+
+    private static async Task WaitForInvoiceSequenceLockWaitersAsync(string connectionString)
+    {
+        await using var observer = new NpgsqlConnection(connectionString);
+        await observer.OpenAsync();
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
+        do
+        {
+            await using var command = observer.CreateCommand();
+            command.CommandText = """
+                SELECT count(*)
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid <> pg_backend_pid()
+                  AND wait_event_type = 'Lock'
+                  AND query LIKE '%pg_advisory_xact_lock%'
+                """;
+            if ((long)(await command.ExecuteScalarAsync() ?? 0L) >= 2)
+                return;
+            await Task.Delay(20);
+        }
+        while (DateTimeOffset.UtcNow < deadline);
+
+        throw new TimeoutException("Two invoice sequence allocations did not reach the database barrier.");
+    }
+
+    private static async Task SetInvoiceSequenceLockAsync(
+        NpgsqlConnection connection,
+        Guid supplierTenantId,
+        bool acquire)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = acquire
+            ? "SELECT pg_advisory_lock(hashtextextended(CAST(@tenantId AS text), 0))"
+            : "SELECT pg_advisory_unlock(hashtextextended(CAST(@tenantId AS text), 0))";
+        command.Parameters.AddWithValue("tenantId", supplierTenantId);
+        await command.ExecuteNonQueryAsync();
     }
 
     private static async Task ExecuteAsync(
