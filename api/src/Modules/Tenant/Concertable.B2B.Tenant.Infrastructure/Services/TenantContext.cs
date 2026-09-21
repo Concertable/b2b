@@ -42,13 +42,13 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
 
     public bool HasPermission(string permission, TenantType? requiredTenantType = null)
     {
-        if (Active is not { } active)
+        if (Active is not { Role: { } role, Type: { } type })
             return false;
 
-        if (requiredTenantType is { } required && active.Type != required)
+        if (requiredTenantType is { } required && type != required)
             return false;
 
-        return permissionCatalog.Grants(active.Type, active.Role, permission);
+        return permissionCatalog.Grants(type, role, permission);
     }
 
     public async Task ResolveAsync(CancellationToken ct = default)

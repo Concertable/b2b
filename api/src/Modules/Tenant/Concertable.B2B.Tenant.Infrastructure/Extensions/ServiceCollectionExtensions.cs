@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.KeyedStrategies;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
@@ -69,6 +70,7 @@ public static class ServiceCollectionExtensions
         services.AddTenantStrategies();
 
         services.AddSingleton<ITenantContextAccessor, TenantContextAccessor>();
+        services.AddScoped<ITenantScope, TenantScope>();
         services.AddScoped<TenantContext>();
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
         services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<TenantContext>());
