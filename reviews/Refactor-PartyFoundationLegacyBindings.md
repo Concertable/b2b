@@ -996,11 +996,15 @@ judgment stays changes-requested until address-review resolves every accepted it
   predicate. The mobile unit regression proves the tab predicate is false without the permission and true with
   it; the mobile suite and type-check pass.
 
-- [ ] **N14 — MEDIUM — mobile authentication — unauthenticated sessions mount account-owned navigation.**
+- [x] **N14 — MEDIUM — mobile authentication — unauthenticated sessions mount account-owned navigation.**
   `app/mobile/src/navigation/RootNavigator.tsx:148-153` sends `user === undefined` to `ArtistTabs`, which
   unconditionally mounts My Artist, Messages, and Profile stacks at `ArtistTabs.tsx:35-59`.
   **Fix:** use a dedicated public/auth navigator or gate every account-owned tab on authentication, and test
   that private routes are absent for an unauthenticated session.
+  **Disposition:** Unauthenticated sessions now mount a dedicated public tab navigator containing only Home,
+  Search and the shared sign-in/account screen. The public route catalog excludes My Artist, Messages and the
+  private profile stack; the mobile regression proves public/authenticated root selection and the exact public
+  route set.
 
 - [ ] **N15 — MEDIUM — docs/workflow — the roadmap's status prose contradicts the progress ledger.**
   `plans/party-foundation/PARTY_FOUNDATION_ROADMAP.md:6-10` says no implementation phase is delivered while
@@ -2161,3 +2165,23 @@ The native/general and security/durability lenses approved N12. The shared wire 
 exactly match the backend enum's six values; the exhaustive label map and sole roster option source carry only
 those typed values through the role request. The unsupported role is absent from application source. No
 actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `dab86afc3da06bc3563f3fac89d9ca6db0a2d0a5`
+**Candidate head:** `e70393fb8e87fba8f793d5f56f2df1e74f985f2d`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:a6ed4bd3c1a394758855ec2957ac894e46d92d2c8ca3b322ca2006e984258c88` `(6 paths)`
+**Candidate patch:** `sha256:3ba74249b0c37bb97e76d46df23250e1e112a9156af673fc8f855facfb870c80`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\1d5f9acdef8d5e27ad6da47a295f96f17d5043ec9b31057fff60a4854c798809`
+**Candidate bundle identity:** `sha256:b5b4467cac20258963375a2be2baa76d7f0c7d8af2607d3b4365d669b37dfc64`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N13. The typed, fail-closed `operations.view`
+predicate directly controls registration of the sole Operations route. Active-membership permission changes
+rerender the keyed navigation tree, and pure regressions cover both predicate branches. No actionable findings.

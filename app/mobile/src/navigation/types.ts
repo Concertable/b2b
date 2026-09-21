@@ -17,6 +17,12 @@ export type ArtistTabParamList = {
   ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
 
+export type PublicTabParamList = {
+  Home: undefined;
+  Search: undefined;
+  Account: undefined;
+};
+
 export type BusinessTabParamList = {
   Operations: undefined;
   Venue: NavigatorScreenParams<MyVenueStackParamList>;

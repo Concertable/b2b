@@ -18,8 +18,9 @@ import { ActiveTenantProvider } from "../features/tenant/ActiveTenantContext";
 import { TenantChooser } from "../features/tenant/components/TenantChooser";
 import { TenantSwitcher } from "../features/tenant/components/TenantSwitcher";
 import { initializeTenantSession } from "../lib/b2bClient";
-import { ArtistTabs } from "./ArtistTabs";
 import { BusinessNavigator } from "./BusinessNavigator";
+import { PublicTabs } from "./PublicTabs";
+import { rootNavigationTarget } from "./rootNavigation";
 
 function LoadingScreen() {
   return (
@@ -145,10 +146,10 @@ export function RootNavigator() {
     );
   }
 
-  if (user === undefined) {
+  if (rootNavigationTarget(user !== undefined) === "public") {
     return (
       <NavigationContainer>
-        <ArtistTabs />
+        <PublicTabs />
       </NavigationContainer>
     );
   }
