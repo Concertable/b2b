@@ -180,41 +180,35 @@ public sealed class ConcertApiFixture : ApiFixture
         Exception injectedFailure) =>
         await RunWithReceiptInsertBarrierCoreAsync(action, injectedFailure);
 
-    internal async Task<T> RunWithInvoiceSequenceAllocationBarrierAsync<T>(
+    internal async Task<T[]> RunWithInvoiceSequenceAllocationBarrierAsync<T>(
         Guid supplierTenantId,
-        Func<CancellationToken, Task<T>> action)
+        Func<CancellationToken, Task<T>[]> action)
     {
         using var cancellation = new CancellationTokenSource();
         await using var control = new NpgsqlConnection(connectionString);
-        Task<T>? result = null;
+        Task<T[]>? result = null;
         ExceptionDispatchInfo? failure = null;
-        T? outcome = default;
+        T[]? outcome = null;
         var completed = false;
         var lockHeld = false;
+        var cancellationRequested = false;
 
         try
         {
             await control.OpenAsync();
             await SetInvoiceSequenceLockAsync(control, supplierTenantId, acquire: true);
             lockHeld = true;
-            result = action(cancellation.Token);
-            await WaitForInvoiceSequenceLockWaitersAsync(connectionString);
-            await SetInvoiceSequenceLockAsync(control, supplierTenantId, acquire: false);
-            lockHeld = false;
-            outcome = await result;
-            completed = true;
+            var actions = action(cancellation.Token);
+            result = Task.WhenAll(actions);
+            var firstAction = Task.WhenAny(actions);
+            var waiters = WaitForInvoiceSequenceLockWaitersAsync(connectionString);
+            if (await Task.WhenAny(firstAction, waiters) == firstAction)
+                await await firstAction;
+            await waiters;
         }
         catch (Exception exception)
         {
             failure = ExceptionDispatchInfo.Capture(exception);
-            try
-            {
-                await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            }
-            catch (Exception cancellationException)
-            {
-                failure ??= ExceptionDispatchInfo.Capture(cancellationException);
-            }
         }
 
         if (lockHeld)
@@ -240,6 +234,19 @@ public sealed class ConcertApiFixture : ApiFixture
 
         if (result is not null && !completed)
         {
+            if (failure is not null)
+            {
+                try
+                {
+                    await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                    cancellationRequested = true;
+                }
+                catch (Exception cancellationException)
+                {
+                    failure ??= ExceptionDispatchInfo.Capture(cancellationException);
+                }
+            }
+
             try
             {
                 outcome = await result.WaitAsync(TimeSpan.FromSeconds(10));
@@ -248,6 +255,17 @@ public sealed class ConcertApiFixture : ApiFixture
             catch (Exception exception)
             {
                 failure ??= ExceptionDispatchInfo.Capture(exception);
+                if (!cancellationRequested)
+                {
+                    try
+                    {
+                        await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                    }
+                    catch (Exception cancellationException)
+                    {
+                        failure ??= ExceptionDispatchInfo.Capture(cancellationException);
+                    }
+                }
             }
         }
 

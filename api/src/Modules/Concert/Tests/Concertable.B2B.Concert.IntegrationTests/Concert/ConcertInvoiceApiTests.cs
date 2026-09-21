@@ -3,9 +3,12 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Application.Errors;
+using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Reunion;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -222,9 +225,11 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 
         var results = await fixture.RunWithInvoiceSequenceAllocationBarrierAsync(
             flatFeeConcert.ArtistTenantId,
-            ct => Task.WhenAll(
+            ct => new[]
+            {
                 fixture.CompleteConcertAsync(flatFeeConcert.Id, ct),
-                fixture.CompleteConcertAsync(doorSplitConcert.Id, ct)));
+                fixture.CompleteConcertAsync(doorSplitConcert.Id, ct)
+            });
 
         Assert.All(results, result => Assert.True(result.TryGetValue(out _)));
         var bookingIds = new[] { flatFee.Id, doorSplit.Id };
@@ -235,6 +240,41 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal(2, invoices.Count);
         Assert.Equal([1, 2], invoices.Select(invoice => invoice.SequenceNumber));
         Assert.Equal(2, invoices.Select(invoice => invoice.InvoiceNumber).Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Finish_ConcurrentFirstInvoices_PreservesActionFailureAfterBarrierCleanup()
+    {
+        var flatFee = fixture.SeedState.PastFlatFeeBooking;
+        var doorSplit = fixture.SeedState.PastDoorSplitBooking;
+        var flatFeeConcert = fixture.SeedState.ConcertFor(flatFee);
+        var doorSplitConcert = fixture.SeedState.ConcertFor(doorSplit);
+        await fixture.DeclareDoorRevenueAsync(doorSplitConcert.Id, DoorRevenue);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(flatFeeConcert.Id);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(doorSplitConcert.Id);
+        var expected = new InvalidOperationException("forced invoice race failure");
+
+        async Task<Result<SettlementOutcome, FinishConcertError>> CompleteThenFailAsync(
+            int concertId,
+            CancellationToken ct)
+        {
+            await fixture.CompleteConcertAsync(concertId, ct);
+            throw expected;
+        }
+
+        var caught = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            fixture.RunWithInvoiceSequenceAllocationBarrierAsync(
+                flatFeeConcert.ArtistTenantId,
+                ct => new[]
+                {
+                    CompleteThenFailAsync(flatFeeConcert.Id, ct),
+                    fixture.CompleteConcertAsync(doorSplitConcert.Id, ct)
+                }));
+
+        Assert.Same(expected, caught);
+        Assert.Contains(
+            nameof(Finish_ConcurrentFirstInvoices_PreservesActionFailureAfterBarrierCleanup),
+            caught.StackTrace);
     }
 
     // --- Read surface: two-party scoped ---

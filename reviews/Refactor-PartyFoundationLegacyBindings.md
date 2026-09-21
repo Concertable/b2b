@@ -914,6 +914,8 @@ judgment stays changes-requested until address-review resolves every accepted it
   **Disposition:** invoice allocation now takes a transaction-scoped PostgreSQL advisory lock derived from the
   supplier tenant before reading or creating its sequence. A server-observed two-concert race holds that exact
   lock until both settlement transactions are waiting, then proves successful unique monotonic allocation.
+  Its cleanup releases the control lock before bounded cancellation and aggregate observation, races each child
+  action against waiter proof, and preserves the original action exception and stack.
 
 - [ ] **N7 — MEDIUM — native/security — concurrent first conversation creation can violate request-id replay semantics.**
   `api/src/Modules/Conversations/Concertable.B2B.Conversations.Infrastructure/Repositories/ConversationRepository.cs:49-67`
