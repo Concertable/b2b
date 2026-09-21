@@ -974,6 +974,8 @@ judgment stays changes-requested until address-review resolves every accepted it
   **Disposition:** `useTenant` now resolves the tenant session for every membership-set change, including the
   transition to an empty set. The tenant-session regression starts with one membership, persists its selected
   tenant, removes the final membership and proves both the Zustand selection and persisted selection are cleared.
+  A hook-level regression exercises that same one-to-zero rerender through `useTenant`, proving the store,
+  request session and persisted selection clear exactly once. The shared package passes 39/39 tests and builds.
 
 - [ ] **N12 — MEDIUM — frontend contract — membership controls render an unsupported role.**
   `app/shared/src/features/tenant/constants.ts:10` exports `restrictedParticipant`,
