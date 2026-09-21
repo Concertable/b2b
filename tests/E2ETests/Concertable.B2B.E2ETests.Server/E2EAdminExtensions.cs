@@ -177,7 +177,7 @@ public static class E2EAdminExtensions
         int applicationId,
         IDbConnection connection) =>
         Results.Ok(await connection.QuerySingleAsync<int>(
-            "SELECT Id FROM concert.Concerts WHERE ApplicationId = @applicationId",
+            "SELECT \"Id\" FROM concert.\"Concerts\" WHERE \"ApplicationId\" = @applicationId",
             new { applicationId }));
 
     // Accept checkout is closed once the opportunity has passed, so a seeded past application cannot be

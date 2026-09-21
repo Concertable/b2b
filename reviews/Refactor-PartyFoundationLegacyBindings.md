@@ -953,12 +953,17 @@ judgment stays changes-requested until address-review resolves every accepted it
   admin profile. The exact flow passes 1/1, Admin integration passes 8/8, User integration passes 14/14 and the
   affected graph builds with no warnings or errors.
 
-- [ ] **N10 — MEDIUM — E2E — the admin concert-id query uses unquoted PostgreSQL identifiers.**
+- [x] **N10 — MEDIUM — E2E — the admin concert-id query uses unquoted PostgreSQL identifiers.**
   `tests/E2ETests/Concertable.B2B.E2ETests.Server/E2EAdminExtensions.cs:176-181` queries
   `SELECT Id FROM concert.Concerts WHERE ApplicationId = ...`, which PostgreSQL folds to lowercase and cannot
   resolve against the quoted PascalCase schema used by the migration and adjacent queries.
   **Fix:** quote schema objects and columns consistently and add an authenticated E2E-admin endpoint smoke
   assertion against seeded data.
+  **Disposition:** the concert-id lookup now quotes the `Concerts` table and its `Id` and `ApplicationId`
+  columns consistently with the PostgreSQL migration. A focused authenticated endpoint test seeds those exact
+  PascalCase identifiers in real PostgreSQL and proves the endpoint returns the matching concert. The exact
+  regression passes 1/1, the full E2E-admin integration suite passes 8/8 and the affected graph builds with no
+  warnings or errors.
 
 - [ ] **N11 — MEDIUM — frontend — losing the final membership leaves a stale active tenant persisted.**
   `app/shared/src/features/tenant/hooks/useTenant.ts:17-19` skips reconciliation when memberships becomes
@@ -2061,3 +2066,24 @@ The native/general and security lenses approved N8. The real-API lifecycle prove
 authority, cross-tenant and version rejection without mutation, current-version removal, and that a newly
 accepted membership cannot inherit the deliberately live grant issued to its removed predecessor. No actionable
 findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `81ced39caf109386290a3cb6756702286c47b2d5`
+**Candidate head:** `913b71df10e85b9f860314e8c308328cfa3ee006`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:4f64d9c4b3c0b64cd1e384af2f18e9d4af0e1ed8f2377102a9b30f83251fdc37` `(5 paths)`
+**Candidate patch:** `sha256:3f8c0400e6be626b7a45d41ca534a42a0e868cde98ff61ecfee8f57db54ee3a3`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\27f00bc99e1db54fe8f7c9c54a8d0c0e9810a30c7a9c1d5308a06fd4d3d5f7d3`
+**Candidate bundle identity:** `sha256:80c6ea775af56bda7d9ecd232eb950700f2d068cd39c8e0a9842522ebaaf4c56`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N9. Test identities now traverse the production
+registration handler under its real scoped composition. Respawn retains only baseline user rows while each reset
+removes transient registrations; the admin flow proves registration creates a plain B2B user before authenticated
+login can consume the exact active invitation and grant that same user admin authority. No actionable findings.
