@@ -8,11 +8,13 @@ using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
 public sealed class TenantApiFixture : ApiFixture
 {
+    private const long TenantCreationLockSeed = 638457220;
     private TenantDbContext dbContext = null!;
     private TenantProvisioningHandler provisioningHandler = null!;
 
@@ -100,6 +102,65 @@ public sealed class TenantApiFixture : ApiFixture
         dbContext.Verifications.Add(verification);
         await dbContext.SaveChangesAsync();
         return verification;
+    }
+
+    public async Task<T> RunWithTenantCreationBarrierAsync<T>(Guid userId, Func<Task<T>> action)
+    {
+        await using var control = new NpgsqlConnection(dbContext.Database.GetConnectionString());
+        await control.OpenAsync();
+        await ExecuteScalarAsync(
+            control,
+            "SELECT pg_advisory_lock(hashtextextended(CAST(@userId AS text), @seed))",
+            userId);
+        var lockHeld = true;
+        var result = action();
+        try
+        {
+            await WaitForTenantCreationWaitersAsync(control);
+            await ExecuteScalarAsync(
+                control,
+                "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
+                userId);
+            lockHeld = false;
+            return await result;
+        }
+        finally
+        {
+            if (lockHeld)
+                await ExecuteScalarAsync(
+                    control,
+                    "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
+                    userId);
+        }
+    }
+
+    private static async Task WaitForTenantCreationWaitersAsync(NpgsqlConnection connection)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (true)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                SELECT COUNT(*)
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid <> pg_backend_pid()
+                  AND wait_event = 'advisory'
+                  AND query LIKE '%pg_advisory_xact_lock(hashtextextended%'
+                """;
+            if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) >= 2)
+                return;
+            await Task.Delay(25, timeout.Token);
+        }
+    }
+
+    private static async Task ExecuteScalarAsync(NpgsqlConnection connection, string sql, Guid userId)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("userId", userId);
+        command.Parameters.AddWithValue("seed", TenantCreationLockSeed);
+        await command.ExecuteScalarAsync();
     }
 
     protected override void OnReset(IServiceScope scope)

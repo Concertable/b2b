@@ -7,6 +7,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
 internal sealed class TenantRepository : Repository<TenantEntity>, ITenantRepository
 {
+    private const long CreationLockSeed = 638457220;
     private readonly TenantDbContext context;
     private readonly CommandTransactionAccessor transactions;
 
@@ -45,10 +46,7 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         await transaction.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
-             SELECT 1
-             FROM tenant."Tenants"
-             WHERE "CreatedByUserId" = {userId}
-             FOR UPDATE
+             SELECT pg_advisory_xact_lock(hashtextextended(CAST({userId} AS text), {CreationLockSeed}))
              """,
             ct);
         return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.CreatedByUserId == userId, ct);

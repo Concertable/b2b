@@ -857,7 +857,7 @@ judgment stays changes-requested until address-review resolves every accepted it
   without replay. The focused unit and integration suites pass (5/5 and 1/1); N16 owns the missing
   commit-boundary fault coverage identified by the incremental review.
 
-- [ ] **N2 — MEDIUM — native/security — concurrent first-tenant creation can escape as an unhandled unique-key failure.**
+- [x] **N2 — MEDIUM — native/security — concurrent first-tenant creation can escape as an unhandled unique-key failure.**
   `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Repositories/TenantRepository.cs:39-54`
   selects by `CreatedByUserId FOR UPDATE`, but PostgreSQL locks no row when no tenant exists. Two first-create
   requests can therefore both pass `TenantService.cs:114-127`; the unique index at
@@ -865,6 +865,9 @@ judgment stays changes-requested until address-review resolves every accepted it
   `AlreadyOwnsTenant` outcome.
   **Fix:** serialize on a stable per-user/advisory lock or classify the exact unique violation after rollback;
   add a deterministic two-request race proving one creation and stable typed/HTTP outcomes for both calls.
+  **Disposition:** tenant creation now takes a transaction-scoped PostgreSQL advisory lock derived from the
+  authenticated user before checking ownership. The deterministic HTTP race holds that exact lock until both
+  requests are waiting, then proves one 201, one typed 409, one tenant and one founding membership.
 
 - [ ] **N3 — MEDIUM — native — concurrent verification reviews can both succeed and publish conflicting decisions.**
   `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Services/VerificationService.cs:118-125`
@@ -1820,3 +1823,23 @@ zero instead of failing validation.
 The native/general and security/API lenses approved N29. The binding-required version query fails with an
 automatic 400 before service invocation; the regression proves no version or access change and retains the
 independent stale/current lifecycle assertions. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `db0717dff2e8610d282acfce3118bf2776689965`
+**Candidate head:** `87ba51eac49e57ce938ad085c6fe55067bd94964`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:62c49ac442ae133f6a5a04b2f79222809e4cb4d05d016d8580ed1ce4d6cb546b` `(1 path)`
+**Candidate patch:** `sha256:07c01ea037e1e1eba4cc6b0e412bc15a1c82186df94cede420803827a2c56d7c`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\43c33e24a179052b0e8ebcc81e8833810c172d3688ab57966436f47eb12407c3`
+**Candidate bundle identity:** `sha256:09134feb10f110bbee1fcb659d9df5d28e118922b41891a8333b542abb05e4d0`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved R23. Both settlement processors fail before the inbox
+receipt on a missing concert or mismatched operation, distinguish those failures, and therefore retain the same
+durable retry/dead-letter policy. No actionable findings.
