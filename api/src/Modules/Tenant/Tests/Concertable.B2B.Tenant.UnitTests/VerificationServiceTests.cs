@@ -39,6 +39,7 @@ public sealed class VerificationServiceTests
             blobStorage.Object,
             notifier.Object,
             currentUser.Object,
+            new ImmediateUnitOfWorkBehavior(),
             TimeProvider.System,
             logger.Object);
     }

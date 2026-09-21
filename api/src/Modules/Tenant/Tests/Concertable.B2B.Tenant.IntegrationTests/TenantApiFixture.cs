@@ -17,6 +17,7 @@ public sealed class TenantApiFixture : ApiFixture
     private const long TenantCreationLockSeed = 638457220;
     private TenantDbContext dbContext = null!;
     private TenantProvisioningHandler provisioningHandler = null!;
+    internal VerificationReviewRaceInterceptor VerificationReviewRace { get; } = new();
 
     public IQueryable<TenantEntity> Tenants => dbContext.Tenants.AsNoTracking();
     public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.AsNoTracking();
@@ -134,6 +135,40 @@ public sealed class TenantApiFixture : ApiFixture
         }
     }
 
+    public async Task<T> RunWithVerificationReviewBarrierAsync<T>(Guid tenantId, Func<Task<T>> action)
+    {
+        await using var control = new NpgsqlConnection(dbContext.Database.GetConnectionString());
+        await control.OpenAsync();
+        await using var transaction = await control.BeginTransactionAsync();
+        var lockHeld = true;
+        await using (var command = control.CreateCommand())
+        {
+            command.CommandText = """
+                SELECT 1
+                FROM tenant."Verifications"
+                WHERE "TenantId" = @tenantId
+                FOR UPDATE
+                """;
+            command.Parameters.AddWithValue("tenantId", tenantId);
+            await command.ExecuteScalarAsync();
+        }
+
+        VerificationReviewRace.Arm();
+        var result = action();
+        try
+        {
+            await VerificationReviewRace.WaitForCompetingLockWaitsAsync();
+            await transaction.CommitAsync();
+            lockHeld = false;
+            return await result;
+        }
+        finally
+        {
+            if (lockHeld)
+                await transaction.RollbackAsync();
+        }
+    }
+
     private static async Task WaitForTenantCreationWaitersAsync(NpgsqlConnection connection)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -163,9 +198,17 @@ public sealed class TenantApiFixture : ApiFixture
         await command.ExecuteScalarAsync();
     }
 
+    protected override void OnConfigureServices(IServiceCollection services)
+    {
+        services.AddResettables(VerificationReviewRace);
+        services.ConfigureDbContext<TenantDbContext>(
+            (_, options) => options.AddInterceptors(VerificationReviewRace));
+    }
+
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<TenantDbContext>();
+        VerificationReviewRace.UseDataSource(scope.ServiceProvider.GetRequiredService<NpgsqlDataSource>());
         provisioningHandler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()
             .OfType<TenantProvisioningHandler>()

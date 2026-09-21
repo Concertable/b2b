@@ -293,5 +293,35 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         Assert.Contains(fixture.EmailSender.Sent, e => e.To == venue.Email);
     }
 
+    [Fact]
+    public async Task Review_ConcurrentApproveAndReject_RecordsOneDecisionAndNotification()
+    {
+        var owner = fixture.SeedState.UnverifiedVenueManager;
+        var tenantId = TenantOf(owner.Id);
+        var contactEmail = fixture.Tenants.Single(tenant => tenant.Id == tenantId).ContactEmail;
+        await fixture.AddPendingVerificationAsync(
+            tenantId,
+            VerificationDocumentType.Licence,
+            fixture.SeedNow.AddDays(-1));
+        using var approveClient = fixture.CreateClient(fixture.SeedState.Admin);
+        using var rejectClient = fixture.CreateClient(fixture.SeedState.Admin);
+
+        var responses = await fixture.RunWithVerificationReviewBarrierAsync(
+            tenantId,
+            () => Task.WhenAll(
+                approveClient.PostAsync($"/api/verification/{tenantId}/approve", null),
+                rejectClient.PostAsJsonAsync(
+                    $"/api/verification/{tenantId}/reject",
+                    new RejectVerificationRequest { Reason = "Conflicting decision." })));
+
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.NoContent);
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Conflict);
+        var verification = fixture.Verifications.Single(candidate => candidate.TenantId == tenantId);
+        Assert.Contains(
+            verification.Status,
+            new[] { TenantVerificationStatus.Approved, TenantVerificationStatus.Rejected });
+        Assert.Single(fixture.EmailSender.Sent, email => email.To == contactEmail);
+    }
+
     #endregion
 }

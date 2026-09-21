@@ -869,7 +869,7 @@ judgment stays changes-requested until address-review resolves every accepted it
   authenticated user before checking ownership. The deterministic HTTP race holds that exact lock until both
   requests are waiting, then proves one 201, one typed 409, one tenant and one founding membership.
 
-- [ ] **N3 — MEDIUM — native — concurrent verification reviews can both succeed and publish conflicting decisions.**
+- [x] **N3 — MEDIUM — native — concurrent verification reviews can both succeed and publish conflicting decisions.**
   `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Services/VerificationService.cs:118-125`
   performs an unlocked pending-state read, transition, and save, while
   `TenantVerificationEntityConfiguration.cs:12-17` configures no concurrency token. Approve and reject can
@@ -877,6 +877,9 @@ judgment stays changes-requested until address-review resolves every accepted it
   **Fix:** lock the verification row for review or use optimistic concurrency and translate the loser to
   `VerificationReviewError.NotPending`; add an approve-versus-reject integration race asserting one durable
   decision and one notification.
+  **Disposition:** approve and reject now run their pending-state check, transition and save under a command
+  transaction after locking the verification row. Notifications remain post-commit. A server-observed HTTP race
+  proves one 204, one typed 409, one durable decision and one notification.
 
 - [x] **N4 — HIGH — workflow/security — a delayed cancellation can reopen an opportunity filled by a newer lifecycle.**
   `api/src/Modules/Opportunity/Concertable.B2B.Opportunity.Infrastructure/Events/OpportunityCancellationIntegrationEventHandler.cs:24-49`
@@ -1843,3 +1846,23 @@ independent stale/current lifecycle assertions. No actionable findings.
 The native/general and security/durability lenses approved R23. Both settlement processors fail before the inbox
 receipt on a missing concert or mismatched operation, distinguish those failures, and therefore retain the same
 durable retry/dead-letter policy. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `87ba51eac49e57ce938ad085c6fe55067bd94964`
+**Candidate head:** `542fc2720a7999d61d4841634828d5c91c9845b6`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:f7d0186ed70755a19275997b6c574f3ba44594611ce862f728a528567d2438bd` `(4 paths)`
+**Candidate patch:** `sha256:63b2448ac874c909c4ff40695dbad5ed92570250c67147bf1e7f38aeec005383`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\0f4065bab7c048ddd4c671d24fcac7889fa8214ae47b1f80d49f2cee134f2465`
+**Candidate bundle identity:** `sha256:3f4f38cb410cb2daff1a200fc0dde6ed956d79a27323a09bd12a0164c610bd96`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/data lenses approved N2. The stable per-user advisory lock spans the exact
+ownership check, tenant and founding-membership inserts, and commit or rollback. The deterministic two-waiter
+HTTP race proves one creation, one typed conflict and one persisted aggregate. No actionable findings.

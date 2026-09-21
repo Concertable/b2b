@@ -16,6 +16,7 @@ internal sealed class VerificationService : IVerificationService
     private readonly IBlobStorageService blobStorage;
     private readonly IVerificationNotifier notifier;
     private readonly ICurrentUser currentUser;
+    private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<VerificationService> logger;
 
@@ -26,6 +27,7 @@ internal sealed class VerificationService : IVerificationService
         IBlobStorageService blobStorage,
         IVerificationNotifier notifier,
         ICurrentUser currentUser,
+        IOutboxUnitOfWorkBehavior unitOfWork,
         TimeProvider timeProvider,
         ILogger<VerificationService> logger)
     {
@@ -35,6 +37,7 @@ internal sealed class VerificationService : IVerificationService
         this.blobStorage = blobStorage;
         this.notifier = notifier;
         this.currentUser = currentUser;
+        this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
         this.logger = logger;
     }
@@ -115,14 +118,13 @@ internal sealed class VerificationService : IVerificationService
         Func<TenantVerificationEntity, string, Task> notify,
         CancellationToken ct)
     {
-        var verification = await repository.GetByTenantIdAsync(tenantId, ct);
-        if (verification is null)
-            return new VerificationReviewError.NotFound(tenantId);
-        if (verification.Status != TenantVerificationStatus.Pending)
-            return new VerificationReviewError.NotPending(verification.Status);
-
-        transition(verification);
-        await repository.SaveChangesAsync(ct);
+        var review = await unitOfWork.ExecuteAsync(
+            () => ReviewCoreAsync(tenantId, transition, ct),
+            ct);
+        if (review.TryGetError(out var error))
+            return error;
+        if (!review.TryGetValue(out var verification))
+            throw new InvalidOperationException("Verification review completed without a decision.");
 
         try
         {
@@ -135,13 +137,26 @@ internal sealed class VerificationService : IVerificationService
         }
         catch (Exception exception)
         {
-            // The persisted review decision is the record the admin action turns on; a notification
-            // failure must not fail a request whose write already committed, or a retry just hits
-            // VerificationReviewError.NotPending against the decision that already landed.
             logger.VerificationReviewNotificationFailed(tenantId, exception);
         }
 
         return new Success();
+    }
+
+    private async Task<Result<TenantVerificationEntity, VerificationReviewError>> ReviewCoreAsync(
+        Guid tenantId,
+        Action<TenantVerificationEntity> transition,
+        CancellationToken ct)
+    {
+        var verification = await repository.GetByTenantIdForReviewAsync(tenantId, ct);
+        if (verification is null)
+            return new VerificationReviewError.NotFound(tenantId);
+        if (verification.Status != TenantVerificationStatus.Pending)
+            return new VerificationReviewError.NotPending(verification.Status);
+
+        transition(verification);
+        await repository.SaveChangesAsync(ct);
+        return verification;
     }
 
     private static PendingVerificationDto ToDto(PendingVerificationProjection pending) => new()

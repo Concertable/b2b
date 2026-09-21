@@ -8,6 +8,8 @@ internal interface IVerificationRepository : IRepository<TenantVerificationEntit
 {
     Task<TenantVerificationEntity?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 
+    Task<TenantVerificationEntity?> GetByTenantIdForReviewAsync(Guid tenantId, CancellationToken ct = default);
+
     Task<TenantVerificationEntity?> GetByTenantIdAsync(
         Guid tenantId,
         ISpecification<TenantVerificationEntity> spec,
