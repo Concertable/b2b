@@ -730,7 +730,7 @@ recovery-mapping tests are required before R7 can close.
   focused aggregate tests pass 4/4, and the API regression proves assigned Staff read/send access, stale-removal
   conflict, grant preservation and final removal. N8 retains its remaining cross-tenant and rejoin coverage.
 
-- [ ] **R23 — low — the settlement succeeded/failed processors now disagree on the same condition.**
+- [x] **R23 — low — the settlement succeeded/failed processors now disagree on the same condition.**
   `SettlementPaymentProcessor.cs:48-53` throws for an outcome naming an unknown concert;
   `SettlementPaymentFailedProcessor.cs:38-43` logs and records the inbox receipt for the identical condition.
   Same event family, opposite poison policy: one dead-letters and needs an operator, the other consumes
@@ -739,6 +739,10 @@ recovery-mapping tests are required before R7 can close.
   — both verified.
   **Fix:** pick one policy for an unresolvable target across both processors, and distinguish "concert does not
   exist" from "operation mismatch" in the message so a dead-lettered entry is actionable.
+  **Disposition:** both processors now log and throw before recording an inbox receipt when the concert is
+  missing or its current settlement operation does not match. The exception messages distinguish those two
+  cases, so both event outcomes follow the same durable retry/dead-letter policy. The current-graph settlement
+  outcome regressions pass 2/2; the full Concert integration suite passes 83/83.
 
 **Dropped by the parent, with reason.** The persistence lens reported `IMembershipReadRepository` as a
 misnamed cross-module persistence contract. Plan §4.9's naming inventory mandates that exact name and §4.1
@@ -1796,3 +1800,23 @@ zero instead of failing validation.
   **Disposition:** DELETE marks `expectedVersion` binding-required. The Staff lifecycle regression now proves an
   omitted key returns 400, leaves `AccessVersion` unchanged and preserves assigned read access before exercising
   the stale and current-version removal paths.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `d1cfd1111b96b5fdfa674f4d3d1acdf084ea44e9`
+**Candidate head:** `db0717dff2e8610d282acfce3118bf2776689965`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:889e8c9db1f8a7f503f549823ef94fb94f7576d83d3dd9fa57790734638f4829` `(3 paths)`
+**Candidate patch:** `sha256:8dd9409226f2a327440f6815ad0d8f0af104b68267174805a680194951e92f27`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\c4458a38a545bd0d16f0ed15a2667bf6d962b11a2a1ab0880711a36ac3e36c99`
+**Candidate bundle identity:** `sha256:5685b9fce2e0559f58d6c7b96acb7179ef5175b53ce3b027c0f0b91611ce30c3`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/API lenses approved N29. The binding-required version query fails with an
+automatic 400 before service invocation; the regression proves no version or access change and retains the
+independent stale/current lifecycle assertions. No actionable findings.
