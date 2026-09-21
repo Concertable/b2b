@@ -201,13 +201,16 @@ public sealed class MessagingInboxTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task AssignedStaff_StaleRemovalPreservesTheNewerGrant()
+    public async Task AssignedStaff_AccessIsMembershipScopedAndVersioned()
     {
         var owner = fixture.SeedState.VenueManager1;
         var staff = fixture.SeedState.VenueManager3;
         var tenantId = TenantSeedIds.For(owner.Id);
         var membership = fixture.SeedState.Memberships.Single(value =>
             value.TenantId == tenantId && value.UserId == staff.Id);
+        var foreignTenantId = TenantSeedIds.For(fixture.SeedState.VenueManager2.Id);
+        var foreignMembership = fixture.SeedState.Memberships.Single(value =>
+            value.TenantId == foreignTenantId && value.UserId == fixture.SeedState.VenueManager2.Id);
         var ownerClient = fixture.CreateClient(owner);
         var staffClient = fixture.CreateClient(staff);
         staffClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
@@ -221,6 +224,22 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var before = await GetConversationAsync(ownerClient, preview.ConversationId);
         await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
             .ShouldBe(HttpStatusCode.NotFound);
+        await (await staffClient.PostAsync(
+                $"/api/conversations/{preview.ConversationId}/messages",
+                new { requestId = Guid.NewGuid(), content = "Unassigned staff message" }))
+            .ShouldBe(HttpStatusCode.Forbidden);
+
+        await (await ownerClient.PostAsync(
+                $"/api/conversations/{preview.ConversationId}/member-assignments",
+                new
+                {
+                    membershipId = foreignMembership.Id,
+                    expectedAccessVersion = before.AccessVersion
+                }))
+            .ShouldBe(HttpStatusCode.BadRequest);
+        Assert.Equal(
+            before.AccessVersion,
+            (await GetConversationAsync(ownerClient, preview.ConversationId)).AccessVersion);
 
         await (await ownerClient.PostAsync(
                 $"/api/conversations/{preview.ConversationId}/member-assignments",
@@ -256,6 +275,44 @@ public sealed class MessagingInboxTests : IAsyncLifetime
             .ShouldBe(HttpStatusCode.NoContent);
         await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
             .ShouldBe(HttpStatusCode.NotFound);
+        await (await staffClient.PostAsync(
+                $"/api/conversations/{preview.ConversationId}/messages",
+                new { requestId = Guid.NewGuid(), content = "Removed staff message" }))
+            .ShouldBe(HttpStatusCode.Forbidden);
+
+        var removed = await GetConversationAsync(ownerClient, preview.ConversationId);
+        await (await ownerClient.PostAsync(
+                $"/api/conversations/{preview.ConversationId}/member-assignments",
+                new
+                {
+                    membershipId = membership.Id,
+                    expectedAccessVersion = removed.AccessVersion
+                }))
+            .ShouldBe(HttpStatusCode.NoContent);
+        await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
+            .ShouldBe(HttpStatusCode.OK);
+
+        await (await ownerClient.DeleteAsync($"/api/organization/members/{staff.Id}"))
+            .ShouldBe(HttpStatusCode.NoContent);
+        var invitationResponse = await ownerClient.PostAsync(
+            "/api/organization/invitations",
+            new { staff.Email, role = TenantRole.Staff.ToString() });
+        await invitationResponse.ShouldBe(HttpStatusCode.Created);
+        var invitation = (await invitationResponse.Content.ReadAsync<Invitation>())!;
+        var acceptanceResponse = await fixture.CreateClient(staff)
+            .PostAsync($"/api/invitation/{invitation.Id}/accept");
+        await acceptanceResponse.ShouldBe(HttpStatusCode.OK);
+        var rejoinedMembership = (await acceptanceResponse.Content.ReadAsync<Membership>())!;
+        Assert.NotEqual(membership.Id, rejoinedMembership.MembershipId);
+
+        var rejoinedClient = fixture.CreateClient(staff);
+        rejoinedClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
+        await (await rejoinedClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
+            .ShouldBe(HttpStatusCode.NotFound);
+        await (await rejoinedClient.PostAsync(
+                $"/api/conversations/{preview.ConversationId}/messages",
+                new { requestId = Guid.NewGuid(), content = "Rejoined staff message" }))
+            .ShouldBe(HttpStatusCode.Forbidden);
     }
 
     private static async Task<Conversation> CreateAsync(
@@ -301,6 +358,8 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         long AccessVersion,
         List<ConversationParticipant> Participants);
     private sealed record ConversationParticipant(Guid TenantId, string DisplayName);
+    private sealed record Invitation(Guid Id);
+    private sealed record Membership(Guid MembershipId);
     private sealed record Message(
         int Id,
         int ConversationId,

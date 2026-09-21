@@ -929,11 +929,16 @@ judgment stays changes-requested until address-review resolves every accepted it
   holds that exact composite key until both requests are waiting, then proves both return the winning conversation.
   The exact race passes 1/1 and the full Conversations integration suite passes 19/19.
 
-- [ ] **N8 — LOW — test-impact/security — assigned-member messaging authority lacks integration coverage.**
+- [x] **N8 — LOW — test-impact/security — assigned-member messaging authority lacks integration coverage.**
   `ConversationEntity.cs:43-74` and `ConversationService.cs:264-345` add security-sensitive assignment and
   removal behavior, but only aggregate unit coverage exists.
   **Fix:** add API coverage for assigned Staff read/send access, unassigned denial, removal, cross-tenant
   rejection, stale access version, and membership removal/rejoin not inheriting the old grant.
+  **Disposition:** the existing Staff lifecycle regression now also proves unassigned read/send denial,
+  cross-tenant assignment rejection without an access-version change, denial after assignment removal, and a
+  real remove/invite/accept rejoin whose new membership id cannot inherit the old grant. It retains assigned
+  read/send coverage and omitted, stale and current-version removal assertions. The exact regression passes 1/1
+  and the full Conversations integration suite passes 19/19.
 
 - [ ] **N9 — MEDIUM — seeding/composition — integration setup still inserts B2B users directly.**
   `api/src/Modules/User/Concertable.B2B.User.Infrastructure/Extensions/ServiceCollectionExtensions.cs:62-65`
@@ -2009,3 +2014,24 @@ The native/general and security/durability lenses approved N6's final test repai
 child to throw before any request while its sibling starts normally, bounds prompt exception propagation,
 preserves exception identity and stack, proves sibling cancellation and observation, and independently proves
 the advisory lock is released. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `a198277bcf557f4e419c20e0d55354d8ee4ccc49`
+**Candidate head:** `dca9a2828ae040afa80597695b2cd7b61ba25fac`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:45c6c14e311402bcf502763f809f9ca71afe03ea0878ea81e814c6f95b8cfbe8` `(4 paths)`
+**Candidate patch:** `sha256:6e59837df0350db36366e4d89885bb931a1486ef014ce73fa23ada0c50c35071`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\d587f74f383faa5e2719cd28ff7148e47b909d692a3ffe5414344b8fdfcece22`
+**Candidate bundle identity:** `sha256:9c89c33ffff6d7c1b35289b071fb63159685eb67976536aec195e38e251ef37f`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N7. The dedicated transaction advisory key uses the
+resolved creator tenant, membership and request id before the absent receipt read and remains held through the
+winner's commit or rollback. The server-observed race proves two actual same-key waiters return the same durable
+conversation, with bounded cleanup and aggregate observation. No actionable findings.
