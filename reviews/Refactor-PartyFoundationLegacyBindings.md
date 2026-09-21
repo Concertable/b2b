@@ -965,12 +965,15 @@ judgment stays changes-requested until address-review resolves every accepted it
   regression passes 1/1, the full E2E-admin integration suite passes 8/8 and the affected graph builds with no
   warnings or errors.
 
-- [ ] **N11 — MEDIUM — frontend — losing the final membership leaves a stale active tenant persisted.**
+- [x] **N11 — MEDIUM — frontend — losing the final membership leaves a stale active tenant persisted.**
   `app/shared/src/features/tenant/hooks/useTenant.ts:17-19` skips reconciliation when memberships becomes
   empty, although `useTenantStore.ts:28-42` would clear an invalid selection. The stale tenant remains in
   Zustand/local storage until another route resolution or logout.
   **Fix:** reconcile or explicitly clear on the empty-membership transition and test one-membership-to-zero
   behavior across store and persistence.
+  **Disposition:** `useTenant` now resolves the tenant session for every membership-set change, including the
+  transition to an empty set. The tenant-session regression starts with one membership, persists its selected
+  tenant, removes the final membership and proves both the Zustand selection and persisted selection are cleared.
 
 - [ ] **N12 — MEDIUM — frontend contract — membership controls render an unsupported role.**
   `app/shared/src/features/tenant/constants.ts:10` exports `restrictedParticipant`,
@@ -2087,3 +2090,24 @@ The native/general and security/durability lenses approved N9. Test identities n
 registration handler under its real scoped composition. Respawn retains only baseline user rows while each reset
 removes transient registrations; the admin flow proves registration creates a plain B2B user before authenticated
 login can consume the exact active invitation and grant that same user admin authority. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `913b71df10e85b9f860314e8c308328cfa3ee006`
+**Candidate head:** `a9073c661da738cf8031408dbf9c8b09c413c752`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:c7603bbac7dd8db7435b9daa12f2efc5cbb24cd589fb840050ddb4ef3fe9f5df` `(3 paths)`
+**Candidate patch:** `sha256:7b5e35a398cd6bd00fa04d66b9140f3f77c9ed785a9d1bf50d415010d710e16f`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\a6d1cbc6c666f2ef4788d9da2023520aaad0adb117cff4c6eb66fa5088456dd9`
+**Candidate bundle identity:** `sha256:15b2f8c151952801608b4de36ab80aeb1b632136d2aa97075df9d51b776f5282`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N10. The endpoint remains E2E-only and behind the
+fixed-time key filter; its Dapper query now uses the exact quoted PostgreSQL schema/table/column identifiers with
+a bound application-id parameter. The real-PostgreSQL regression traverses the authenticated endpoint and retains
+the missing-key, blank-key and non-E2E denials. No actionable findings.

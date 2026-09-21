@@ -15,7 +15,7 @@ export function useTenant(
   const resolution = resolveTenant(memberships, businessActivity, activeTenantId);
 
   useEffect(() => {
-    if (memberships.length > 0) void tenantSession.resolve(businessActivity);
+    void tenantSession.resolve(businessActivity);
   }, [memberships, businessActivity]);
 
   const permissions = useMemo(

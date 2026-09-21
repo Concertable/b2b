@@ -188,6 +188,26 @@ describe("tenant session", () => {
     expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-one");
   });
 
+  it("clears the store and persistence when the final membership is removed", async () => {
+    let memberships = venueMemberships.slice(0, 1);
+    const storage = createStorage();
+    const session = createTenantSession(useTenantStore);
+    await session.configure({
+      storage,
+      memberships: () => memberships,
+      clearMemberships: vi.fn(),
+    });
+    await session.resolve("venueOperator");
+    expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-one");
+
+    memberships = [];
+    await session.resolve("venueOperator");
+
+    expect(useTenantStore.getState().activeTenantId).toBeUndefined();
+    expect(session.tenantIdForRequest()).toBeUndefined();
+    expect(storage.clearActiveTenantId).toHaveBeenCalledOnce();
+  });
+
   it("selects across all membership types for a cross-platform B2B app", async () => {
     const memberships: ReadonlyArray<Membership> = [
       ...venueMemberships,
