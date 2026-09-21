@@ -5,9 +5,9 @@ owns product priority and the cross-system launch/party-foundation item.
 
 - [ ] `party-foundation/core` — Explicit participation, resource access and immutable acceptance.
   [Implementation plan](PARTY_FOUNDATION_PLAN.md) · [current state](PARTY_FOUNDATION_PROGRESS.md).
-  Replanned from current source. The five phases begin with replacement of pair-scoped access,
-  followed by accepted participants/Show, delegated signing, direct invitations and enforced evidence
-  approval. No implementation phase is delivered.
+  P1's pair-scoped-access replacement is implemented and under terminal review/delivery in PR #18.
+  Accepted participants/Show, delegated signing, direct invitations and enforced evidence approval remain
+  pending as P2–P5, so the overall roadmap item stays open.
 
 Deal Configuration consumes the plan's implemented attachment gates. Its economic language/storage,
 the recovered commercial decisions, provider migration, Payment policy and current vocabulary/claim

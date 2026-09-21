@@ -1,21 +1,22 @@
 # Party foundation progress
 
-- Plan: \`plans/party-foundation/PARTY_FOUNDATION_PLAN.md\`
-- Roadmap: \`plans/party-foundation/PARTY_FOUNDATION_ROADMAP.md\`
-- Roadmap item: \`party-foundation/core\`
+- Plan: `plans/party-foundation/PARTY_FOUNDATION_PLAN.md`
+- Roadmap: `plans/party-foundation/PARTY_FOUNDATION_ROADMAP.md`
+- Roadmap item: `party-foundation/core`
 - Worktree: \`C:\Users\TommySeery\source\repos\Concertable\b2b\.worktrees\Refactor-PartyFoundationLegacyBindings\`
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: P1 4.8 candidate reconciled with the PostgreSQL default branch and locally qualified
+- Current checkpoint: P1 implementation and accepted code-finding remediation complete; N15 reconciliation active
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
-- Last reconciled: 20 September 2026 against HEAD \`d073fb75\` and merged \`origin/main\` \`7fd22b46\`
+- Last reconciled: 21 September 2026 against HEAD \`ed76eda6\` and merged \`origin/main\` \`7fd22b46\`
 
 ## Current state
 
 P1 slices 1-4, 4.3, 4.1, 4.7 and 4.8 are implemented. The branch has absorbed the current default
-branch's PostgreSQL composition and the merge-conflict repair has passed the complete local qualification
-matrix. The merge remains open only until the reconciled changes and this ledger are staged and committed.
+branch's PostgreSQL composition. Canonical review covered all 757 manifest paths; accepted code findings
+N1-N14 are repaired, locally validated, committed and approved by both native/general and
+security/durability lenses. N15 is the remaining roadmap/ledger reconciliation finding.
 
 The provider reconciliation uses the platform PostgreSQL fixture plus B2B-owned database lifecycle,
 Npgsql command transactions and an NTS-configured \`NpgsqlDataSource\`. Command contexts are reset to
@@ -24,21 +25,23 @@ read-position upsert replace SQL Server lock hints. All eleven current InitialCr
 to PostgreSQL; Tenant's migration retains the hand-authored \`tenant.MembershipAuthority\` view.
 
 Preserve the unrelated \`.claude/settings.json\`, \`.codex/\` and generated
-\`tests/E2ETests/**/*.feature.cs\` changes throughout delivery. The first two are held in
-\`stash@{0}\` while the merge is completed; generated feature files remain unstaged.
+\`tests/E2ETests/**/*.feature.cs\` changes throughout delivery. The first two remain in stash
+\`4fecf8ee3a850423cec8959d279b6ff75bc24097\`; the generated-file backup is
+\`3c04f1a67ed73382eb729724120ce9ed1e0b2996\`, and the current generated feature files remain unstaged.
 
 ## Next Steps
 
-Scope: complete the current P1 candidate and its terminal delivery; P2-P5 retain their roadmap ownership.
-Done when: the reconciled candidate passes canonical review and exact-head remote gates and PR #18 is merged.
+Scope: current slice only; full plan remains incomplete.
+Current slice: close N15, run current-graph qualification, complete final canonical review and deliver PR #18.
+Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
+Done when: one reviewed head passes local and exact-head remote CI/E2E gates and PR #18 is merged.
 
-1. Stage the reconciled provider repairs, regenerated migrations and this ledger; exclude preserved user and
-   generated feature files, then complete the local merge checkpoint.
-2. Run canonical review against that immutable checkpoint and serially close any actionable findings with
-   focused and affected-gate reruns.
-3. Push one stable reviewed head, require ordinary CI and the separately dispatched \`.github/workflows/e2e.yml\`
-   at that exact SHA, then merge PR #18.
-4. Restore the preserved unrelated files without committing them and record terminal delivery.
+1. Commit and dual-review this N15 graph reconciliation without staging preserved generated files.
+2. Run the complete current-graph build, unit/integration, migration-drift, web and mobile gates; repair any
+   attributable failure and record the final evidence.
+3. Complete final canonical review, push the stable head, and require ordinary CI plus separately dispatched
+   \`.github/workflows/e2e.yml\` at that exact SHA.
+4. Merge PR #18, restore the preserved unrelated files without committing them and record terminal delivery.
 
 ## Completed work
 
@@ -61,6 +64,8 @@ Done when: the reconciled candidate passes canonical review and exact-head remot
   client journeys before default-branch reconciliation.
 - Current-main reconciliation: PostgreSQL hosting/migrations/fixtures, provider-correct locks, geometry mapping,
   command-transaction connection ownership and current composition merged from \`7fd22b46\`.
+- Canonical remediation N1-N14: command cancellation/locking, provider-real races, invitation seeding,
+  PostgreSQL E2E lookup, tenant-session clearing, exact frontend roles and mobile permission/auth navigation.
 
 ## Verification
 
@@ -76,16 +81,21 @@ Done when: the reconciled candidate passes canonical review and exact-head remot
 - Provider race regressions passed after their durable repairs: Application accept/reject, Booking/Concert
   command locking, monotonic Conversation reads, Opportunity activity authorization and Venue profile creation.
 - Migration drift: \`scripts/validate-migrations.ps1 -Configuration Debug\` passed all 11 contexts.
-- Web: \`npm run build:web\` passed shared tests 37/37, web-shared tests 18/18 and all four production builds.
-- Mobile: \`npm run build:mobile\` passed TypeScript validation and Android export (3,864 modules).
-- Windows required a process-local shortened PATH for nested npm scripts; source and lockfile were unchanged.
+- Prior full web gate: \`npm run build:web\` passed shared tests 37/37, web-shared tests 18/18 and all four
+  production builds. Current-head affected gates pass shared 39/39, web-shared 18/18 and both package builds.
+- Prior full mobile gate: \`npm run build:mobile\` passed TypeScript validation and Android export (3,864 modules).
+  Current-head mobile navigation passes 4/4 and TypeScript validation.
+- Windows requires a process-local shortened PATH for nested npm wrapper scripts; direct constituent package
+  commands are green. The final full frontend gates must use the shortened PATH.
 - Exact-head remote CI and the separate API/UI E2E workflow remain delivery gates after the reviewed push.
 
 ## Reviews
 
-Canonical review has not started. It follows the local merge checkpoint so the reviewer receives one immutable
-reconciled diff. Existing \`reviews/Refactor-PostgresB2BReplacement.md\` belongs to the merged default-branch
-provider work and does not substitute for the P1 review.
+Canonical review covered all 757 manifest paths and accepted N1-N15. N1-N14 are repaired and approved by both
+native/general and security/durability lenses through commit \`ed76eda6\`. N15 is this planning-graph
+reconciliation; after its incremental approval, current-graph qualification and the final canonical pass remain.
+Existing \`reviews/Refactor-PostgresB2BReplacement.md\` belongs to the merged default-branch provider work and
+does not substitute for the P1 review.
 
 ## Decisions, discoveries, blockers, and deviations
 
@@ -107,7 +117,7 @@ provider work and does not substitute for the P1 review.
   and conversation read positions use \`ON CONFLICT ... GREATEST\`.
 - Opportunity creation is restricted to VenueOperator activity; integration handlers and race verification use
   privileged contexts when no interactive tenant exists.
-- No current local red gate remains.
+- No accepted code finding remains open. Current-graph qualification and final review remain delivery gates.
 
 ## External/deferred owners
 

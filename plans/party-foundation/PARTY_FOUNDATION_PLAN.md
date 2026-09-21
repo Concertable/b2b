@@ -27,11 +27,10 @@ DTOs and internal messages directly; regenerate InitialCreate and synthetic fixt
 superseded type, column, caller and event registration in its owning change. Future agreements created
 by the replacement model are immutable business records; today's fixed-pair shape is deleted.
 
-The branch contains a partial P1 implementation. This source review replaces its incomplete mechanism
-specification; P1 requires the repairs and qualification below before it is complete. P2–P5 remain
-future work. On 17 September 2026 the user authorized a Claude Opus handoff to apply the P1 feedback
-and agreed replacement mechanisms, including the naming corrections. The current execution scope
-and remaining delivery gate are recorded in [the companion ledger](PARTY_FOUNDATION_PROGRESS.md).
+The branch contains the implemented P1 candidate. Its replacement mechanisms and accepted review repairs
+are complete; current-graph qualification, final canonical review and terminal delivery remain before P1 is
+landed. P2–P5 remain future work. The current execution scope and remaining delivery gates are recorded in
+[the companion ledger](PARTY_FOUNDATION_PROGRESS.md).
 
 ### Product authority and corrections to older prose
 
@@ -177,10 +176,10 @@ two-participant rule.
 
 ## 4. P1 replacement specification
 
-P1 must make one complete journey work: a separate business, including a business without an Artist
+P1 makes one complete journey work: a separate business, including a business without an Artist
 or Venue profile, reads an explicitly shared concert summary and cannot read terms, finance, private
 messages or invoke commercial actions. Existing principals retain their own properly authorized
-workflows. P2–P5 remain future implementation; this review does not authorize runtime changes.
+workflows. P2–P5 remain future implementation and outside the current delivery scope.
 
 The following before snippets describe the reviewed head. After snippets select the replacement
 mechanisms and contracts; omitted ordinary mapping/error plumbing is not permission to choose another
@@ -1849,7 +1848,7 @@ approval decision. Reading shared evidence does not reveal underlying artist con
 
 ## 9. Implementation phases and verification
 
-P1 is partially implemented and requires replacement/qualification; P2–P5 remain outstanding.
+P1 is implemented and under terminal qualification/delivery; P2–P5 remain outstanding.
 Each phase ends with its entire exposed behaviour usable and secure,
 a focused green candidate, review and applicable exact-head delivery checks. Commits may divide work
 inside a phase; do not expose half a resource's security cutover. Combine adjacent phases in one PR
@@ -1857,10 +1856,9 @@ where dependencies permit; package publication is the real reason for a separate
 
 ### P1 — repair and qualify resource access with neutral business consumption
 
-**Current verdict:** the branch is recoverable; P1 exists in source but is not secure or complete.
-Implement section 4 as the governing replacement specification. Keep the neutral module, tenant
-identity, typed resource ownership and economic direction; replace the rejected mechanisms rather
-than restoring pair visibility.
+**Current verdict:** the P1 replacement is implemented and its accepted canonical code findings are closed.
+Section 4 remains the governing specification. Current-graph qualification, final canonical review,
+exact-head remote validation and merge remain before P1 is delivered.
 
 Implement in these cohesive slices, each with the relevant section 4.10 acceptance:
 
@@ -1881,9 +1879,8 @@ financial entitlement, signing or cancellation authority; P2 supplies the accept
 
 **Done when:** all section 4.10 cases are proven, current lifecycle/economic tests remain green,
 browser/native journeys work and a review of the committed replacement closes every F01–F28 finding.
-The user has authorized P1 implementation and qualification in the existing worktree. The companion
-ledger records the current scope and the retained user restriction on push and merge; this handoff
-does not authorize P2–P5 execution.
+The current authorization carries P1 through review, push, exact-head remote validation and merge.
+The companion ledger owns those live gates; P2–P5 remain outside this delivery.
 
 ### P2 — explicit accepted participants and promoter-led application bookings
 

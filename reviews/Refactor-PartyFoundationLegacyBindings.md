@@ -1006,11 +1006,14 @@ judgment stays changes-requested until address-review resolves every accepted it
   private profile stack; the mobile regression proves public/authenticated root selection and the exact public
   route set.
 
-- [ ] **N15 — MEDIUM — docs/workflow — the roadmap's status prose contradicts the progress ledger.**
+- [x] **N15 — MEDIUM — docs/workflow — the roadmap's status prose contradicts the progress ledger.**
   `plans/party-foundation/PARTY_FOUNDATION_ROADMAP.md:6-10` says no implementation phase is delivered while
   `PARTY_FOUNDATION_PROGRESS.md:16-18` records P1 implementation and qualification.
   **Fix:** state that P1 is implemented and under review while later phases and the overall roadmap item
   remain pending, so the durable index and ledger agree.
+  **Disposition:** The roadmap, plan and progress ledger now agree that P1 is implemented and under terminal
+  qualification/review/delivery while P2-P5 and the overall roadmap item remain open. The ledger also records
+  the current review state, exact preserved-file identities and full authorization through merge.
 
 All 757 manifest paths were covered serially. Accepted new findings: 15 (2 high, 11 medium, 2 low).
 Historical findings still open after current-head validation: R2, R3, R4, R6, R7, R8, R10, R11, R12,
@@ -2185,3 +2188,23 @@ actionable findings.
 The native/general and security/durability lenses approved N13. The typed, fail-closed `operations.view`
 predicate directly controls registration of the sole Operations route. Active-membership permission changes
 rerender the keyed navigation tree, and pure regressions cover both predicate branches. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `e70393fb8e87fba8f793d5f56f2df1e74f985f2d`
+**Candidate head:** `ed76eda6af551eaddd4927b1370054fc2880815c`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:1798969334ed4ca1870bc4eb2bd29c04785c554406ce3faeb00743a7bf2a839f` `(6 paths)`
+**Candidate patch:** `sha256:eca8ff861b8c9734fd83bf3c7f4eaf11ccad829a06c6e05abf30bdd444c3183f`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\4fd8afd0753a3d930a67cc264c0cd38b02f92b877cd05a8dafaf2753884bbbf5`
+**Candidate bundle identity:** `sha256:8a210f03ef8e6306d45ebfb4fde7bb2f4d2beb89f2825b403ebd680d1a643fc6`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N14. Unauthenticated sessions mount a distinct
+typed public graph containing only Home, Search and the direct sign-in Account screen; no private route or
+stack is registered, and auth transitions replace the graph. No actionable findings.
