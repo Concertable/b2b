@@ -21,3 +21,6 @@ dist/
 # Local configuration and operating-system files
 appsettings.Development.json
 .DS_Store
+
+# Reqnroll regenerates these on every build, appending a newline each time.
+*.feature.cs
