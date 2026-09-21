@@ -988,10 +988,13 @@ judgment stays changes-requested until address-review resolves every accepted it
   `TenantRole` values, so membership controls can no longer submit the unsupported role. Both frontend packages
   pass their test suites and builds.
 
-- [ ] **N13 — MEDIUM — mobile permissions — Operations is exposed without `operations.view`.**
+- [x] **N13 — MEDIUM — mobile permissions — Operations is exposed without `operations.view`.**
   `app/mobile/src/navigation/BusinessNavigator.tsx:33-41` registers the Operations tab for every tenant member
   even though the navigator already receives the active permission set; the Messages tab is correctly gated.
   **Fix:** register Operations only when `permissions.has("operations.view")` and test tab absence/presence.
+  **Disposition:** `BusinessNavigator` now registers Operations only through the typed `operations.view`
+  predicate. The mobile unit regression proves the tab predicate is false without the permission and true with
+  it; the mobile suite and type-check pass.
 
 - [ ] **N14 — MEDIUM — mobile authentication — unauthenticated sessions mount account-owned navigation.**
   `app/mobile/src/navigation/RootNavigator.tsx:148-153` sends `user === undefined` to `ArtistTabs`, which
@@ -2137,3 +2140,24 @@ The native/general and security/durability lenses approved N11's hook-level repa
 actual `useTenant` lifecycle across a one-membership-to-zero rerender with the production store initializer and
 real tenant session, then proves store, request-session and persistence clearing with exactly one save and clear.
 No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `b569ec38271772035744deebbb3756d25b2eda54`
+**Candidate head:** `dab86afc3da06bc3563f3fac89d9ca6db0a2d0a5`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:29f911ac3ed597ddbdc57c6f36886b0b3b22634c11a8388bb8c9f62d691638f8` `(3 paths)`
+**Candidate patch:** `sha256:72e405418e8e311d6467a5f3f208ea00ecf0532f75df24b5fd7567e33e3baa27`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\b59d83fc6620323b15d27ef33748e62b415124b30b8131dba9d62b831cea4856`
+**Candidate bundle identity:** `sha256:b0830a80cf1f05a9122dd3942021a5b0a72502bc3d59444c9250ae5b0737c898`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N12. The shared wire tuple and derived role type now
+exactly match the backend enum's six values; the exhaustive label map and sole roster option source carry only
+those typed values through the role request. The unsupported role is absent from application source. No
+actionable findings.

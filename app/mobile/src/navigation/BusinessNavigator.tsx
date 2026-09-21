@@ -11,6 +11,7 @@ import { MyArtistStack } from "./MyArtistStack";
 import { MyVenueStack } from "./MyVenueStack";
 import { theme } from "@concertable/mobile/lib/theme";
 import type { BusinessTabParamList } from "./types";
+import { includesOperationsTab } from "./businessNavigation";
 
 const Tab = createBottomTabNavigator<BusinessTabParamList>();
 
@@ -30,15 +31,17 @@ export function BusinessNavigator({
         tabBarStyle: { borderTopColor: theme.border },
       }}
     >
-      <Tab.Screen
-        name="Operations"
-        component={OperationsScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <BriefcaseBusiness size={size} color={color} />
-          ),
-        }}
-      />
+      {includesOperationsTab(permissions) ? (
+        <Tab.Screen
+          name="Operations"
+          component={OperationsScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <BriefcaseBusiness size={size} color={color} />
+            ),
+          }}
+        />
+      ) : null}
       {activities.includes("venueOperator") ? (
         <Tab.Screen
           name="Venue"
