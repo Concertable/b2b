@@ -26,7 +26,7 @@ public sealed class AppFixture : IAsyncLifetime
     private const string SearchWorkersDigest = "sha256:c0c7d64a4b2702a0186963472ab8bf4030c2cba873748eb8fdb6be9905c84d11";
     private const string SearchMigrationsImage = "ghcr.io/concertable/search-migrations";
     private const string SearchMigrationsDigest = "sha256:0ac571000b44f5683efa6890b23b9ef5d8b9e1cb5aa3461d314ececdccd453ea";
-    private const string AuthE2EDigest = "sha256:e228e89af3fa51f1dd7995d33e109bb3a9c2bf2ab3bed98df28e3ef7bac28251";
+    private const string AuthE2EDigest = "sha256:53d75c608f3d51afc52ef3e1462be6ef79809634b196832bae45cf9ac132bbd4";
     private const string PaymentE2EWebDigest = "sha256:df33de77f2d01558f9ffb3b0d1cc68ddcd26e41f6d54f65045caf3e466b4a775";
     private const string PaymentE2EWorkersDigest = "sha256:4385c505153cca1df16983864b0c99807537b37f8aea801d434092cce47c87c8";
 
