@@ -1,4 +1,4 @@
-<# Restores and builds every B2B package candidate from a clean consumer that sees no repository source. #>
+﻿<# Restores and builds every B2B package candidate from a clean consumer that sees no repository source. #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
@@ -11,8 +11,10 @@ $expectedPackageIds = @(
     'Concertable.B2B.Admin.Contracts'
     'Concertable.B2B.Application.Contracts'
     'Concertable.B2B.Artist.Contracts'
+    'Concertable.B2B.Authorization.Contracts'
     'Concertable.B2B.Booking.Contracts'
     'Concertable.B2B.Concert.Contracts'
+    'Concertable.B2B.Conversations.Contracts'
     'Concertable.B2B.Deal.Contracts'
     'Concertable.B2B.Hosting'
     'Concertable.B2B.Seed.Contracts'
@@ -107,8 +109,10 @@ var boundTypes = new[]
     typeof(Concertable.B2B.Admin.Contracts.IAdminModule),
     typeof(Concertable.B2B.Application.Contracts.AcceptedApplication),
     typeof(Concertable.B2B.Artist.Contracts.ArtistProfile),
+    typeof(Concertable.B2B.Authorization.Contracts.MembershipSnapshot),
     typeof(Concertable.B2B.Booking.Contracts.ConfirmedBookingSnapshot),
     typeof(Concertable.B2B.Concert.Contracts.ArtistDashboardCounts),
+    typeof(Concertable.B2B.Conversations.Contracts.Events.ConversationChanged),
     typeof(Concertable.B2B.Deal.Contracts.FlatFeeTerms),
     typeof(Concertable.B2B.Seed.Contracts.Specs.ArtistSeedSpec),
     typeof(Concertable.B2B.Tenant.Contracts.ActivityItemDto),
