@@ -1,8 +1,9 @@
-using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
+using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Seed.Infrastructure;
-using Concertable.B2B.Venue.Infrastructure.Data;
+using Concertable.Seed.Shared;
 using Microsoft.EntityFrameworkCore;
+using Concertable.B2B.Venue.Infrastructure.Data;
 
 namespace Concertable.B2B.Venue.Infrastructure.Data.Seeders;
 
@@ -12,19 +13,17 @@ internal sealed class VenueDevSeeder : IDevSeeder
 
     private readonly VenueDbContext context;
     private readonly SeedState seed;
+    private readonly ITenantScope tenantScope;
 
-    public VenueDevSeeder(VenueDbContext context, SeedState seed)
+    public VenueDevSeeder(VenueDbContext context, SeedState seed, ITenantScope tenantScope)
     {
         this.context = context;
         this.seed = seed;
+        this.tenantScope = tenantScope;
     }
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
 
-    public async Task SeedAsync(CancellationToken ct = default) =>
-        await context.Venues.SeedIfEmptyAsync(async () =>
-        {
-            context.Venues.AddRange(seed.Venues);
-            await context.SaveChangesAsync(ct);
-        });
+    public Task SeedAsync(CancellationToken ct = default) =>
+        context.SeedByTenantAsync(tenantScope, seed.Venues, ct);
 }

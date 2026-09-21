@@ -1,6 +1,7 @@
-using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
+using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Seed.Infrastructure;
+using Concertable.Seed.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Data.Seeders;
@@ -11,19 +12,17 @@ internal sealed class ArtistDevSeeder : IDevSeeder
 
     private readonly ArtistDbContext context;
     private readonly SeedState seed;
+    private readonly ITenantScope tenantScope;
 
-    public ArtistDevSeeder(ArtistDbContext context, SeedState seed)
+    public ArtistDevSeeder(ArtistDbContext context, SeedState seed, ITenantScope tenantScope)
     {
         this.context = context;
         this.seed = seed;
+        this.tenantScope = tenantScope;
     }
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
 
-    public async Task SeedAsync(CancellationToken ct = default) =>
-        await context.Artists.SeedIfEmptyAsync(async () =>
-        {
-            context.Artists.AddRange(seed.Artists);
-            await context.SaveChangesAsync(ct);
-        });
+    public Task SeedAsync(CancellationToken ct = default) =>
+        context.SeedByTenantAsync(tenantScope, seed.Artists, ct);
 }
