@@ -275,6 +275,20 @@ public sealed class ConcertApiFixture : ApiFixture
         return outcome!;
     }
 
+    internal async Task<bool> CanAcquireInvoiceSequenceLockAsync(Guid supplierTenantId)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT pg_try_advisory_lock(hashtextextended(CAST(@tenantId AS text), 0))";
+        command.Parameters.AddWithValue("tenantId", supplierTenantId);
+        var acquired = (bool)(await command.ExecuteScalarAsync() ?? false);
+        if (acquired)
+            await SetInvoiceSequenceLockAsync(connection, supplierTenantId, acquire: false);
+        return acquired;
+    }
+
     private async Task<T> RunWithReceiptInsertBarrierCoreAsync<T>(
         Func<CancellationToken, Task<T>> action,
         Exception? injectedFailure)

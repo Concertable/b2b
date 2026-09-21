@@ -254,27 +254,31 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         await fixture.EnsureSupplierSelfBillingAgreementAsync(doorSplitConcert.Id);
         var expected = new InvalidOperationException("forced invoice race failure");
 
-        async Task<Result<SettlementOutcome, FinishConcertError>> CompleteThenFailAsync(
-            int concertId,
-            CancellationToken ct)
+        async Task<Result<SettlementOutcome, FinishConcertError>> FailBeforeRequestAsync()
         {
-            await fixture.CompleteConcertAsync(concertId, ct);
+            await Task.Yield();
             throw expected;
         }
 
+        Task<Result<SettlementOutcome, FinishConcertError>>? remaining = null;
         var caught = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            fixture.RunWithInvoiceSequenceAllocationBarrierAsync(
-                flatFeeConcert.ArtistTenantId,
-                ct => new[]
-                {
-                    CompleteThenFailAsync(flatFeeConcert.Id, ct),
-                    fixture.CompleteConcertAsync(doorSplitConcert.Id, ct)
-                }));
+                fixture.RunWithInvoiceSequenceAllocationBarrierAsync(
+                    flatFeeConcert.ArtistTenantId,
+                    ct => new[]
+                    {
+                        FailBeforeRequestAsync(),
+                        remaining = fixture.CompleteConcertAsync(doorSplitConcert.Id, ct)
+                    }))
+            .WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Same(expected, caught);
         Assert.Contains(
             nameof(Finish_ConcurrentFirstInvoices_PreservesActionFailureAfterBarrierCleanup),
             caught.StackTrace);
+        Assert.NotNull(remaining);
+        Assert.True(remaining.IsCompleted);
+        Assert.True(remaining.IsCanceled);
+        Assert.True(await fixture.CanAcquireInvoiceSequenceLockAsync(flatFeeConcert.ArtistTenantId));
     }
 
     // --- Read surface: two-party scoped ---
