@@ -1866,3 +1866,32 @@ durable retry/dead-letter policy. No actionable findings.
 The native/general and security/data lenses approved N2. The stable per-user advisory lock spans the exact
 ownership check, tenant and founding-membership inserts, and commit or rollback. The deterministic two-waiter
 HTTP race proves one creation, one typed conflict and one persisted aggregate. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `542fc2720a7999d61d4841634828d5c91c9845b6`
+**Candidate head:** `f982792e5ab690b84ec0b08ca0623cbae21451ee`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:c78598c52b2f71090f702dcce9ca0498d3069c07b2def97a631bfa52e8f4d5a9` `(8 paths)`
+**Candidate patch:** `sha256:0ceaa286768588ba84f8922c3c702656d01ac1678e1743a53355a82d291ada38`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\2411fd943902e16ead6409c73b0fdcdd082e0a481702def6f37fdebc7b42a24b`
+**Candidate bundle identity:** `sha256:707a69add071abe04ad9ea4b9115330afc7639b3f68b89034e40606112f5c301`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+Both native/general and security/durability lenses approved N3's production row lock, typed loser conflict and
+post-commit notification ordering. Both accepted the same test-isolation finding.
+
+- [x] **N30 — LOW — test-isolation — verification race-barrier failure can leave detached HTTP requests.**
+  The barrier starts the aggregate HTTP work before its server-wait proof and control commit, but only awaits it
+  on the success path. A waiter or commit failure can release the row lock while the requests continue into the
+  next fixture reset or fault unobserved, and the barrier failure can obscure the request failure.
+  **Fix:** own and thread cancellation into both requests, preserve the primary exception, always release the
+  control transaction, then boundedly cancel and observe all started work before rethrowing the primary.
+  **Disposition:** the barrier now captures the first failure with its stack, releases or rolls back its control
+  transaction, bounds cancellation and aggregate observation, and rethrows the first failure. A forced failure
+  after both server-observed waiters proves that exact exception and helper stack survive cleanup.

@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
@@ -135,38 +136,100 @@ public sealed class TenantApiFixture : ApiFixture
         }
     }
 
-    public async Task<T> RunWithVerificationReviewBarrierAsync<T>(Guid tenantId, Func<Task<T>> action)
+    public Task<T> RunWithVerificationReviewBarrierAsync<T>(
+        Guid tenantId,
+        Func<CancellationToken, Task<T>> action) =>
+        RunWithVerificationReviewBarrierCoreAsync(tenantId, action, null);
+
+    public Task<T> RunWithVerificationReviewBarrierAsync<T>(
+        Guid tenantId,
+        Func<CancellationToken, Task<T>> action,
+        Exception injectedFailure) =>
+        RunWithVerificationReviewBarrierCoreAsync(tenantId, action, injectedFailure);
+
+    private async Task<T> RunWithVerificationReviewBarrierCoreAsync<T>(
+        Guid tenantId,
+        Func<CancellationToken, Task<T>> action,
+        Exception? injectedFailure)
     {
+        using var cancellation = new CancellationTokenSource();
         await using var control = new NpgsqlConnection(dbContext.Database.GetConnectionString());
         await control.OpenAsync();
         await using var transaction = await control.BeginTransactionAsync();
-        var lockHeld = true;
-        await using (var command = control.CreateCommand())
-        {
-            command.CommandText = """
-                SELECT 1
-                FROM tenant."Verifications"
-                WHERE "TenantId" = @tenantId
-                FOR UPDATE
-                """;
-            command.Parameters.AddWithValue("tenantId", tenantId);
-            await command.ExecuteScalarAsync();
-        }
+        Task<T>? result = null;
+        ExceptionDispatchInfo? failure = null;
+        T? outcome = default;
+        var completed = false;
+        var transactionCompleted = false;
 
-        VerificationReviewRace.Arm();
-        var result = action();
         try
         {
+            await using (var command = control.CreateCommand())
+            {
+                command.CommandText = """
+                    SELECT 1
+                    FROM tenant."Verifications"
+                    WHERE "TenantId" = @tenantId
+                    FOR UPDATE
+                    """;
+                command.Parameters.AddWithValue("tenantId", tenantId);
+                await command.ExecuteScalarAsync();
+            }
+
+            VerificationReviewRace.Arm();
+            result = action(cancellation.Token);
             await VerificationReviewRace.WaitForCompetingLockWaitsAsync();
+            if (injectedFailure is not null)
+                throw injectedFailure;
             await transaction.CommitAsync();
-            lockHeld = false;
-            return await result;
+            transactionCompleted = true;
+            outcome = await result.WaitAsync(TimeSpan.FromSeconds(10));
+            completed = true;
         }
-        finally
+        catch (Exception exception)
         {
-            if (lockHeld)
-                await transaction.RollbackAsync();
+            failure = ExceptionDispatchInfo.Capture(exception);
         }
+
+        if (!transactionCompleted)
+        {
+            try
+            {
+                await transaction.RollbackAsync();
+                transactionCompleted = true;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+        }
+
+        if (result is not null && !completed)
+        {
+            try
+            {
+                await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+
+            try
+            {
+                outcome = await result.WaitAsync(TimeSpan.FromSeconds(10));
+                completed = true;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+        }
+
+        failure?.Throw();
+        if (!completed)
+            throw new InvalidOperationException("The verification review barrier action did not complete.");
+        return outcome!;
     }
 
     private static async Task WaitForTenantCreationWaitersAsync(NpgsqlConnection connection)

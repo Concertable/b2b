@@ -308,11 +308,12 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
 
         var responses = await fixture.RunWithVerificationReviewBarrierAsync(
             tenantId,
-            () => Task.WhenAll(
-                approveClient.PostAsync($"/api/verification/{tenantId}/approve", null),
+            ct => Task.WhenAll(
+                approveClient.PostAsync($"/api/verification/{tenantId}/approve", null, ct),
                 rejectClient.PostAsJsonAsync(
                     $"/api/verification/{tenantId}/reject",
-                    new RejectVerificationRequest { Reason = "Conflicting decision." })));
+                    new RejectVerificationRequest { Reason = "Conflicting decision." },
+                    ct)));
 
         Assert.Single(responses, response => response.StatusCode == HttpStatusCode.NoContent);
         Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Conflict);
@@ -321,6 +322,34 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
             verification.Status,
             new[] { TenantVerificationStatus.Approved, TenantVerificationStatus.Rejected });
         Assert.Single(fixture.EmailSender.Sent, email => email.To == contactEmail);
+    }
+
+    [Fact]
+    public async Task Review_BarrierFailure_PreservesFailureAndDrainsRequests()
+    {
+        var owner = fixture.SeedState.UnverifiedVenueManager;
+        var tenantId = TenantOf(owner.Id);
+        await fixture.AddPendingVerificationAsync(
+            tenantId,
+            VerificationDocumentType.Licence,
+            fixture.SeedNow.AddDays(-1));
+        using var approveClient = fixture.CreateClient(fixture.SeedState.Admin);
+        using var rejectClient = fixture.CreateClient(fixture.SeedState.Admin);
+        var failure = new InvalidOperationException("Injected verification barrier failure.");
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => fixture.RunWithVerificationReviewBarrierAsync(
+                tenantId,
+                ct => Task.WhenAll(
+                    approveClient.PostAsync($"/api/verification/{tenantId}/approve", null, ct),
+                    rejectClient.PostAsJsonAsync(
+                        $"/api/verification/{tenantId}/reject",
+                        new RejectVerificationRequest { Reason = "Conflicting decision." },
+                        ct)),
+                failure));
+
+        Assert.Same(failure, thrown);
+        Assert.Contains("RunWithVerificationReviewBarrierCoreAsync", thrown.StackTrace);
     }
 
     #endregion
