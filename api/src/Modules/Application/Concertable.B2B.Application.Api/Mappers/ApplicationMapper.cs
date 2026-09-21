@@ -21,33 +21,39 @@ internal sealed class ApplicationMapper : IApplicationMapper
         this.permissionCatalog = permissionCatalog;
     }
 
-    public async Task<ApplicationSummaryResponse> ToSummaryResponseAsync(ApplicationSummaryDto dto)
+    public async Task<ApplicationSummaryResponse> ToSummaryResponseAsync(
+        ApplicationSummaryDto dto,
+        CancellationToken ct = default)
     {
-        var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id);
+        var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id, ct);
         bookingOption.TryGetValue(out var booking);
         return dto.ToResponse(booking);
     }
 
     public async Task<IReadOnlyList<ApplicationSummaryResponse>> ToSummaryResponsesAsync(
-        IReadOnlyList<ApplicationSummaryDto> dtos)
+        IReadOnlyList<ApplicationSummaryDto> dtos,
+        CancellationToken ct = default)
     {
-        var bookings = await GetBookingsByApplicationIdAsync(dtos.Select(dto => dto.Id));
+        var bookings = await GetBookingsByApplicationIdAsync(dtos.Select(dto => dto.Id), ct);
         return dtos
             .Select(dto => dto.ToResponse(bookings.GetValueOrDefault(dto.Id)))
             .ToList();
     }
 
-    public async Task<ApplicationProposalResponse> ToProposalResponseAsync(ApplicationProposalDto dto)
+    public async Task<ApplicationProposalResponse> ToProposalResponseAsync(
+        ApplicationProposalDto dto,
+        CancellationToken ct = default)
     {
-        var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id);
+        var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id, ct);
         bookingOption.TryGetValue(out var booking);
         return dto.ToResponse(booking, membership.Membership, permissionCatalog);
     }
 
     public async Task<IReadOnlyList<ApplicationProposalResponse>> ToProposalResponsesAsync(
-        IReadOnlyList<ApplicationProposalDto> dtos)
+        IReadOnlyList<ApplicationProposalDto> dtos,
+        CancellationToken ct = default)
     {
-        var bookings = await GetBookingsByApplicationIdAsync(dtos.Select(dto => dto.Id));
+        var bookings = await GetBookingsByApplicationIdAsync(dtos.Select(dto => dto.Id), ct);
         return dtos
             .Select(dto => dto.ToResponse(
                 bookings.GetValueOrDefault(dto.Id),
@@ -57,7 +63,8 @@ internal sealed class ApplicationMapper : IApplicationMapper
     }
 
     private async Task<IReadOnlyDictionary<int, BookingSummary>> GetBookingsByApplicationIdAsync(
-        IEnumerable<int> applicationIds) =>
-        (await bookingModule.GetByApplicationIdsAsync(applicationIds.ToArray()))
+        IEnumerable<int> applicationIds,
+        CancellationToken ct) =>
+        (await bookingModule.GetByApplicationIdsAsync(applicationIds.ToArray(), ct))
             .ToDictionary(booking => booking.ApplicationId);
 }

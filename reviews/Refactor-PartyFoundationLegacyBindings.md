@@ -894,12 +894,15 @@ judgment stays changes-requested until address-review resolves every accepted it
   both cancellation event types reopen only a matching fill. The refreshed Opportunity migration has no drift,
   the project builds cleanly, and all three focused integration regressions pass, including delayed A after B.
 
-- [ ] **N5 — LOW — native — Application read paths drop request cancellation before database and cross-module I/O.**
+- [x] **N5 — LOW — native — Application read paths drop request cancellation before database and cross-module I/O.**
   `api/src/Modules/Application/Concertable.B2B.Application.Infrastructure/Services/ApplicationService.cs:75-160`
   exposes summary, proposal, opportunity, and dashboard reads without a cancellation token and calls
   repositories/modules without one.
   **Fix:** thread `CancellationToken ct = default` through interface, implementation and controller actions,
   pass it to every supporting I/O call, and cover propagation on a representative endpoint.
+  **Disposition:** all seven Application read endpoints now thread request cancellation through service,
+  repository, application mapping and HTTP response mapping, including Artist, Opportunity and Booking module
+  calls. A focused service test proves the exact token reaches the opportunity module, repository and mapper.
 
 - [ ] **N6 — MEDIUM — security — concurrent first invoice-number allocation is not serialized.**
   `api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Repositories/InvoiceSequenceRepository.cs:20-28`
@@ -1895,3 +1898,24 @@ post-commit notification ordering. Both accepted the same test-isolation finding
   **Disposition:** the barrier now captures the first failure with its stack, releases or rolls back its control
   transaction, bounds cancellation and aggregate observation, and rethrows the first failure. A forced failure
   after both server-observed waiters proves that exact exception and helper stack survive cleanup.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `f982792e5ab690b84ec0b08ca0623cbae21451ee`
+**Candidate head:** `d900d27dd89b9eae79c14a4acbc8991a6b5be29d`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:a8e3c1400229754869f69d0c263de4fff766434fab6ce206e43cef73eb4fc684` `(3 paths)`
+**Candidate patch:** `sha256:560f7ca35ec8924ef6ffa18bb606f82f02be76fe998769e5739a1ad23d5f4c87`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\a020d26e1036e76332aa925ddecf9aa38cc340a51c7007bacbb6539f67443c82`
+**Candidate bundle identity:** `sha256:0649baf7d974b770eaf880719e3456b609a684e502add5fb070a0294e60ffc1f`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N30. The barrier owns cancellation for both requests,
+resolves the control transaction before bounded cancellation and aggregate observation, preserves the primary
+exception and stack, and deterministically exercises that cleanup after both server-observed waiters. No
+actionable findings.
