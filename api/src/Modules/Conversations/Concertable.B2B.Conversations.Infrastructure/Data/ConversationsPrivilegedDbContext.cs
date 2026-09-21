@@ -7,8 +7,9 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data;
 
 /// <summary>
 /// The Conversations module's platform-admin stance: the same anemic configuration as
-/// <see cref="ConversationsDbContext"/>, writable, with no tenant filter — a platform operator moderates
-/// threads they are not party to. The tenant-filtered counterpart is <see cref="ConversationsDbContext"/>.
+/// <see cref="ConversationsDbContext"/>, writable, with neither the tenant filter nor the tenant write
+/// guard — a platform operator moderates threads they are not party to, and the guard refuses a write with
+/// no current tenant. The tenant-filtered, guarded counterpart is <see cref="ConversationsDbContext"/>.
 /// </summary>
 internal sealed class ConversationsPrivilegedDbContext(
     DbContextOptions<ConversationsPrivilegedDbContext> options,
