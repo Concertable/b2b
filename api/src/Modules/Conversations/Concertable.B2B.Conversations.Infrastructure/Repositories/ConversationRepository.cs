@@ -18,6 +18,7 @@ internal sealed class ConversationRepository : Repository<ConversationEntity>, I
 
 internal sealed class ConversationPrivilegedRepository : IConversationPrivilegedRepository
 {
+    private const long ConversationCreationLockSeed = 638457221;
     private readonly ConversationsPrivilegedDbContext context;
 
     public ConversationPrivilegedRepository(ConversationsPrivilegedDbContext context)
@@ -52,6 +53,14 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
         Guid requestId,
         CancellationToken ct = default)
     {
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            SELECT pg_advisory_xact_lock(
+                hashtextextended(
+                    CAST({creatorTenantId} AS text)
+                    || ':' || CAST({createdByMembershipId} AS text)
+                    || ':' || CAST({requestId} AS text),
+                    {ConversationCreationLockSeed}))
+            """, ct);
         await context.Database.ExecuteSqlInterpolatedAsync($"""
             SELECT 1
             FROM conversations."ConversationCreationReceipts"

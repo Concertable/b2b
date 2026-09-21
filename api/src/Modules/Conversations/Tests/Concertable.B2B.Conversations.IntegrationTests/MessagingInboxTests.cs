@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.Seed.Identity;
@@ -102,6 +103,40 @@ public sealed class MessagingInboxTests : IAsyncLifetime
                 }
             }))
             .ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Create_ConcurrentSameRequest_ReplaysTheWinningConversation()
+    {
+        var actor = fixture.SeedState.VenueManager1;
+        var client = fixture.CreateClient(actor);
+        var requestId = Guid.NewGuid();
+        var creatorTenantId = TenantSeedIds.For(actor.Id);
+        var createdByMembershipId = fixture.SeedState.Memberships.Single(membership =>
+            membership.TenantId == creatorTenantId && membership.UserId == actor.Id).Id;
+        var participantTenantIds = new[]
+        {
+            creatorTenantId,
+            TenantSeedIds.For(fixture.SeedState.ArtistManager1.Id)
+        };
+
+        var responses = await fixture.RunWithConversationCreationBarrierAsync(
+            creatorTenantId,
+            createdByMembershipId,
+            requestId,
+            ct => new[]
+            {
+                client.PostAsJsonAsync("/api/conversations", new { requestId, participantTenantIds }, ct),
+                client.PostAsJsonAsync("/api/conversations", new { requestId, participantTenantIds }, ct)
+            });
+
+        foreach (var response in responses)
+            await response.ShouldBe(HttpStatusCode.Created);
+        var conversations = await Task.WhenAll(
+            responses.Select(response => response.Content.ReadAsync<Conversation>()));
+        Assert.Equal(conversations[0]!.ConversationId, conversations[1]!.ConversationId);
+        foreach (var response in responses)
+            response.Dispose();
     }
 
     [Fact]

@@ -917,13 +917,17 @@ judgment stays changes-requested until address-review resolves every accepted it
   Its cleanup releases the control lock before bounded cancellation and aggregate observation, races each child
   action against waiter proof, and preserves the original action exception and stack.
 
-- [ ] **N7 — MEDIUM — native/security — concurrent first conversation creation can violate request-id replay semantics.**
+- [x] **N7 — MEDIUM — native/security — concurrent first conversation creation can violate request-id replay semantics.**
   `api/src/Modules/Conversations/Concertable.B2B.Conversations.Infrastructure/Repositories/ConversationRepository.cs:49-67`
   locks an absent receipt key, which PostgreSQL cannot serialize. Two same-actor/same-request calls can both
   create before the unique receipt constraint rejects one; `ConversationService.cs:102-128` has no duplicate
   classification/replay path, so the loser receives a database error.
   **Fix:** serialize on a stable actor/request key or classify the exact duplicate after rollback, re-read the
   winning receipt, and return replay/`RequestConflict`; add a genuinely concurrent integration race.
+  **Disposition:** conversation creation now takes a transaction-scoped PostgreSQL advisory lock derived from
+  the creator tenant, creating membership and request id before reading the receipt. A server-observed HTTP race
+  holds that exact composite key until both requests are waiting, then proves both return the winning conversation.
+  The exact race passes 1/1 and the full Conversations integration suite passes 19/19.
 
 - [ ] **N8 — LOW — test-impact/security — assigned-member messaging authority lacks integration coverage.**
   `ConversationEntity.cs:43-74` and `ConversationService.cs:264-345` add security-sensitive assignment and
@@ -1944,3 +1948,64 @@ actionable findings.
 The native/API-contract and security/durability lenses approved N5. All seven Application read routes propagate
 the request token through controller, service, repository and cross-module mapping to the final EF operations.
 The exact-token regression is sensitive to token identity. No actionable findings.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `5e5cd0db7b99f6e4dbc351b48e01a7eb1cec4739`
+**Candidate head:** `553b867eaffe88a8b529577c2ba9ef6c4b0cb34c`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:14e373ad6c558d202a5835e1501e09ebe82478c4122a74dac9f1c3fc6ac719ed` `(4 paths)`
+**Candidate patch:** `sha256:006525a3b5463d064daba962bcf898eac2cc1a6142ef86a6c7d62cf3b9895e2d`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\a017ee6071fcbf5b349a3269deb6707ddb389c065b83c5c9b096ca401bce47d2`
+**Candidate bundle identity:** `sha256:feccb0fc9fda6bed9d6c7d12f0d1e4f69a099509f869d46ec684f5d535f51e3a`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+Both lenses approved N6's production advisory lock and successful two-waiter allocation proof. The
+security/durability lens found that an early child failure could be masked by the waiter timeout and that
+aggregate success observation was unbounded.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `553b867eaffe88a8b529577c2ba9ef6c4b0cb34c`
+**Candidate head:** `c50cccde364c416cf43b7742156c5c013c4bafee`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:8ed26b7d26cce71a05059d4b259ef9a569025eb8cc645f24a6a83e70da42384b` `(3 paths)`
+**Candidate patch:** `sha256:d325a7c2b75ae346d363af87c2c76c9ff7070a66258d8d3ccda2b1877949bc70`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\c8588cb06bb1050a637873d0b035d6e020ddbe36c2acb452afead8344bcfe8db`
+**Candidate bundle identity:** `sha256:682410af944e8b067279fd3c9a1132f7095d69e3a20bb6c759e7338f480cbe1f`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The security/durability lens approved the bounded cleanup and first-failure preservation. The native/general
+lens found that the forced-failure regression threw only after a real settlement completed, so it did not prove
+the child-before-waiter failure branch.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `c50cccde364c416cf43b7742156c5c013c4bafee`
+**Candidate head:** `a198277bcf557f4e419c20e0d55354d8ee4ccc49`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:a3a379b7d9ee3db9e737bb1f94a34b4d15ec540aaee70b509bfc4c380ecbf43a` `(2 paths)`
+**Candidate patch:** `sha256:cc7ca99380e3a6b1344b4495d2b995dd7b089a5fe93450446f739b308297b763`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\992aea735aff0190b24b721595b9ab4f40f85c1526c0627f928bdd8102626550`
+**Candidate bundle identity:** `sha256:42744cb2c1e5d74957d591deccf1562bbf60aac7cb252bc33ebf17250206f1d9`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+The native/general and security/durability lenses approved N6's final test repair. The regression forces one
+child to throw before any request while its sibling starts normally, bounds prompt exception propagation,
+preserves exception identity and stack, proves sibling cancellation and observation, and independently proves
+the advisory lock is released. No actionable findings.
