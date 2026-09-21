@@ -5,6 +5,7 @@ using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.RateLimiting;
 using Reunion.AspNetCore.Mvc;
 
@@ -84,7 +85,7 @@ internal sealed class ConversationsController : ControllerBase
     public async Task<IActionResult> RemoveMemberAssignment(
         int conversationId,
         Guid membershipId,
-        [FromQuery] long expectedVersion,
+        [FromQuery, BindRequired] long expectedVersion,
         CancellationToken ct) =>
         (await conversationService.RemoveMemberAssignmentAsync(
             conversationId, membershipId, expectedVersion, ct))

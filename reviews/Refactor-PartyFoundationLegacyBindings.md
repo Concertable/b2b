@@ -1767,3 +1767,32 @@ that removal omitted the access-version precondition and could revoke a newer re
   Assignment returns its issued grants and the privileged repository explicitly adds them, matching the Concert
   aggregate pattern. The exact Staff assignment/stale-removal regression passes 1/1, Conversations unit tests
   pass 38/38 and the full Conversations integration suite passes 18/18.
+
+## Review pass — 2026-09-21 — incremental
+
+**Candidate base:** `99c473f823ad7a19a1fbeefbf98a81a540af4537`
+**Candidate head:** `d1cfd1111b96b5fdfa674f4d3d1acdf084ea44e9`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:b3eeecf2f3e772257e28a9d2b3cf1b0460a0845871df120218472cfa94d37bb3` `(9 paths)`
+**Candidate patch:** `sha256:81ba62132c9565ceeccfe719858172294f036d841894c09d73e9dfbb904ca3ea`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\party-foundation-remediation-20260920\review\7d3c10bacfe2ea8ec8bb63fe720ffdcd6c7111e1c9cfe30e5e83c6fad47df1e0`
+**Candidate bundle identity:** `sha256:862e95f2ba4be3445cd9b6e9f71d1ad83ca22a1fa992da211d0ea52df8cc6353`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+The security/data lens approved N28's stale-removal version fence, explicit grant staging and complete Staff
+assignment lifecycle. The native/general lens found that an omitted value-type query parameter could bind as
+zero instead of failing validation.
+
+- [x] **N29 — MEDIUM — native/HTTP — conversation assignment removal does not require the version query key.**
+  `[FromQuery] long expectedVersion` accepts omission as zero, so the request reaches the locked command with an
+  invented concurrency precondition and can produce the wrong terminal or remove a version-zero assignment.
+  **Fix:** make the query binding required and prove an authenticated omission returns 400 without changing the
+  aggregate version or assigned member's access.
+  **Disposition:** DELETE marks `expectedVersion` binding-required. The Staff lifecycle regression now proves an
+  omitted key returns 400, leaves `AccessVersion` unchanged and preserves assigned read access before exercising
+  the stale and current-version removal paths.

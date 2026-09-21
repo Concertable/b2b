@@ -202,6 +202,15 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         await SendAsync(staffClient, preview.ConversationId, Guid.NewGuid(), "Assigned staff message");
 
         await (await ownerClient.DeleteAsync(
+                $"/api/conversations/{preview.ConversationId}/member-assignments/{membership.Id}"))
+            .ShouldBe(HttpStatusCode.BadRequest);
+        Assert.Equal(
+            assigned.AccessVersion,
+            (await GetConversationAsync(ownerClient, preview.ConversationId)).AccessVersion);
+        await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
+            .ShouldBe(HttpStatusCode.OK);
+
+        await (await ownerClient.DeleteAsync(
                 $"/api/conversations/{preview.ConversationId}/member-assignments/{membership.Id}?expectedVersion={before.AccessVersion}"))
             .ShouldBe(HttpStatusCode.Conflict);
         await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
