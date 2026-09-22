@@ -6,6 +6,7 @@ using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel;
+using Concertable.Messaging.Contracts;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Dapper;
@@ -82,10 +83,20 @@ public static class E2EAdminExtensions
     private static async Task<IResult> ResetAsync(
         B2BDatabaseResetter resetter,
         B2BHostInitializer initializer,
+        IBusQuiescence quiescence,
         CancellationToken cancellationToken)
     {
-        await resetter.ResetAsync(cancellationToken);
-        await initializer.InitializeAsync();
+        try
+        {
+            await quiescence.PauseAsync(cancellationToken);
+            await resetter.ResetAsync(cancellationToken);
+            await initializer.InitializeAsync();
+        }
+        finally
+        {
+            await quiescence.ResumeAsync();
+        }
+
         return Results.NoContent();
     }
 

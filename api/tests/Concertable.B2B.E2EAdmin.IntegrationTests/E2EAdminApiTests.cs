@@ -1,9 +1,10 @@
-using System.Data;
+﻿using System.Data;
 using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.E2ETests.Server;
 using Concertable.B2B.Seed.Infrastructure;
+using Concertable.Messaging.Contracts;
 using Concertable.Testing.Integration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -106,6 +107,7 @@ public sealed class E2EAdminApiTests
             (services, configuration, environment) =>
             {
                 services.AddSingleton<SeedState>(_ => throw new NotSupportedException());
+                services.AddSingleton<IBusQuiescence, NoOpBusQuiescence>();
                 if (connection is null)
                     services.AddSingleton<IDbConnection>(_ => throw new NotSupportedException());
                 else
@@ -113,4 +115,11 @@ public sealed class E2EAdminApiTests
                 services.AddB2BE2EAdmin(configuration, environment);
             },
             app => app.MapB2BE2EAdmin());
+
+    private sealed class NoOpBusQuiescence : IBusQuiescence
+    {
+        public Task PauseAsync(CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task ResumeAsync(CancellationToken ct = default) => Task.CompletedTask;
+    }
 }

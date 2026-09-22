@@ -57,9 +57,9 @@ before the entities are migrated.
 The backend workflow runs the solution with `--filter
 "Category=Unit|Category=Integration|Category=Architecture|Category=Startup"`. Several projects contain
 tests but no matching category traits, so `dotnet test` reports "No test matches" and exits successfully.
-The affected non-E2E projects observed during the PostgreSQL cut-over are DataAccess unit, Application unit,
-Artist unit, Booking unit, Conversations integration, Conversations unit, User unit, and Venue unit. The
-workflow therefore presents a green backend gate without executing those assemblies.
+The affected non-E2E projects are Application unit, Artist unit, Booking unit, Conversations integration,
+Conversations unit, User unit, and Venue unit. All seven pass when run directly — 117 tests — and CI never
+runs any of them, so the workflow presents a green backend gate without executing those assemblies.
 
 **Resolves when:** every intended backend test project either supplies a matching assembly/test category or
 the workflow selects projects by an explicit tier manifest, and CI fails when any intended project discovers
@@ -249,6 +249,14 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 ---
 
 ## LOW
+
+### Committed Reqnroll `.feature.cs` files carry trailing blank lines the generator no longer emits
+
+The eleven generated files under `tests/E2ETests/Concertable.B2B.E2ETests.Ui/Features/` each end with 30
+trailing blank lines past what the current Reqnroll generator produces, so any build that regenerates them
+dirties the working tree with a whitespace-only diff in all eleven. Nothing else differs.
+
+**Resolves when:** either the regenerated output is committed, or the generated files stop being tracked.
 
 ### Action-link hrefs are hand-interpolated instead of generated from routes
 

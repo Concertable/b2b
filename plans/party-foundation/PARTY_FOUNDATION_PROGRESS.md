@@ -7,16 +7,20 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: P1 implementation and accepted code-finding remediation complete; N15 reconciliation active
+- Current checkpoint: P1 implementation, remediation and N15 reconciliation complete; delivery gates active
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
-- Last reconciled: 21 September 2026 against HEAD \`ed76eda6\` and merged \`origin/main\` \`7fd22b46\`
+- Last reconciled: 22 September 2026 against merged \`origin/main\` \`7fd22b46\`
 
 ## Current state
 
 P1 slices 1-4, 4.3, 4.1, 4.7 and 4.8 are implemented. The branch has absorbed the current default
 branch's PostgreSQL composition. Canonical review covered all 757 manifest paths; accepted code findings
-N1-N14 are repaired, locally validated, committed and approved by both native/general and
-security/durability lenses. N15 is the remaining roadmap/ledger reconciliation finding.
+N1-N15 are repaired, locally validated, committed and approved by both native/general and
+security/durability lenses. No accepted finding remains open.
+
+Ordinary CI is green. The one E2E defect attributable to this branch was the reset endpoint racing
+handlers that still held this branch's row locks, and it is repaired through a new platform capability
+rather than a retry or a widened timeout.
 
 The provider reconciliation uses the platform PostgreSQL fixture plus B2B-owned database lifecycle,
 Npgsql command transactions and an NTS-configured \`NpgsqlDataSource\`. Command contexts are reset to
@@ -32,16 +36,15 @@ Preserve the unrelated \`.claude/settings.json\`, \`.codex/\` and generated
 ## Next Steps
 
 Scope: current slice only; full plan remains incomplete.
-Current slice: close N15, run current-graph qualification, complete final canonical review and deliver PR #18.
+Current slice: land the E2E reset quiescence fix, complete the final incremental review and deliver PR #18.
 Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
 Done when: one reviewed head passes local and exact-head remote CI/E2E gates and PR #18 is merged.
 
-1. Commit and dual-review this N15 graph reconciliation without staging preserved generated files.
-2. Run the complete current-graph build, unit/integration, migration-drift, web and mobile gates; repair any
-   attributable failure and record the final evidence.
-3. Complete final canonical review, push the stable head, and require ordinary CI plus separately dispatched
-   \`.github/workflows/e2e.yml\` at that exact SHA.
-4. Merge PR #18, restore the preserved unrelated files without committing them and record terminal delivery.
+1. Bump the platform pin to the published quiescence release, rebuild and re-run the backend gates.
+2. Re-run the API E2E suite and confirm \`ConcertFinishedTests\` no longer 500s on the reset endpoint.
+3. Append the final incremental review pass for base \`ed76eda6\` through the delivered head.
+4. Push, require ordinary CI plus separately dispatched \`.github/workflows/e2e.yml\` at that exact SHA,
+   merge PR #18 and then PR #27, and restore the preserved unrelated files without committing them.
 
 ## Completed work
 
@@ -66,6 +69,17 @@ Done when: one reviewed head passes local and exact-head remote CI/E2E gates and
   command-transaction connection ownership and current composition merged from \`7fd22b46\`.
 - Canonical remediation N1-N14: command cancellation/locking, provider-real races, invitation seeding,
   PostgreSQL E2E lookup, tenant-session clearing, exact frontend roles and mobile permission/auth navigation.
+- Delivery repairs on this branch: \`a387e19a\` declared the Reunion reference the Application tests use;
+  \`0e9f9d05\` pinned auth to the image that knows the Business client, which every API E2E test had been
+  failing its readiness poll without; \`f580b53f\` named this branch's new contracts in the release set and
+  declared \`TenantDisplayChanged\`/\`ConversationChanged\` in the bus topology, which had left their
+  subscriptions unprovisioned and fan-out dead; \`ceb13880\` kept the messaging migration history across an
+  E2E reset (42P07); \`85c7c5a9\` took the release candidate set from the promotion manifest alone, ending
+  the drift of four hand-maintained copies.
+- E2E reset quiescence: the reset endpoint now pauses inbound bus consumption, waits for every running
+  handler to finish, resets, and resumes. The capability is \`IBusQuiescence\` in
+  \`Concertable.Messaging.Contracts\`, implemented by the Azure Service Bus receiver over
+  \`StopProcessingAsync\`/\`StartProcessingAsync\`.
 
 ## Verification
 
@@ -87,6 +101,10 @@ Done when: one reviewed head passes local and exact-head remote CI/E2E gates and
   Current-head mobile navigation passes 4/4 and TypeScript validation.
 - Windows requires a process-local shortened PATH for nested npm wrapper scripts; direct constituent package
   commands are green. The final full frontend gates must use the shortened PATH.
+- Ordinary remote CI passed at \`85c7c5a9\`.
+- The backend CI category filter still skips seven untagged projects. Run directly they pass 98 of 98
+  across the six unit projects; the seventh, Conversations integration, is covered by the same entry.
+  \`TECH_DEBT.md\` owns the stale affected-list correction.
 - Exact-head remote CI and the separate API/UI E2E workflow remain delivery gates after the reviewed push.
 
 ## Reviews
@@ -105,7 +123,7 @@ does not substitute for the P1 review.
 - P1 external disclosure is Concert Summary only; member assignments stay inside a principal tenant.
 - Protected commands use one local transaction; ordinary and parallel reads use independent connections.
 - External payment/blob calls remain outside the database transaction and reuse durable operation identity.
-- The product is pre-launch: no compatibility layer, backfill or retained old vocabulary.
+- The product is pre-launch: a superseded shape is replaced outright, with no parallel path or data retrofit.
 - Migrations stay owned by the filtered context; privileged contexts perform explicit system work.
 - Platform Testing \`0.2.0-alpha.0.14\` exposes only its PostgreSQL fixture. The obsolete local SQL Server
   fixture and \`Testcontainers.MsSql\` dependency were removed during the durable provider reconciliation.
@@ -117,6 +135,16 @@ does not substitute for the P1 review.
   and conversation read positions use \`ON CONFLICT ... GREATEST\`.
 - Opportunity creation is restricted to VenueOperator activity; integration handlers and race verification use
   privileged contexts when no interactive tenant exists.
+- The reset endpoint deadlocked (40P01) because Respawn's DELETE raced row locks still held by handlers
+  draining the previous test's bus messages, and stale deliveries landed after the reset and corrupted
+  Payment state. Retrying the deadlock or widening a timeout was rejected: neither addresses the stale
+  deliveries. Quiescence belongs to the receiving transport, so the capability was added to the platform
+  messaging package and consumed here, accepting the publish-then-bump release that implies.
+- The two FlatFee checkout 409s are not attributable to this branch. A control run of the default branch
+  plus only the Outbox fix scored 8 of 10 with exactly those two failing, against 6-7 of 10 here. The cause
+  is the checkout operation identity being composed from a database id that Respawn reseeds, so a reused id
+  collides with a retained Payment operation. That is the unstable-checkout-ID debt P2 already owns at
+  \`PARTY_FOUNDATION_PLAN.md\` section P2.
 - No accepted code finding remains open. Current-graph qualification and final review remain delivery gates.
 
 ## External/deferred owners

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <ConcertableDotNetPlatformVersion>0.2.0-alpha.0.14</ConcertableDotNetPlatformVersion>
+    <ConcertableDotNetPlatformVersion>0.2.0-alpha.0.17</ConcertableDotNetPlatformVersion>
     <!-- Each service publishes on its own train, so a service package cannot track the platform
          version; a shared literal here silently ships a stale client for whichever service moved. -->
     <ConcertableAuthVersion>0.2.0-alpha.0.304</ConcertableAuthVersion>

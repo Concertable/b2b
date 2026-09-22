@@ -279,7 +279,7 @@ No new findings. Both fresh lenses returned completed results with the exact rec
 descriptor, path digest and bundle identity. They checked authority/transaction ownership, shared/web/
 mobile consumers, Tenant facts, intermediate consent and separate content seals, slot/performance
 attachments, durable financial records and independent zero-ticket publication. Both independently
-confirmed the plan requires replacement without adapters, fallback readers, backfills or parallel events.
+confirmed the plan requires replacement without adapters, fallback readers, data retrofits or parallel events.
 
 The parent validated the evidence and work-order delta. Original F1–F10 text, candidate identities and
 completed pass judgments are unchanged except permitted statuses/dispositions. F11/F16/F18 were fixed
