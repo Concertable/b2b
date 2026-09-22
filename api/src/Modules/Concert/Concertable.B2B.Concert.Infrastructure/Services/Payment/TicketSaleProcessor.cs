@@ -1,5 +1,6 @@
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.Customer.Ticket.Contracts.Events;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -13,17 +14,23 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 internal sealed class TicketSaleProcessor : IIntegrationEventHandler<TicketPurchasedEvent>
 {
     private readonly ConcertDbContext context;
+    private readonly IConcertReadDbContext readDbContext;
+    private readonly ITenantScope tenantScope;
     private readonly ILogger<TicketSaleProcessor> logger;
     private readonly IBus bus;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
 
     public TicketSaleProcessor(
         ConcertDbContext context,
+        IConcertReadDbContext readDbContext,
+        ITenantScope tenantScope,
         ILogger<TicketSaleProcessor> logger,
         IBus bus,
         IOutboxUnitOfWorkBehavior outboxBehavior)
     {
         this.context = context;
+        this.readDbContext = readDbContext;
+        this.tenantScope = tenantScope;
         this.logger = logger;
         this.bus = bus;
         this.outboxBehavior = outboxBehavior;
@@ -34,12 +41,22 @@ internal sealed class TicketSaleProcessor : IIntegrationEventHandler<TicketPurch
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(TicketSaleProcessor), ct))
             return;
 
+        // A ticket sale names only the concert, so the owner comes off the row itself through the
+        // unfiltered read stance; the increment then runs as that tenant, where the filter can see it.
+        var venueTenantId = await readDbContext.Concerts
+            .Where(value => value.Id == @event.ConcertId)
+            .Select(value => (Guid?)value.VenueTenantId)
+            .SingleOrDefaultAsync(ct);
+
         try
         {
+            using var acting = venueTenantId is null ? null : tenantScope.As(venueTenantId.Value);
             await outboxBehavior.ExecuteAsync(async () =>
             {
                 context.AddInboxMessage(envelope, nameof(TicketSaleProcessor));
-                var concert = await context.Concerts.FirstOrDefaultAsync(c => c.Id == @event.ConcertId, ct);
+                var concert = venueTenantId is null
+                    ? null
+                    : await context.Concerts.FirstOrDefaultAsync(c => c.Id == @event.ConcertId, ct);
                 if (concert is null)
                 {
                     logger.ConcertNotFoundForTicketSale(@event.ConcertId);

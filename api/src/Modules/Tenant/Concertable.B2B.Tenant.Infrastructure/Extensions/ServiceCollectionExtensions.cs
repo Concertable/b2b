@@ -70,7 +70,7 @@ public static class ServiceCollectionExtensions
         services.AddTenantStrategies();
 
         services.AddSingleton<ITenantContextAccessor, TenantContextAccessor>();
-        services.AddScoped<ITenantScope, TenantScope>();
+        services.AddSingleton<ITenantScope, TenantScope>();
         services.AddScoped<TenantContext>();
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
         services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<TenantContext>());

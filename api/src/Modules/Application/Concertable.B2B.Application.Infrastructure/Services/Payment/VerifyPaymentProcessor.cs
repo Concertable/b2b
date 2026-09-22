@@ -1,5 +1,6 @@
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Application.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -13,7 +14,8 @@ namespace Concertable.B2B.Application.Infrastructure.Services.Payment;
 internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
     private readonly IPaymentVerificationRecorder paymentVerificationRecorder;
-    private readonly IApplicationRepository applicationRepository;
+    private readonly IApplicationReadDbContext readDbContext;
+    private readonly ITenantScope tenantScope;
     private readonly IPaymentSessionOperationsClient paymentSessions;
     private readonly ApplicationDbContext context;
     private readonly IUnitOfWork unitOfWork;
@@ -21,14 +23,16 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
 
     public VerifyPaymentProcessor(
         IPaymentVerificationRecorder paymentVerificationRecorder,
-        IApplicationRepository applicationRepository,
+        IApplicationReadDbContext readDbContext,
+        ITenantScope tenantScope,
         IPaymentSessionOperationsClient paymentSessions,
         ApplicationDbContext context,
         IUnitOfWork unitOfWork,
         ILogger<VerifyPaymentProcessor> logger)
     {
         this.paymentVerificationRecorder = paymentVerificationRecorder;
-        this.applicationRepository = applicationRepository;
+        this.readDbContext = readDbContext;
+        this.tenantScope = tenantScope;
         this.paymentSessions = paymentSessions;
         this.context = context;
         this.unitOfWork = unitOfWork;
@@ -46,13 +50,13 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentProcessor), ct))
             return;
 
-        var venueTenantId = await applicationRepository.GetByIdAsync(
-            applicationId,
-            VenueArtistTenantSpecification<ApplicationEntity>.CreateVenueTenantId(),
-            ct);
-        var owned = venueTenantId is { } payerOwnerId
+        var venueTenantId = await readDbContext.Applications
+            .Where(application => application.Id == applicationId)
+            .Select(application => (Guid?)application.VenueTenantId)
+            .SingleOrDefaultAsync(ct);
+        var owned = venueTenantId is not null
             && (await paymentSessions.ValidatePaymentMethodAsync(
-                new PaymentMethodValidationRequest(@event.Reference, payerOwnerId), ct)).IsSuccess;
+                new PaymentMethodValidationRequest(@event.Reference, venueTenantId.Value), ct)).IsSuccess;
 
         context.AddInboxMessage(envelope, nameof(VerifyPaymentProcessor));
         try
@@ -65,6 +69,7 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
             }
 
             logger.VerifyWebhookReceived(@event.Reference.ClientReference, applicationId);
+            using var acting = tenantScope.As(venueTenantId!.Value);
             await paymentVerificationRecorder.RecordAsync(new VerifyPaymentSucceeded(applicationId), ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
