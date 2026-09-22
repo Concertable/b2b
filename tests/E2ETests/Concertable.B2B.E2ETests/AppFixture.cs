@@ -21,14 +21,13 @@ namespace Concertable.B2B.E2ETests;
 public sealed class AppFixture : IAsyncLifetime
 {
     private const string SearchWebImage = "ghcr.io/concertable/search-web";
-    private const string SearchWebDigest = "sha256:5bfb93f03c875d2adb5bbd18499f2ff11ef9a71902cd7f62811cb0d7876976cb";
+    private const string SearchWebDigest = "sha256:f345c7e05209d4a72f7aee23f311867327fbc9b8b5daec7323506c3ef517d50a";
     private const string SearchWorkersImage = "ghcr.io/concertable/search-workers";
-    private const string SearchWorkersDigest = "sha256:c0c7d64a4b2702a0186963472ab8bf4030c2cba873748eb8fdb6be9905c84d11";
+    private const string SearchWorkersDigest = "sha256:179918a414cb6aa398dc3ffd5035728a47d2780649b88c0b27468cdf71223515";
     private const string SearchMigrationsImage = "ghcr.io/concertable/search-migrations";
-    private const string SearchMigrationsDigest = "sha256:0ac571000b44f5683efa6890b23b9ef5d8b9e1cb5aa3461d314ececdccd453ea";
-    private const string AuthE2EDigest = "sha256:e228e89af3fa51f1dd7995d33e109bb3a9c2bf2ab3bed98df28e3ef7bac28251";
-    private const string PaymentE2EWebDigest = "sha256:df33de77f2d01558f9ffb3b0d1cc68ddcd26e41f6d54f65045caf3e466b4a775";
-    private const string PaymentE2EWorkersDigest = "sha256:4385c505153cca1df16983864b0c99807537b37f8aea801d434092cce47c87c8";
+    private const string SearchMigrationsDigest = "sha256:351365915b0afbfd604db29d4dcff252b9bb8d2beeff3bd6d38392de176413b7";
+    private const string PaymentE2EWebDigest = "sha256:67688d0d65f35cf15671ffbf5c65e68546e3189e59354b6b5ed34751fc1aa27c";
+    private const string PaymentE2EWorkersDigest = "sha256:5d46a8507f52538bb3454d2b646e8dc8ead0b8b0561c78d83bab32128e4d7d47";
 
     private DistributedApplication app = null!;
     private AspireResourceLogger resourceLogger = null!;
@@ -104,21 +103,16 @@ public sealed class AppFixture : IAsyncLifetime
         StripeCustomerResolver = await Concertable.Testing.E2E.StripeCustomerResolver.CreateAsync(stripeClient);
         var run = Run.Create(Profile.B2B(B2BWebUrl, SearchWebUrl, authUrl, PaymentWebUrl));
 
-        var sql = builder.Resources.OfType<SqlServerServerResource>().Single();
-        var searchDb = builder.CreateResourceBuilder(sql).AddDatabase(SearchConstants.Database);
+        var postgres = builder.Resources.OfType<PostgresServerResource>().Single();
+        var searchDb = builder.CreateResourceBuilder(postgres).AddDatabase(SearchConstants.Database);
         var authResource = builder.Resources.OfType<ServiceContainerResource>()
             .Single(resource => resource.Name == AuthConstants.Resource);
         var authBuilder = builder.CreateResourceBuilder(authResource);
-        authBuilder.WithImageSHA256(AuthE2EDigest["sha256:".Length..]);
         authBuilder.WithEnvironment("Auth__VerificationBaseUrl", authBuilder.GetEndpoint("https"));
         authBuilder.WithEnvironment("RateLimiting__credential__PermitLimit", "1000");
         var authService = builder.CreateResourceBuilder((IResourceWithServiceDiscovery)authResource);
-        var searchMigrations = builder.AddContainerImage(
-                "search-migrations",
-                SearchMigrationsImage,
-                SearchMigrationsDigest)
-            .WithReference(searchDb)
-            .WaitFor(searchDb);
+        var searchMigrations = builder.AddSearchMigrations(
+            SearchMigrationsImage, SearchMigrationsDigest, searchDb);
         var searchWeb = builder.AddSearchWeb(SearchWebImage, SearchWebDigest, authService, searchDb)
             .WaitForCompletion(searchMigrations);
         builder.AddSearchWorkers(SearchWorkersImage, SearchWorkersDigest, searchDb,

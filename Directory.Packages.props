@@ -5,10 +5,10 @@
     <ConcertableDotNetPlatformVersion>0.2.0-alpha.0.14</ConcertableDotNetPlatformVersion>
     <!-- Each service publishes on its own train, so a service package cannot track the platform
          version; a shared literal here silently ships a stale client for whichever service moved. -->
-    <ConcertableAuthVersion>0.2.0-alpha.0.297</ConcertableAuthVersion>
+    <ConcertableAuthVersion>0.2.0-alpha.0.305</ConcertableAuthVersion>
     <ConcertableCustomerVersion>0.1.0-alpha.0.1381</ConcertableCustomerVersion>
-    <ConcertablePaymentVersion>0.1.0-alpha.0.1384</ConcertablePaymentVersion>
-    <ConcertableSearchVersion>0.1.0-alpha.0.1381</ConcertableSearchVersion>
+    <ConcertablePaymentVersion>0.2.0-alpha.0.381</ConcertablePaymentVersion>
+    <ConcertableSearchVersion>0.2.0-alpha.0.330</ConcertableSearchVersion>
     <ConcertableSystemVersion>0.2.0-alpha.0.192</ConcertableSystemVersion>
   </PropertyGroup>
 
