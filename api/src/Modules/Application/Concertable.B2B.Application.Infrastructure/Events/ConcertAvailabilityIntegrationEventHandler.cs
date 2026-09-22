@@ -28,19 +28,21 @@ internal sealed class ConcertAvailabilityIntegrationEventHandler :
         this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         ConcertCreatedEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(async () =>
+        CancellationToken ct = default)
+    {
+        // The scope wraps the unit of work rather than sitting inside it: the save runs after the
+        // block returns.
+        using var acting = tenantScope.As(@event.VenueTenantId);
+        await unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(ConcertAvailabilityIntegrationEventHandler);
             if (await dbContext.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
                 return;
 
             dbContext.AddInboxMessage(envelope, handler);
-
-            using var acting = tenantScope.As(@event.VenueTenantId);
             if (!await dbContext.ConcertAvailabilities.AnyAsync(
                     availability => availability.ConcertId == @event.ConcertId,
                     ct))
@@ -53,32 +55,35 @@ internal sealed class ConcertAvailabilityIntegrationEventHandler :
                     @event.ArtistTenantId,
                     @event.StartDate));
         }, ct);
+    }
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         ConcertCancelledEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(async () =>
+        CancellationToken ct = default)
+    {
+        // The cancellation carries no tenant, so the owner comes off the row itself through the
+        // unfiltered read stance; the removal then runs as that tenant, where the filter can see it.
+        var venueTenantId = await readDbContext.ConcertAvailabilities
+            .Where(value => value.ConcertId == @event.ConcertId)
+            .Select(value => (Guid?)value.VenueTenantId)
+            .SingleOrDefaultAsync(ct);
+
+        using var acting = venueTenantId is null ? null : tenantScope.As(venueTenantId.Value);
+        await unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = $"{nameof(ConcertAvailabilityIntegrationEventHandler)}.Cancellation";
             if (await dbContext.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
                 return;
 
             dbContext.AddInboxMessage(envelope, handler);
-
-            // The cancellation carries no tenant, so the owner comes off the row itself through the
-            // unfiltered read stance; the removal then runs as that tenant, where the filter can see it.
-            var venueTenantId = await readDbContext.ConcertAvailabilities
-                .Where(value => value.ConcertId == @event.ConcertId)
-                .Select(value => (Guid?)value.VenueTenantId)
-                .SingleOrDefaultAsync(ct);
             if (venueTenantId is null)
                 return;
 
-            using var acting = tenantScope.As(venueTenantId.Value);
             var availability = await dbContext.ConcertAvailabilities
                 .SingleOrDefaultAsync(value => value.ConcertId == @event.ConcertId, ct);
             if (availability is not null)
                 dbContext.ConcertAvailabilities.Remove(availability);
         }, ct);
+    }
 }

@@ -25,30 +25,33 @@ internal sealed class ApplicationAcceptedIntegrationEventHandler : IIntegrationE
         this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         ApplicationAcceptedEvent @event,
         MessageEnvelope envelope,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(async () =>
+        CancellationToken ct = default)
+    {
+        // The event names only the opportunity, so the owner comes off the row itself through the
+        // unfiltered read stance. The scope wraps the unit of work rather than sitting inside it: the
+        // save the write guard inspects runs after the block returns.
+        var tenantId = await readDbContext.Opportunities
+            .Where(value => value.Id == @event.OpportunityId)
+            .Select(value => (Guid?)value.TenantId)
+            .SingleOrDefaultAsync(ct);
+
+        using var acting = tenantId is null ? null : tenantScope.As(tenantId.Value);
+        await unitOfWorkBehavior.ExecuteAsync(async () =>
         {
             var handler = nameof(ApplicationAcceptedIntegrationEventHandler);
             if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, handler, ct))
                 return;
 
             context.AddInboxMessage(envelope, handler);
-            // The event names only the opportunity, so the owner comes off the row itself through the
-            // unfiltered read stance; the transition then runs as that tenant, where the filter can see it.
-            var tenantId = await readDbContext.Opportunities
-                .Where(value => value.Id == @event.OpportunityId)
-                .Select(value => (Guid?)value.TenantId)
-                .SingleOrDefaultAsync(ct);
             if (tenantId is null)
                 return;
-
-            using var acting = tenantScope.As(tenantId.Value);
 
             var opportunity = await context.Opportunities
                 .SingleOrDefaultAsync(value => value.Id == @event.OpportunityId, ct);
             opportunity?.MarkFilled();
         }, ct);
+    }
 }

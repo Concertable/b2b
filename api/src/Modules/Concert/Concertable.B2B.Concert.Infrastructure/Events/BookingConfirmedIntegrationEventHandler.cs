@@ -17,12 +17,12 @@ internal sealed class BookingConfirmedIntegrationEventHandler : IIntegrationEven
         this.tenantScope = tenantScope;
     }
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         BookingConfirmedEvent @event,
         MessageEnvelope envelope,
         CancellationToken ct = default)
     {
         using var acting = tenantScope.As(@event.Booking.VenueTenantId);
-        return concertService.CreateAsync(@event.Booking, ct);
+        await concertService.CreateAsync(@event.Booking, ct);
     }
 }
