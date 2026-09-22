@@ -1,3 +1,4 @@
+using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
@@ -12,17 +13,20 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
 {
     private readonly ConcertDbContext context;
+    private readonly IConcertReadDbContext readContext;
     private readonly IEndedSpecification endedSpecification;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
     private readonly TimeProvider timeProvider;
 
     public ConcertRepository(
         ConcertDbContext context,
+        IConcertReadDbContext readContext,
         IEndedSpecification endedSpecification,
         IDoorRevenueOutstandingSpecification doorRevenueOutstanding,
         TimeProvider timeProvider) : base(context)
     {
         this.context = context;
+        this.readContext = readContext;
         this.endedSpecification = endedSpecification;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
         this.timeProvider = timeProvider;
@@ -127,17 +131,20 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .ToListAsync();
     }
 
-    public async Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
+    // The sweep runs before any tenant is established, so the scan reads the unfiltered stance.
+    // SettlementPayeeTenantId is declared per concert subtype, so it resolves client-side.
+    public async Task<IReadOnlyList<ConcertCompletionCandidate>> GetEndedPendingCompletionAsync(
         CancellationToken ct = default) =>
-        await context.Concerts
+        (await readContext.Concerts
             .Where(concert =>
                 concert.State == ConcertState.Draft ||
                 concert.State == ConcertState.Posted ||
                 concert.State == ConcertState.SettlementFailed ||
                 concert.State == ConcertState.AwaitingSettlement)
             .Where(endedSpecification.And(doorRevenueOutstanding.Not()).ToExpression())
-            .Select(c => c.Id)
-            .ToListAsync(ct);
+            .ToListAsync(ct))
+        .Select(concert => new ConcertCompletionCandidate(concert.Id, concert.SettlementPayeeTenantId))
+        .ToList();
 
     public Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId) =>
         context.Concerts.OfType<DoorRevenueConcert>()

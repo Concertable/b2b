@@ -55,14 +55,12 @@ public sealed class ConcertApiTests : IAsyncLifetime
     public async Task GetUpcomingForManagers_IncludesConcertAlreadyInProgress()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
         var seededConcert = fixture.SeedState.Concerts.First(concert => concert.DatePosted is not null);
-        var concert = await context.Concerts
-            .SingleAsync(entity => entity.Id == seededConcert.Id);
         var now = scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime;
-        context.Entry(concert).ComplexProperty(entity => entity.Period).CurrentValue =
-            new DateRange(now.AddHours(-1), now.AddHours(1));
-        await context.SaveChangesAsync();
+        await fixture.SetConcertPeriodAsync(
+            seededConcert.Id,
+            new DateRange(now.AddHours(-1), now.AddHours(1)));
+        var concert = await fixture.Concerts.SingleAsync(entity => entity.Id == seededConcert.Id);
 
         var venueResponse = await CreateOwningVenueClient(concert.VenueId)
             .GetAsync("/api/Concert/upcoming/venue/current");
