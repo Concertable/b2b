@@ -4,10 +4,12 @@ using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Booking.Infrastructure.Extensions;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.Kernel.DependencyInjection;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Events;
 
@@ -18,6 +20,8 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<DepositEscrowRejectedEvent>
 {
     private readonly BookingDbContext context;
+    private readonly IBookingReadDbContext readDbContext;
+    private readonly ITenantScope tenantScope;
     private readonly IBookingService bookingService;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
@@ -25,12 +29,16 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
 
     public AcceptanceFinancialOperationOutcomeProcessor(
         BookingDbContext context,
+        IBookingReadDbContext readDbContext,
+        ITenantScope tenantScope,
         IBookingService bookingService,
         IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         IScoped<AcceptanceFinancialOperationOutcomeProcessor> convergence)
     {
         this.context = context;
+        this.readDbContext = readDbContext;
+        this.tenantScope = tenantScope;
         this.bookingService = bookingService;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
@@ -106,12 +114,23 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
             && reference.TryGetBookingId(out bookingId);
     }
 
-    private Task ProcessAsync(
+    private async Task ProcessAsync(
         int bookingId,
         MessageEnvelope envelope,
         FinancialOperationEvidence evidence,
-        CancellationToken ct) =>
-        unitOfWorkBehavior.TryExecuteAsync(
+        CancellationToken ct)
+    {
+        // A payment outcome names only the booking, so the owner comes off the row itself through the
+        // unfiltered read stance; everything after runs as that tenant, where the filter can see it.
+        var venueTenantId = await readDbContext.Bookings
+            .Where(booking => booking.Id == bookingId)
+            .Select(booking => (Guid?)booking.VenueTenantId)
+            .SingleOrDefaultAsync(ct);
+        if (venueTenantId is null)
+            return;
+
+        using var acting = tenantScope.As(venueTenantId.Value);
+        await unitOfWorkBehavior.TryExecuteAsync(
             async () =>
             {
                 await ProcessCoreAsync(bookingId, envelope, evidence, ct);
@@ -125,6 +144,7 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
                 return true;
             },
             ct);
+    }
 
     private Task ProcessOnceAsync(
         int bookingId,

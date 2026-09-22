@@ -36,13 +36,14 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
+        // No TenantInterceptor: this stance exists so an operator can write rows no tenant owns, and the
+        // write guard now throws on exactly that rather than standing aside for it.
         services.AddDbContext<ConversationsPrivilegedDbContext>((sp, opts) =>
             opts.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
                     npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddSingleton<ConversationsConfigurationProvider>();

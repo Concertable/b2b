@@ -34,25 +34,26 @@ internal sealed class TenantContext : ITenantContext, ITenantResolver, IMembersh
     public TenantType? Type => Active?.Type;
 
     /// <summary>
-    /// No HTTP request in scope (worker, outbox dispatcher, event/projection handler) = system caller = filter bypass.
-    /// An anonymous HTTP request keeps this <see langword="false"/>, so it fails closed (sees nothing) instead of open.
+    /// No HTTP request in scope (worker, outbox dispatcher, event/projection handler) means there is no tenant
+    /// to resolve from, so resolution is skipped and <see cref="TenantId"/> stays null. It no longer grants
+    /// visibility: a caller that has to see across tenants composes an unfiltered stance.
     /// </summary>
-    public bool IsHost => httpContextAccessor.HttpContext is null;
+    private bool HasNoRequest => httpContextAccessor.HttpContext is null;
 
     public bool HasPermission(string permission, TenantType? requiredTenantType = null)
     {
-        if (Active is not { } active)
+        if (Active is not { Role: { } role, Type: { } type })
             return false;
 
-        if (requiredTenantType is { } required && active.Type != required)
+        if (requiredTenantType is { } required && type != required)
             return false;
 
-        return permissionCatalog.Grants(active.Type, active.Role, permission);
+        return permissionCatalog.Grants(type, role, permission);
     }
 
     public async Task ResolveAsync(CancellationToken ct = default)
     {
-        if (accessor.Resolution is not null || IsHost)
+        if (accessor.Resolution is not null || HasNoRequest)
             return;
 
         if (currentUser.Id is not { } userId)

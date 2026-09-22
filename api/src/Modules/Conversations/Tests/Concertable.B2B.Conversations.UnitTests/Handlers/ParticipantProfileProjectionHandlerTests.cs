@@ -82,6 +82,5 @@ public sealed class ParticipantProfileProjectionHandlerTests
     private sealed class StubTenantContext(Guid tenantId) : ITenantContext
     {
         public Guid? TenantId { get; } = tenantId;
-        public bool IsHost => false;
     }
 }

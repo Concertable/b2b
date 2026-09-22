@@ -348,15 +348,21 @@ public class ApiFixture : IAsyncLifetime
                 .CountAsync(message => message.MessageType == messageType));
     }
 
-    public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(string messageType) => factory.Services
-        .GetRequiredService<IScoped<OutboxDbContext>>()
-        .RunAsync(async outbox =>
-        {
-            var row = await outbox.Set<OutboxMessageEntity>()
-                .AsNoTracking()
-                .SingleAsync(message => message.MessageType == messageType);
-            return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
-        });
+    // Seeding publishes the same integration events the API does, so a message type identifies no single
+    // row; a caller after its own request's row takes the id that was not already there.
+    public Task<IReadOnlyList<OutboxMessageSnapshot>> GetOutboxMessagesAsync(string messageType) =>
+        factory.Services
+            .GetRequiredService<IScoped<OutboxDbContext>>()
+            .RunAsync(async Task<IReadOnlyList<OutboxMessageSnapshot>> (outbox) =>
+                await outbox.Set<OutboxMessageEntity>()
+                    .AsNoTracking()
+                    .Where(message => message.MessageType == messageType)
+                    .OrderBy(message => message.OccurredAtUtc)
+                    .Select(message => new OutboxMessageSnapshot(
+                        message.Id,
+                        message.Payload,
+                        message.Status == OutboxStatus.Dispatched))
+                    .ToListAsync());
 
     public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(Guid id) => factory.Services
         .GetRequiredService<IScoped<OutboxDbContext>>()

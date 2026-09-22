@@ -1,8 +1,9 @@
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
+using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.Seed.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -15,6 +16,7 @@ internal sealed class ConcertDevSeeder : IDevSeeder
     private readonly ConcertDbContext context;
     private readonly SeedState seed;
     private readonly ITenantModule tenants;
+    private readonly ITenantScope tenantScope;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
 
@@ -22,12 +24,14 @@ internal sealed class ConcertDevSeeder : IDevSeeder
         ConcertDbContext context,
         SeedState seed,
         ITenantModule tenants,
+        ITenantScope tenantScope,
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider)
     {
         this.context = context;
         this.seed = seed;
         this.tenants = tenants;
+        this.tenantScope = tenantScope;
         this.legal = legal.Value;
         this.timeProvider = timeProvider;
     }
@@ -36,17 +40,11 @@ internal sealed class ConcertDevSeeder : IDevSeeder
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        await context.Concerts.SeedIfEmptyAsync(async () =>
-        {
-            context.Concerts.AddRange(seed.Concerts);
-            await context.SaveChangesAsync(ct);
-        });
+        await context.SeedByVenueTenantAsync(tenantScope, seed.Concerts, ct);
 
-        await context.SelfBillingAgreements.SeedIfEmptyAsync(async () =>
-        {
-            await SeededSelfBillingAgreementGranter.GrantAsync(
-                context, seed, tenants, legal.PlatformTermsVersion, timeProvider.GetUtcNow().UtcDateTime, ct);
-            await context.SaveChangesAsync(ct);
-        });
+        var agreements = await SeededSelfBillingAgreementGranter.GrantAsync(
+            seed, tenants, legal.PlatformTermsVersion, timeProvider.GetUtcNow().UtcDateTime, ct);
+
+        await context.SeedByTenantAsync(tenantScope, agreements, ct);
     }
 }

@@ -6,6 +6,7 @@ using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.Messaging.Contracts;
+using Concertable.Seed.Identity;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
@@ -307,9 +308,11 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         var verified = new VerifyPaymentSucceededDomainEvent(
             new VerifyPaymentSucceeded(applicationId));
 
+        var venueTenantId = TenantSeedIds.For(fixture.SeedState.VenueManager1.Id);
+
         await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
-            () => fixture.DispatchPreCommitDomainEventAsync(verified));
-        await fixture.DispatchPreCommitDomainEventAsync(verified);
+            () => fixture.DispatchPreCommitDomainEventAsync(verified, venueTenantId));
+        await fixture.DispatchPreCommitDomainEventAsync(verified, venueTenantId);
 
         Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));

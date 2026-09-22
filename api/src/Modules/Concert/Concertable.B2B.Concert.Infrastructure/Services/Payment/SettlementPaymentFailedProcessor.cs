@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -12,17 +13,23 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
     private readonly ConcertDbContext context;
+    private readonly IConcertReadDbContext readDbContext;
+    private readonly ITenantScope tenantScope;
     private readonly ISettlementService settlementService;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly ILogger<SettlementPaymentFailedProcessor> logger;
 
     public SettlementPaymentFailedProcessor(
         ConcertDbContext context,
+        IConcertReadDbContext readDbContext,
+        ITenantScope tenantScope,
         ISettlementService settlementService,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         ILogger<SettlementPaymentFailedProcessor> logger)
     {
         this.context = context;
+        this.readDbContext = readDbContext;
+        this.tenantScope = tenantScope;
         this.settlementService = settlementService;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
         this.logger = logger;
@@ -35,13 +42,20 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
             || !@event.Metadata.TryGetOperationId(out var operationId))
             return;
         logger.SettlementPaymentFailed(concertId, @event.FailureCode, @event.FailureMessage);
-        if (!await context.Concerts.AnyAsync(value => value.Id == concertId, ct))
+        // A settlement outcome names only the concert, so the owner comes off the row itself through the
+        // unfiltered read stance; the failure is then recorded as that tenant.
+        var venueTenantId = await readDbContext.Concerts
+            .Where(value => value.Id == concertId)
+            .Select(value => (Guid?)value.VenueTenantId)
+            .SingleOrDefaultAsync(ct);
+        if (venueTenantId is null)
         {
             logger.SettlementOutcomeForUnknownConcert(concertId);
             await RecordInboxAsync(envelope, ct);
             return;
         }
 
+        using var acting = tenantScope.As(venueTenantId.Value);
         await settlementService.RecordFailureAsync(
             concertId,
             operationId,

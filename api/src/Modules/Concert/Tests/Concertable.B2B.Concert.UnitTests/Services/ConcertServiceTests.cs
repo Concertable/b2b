@@ -107,7 +107,7 @@ public sealed class ConcertServiceTests
             It.IsAny<Func<DbUpdateException, bool>>(),
             It.IsAny<CancellationToken>())).ReturnsAsync(false);
         var tenantContext = new Mock<ITenantContext>();
-        tenantContext.SetupGet(context => context.IsHost).Returns(true);
+        tenantContext.SetupGet(context => context.TenantId).Returns(ConfirmedBookings.VenueTenantId);
         var service = new ConcertService(
             repository.Object,
             Mock.Of<IConcertReadRepository>(),
@@ -143,7 +143,7 @@ public sealed class ConcertServiceTests
             .Setup(value => value.GetByIdAsync(42, It.IsAny<CancellationToken>()))
             .ReturnsAsync(concert);
         var tenantContext = new Mock<ITenantContext>();
-        tenantContext.SetupGet(context => context.IsHost).Returns(true);
+        tenantContext.SetupGet(context => context.TenantId).Returns(ConfirmedBookings.VenueTenantId);
         var service = new ConcertService(
             repository.Object,
             Mock.Of<IConcertReadRepository>(),

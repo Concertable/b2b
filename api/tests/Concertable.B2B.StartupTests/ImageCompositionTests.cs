@@ -21,7 +21,6 @@ public sealed class ImageCompositionTests
     {
         var builder = DistributedApplication.CreateBuilder();
         var postgres = builder.AddPostgres("postgres");
-        var sql = builder.AddSqlServer("sql");
         var asb = builder.AddServiceBus();
         var (storage, blobs) = builder.AddAzureStorage();
         var auth = builder.AddContainerImage(AuthConstants.Resource, "ghcr.io/concertable/auth", Digest)
@@ -30,7 +29,7 @@ public sealed class ImageCompositionTests
             "ghcr.io/concertable/payment-web",
             Digest,
             auth,
-            sql.AddDatabase(PaymentConstants.Database),
+            postgres.AddDatabase(PaymentConstants.Database),
             asb);
 
         var web = builder.AddB2BWeb(

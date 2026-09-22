@@ -3,7 +3,12 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
-internal sealed record ActiveTenant(Guid TenantId, TenantRole Role, TenantType Type);
+/// <summary>
+/// The tenant a caller is acting as. <see cref="Role"/> and <see cref="Type"/> are <see langword="null"/> for a
+/// request-less caller that states a tenant to write as — it has an authority boundary but no membership, so
+/// every permission question about it fails closed.
+/// </summary>
+internal sealed record ActiveTenant(Guid TenantId, TenantRole? Role, TenantType? Type);
 
 /// <summary>
 /// A resolution that has already happened. <see cref="Tenant"/> is <see langword="null"/> when the caller
@@ -27,6 +32,11 @@ internal sealed class TenantContextAccessor : ITenantContextAccessor
 {
     private const string ItemKey = "Concertable.Tenant.Resolution";
 
+    // Where a request-less caller's tenant lives: a worker, dispatcher or seeder has no HttpContext.Items to
+    // hang a resolution on. Async-local so it follows one operation's await chain and does not leak into the
+    // concurrent operations sharing this singleton.
+    private static readonly AsyncLocal<TenantResolution?> Ambient = new();
+
     private readonly IHttpContextAccessor httpContextAccessor;
 
     public TenantContextAccessor(IHttpContextAccessor httpContextAccessor)
@@ -36,16 +46,15 @@ internal sealed class TenantContextAccessor : ITenantContextAccessor
 
     public TenantResolution? Resolution
     {
-        get => httpContextAccessor.HttpContext is { } http && http.Items.TryGetValue(ItemKey, out var value)
-            ? value as TenantResolution
-            : null;
+        get => httpContextAccessor.HttpContext is { } http
+            ? http.Items.TryGetValue(ItemKey, out var value) ? value as TenantResolution : null
+            : Ambient.Value;
         set
         {
-            if (httpContextAccessor.HttpContext is not { } http)
-                throw new InvalidOperationException(
-                    "A tenant resolution has no request to belong to. Host callers resolve nothing.");
-
-            http.Items[ItemKey] = value;
+            if (httpContextAccessor.HttpContext is { } http)
+                http.Items[ItemKey] = value;
+            else
+                Ambient.Value = value;
         }
     }
 }

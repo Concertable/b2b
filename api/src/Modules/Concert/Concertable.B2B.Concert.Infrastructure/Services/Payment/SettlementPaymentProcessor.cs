@@ -2,6 +2,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -15,6 +16,8 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
     private readonly ConcertDbContext context;
+    private readonly IConcertReadDbContext readDbContext;
+    private readonly ITenantScope tenantScope;
     private readonly ISettlementService settlementService;
     private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
     private readonly ILogger<SettlementPaymentProcessor> logger;
@@ -22,12 +25,16 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
 
     public SettlementPaymentProcessor(
         ConcertDbContext context,
+        IConcertReadDbContext readDbContext,
+        ITenantScope tenantScope,
         ISettlementService settlementService,
         IOutboxUnitOfWorkBehavior outboxBehavior,
         ILogger<SettlementPaymentProcessor> logger,
         IBus bus)
     {
         this.context = context;
+        this.readDbContext = readDbContext;
+        this.tenantScope = tenantScope;
         this.settlementService = settlementService;
         this.outboxBehavior = outboxBehavior;
         this.logger = logger;
@@ -41,8 +48,9 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
             || !@event.Metadata.TryGetOperationId(out var operationId))
             return;
         logger.SettlementWebhookReceived(@event.Reference.ClientReference, concertId);
-        var concert = await context.Concerts
-            .AsNoTracking()
+        // A settlement outcome names only the concert, so the row comes off the unfiltered read stance;
+        // everything after runs as its venue tenant, where the filter can see it.
+        var concert = await readDbContext.Concerts
             .SingleOrDefaultAsync(value => value.Id == concertId, ct);
         if (concert is null)
         {
@@ -50,6 +58,8 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
             await RecordInboxAsync(envelope, ct);
             return;
         }
+
+        using var acting = tenantScope.As(concert.VenueTenantId);
 
         var completion = await settlementService.CompleteAsync(concert.Id, operationId, ct);
         if (completion.TryGetError(out var error))

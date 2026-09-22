@@ -6,7 +6,9 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.Kernel.ValueObjects;
 using Concertable.Testing.Integration;
 using Concertable.Kernel.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
@@ -48,21 +50,54 @@ public sealed class ConcertApiFixture : ApiFixture
 
         return response;
     }
-    internal IQueryable<InvoiceEntity> Invoices => dbContext.Invoices.AsNoTracking();
+    internal IQueryable<InvoiceEntity> Invoices => readDbContext.Invoices;
     internal IQueryable<SelfBillingAgreementEntity> SelfBillingAgreements =>
         readDbContext.SelfBillingAgreements;
 
     internal async Task<Result<SettlementOutcome, FinishConcertError>> FinishConcertAsync(int concertId)
     {
         await EnsureSupplierSelfBillingAgreementAsync(concertId);
-        return await workflow.RunAsync(workflow => workflow.CompleteAsync(concertId));
+        return await CompleteConcertAsync(concertId);
     }
 
     internal Task<Result<SettlementOutcome, FinishConcertError>> CompleteConcertAsync(int concertId) =>
-        workflow.RunAsync(workflow => workflow.CompleteAsync(concertId));
+        AsSettlementPayeeAsync(
+            concertId,
+            () => workflow.RunAsync(workflow => workflow.CompleteAsync(concertId)));
 
     internal Task DeclareDoorRevenueAsync(int concertId, decimal doorRevenue) =>
-        concertService.DeclareDoorRevenueAsync(concertId, doorRevenue);
+        AsVenueAsync(concertId, () => concertService.DeclareDoorRevenueAsync(concertId, doorRevenue));
+
+    /// <summary>
+    /// The sweep and the HTTP terminal both reach the workflow with a tenant established; these helpers
+    /// stand in for it, picking the same tenant that caller would have carried.
+    /// </summary>
+    private async Task<T> AsSettlementPayeeAsync<T>(int concertId, Func<Task<T>> action)
+    {
+        var concert = await readDbContext.Concerts
+            .SingleOrDefaultAsync(value => value.Id == concertId);
+        if (concert is null)
+            return await action();
+
+        using var acting = TenantScope.As(concert.SettlementPayeeTenantId);
+        return await action();
+    }
+
+    private async Task AsVenueAsync(int concertId, Func<Task> action)
+    {
+        var venueTenantId = await readDbContext.Concerts
+            .Where(concert => concert.Id == concertId)
+            .Select(concert => (Guid?)concert.VenueTenantId)
+            .SingleOrDefaultAsync();
+        if (venueTenantId is null)
+        {
+            await action();
+            return;
+        }
+
+        using var acting = TenantScope.As(venueTenantId.Value);
+        await action();
+    }
 
     /// <summary>
     /// Commits <paramref name="competingChange"/> between the next concert transition's read and its
@@ -101,6 +136,14 @@ public sealed class ConcertApiFixture : ApiFixture
         Guid? artistTenantId = null,
         Guid? venueTenantId = null)
     {
+        var owner = await readDbContext.Concerts
+            .Where(concert => concert.Id == concertId)
+            .Select(concert => (Guid?)concert.VenueTenantId)
+            .SingleOrDefaultAsync();
+        if (owner is null)
+            return;
+
+        using var acting = TenantScope.As(owner.Value);
         if (artistTenantId is { } artist)
             await dbContext.Concerts.Where(concert => concert.Id == concertId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(
@@ -113,12 +156,35 @@ public sealed class ConcertApiFixture : ApiFixture
                     venue));
     }
 
+    internal async Task SetConcertPeriodAsync(int concertId, DateRange period)
+    {
+        var venueTenantId = await readDbContext.Concerts
+            .Where(concert => concert.Id == concertId)
+            .Select(concert => (Guid?)concert.VenueTenantId)
+            .SingleOrDefaultAsync();
+        if (venueTenantId is null)
+            return;
+
+        await using var scope = Services.CreateAsyncScope();
+        using var acting = TenantScope.As(venueTenantId.Value);
+        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
+        var concert = await context.Concerts.SingleAsync(entity => entity.Id == concertId);
+        context.Entry(concert).ComplexProperty(entity => entity.Period).CurrentValue = period;
+        await context.SaveChangesAsync();
+    }
+
     internal async Task AddSelfBillingAgreementsAsync(
         params SelfBillingAgreementEntity[] agreements)
     {
-        dbContext.SelfBillingAgreements.AddRange(agreements);
-        await dbContext.SaveChangesAsync();
+        foreach (var owned in agreements.GroupBy(agreement => agreement.TenantId))
+        {
+            using var acting = TenantScope.As(owned.Key);
+            dbContext.SelfBillingAgreements.AddRange(owned);
+            await dbContext.SaveChangesAsync();
+        }
     }
+
+    private ITenantScope TenantScope => Services.GetRequiredService<ITenantScope>();
 
     internal Task AddSelfBillingAgreementAsync(Guid tenantId, DateTime acceptedAtUtc) =>
         AddSelfBillingAgreementsAsync(CreateAgreement(tenantId, acceptedAtUtc));
@@ -143,13 +209,13 @@ public sealed class ConcertApiFixture : ApiFixture
 
     internal async Task EnsureSupplierSelfBillingAgreementAsync(int concertId)
     {
-        var concert = await dbContext.Concerts.SingleOrDefaultAsync(value => value.Id == concertId);
+        var concert = await readDbContext.Concerts.SingleOrDefaultAsync(value => value.Id == concertId);
         if (concert is null)
             return;
 
         var supplierTenantId = concert.SettlementPayeeTenantId;
         var now = SeedNow;
-        if (await dbContext.SelfBillingAgreements.AnyAsync(
+        if (await readDbContext.SelfBillingAgreements.AnyAsync(
                 agreement => agreement.TenantId == supplierTenantId && agreement.ExpiresAtUtc > now))
             return;
 

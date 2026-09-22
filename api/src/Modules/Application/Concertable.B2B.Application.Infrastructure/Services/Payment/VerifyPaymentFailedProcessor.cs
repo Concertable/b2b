@@ -1,6 +1,6 @@
 using Concertable.B2B.Application.Contracts;
-using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -20,7 +20,8 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
     private readonly IPaymentVerificationRecorder paymentVerificationRecorder;
     private readonly IApplicationNotifier applicationNotifier;
-    private readonly IApplicationRepository applicationRepository;
+    private readonly IApplicationReadDbContext readDbContext;
+    private readonly ITenantScope tenantScope;
     private readonly IPaymentSessionOperationsClient paymentSessions;
     private readonly ApplicationDbContext context;
     private readonly IUnitOfWork unitOfWork;
@@ -29,7 +30,8 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
     public VerifyPaymentFailedProcessor(
         IPaymentVerificationRecorder paymentVerificationRecorder,
         IApplicationNotifier applicationNotifier,
-        IApplicationRepository applicationRepository,
+        IApplicationReadDbContext readDbContext,
+        ITenantScope tenantScope,
         IPaymentSessionOperationsClient paymentSessions,
         ApplicationDbContext context,
         IUnitOfWork unitOfWork,
@@ -37,7 +39,8 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
     {
         this.paymentVerificationRecorder = paymentVerificationRecorder;
         this.applicationNotifier = applicationNotifier;
-        this.applicationRepository = applicationRepository;
+        this.readDbContext = readDbContext;
+        this.tenantScope = tenantScope;
         this.paymentSessions = paymentSessions;
         this.context = context;
         this.unitOfWork = unitOfWork;
@@ -56,10 +59,10 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), ct))
             return;
 
-        var venueTenantId = await applicationRepository.GetByIdAsync(
-            applicationId,
-            VenueArtistTenantSpecification<ApplicationEntity>.CreateVenueTenantId(),
-            ct);
+        var venueTenantId = await readDbContext.Applications
+            .Where(application => application.Id == applicationId)
+            .Select(application => (Guid?)application.VenueTenantId)
+            .SingleOrDefaultAsync(ct);
         var owned = false;
         if (venueTenantId is not null)
         {
@@ -91,11 +94,13 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
                 ? DefaultFailureMessage
                 : @event.FailureMessage;
             logger.VerifyPaymentFailed(applicationId, code, message);
-            await paymentVerificationRecorder.RecordAsync(
-                new VerifyPaymentFailed(applicationId, new VerifyPaymentError(code, message)),
-                ct);
-
-            await applicationNotifier.VerifyPaymentFailedAsync(applicationId, message);
+            using (tenantScope.As(venueTenantId!.Value))
+            {
+                await paymentVerificationRecorder.RecordAsync(
+                    new VerifyPaymentFailed(applicationId, new VerifyPaymentError(code, message)),
+                    ct);
+                await applicationNotifier.VerifyPaymentFailedAsync(applicationId, message);
+            }
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

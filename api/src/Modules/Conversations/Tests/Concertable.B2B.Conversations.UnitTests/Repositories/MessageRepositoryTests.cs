@@ -160,6 +160,5 @@ public sealed class MessageRepositoryTests
         public StubTenantContext(Guid tenantId) => TenantId = tenantId;
 
         public Guid? TenantId { get; }
-        public bool IsHost => false;
     }
 }
