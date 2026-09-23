@@ -9,7 +9,7 @@
     <ConcertableCustomerVersion>0.1.0-alpha.0.1381</ConcertableCustomerVersion>
     <ConcertablePaymentVersion>0.2.0-alpha.0.381</ConcertablePaymentVersion>
     <ConcertableSearchVersion>0.2.0-alpha.0.330</ConcertableSearchVersion>
-    <ConcertableSystemVersion>0.2.0-alpha.0.192</ConcertableSystemVersion>
+    <ConcertableSystemVersion>0.2.0-alpha.0.212</ConcertableSystemVersion>
   </PropertyGroup>
 
   <ItemGroup>
