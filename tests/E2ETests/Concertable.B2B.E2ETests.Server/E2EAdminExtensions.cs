@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Security.Cryptography;
 using System.Text;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -304,6 +304,8 @@ internal sealed class B2BDatabaseResetter
             TablesToIgnore =
             [
                 "__EFMigrationsHistory",
+                "__EFMigrationsHistory_Outbox",
+                "__EFMigrationsHistory_Inbox",
                 new Table("user", "Users"),
                 new Table("admin", "AdminProfiles"),
                 new Table("messaging", "Inbox"),
