@@ -7,8 +7,8 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: P1 implementation, remediation and N15 reconciliation complete; delivery now gated on
-  reconciling this branch with the advanced default branch
+- Current checkpoint: the reconciliation merge with `origin/main` `61f91a71` is resolved and committed at
+  `1d27cb87`; delivery now gated on validation, which this workstation cannot currently run
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
 - Last reconciled: 24 September 2026 against merged \`origin/main\` \`61f91a71\`
 - Ownership: transferred 24 September 2026 to a fresh Claude session in this worktree; no other writer is active
@@ -45,23 +45,29 @@ Preserve the unrelated \`.claude/settings.json\`, \`.codex/\` and generated
 ## Next Steps
 
 Scope: current slice only; full plan remains incomplete.
-Current slice: reconcile with current \`origin/main\`, land the E2E reset quiescence fix, complete the final
-incremental review and deliver PR #18.
+Current slice: validate and deliver the reconciled head of PR #18.
 Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
 Done when: one reviewed head passes local and exact-head remote CI/E2E gates and PR #18 is merged.
 
-1. Merge current \`origin/main\` (\`61f91a71\`) into this branch and resolve its 61 conflicts: 44 content and
-   17 modify/delete. The modify/delete set is the generated
-   \`tests/E2ETests/Concertable.B2B.E2ETests.Ui/Features/*.feature.cs\` files, which the default branch now
-   deletes — take the deletion rather than reinstating them. \`Directory.Packages.props\`,
-   \`DataAccess.Infrastructure/TenantFilters.cs\`, the module seeders, the payment processors and
-   \`tests/E2ETests/Concertable.B2B.E2ETests/AppFixture.cs\` carry the content conflicts.
-2. Bump the platform pin to the published quiescence release, rebuild and re-run the backend gates.
-3. Re-run the API E2E suite and confirm \`ConcertFinishedTests\` no longer 500s on the reset endpoint.
-4. Append the final incremental review pass for base \`ed76eda6\` through the delivered head, covering the
-   reconciliation merge.
-5. Push, require ordinary CI plus separately dispatched \`.github/workflows/e2e.yml\` at that exact SHA, then
-   merge PR #18 and restore the preserved unrelated files without committing them.
+**Blocker — this workstation cannot run the validation tiers.** Free physical memory sat between 0.9 and
+1.4 GB of 32 GB throughout, because Docker Desktop is hosting unrelated CRIS work containers
+(`cris-authz-postgres`, `openfga`, `pgweb`) alongside the usual desktop load. MSBuild worker nodes were
+killed mid-build three times with `MSB4166 Child node exited prematurely`; dropping to `-m:1` stopped the
+crashes but a build recorded at 5m10s did not finish in roughly ninety minutes of wall clock. The
+integration tier needs its own SQL container per fixture and the E2E tier needs the whole Aspire stack, so
+both are further out of reach than the build is. Do not read the partial local evidence as a passing gate.
+
+**Resume condition:** free memory above roughly 12 GB — stop the CRIS containers, or run on a machine that
+is not hosting them — then re-run the tiers named under Verification. Remote CI at the pushed head is the
+other route and does not depend on this workstation.
+
+1. Re-run the backend gates: `dotnet build Concertable.B2B.slnx`, the 14 unit projects, architecture,
+   startup/resource composition, the 14 integration projects and `scripts/validate-migrations.ps1`.
+2. Re-run the API E2E suite and confirm `ConcertFinishedTests` no longer 500s on the reset endpoint.
+3. Append the final incremental review pass for base `ed76eda6` through the delivered head, covering the
+   reconciliation merge `1d27cb87`.
+4. Require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then merge
+   PR #18 and restore the preserved unrelated files without committing them.
 
 ## Completed work
 
@@ -123,6 +129,20 @@ Done when: one reviewed head passes local and exact-head remote CI/E2E gates and
   across the six unit projects; the seventh, Conversations integration, is covered by the same entry.
   \`TECH_DEBT.md\` owns the stale affected-list correction.
 - Exact-head remote CI and the separate API/UI E2E workflow remain delivery gates after the reviewed push.
+- **Everything above this line was measured before the reconciliation merge and is not evidence about
+  `1d27cb87`.** At the merged head only the build was attempted, and it did not complete: 88 of roughly 116
+  projects compiled with zero errors and zero warnings, covering every production project — `Web`, `Workers`,
+  `AppHost`, `Migrations` and all module Api/Application/Domain/Infrastructure assemblies. `AppHost` building
+  is the useful signal, because it binds `AddAuthMigrations`/`AddPaymentMigrations` and the five-argument
+  `AddAuth` against platform `0.2.0-alpha.0.17`. The 22 that remain are all test projects, unbuilt for the
+  resource reason under Next Steps rather than for anything found in them. No unit, architecture, startup,
+  integration, migration-drift or E2E tier was run at this head.
+- `dotnet restore --force-evaluate` passed at the merged head, which is what establishes that platform
+  `0.2.0-alpha.0.17` — the quiescence release carrying `IBusQuiescence` — is published and resolvable.
+- The `GITHUB_PACKAGES_TOKEN` in the environment is an expired `ghp_` PAT: every `Concertable.*` restore
+  returns 401 against it, and `api.github.com/user` rejects it outright. The `gh` CLI's active token carries
+  `read:packages` and works, so restores here export that instead. Replacing the variable is the real fix and
+  belongs to whoever owns the PAT.
 
 ## Reviews
 
@@ -162,6 +182,20 @@ does not substitute for the P1 review.
   is the checkout operation identity being composed from a database id that Respawn reseeds, so a reused id
   collides with a retained Payment operation. That is the unstable-checkout-ID debt P2 already owns at
   \`PARTY_FOUNDATION_PLAN.md\` section P2.
+- The default branch's `ITenantScope` is rejected rather than merged. PR #32 introduced it as an AsyncLocal
+  a request-less writer sets to name the tenant it writes as, which is the ambient-authority shape section 4.6
+  deletes; this branch had already answered the same question with composed privileged stances, and carrying
+  both would leave two mechanisms for one job. `ITenantScope`, `TenantScope`, `TenantScopedSeeding` and the
+  callers that arrived with them are deleted. Verified as lossless: main's every conflicting change was that
+  mechanism, its `SetConcertPeriodAsync` and `AsSettlementPayeeAsync` fixture helpers only wrap what this
+  branch does through the privileged context, and its `ConcertCompletionCandidate` duplicates what
+  `IConcertReadRepository` already reads off the unfiltered stance.
+- Auth moves to `0.2.0-alpha.0.305`. The 0.304 pin existed only because the E2E harness still handed auth a
+  SQL Server database; PR #35 moved it to PostgreSQL and deleted the fixture's separate auth override, so the
+  reason for the pin is gone.
+- Container image digests are written out in `AppHost.cs`, `AppFixture.cs` and `e2e.yml` with nothing
+  reconciling them, which is how `e2e.yml` came to pre-pull a stale auth image and two superseded payment
+  digests. Synced here and recorded in `TECH_DEBT.md`.
 - No accepted code finding remains open. Current-graph qualification and final review remain delivery gates.
 
 ## External/deferred owners
