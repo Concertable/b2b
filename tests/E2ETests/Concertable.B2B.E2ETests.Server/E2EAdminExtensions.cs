@@ -308,10 +308,12 @@ internal sealed record E2EAdminOptions(string AdminKey, string ConnectionString)
 internal sealed class B2BDatabaseResetter
 {
     private readonly E2EAdminOptions options;
+    private readonly NpgsqlDataSource dataSource;
 
-    public B2BDatabaseResetter(E2EAdminOptions options)
+    public B2BDatabaseResetter(E2EAdminOptions options, NpgsqlDataSource dataSource)
     {
         this.options = options;
+        this.dataSource = dataSource;
     }
 
     public async Task ResetAsync(CancellationToken cancellationToken)
@@ -319,6 +321,7 @@ internal sealed class B2BDatabaseResetter
         await using var connection = new NpgsqlConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
         await TerminateOtherBackendsAsync(connection, cancellationToken);
+        DiscardPooledConnections();
         var respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
         {
             TablesToIgnore =
@@ -353,4 +356,14 @@ internal sealed class B2BDatabaseResetter
               AND pid <> pg_backend_pid()
             """,
             cancellationToken: cancellationToken));
+
+    // Every connection pooled before that cull is now dead, and handing one back out is not a transient
+    // blip: the reseed immediately after took a pooled EF connection and failed its migration history read
+    // with 57P01. Both pools have to go -- the contexts pool by connection string, while the command
+    // transactions pool through the injected data source.
+    private void DiscardPooledConnections()
+    {
+        NpgsqlConnection.ClearAllPools();
+        dataSource.Clear();
+    }
 }
