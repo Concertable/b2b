@@ -4,10 +4,10 @@
 > findings directly and report what changed. Tick each `[x]` as you land it. Pause only for a genuinely
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
-**Review status:** `in-progress`
-**Reviewed up to commit:** `bd9e45558b67b088fdd5f7bfe0eb9e223817e422`  `(2026-09-21)`
-**Security-reviewed up to commit:** `bd9e45558b67b088fdd5f7bfe0eb9e223817e422`  `(2026-09-21)`
-**Judgment:** `changes-requested`
+**Review status:** `complete`
+**Reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
+**Security-reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
+**Judgment:** `approved`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
 dropped, so the first pass below reviews code that no longer exists on any branch. Its F1–F10 are
@@ -15,6 +15,55 @@ void as work items; they are retained only for the reasoning that fed the replan
 Participant decision already lives in the ledger. The commit identities recorded in both passes are
 reflog-only. The second pass's approval of the plan documents still stands — their content survived
 the restart unchanged apart from reconciling it to the new starting state.
+
+
+## Review pass — 2026-09-24 — incremental (reconciliation and delivery repairs)
+
+**Candidate base:** `ed76eda6af551eaddd4927b1370054fc2880815c`
+**Candidate head:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:26b079bac58bdd0ddb322cff2bd1babd3250ad059d50de16f5db30e85c4140a4` `(37 paths)`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+**Watermark correction.** The top-level marker read `bd9e4555` while the last recorded pass ended at
+`ed76eda6` with judgment `approved`. The 22 commits between them are the N1-N14 remediation passes already
+recorded in this file, so the marker was stale rather than the range unreviewed; this pass takes `ed76eda6`
+as its base and advances the marker to the reviewed head. Status was likewise left `in-progress` by a pass
+that had completed.
+
+### Scope
+
+The reconciliation merge with `origin/main` `61f91a71`, the delivery repairs that preceded it, and the
+plan/ledger updates. The fence commits `127600fa` and `f400b498` and their revert `8a3143a3` all fall inside
+this range and net to no change in the diff; they are reviewed as history rather than as candidate code.
+
+### Findings
+
+No new findings.
+
+Checked in the parent, no lens dispatched:
+
+- `B2BTopology.cs` declares `TenantDisplayChanged` and `ConversationChanged` on both the publish and the
+  subscribe side, which is what left their subscriptions unprovisioned and fan-out dead before `f580b53f`.
+  Both contracts are correspondingly `IsPackable` and present in `.github/b2b-promotion-candidates.json`.
+- `B2BDatabaseResetter` adds `__EFMigrationsHistory_Outbox` and `__EFMigrationsHistory_Inbox` to
+  `TablesToIgnore`, which is the 42P07 repair, and the reset's `try`/`finally` resumes consumption even when
+  the pause or the reset throws.
+- The release-candidate scripts now derive their expectations from the promotion manifest instead of
+  restating them. `validate-promotion-config.ps1` trades an exact count for a non-empty check; the
+  conscious-edit gate survives in the manifest edit and the clean-consumer program, so the set is not left
+  unguarded.
+- Every image digest in `.github/workflows/e2e.yml` resolves to a constant in `AppHost.cs` or `AppFixture.cs`.
+  The two constants absent from the workflow are AppHost's dev payment pins, which the E2E fixture overrides
+  through `WithImageSHA256`, so the pre-pull list matches what the E2E path actually runs.
+- Ordinary CI passed at `15dce560`, covering build, unit and integration on the reconciled graph.
+
+The open E2E reset defect is not a finding against this candidate. It is diagnosed, its database-level fix is
+disproven with run evidence, and both are recorded under Decisions in the ledger with the remaining work
+routed to the platform messaging package.
 
 ## Review pass — 2026-09-15 — full (void: candidate discarded by branch restart)
 
