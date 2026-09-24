@@ -318,6 +318,7 @@ internal sealed class B2BDatabaseResetter
     {
         await using var connection = new NpgsqlConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
+        await TerminateOtherBackendsAsync(connection, cancellationToken);
         var respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
         {
             TablesToIgnore =
@@ -334,4 +335,22 @@ internal sealed class B2BDatabaseResetter
         });
         await respawner.ResetAsync(connection);
     }
+
+    // Respawn truncates about fifty tables, taking AccessExclusiveLock on each in its own order, so any
+    // surviving transaction that holds a lock on one and wants another deadlocks it (40P01) rather than
+    // queueing behind it. Pausing bus consumption is not enough on its own: it stops new deliveries but
+    // says nothing about work already running, and a transaction that outlives the truncate would write
+    // onto the state this reset just cleared. Terminating is scoped to this database, so the auth,
+    // payment and search databases sharing the server are untouched.
+    private static Task TerminateOtherBackendsAsync(
+        NpgsqlConnection connection,
+        CancellationToken cancellationToken) =>
+        connection.ExecuteAsync(new CommandDefinition(
+            """
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = current_database()
+              AND pid <> pg_backend_pid()
+            """,
+            cancellationToken: cancellationToken));
 }
