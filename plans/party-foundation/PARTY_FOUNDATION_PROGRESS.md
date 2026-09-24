@@ -53,12 +53,12 @@ The reconciliation merge with `origin/main` `61f91a71` is committed at `1d27cb87
 CI passed at `15dce560`** — build, unit and integration are green on the reconciled graph. PR #18 reports
 `MERGEABLE`. The one thing standing between this branch and delivery is the E2E reset deadlock.
 
-1. **Validate the reset fence.** Commit `127600fa` is implemented and compiles but has never run against a
-   live stack — this workstation cannot host one. Dispatch `.github/workflows/e2e.yml` at the pushed head
-   and confirm `ConcertFinishedTests` no longer 500s on its `InitializeAsync` reset. Expect the two FlatFee
-   checkout 409s to remain: they are P2's unstable-checkout-ID debt, not this branch's. Watch also for a
-   transient error immediately after a reset, which would mean a pooled connection was terminated and
-   reused before Npgsql pruned it.
+1. **Decide how the reset reaches quiescence, given the fence is ruled out.** The diagnosis and the
+   disproof are both under Decisions. The remaining candidate that addresses the whole problem is host
+   ingress quiescence in the platform messaging package, which means a publish there before this branch
+   can consume it. Until that lands, \`ConcertFinishedTests\` keeps failing its \`InitializeAsync\` reset, and
+   the E2E gate cannot go green. Confirm with Tommy whether PR #18 waits for it or lands with the E2E
+   failure recorded as a known, separately owned defect.
 2. Append the final incremental review pass for base `ed76eda6` through the delivered head, covering the
    reconciliation merge `1d27cb87` and the reset repair.
 3. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
@@ -193,15 +193,23 @@ does not substitute for the P1 review.
   Bus receiver is therefore not sufficient to make the host quiescent before a truncate, and any writer that
   survives the pause also defeats the reset's purpose, because a write landing after the truncate leaves
   dirty state.
-- **Mechanism chosen: the reset fences the database rather than chasing writers** (commit \`127600fa\`).
-  \`B2BDatabaseResetter\` terminates every other backend on this database before truncating. The rejected
-  alternatives were extending quiescence from one transport to every host ingress, which needs another
-  platform publish-then-bump and still cannot cover an externally delivered webhook, and declaring a lock
-  order for the truncate, which removes the deadlock but leaves a surviving transaction free to write onto
-  cleared state. Only the fence makes the endpoint's actual contract true: after it returns, nothing else
-  has a transaction open against this database. It is scoped by \`current_database()\`, so the auth, payment
-  and search databases on the same server are untouched, and it runs after the existing bus pause so less
-  is in flight to terminate.
+- **The database-level fence is disproven, with evidence.** \`127600fa\` had the reset terminate every
+  other backend on the database before truncating, so that its contract -- nothing else holds a
+  transaction across the truncate -- would be literally true. Two dispatched E2E runs rejected it, both
+  strictly worse than the 3 failures it set out to fix, at 10 of 10 failing at fixture startup:
+  \`127600fa\` alone died reseeding through a connection pooled before the cull (\`57P01\` in
+  \`NpgsqlHistoryRepository.GetAppliedMigrationsAsync\`), and \`f400b498\`, which discarded both pools in
+  the same breath, left b2b-web silent immediately after \`Service Bus consumption paused across 18
+  processors\` -- no resume, no exception, no further output. Reverted at \`8a3143a3\`.
+- **Why it cannot work, rather than why it needs another patch.** The reset endpoint is hosted inside
+  b2b-web, so "every other backend" includes that same process's own connections, including ones held by
+  hosted services and the bus receiver. Clearing pools only governs which connection is handed out next;
+  it does nothing for work already holding one. A test endpoint cannot cull the runtime it runs in.
+- **What remains** is quiescing the host's own ingress rather than the database's connections, which is a
+  change to the platform messaging package and another publish-then-bump, exactly as the original
+  quiescence capability was. That is a cross-repository decision and is not taken here. Declaring a lock
+  order for the truncate remains the other candidate and remains insufficient on its own, because it would
+  remove the deadlock while still letting a surviving transaction write onto cleared state.
 - The two FlatFee checkout 409s are not attributable to this branch. A control run of the default branch
   plus only the Outbox fix scored 8 of 10 with exactly those two failing, against 6-7 of 10 here. The cause
   is the checkout operation identity being composed from a database id that Respawn reseeds, so a reused id
