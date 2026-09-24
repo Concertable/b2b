@@ -7,8 +7,8 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: the reconciliation merge with `origin/main` `61f91a71` is resolved and committed at
-  `1d27cb87`; delivery now gated on validation, which this workstation cannot currently run
+- Current checkpoint: the reconciliation merge with `origin/main` `61f91a71` is committed at `1d27cb87` and
+  remote CI passed at `15dce560`; delivery now gated on the unfixed E2E reset deadlock
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
 - Last reconciled: 24 September 2026 against merged \`origin/main\` \`61f91a71\`
 - Ownership: transferred 24 September 2026 to a fresh Claude session in this worktree; no other writer is active
@@ -63,7 +63,8 @@ other route and does not depend on this workstation.
 
 1. Re-run the backend gates: `dotnet build Concertable.B2B.slnx`, the 14 unit projects, architecture,
    startup/resource composition, the 14 integration projects and `scripts/validate-migrations.ps1`.
-2. Re-run the API E2E suite and confirm `ConcertFinishedTests` no longer 500s on the reset endpoint.
+2. Decide and implement the reset-quiescence mechanism recorded under Decisions, then re-run the API E2E
+   suite. `ConcertFinishedTests` still 500s; the quiescence commit did not close it.
 3. Append the final incremental review pass for base `ed76eda6` through the delivered head, covering the
    reconciliation merge `1d27cb87`.
 4. Require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then merge
@@ -102,7 +103,8 @@ other route and does not depend on this workstation.
 - E2E reset quiescence: the reset endpoint now pauses inbound bus consumption, waits for every running
   handler to finish, resets, and resumes. The capability is \`IBusQuiescence\` in
   \`Concertable.Messaging.Contracts\`, implemented by the Azure Service Bus receiver over
-  \`StopProcessingAsync\`/\`StartProcessingAsync\`.
+  \`StopProcessingAsync\`/\`StartProcessingAsync\`. **This did not fix the reset 500 -
+  see the corrected diagnosis under Decisions.**
 
 ## Verification
 
@@ -172,11 +174,24 @@ does not substitute for the P1 review.
   and conversation read positions use \`ON CONFLICT ... GREATEST\`.
 - Opportunity creation is restricted to VenueOperator activity; integration handlers and race verification use
   privileged contexts when no interactive tenant exists.
-- The reset endpoint deadlocked (40P01) because Respawn's DELETE raced row locks still held by handlers
-  draining the previous test's bus messages, and stale deliveries landed after the reset and corrupted
-  Payment state. Retrying the deadlock or widening a timeout was rejected: neither addresses the stale
-  deliveries. Quiescence belongs to the receiving transport, so the capability was added to the platform
-  messaging package and consumed here, accepting the publish-then-bump release that implies.
+- **The reset 500 is not fixed, and the earlier diagnosis was incomplete.** The E2E run at \`5efaa089\`
+  carried the quiescence fix and platform \`0.2.0-alpha.0.17\`, and \`ConcertFinishedTests\` still failed its
+  \`InitializeAsync\` reset with \`40P01\`. The run's \`e2e-diagnostics.log\` artifact carries the unredacted
+  Postgres deadlock report, which names both parties: process 84 is Respawn's \`TRUNCATE ... CASCADE\` over
+  roughly fifty tables, waiting for \`AccessExclusiveLock\` on relation 21254; process 92 is
+  \`SELECT i."TenantId", i."NextNumber", i.xmin FROM concert."InvoiceSequences"\`, waiting
+  for \`AccessShareLock\` on relation 21196. That read is \`InvoiceIssuer\` under \`SettlementService\`. The
+  two transactions take their table locks in different orders, so this is a lock-order inversion between the
+  truncate and a live settlement, not the handler-drain race previously recorded. b2b-web logged consumption
+  paused across 18 processors at 11:31:11.874 and the deadlock at 11:31:13.021, so settlement work was still
+  touching the database more than a second after \`StopProcessingAsync\` returned. Pausing the Azure Service
+  Bus receiver is therefore not sufficient to make the host quiescent before a truncate, and any writer that
+  survives the pause also defeats the reset's purpose, because a write landing after the truncate leaves
+  dirty state.
+- Choosing the mechanism that makes the reset authoritative is a design decision and is not taken here. The
+  candidates are extending quiescence from one transport to every host ingress, having the reset fence or
+  terminate other backends for its duration, or making the truncate take its locks in a declared order. The
+  first two touch the platform messaging package again and imply another publish-then-bump.
 - The two FlatFee checkout 409s are not attributable to this branch. A control run of the default branch
   plus only the Outbox fix scored 8 of 10 with exactly those two failing, against 6-7 of 10 here. The cause
   is the checkout operation identity being composed from a database id that Respawn reseeds, so a reused id
