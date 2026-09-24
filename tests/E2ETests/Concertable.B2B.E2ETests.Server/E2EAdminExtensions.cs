@@ -308,20 +308,16 @@ internal sealed record E2EAdminOptions(string AdminKey, string ConnectionString)
 internal sealed class B2BDatabaseResetter
 {
     private readonly E2EAdminOptions options;
-    private readonly NpgsqlDataSource dataSource;
 
-    public B2BDatabaseResetter(E2EAdminOptions options, NpgsqlDataSource dataSource)
+    public B2BDatabaseResetter(E2EAdminOptions options)
     {
         this.options = options;
-        this.dataSource = dataSource;
     }
 
     public async Task ResetAsync(CancellationToken cancellationToken)
     {
         await using var connection = new NpgsqlConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
-        await TerminateOtherBackendsAsync(connection, cancellationToken);
-        DiscardPooledConnections();
         var respawner = await Respawner.CreateAsync(connection, new RespawnerOptions
         {
             TablesToIgnore =
@@ -337,33 +333,5 @@ internal sealed class B2BDatabaseResetter
             WithReseed = true,
         });
         await respawner.ResetAsync(connection);
-    }
-
-    // Respawn truncates about fifty tables, taking AccessExclusiveLock on each in its own order, so any
-    // surviving transaction that holds a lock on one and wants another deadlocks it (40P01) rather than
-    // queueing behind it. Pausing bus consumption is not enough on its own: it stops new deliveries but
-    // says nothing about work already running, and a transaction that outlives the truncate would write
-    // onto the state this reset just cleared. Terminating is scoped to this database, so the auth,
-    // payment and search databases sharing the server are untouched.
-    private static Task TerminateOtherBackendsAsync(
-        NpgsqlConnection connection,
-        CancellationToken cancellationToken) =>
-        connection.ExecuteAsync(new CommandDefinition(
-            """
-            SELECT pg_terminate_backend(pid)
-            FROM pg_stat_activity
-            WHERE datname = current_database()
-              AND pid <> pg_backend_pid()
-            """,
-            cancellationToken: cancellationToken));
-
-    // Every connection pooled before that cull is now dead, and handing one back out is not a transient
-    // blip: the reseed immediately after took a pooled EF connection and failed its migration history read
-    // with 57P01. Both pools have to go -- the contexts pool by connection string, while the command
-    // transactions pool through the injected data source.
-    private void DiscardPooledConnections()
-    {
-        NpgsqlConnection.ClearAllPools();
-        dataSource.Clear();
     }
 }
