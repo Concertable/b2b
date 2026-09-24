@@ -229,6 +229,27 @@ each module handles the integration event for its own rows, mirroring how creati
 nothing by key. The realistic next member is a cross-module *read* that varies by tenant type, such as a
 Tenant-side "has this tenant provisioned its profile yet?" over `ExistsByTenantIdAsync`.
 
+### Container image digests are hand-maintained in three places that nothing reconciles
+
+`local/AppHost/AppHost.cs` pins auth, auth-migrations, payment-web, payment-workers and
+payment-migrations; `tests/E2ETests/Concertable.B2B.E2ETests/AppFixture.cs` pins the search trio and
+overrides payment-web/payment-workers with their E2E digests; and `.github/workflows/e2e.yml` pre-pulls
+its own literal copy of that whole set to fail fast on registry access. Nothing compares the three.
+
+The `origin/main` reconciliation is what exposed it. That branch bumped every auth, payment and search
+digest and added two migration images, but never touched `e2e.yml` — so the workflow was left pulling a
+stale auth image and two payment digests the fixture no longer runs, and the merge would have inherited
+that drift silently. This is the same failure shape as the release-candidate set before `85c7c5a9`: a set
+written out more than once, where missing a copy stays invisible until CI fails for an unrelated-looking
+reason.
+
+The workflow's copy is the one with no compiler behind it. The durable fix is to derive the pull list
+from the two C# sources rather than restate it — the digests are already `const string` fields, so a
+small script can emit the list the workflow consumes.
+
+**Resolves when:** `e2e.yml` no longer contains literal image digests, and the set it pulls is generated
+from, or verified against, the `AppHost`/`AppFixture` constants by a step that fails on divergence.
+
 ---
 
 ## RESOLVED

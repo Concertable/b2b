@@ -756,22 +756,30 @@ The first two lines bind the existing parallel dashboard calls to one connection
 registration. Ordinary AddDbContext registrations use their own connection string. Command handlers
 obtain contexts through an internal CommandTransaction, not the request's already-resolved contexts.
 
-The coordinator begins before resolving a handler. Its context factory supplies the same open
-SqlConnection and explicitly enlists every participating DbContext in the same DbTransaction:
+The coordinator opens one connection from the NTS-configured NpgsqlDataSource before resolving a
+handler, and enlists every participating DbContext on it. Enlistment re-points the context the scope
+already resolved rather than constructing a second one, so a context that has already opened its own
+connection is a bug and says so:
 
 ~~~csharp
-public TContext Enlist<TContext>(IServiceProvider services)
-    where TContext : DbContext
+public async Task EnlistAsync(DbContext context, CancellationToken ct = default)
 {
-    var options = new DbContextOptionsBuilder<TContext>()
-        .UseSqlServer(Connection, contextOwnsConnection: false)
-        .Options;
-    var context = ActivatorUtilities.CreateInstance<TContext>(services, options);
-    context.Database.UseTransaction(Transaction);
+    if (participants.Contains(context))
+        return;
+
+    if (context.Database.GetDbConnection().State is not ConnectionState.Closed)
+        throw new InvalidOperationException(
+            $"{context.GetType().Name} opened its connection before command enlistment.");
+
+    context.Database.SetDbConnection(connection, contextOwnsConnection: false);
+    await context.Database.UseTransactionAsync(transaction, ct);
     participants.Add(context);
-    return context;
 }
 ~~~
+
+After commit or rollback the root connection closes, so every participant is handed its own fresh
+connection from the data source. Without that, a later scoped read on the same context would reuse a
+disposed connection.
 
 Each module registers its privileged repositories against its single enlisted context instance;
 standalone query operations retain their ordinary filtered contexts. No module facade returns a DbContext.

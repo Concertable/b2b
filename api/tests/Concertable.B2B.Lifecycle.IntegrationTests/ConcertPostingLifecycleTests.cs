@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Messaging.Contracts;
 using Xunit.Abstractions;
 
@@ -34,10 +35,12 @@ public sealed class ConcertPostingLifecycleTests : IAsyncLifetime
         var client = fixture.CreateClient(manager);
         var expectedType = MessageTypeAttribute.Resolve(typeof(ConcertChangedEvent));
 
+        var before = await ExistingIdsAsync(expectedType);
+
         var response = await client.PutAsync($"/api/concert/post/{concert.Id}", BuildPostRequest());
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var row = await fixture.GetOutboxMessageAsync(expectedType);
+        var row = await PostedRowAsync(expectedType, before);
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
         while (!row.IsDispatched)
         {
@@ -63,15 +66,23 @@ public sealed class ConcertPostingLifecycleTests : IAsyncLifetime
         var concertId = concertPayload.RootElement.GetProperty("id").GetInt32();
         var expectedType = MessageTypeAttribute.Resolve(typeof(ConcertChangedEvent));
 
+        var before = await ExistingIdsAsync(expectedType);
+
         var response = await client.PutAsync($"/api/concert/post/{concertId}", BuildPostRequest());
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var row = await fixture.GetOutboxMessageAsync(expectedType);
+        var row = await PostedRowAsync(expectedType, before);
         using var payload = JsonDocument.Parse(row.Payload);
         Assert.Equal(
             fixture.SeedState.ArtistManager1.Id,
             payload.RootElement.GetProperty("payeeUserId").GetGuid());
     }
+
+    private async Task<HashSet<Guid>> ExistingIdsAsync(string messageType) =>
+        [.. (await fixture.GetOutboxMessagesAsync(messageType)).Select(row => row.Id)];
+
+    private async Task<OutboxMessageSnapshot> PostedRowAsync(string messageType, HashSet<Guid> before) =>
+        (await fixture.GetOutboxMessagesAsync(messageType)).Single(row => !before.Contains(row.Id));
 
     private static object BuildPostRequest() => new
     {

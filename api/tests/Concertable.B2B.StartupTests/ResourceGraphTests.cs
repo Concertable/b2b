@@ -63,6 +63,22 @@ public sealed class ResourceGraphTests
             B2BWorkers.Name,
             B2BMigrations.Name,
             WaitType.WaitForCompletion);
+        AssertWaitsFor(
+            validBuilder,
+            AuthConstants.Resource,
+            AuthConstants.MigrationsResource,
+            WaitType.WaitForCompletion);
+        AssertWaitsFor(
+            validBuilder,
+            PaymentConstants.WebResource,
+            PaymentConstants.MigrationsResource,
+            WaitType.WaitForCompletion);
+        AssertWaitsFor(
+            validBuilder,
+            PaymentConstants.WorkersResource,
+            PaymentConstants.MigrationsResource,
+            WaitType.WaitForCompletion);
+        Assert.DoesNotContain(validBuilder.Resources, resource => resource is SqlServerServerResource);
         foreach (var resourceName in new[] { B2BWeb.Name, B2BWorkers.Name })
         {
             var consumer = validBuilder.Resources.Single(resource => resource.Name == resourceName);
