@@ -45,30 +45,36 @@ Preserve the unrelated \`.claude/settings.json\`, \`.codex/\` and generated
 ## Next Steps
 
 Scope: current slice only; full plan remains incomplete.
-Current slice: validate and deliver the reconciled head of PR #18.
+Current slice: close the E2E reset defect and deliver the reconciled head of PR #18.
 Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
-Done when: one reviewed head passes local and exact-head remote CI/E2E gates and PR #18 is merged.
+Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #18 is merged.
 
-**Blocker — this workstation cannot run the validation tiers.** Free physical memory sat between 0.9 and
-1.4 GB of 32 GB throughout, because Docker Desktop is hosting unrelated CRIS work containers
-(`cris-authz-postgres`, `openfga`, `pgweb`) alongside the usual desktop load. MSBuild worker nodes were
-killed mid-build three times with `MSB4166 Child node exited prematurely`; dropping to `-m:1` stopped the
-crashes but a build recorded at 5m10s did not finish in roughly ninety minutes of wall clock. The
-integration tier needs its own SQL container per fixture and the E2E tier needs the whole Aspire stack, so
-both are further out of reach than the build is. Do not read the partial local evidence as a passing gate.
+The reconciliation merge with `origin/main` `61f91a71` is committed at `1d27cb87`, pushed, and **ordinary
+CI passed at `15dce560`** — build, unit and integration are green on the reconciled graph. PR #18 reports
+`MERGEABLE`. The one thing standing between this branch and delivery is the E2E reset deadlock.
 
-**Resume condition:** free memory above roughly 12 GB — stop the CRIS containers, or run on a machine that
-is not hosting them — then re-run the tiers named under Verification. Remote CI at the pushed head is the
-other route and does not depend on this workstation.
+1. **Decide the reset-quiescence mechanism, then implement it.** The diagnosis is settled and recorded
+   under Decisions, with the unredacted Postgres deadlock report naming both transactions: Respawn's
+   `TRUNCATE ... CASCADE` against a live `InvoiceIssuer` read of `concert."InvoiceSequences"`, a lock-order
+   inversion. Pausing the Azure Service Bus receiver is proven insufficient — consumption was paused across
+   18 processors 1.15 seconds before the deadlock. The three candidates and their trade-offs are recorded
+   under Decisions; pick one and build it. Note that any writer surviving the pause also defeats the reset's
+   purpose, so a fix that only removes the deadlock without removing the concurrent writer is not enough.
+2. Append the final incremental review pass for base `ed76eda6` through the delivered head, covering the
+   reconciliation merge `1d27cb87` and the reset repair.
+3. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
+   merge PR #18 and restore the preserved unrelated files without committing them.
 
-1. Re-run the backend gates: `dotnet build Concertable.B2B.slnx`, the 14 unit projects, architecture,
-   startup/resource composition, the 14 integration projects and `scripts/validate-migrations.ps1`.
-2. Decide and implement the reset-quiescence mechanism recorded under Decisions, then re-run the API E2E
-   suite. `ConcertFinishedTests` still 500s; the quiescence commit did not close it.
-3. Append the final incremental review pass for base `ed76eda6` through the delivered head, covering the
-   reconciliation merge `1d27cb87`.
-4. Require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then merge
-   PR #18 and restore the preserved unrelated files without committing them.
+**This workstation cannot run the local tiers.** Free physical memory sat between 0.9 and 1.4 GB of 32 GB
+because Docker Desktop hosts unrelated CRIS work containers (`cris-authz-postgres`, `openfga`, `pgweb`).
+MSBuild worker nodes were killed three times with `MSB4166 Child node exited prematurely`; `-m:1` stopped
+the crashes but a build recorded at 5m10s did not finish in roughly ninety minutes. Integration needs a
+container per fixture and E2E needs the whole Aspire stack, so both are further out of reach. **Validate
+through remote CI and a dispatched E2E workflow instead** — that path is proven working and does not depend
+on this machine. If local runs are needed, the resume condition is free memory above roughly 12 GB.
+
+Also environmental: `GITHUB_PACKAGES_TOKEN` is an expired `ghp_` PAT, so every `Concertable.*` restore
+returns 401. Export `gh auth token` into it for restores here until the variable itself is replaced.
 
 ## Completed work
 
