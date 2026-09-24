@@ -7,9 +7,11 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: P1 implementation, remediation and N15 reconciliation complete; delivery gates active
+- Current checkpoint: P1 implementation, remediation and N15 reconciliation complete; delivery now gated on
+  reconciling this branch with the advanced default branch
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
-- Last reconciled: 22 September 2026 against merged \`origin/main\` \`7fd22b46\`
+- Last reconciled: 24 September 2026 against merged \`origin/main\` \`61f91a71\`
+- Ownership: transferred 24 September 2026 to a fresh Claude session in this worktree; no other writer is active
 
 ## Current state
 
@@ -18,9 +20,16 @@ branch's PostgreSQL composition. Canonical review covered all 757 manifest paths
 N1-N15 are repaired, locally validated, committed and approved by both native/general and
 security/durability lenses. No accepted finding remains open.
 
-Ordinary CI is green. The one E2E defect attributable to this branch was the reset endpoint racing
-handlers that still held this branch's row locks, and it is repaired through a new platform capability
-rather than a retry or a widened timeout.
+Ordinary CI passed at head \`5efaa089\` (Backend 17m42s, Frontend 2m14s, ci-complete), but that head
+predates three merges into the default branch, so PR #18 now reports \`CONFLICTING\`/\`DIRTY\` and that green
+run is no evidence about the reconciled result. The one E2E defect attributable to this branch was the reset
+endpoint racing handlers that still held this branch's row locks, and it is repaired through a new platform
+capability rather than a retry or a widened timeout.
+
+The default branch advanced from \`7fd22b46\` to \`61f91a71\` through PR #32 (tenant host bypass), PR #27
+(messaging migration history) and PR #35 (PostgreSQL E2E test kits). PR #27 is therefore already merged; it is
+no longer this branch's to land. This worktree was pruned from disk and has been recreated at the same
+recorded path, clean at \`5efaa089\`.
 
 The provider reconciliation uses the platform PostgreSQL fixture plus B2B-owned database lifecycle,
 Npgsql command transactions and an NTS-configured \`NpgsqlDataSource\`. Command contexts are reset to
@@ -36,15 +45,23 @@ Preserve the unrelated \`.claude/settings.json\`, \`.codex/\` and generated
 ## Next Steps
 
 Scope: current slice only; full plan remains incomplete.
-Current slice: land the E2E reset quiescence fix, complete the final incremental review and deliver PR #18.
+Current slice: reconcile with current \`origin/main\`, land the E2E reset quiescence fix, complete the final
+incremental review and deliver PR #18.
 Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
 Done when: one reviewed head passes local and exact-head remote CI/E2E gates and PR #18 is merged.
 
-1. Bump the platform pin to the published quiescence release, rebuild and re-run the backend gates.
-2. Re-run the API E2E suite and confirm \`ConcertFinishedTests\` no longer 500s on the reset endpoint.
-3. Append the final incremental review pass for base \`ed76eda6\` through the delivered head.
-4. Push, require ordinary CI plus separately dispatched \`.github/workflows/e2e.yml\` at that exact SHA,
-   merge PR #18 and then PR #27, and restore the preserved unrelated files without committing them.
+1. Merge current \`origin/main\` (\`61f91a71\`) into this branch and resolve its 61 conflicts: 44 content and
+   17 modify/delete. The modify/delete set is the generated
+   \`tests/E2ETests/Concertable.B2B.E2ETests.Ui/Features/*.feature.cs\` files, which the default branch now
+   deletes — take the deletion rather than reinstating them. \`Directory.Packages.props\`,
+   \`DataAccess.Infrastructure/TenantFilters.cs\`, the module seeders, the payment processors and
+   \`tests/E2ETests/Concertable.B2B.E2ETests/AppFixture.cs\` carry the content conflicts.
+2. Bump the platform pin to the published quiescence release, rebuild and re-run the backend gates.
+3. Re-run the API E2E suite and confirm \`ConcertFinishedTests\` no longer 500s on the reset endpoint.
+4. Append the final incremental review pass for base \`ed76eda6\` through the delivered head, covering the
+   reconciliation merge.
+5. Push, require ordinary CI plus separately dispatched \`.github/workflows/e2e.yml\` at that exact SHA, then
+   merge PR #18 and restore the preserved unrelated files without committing them.
 
 ## Completed work
 
