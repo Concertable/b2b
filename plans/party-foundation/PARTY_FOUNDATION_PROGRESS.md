@@ -37,6 +37,11 @@ Preserve the unrelated \`.claude/settings.json\`, \`.codex/\` and generated
 
 ## Next Steps
 
+Blocked: N16's cross-process mechanism (quiescing B2B Workers across the E2E reset) needs a design decision, which Tommy routes to Astra rather than the implementer.
+Blocked by: Tommy — launching the Astra (gpt-6-astra) design session was refused by the permission classifier on 25 September 2026.
+Unblock action: Tommy runs the Astra design session on step 3 below (or decides the mechanism himself), which commits the design into step 3.
+Resume when: step 3 carries an implementation-ready design with code snippets committed on this branch.
+
 Scope: current slice only; full plan remains incomplete.
 Current slice: close the E2E reset defect and deliver the reconciled head of PR #18.
 Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
@@ -58,11 +63,9 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
    show `ConcertFinishedFunction`, fired by a test through the Functions admin API and returned on 202,
    settling 22 seeded concerts from 11:31:11.027 to past 11:31:14 while b2b-web reset at 11:31:11.874 and
    11:31:13.021; `InvoiceIssuer`'s `InvoiceSequences` read is that process, not b2b-web. `HostPauser` is
-   per-process. The design must decide how a reset in b2b-web (or the E2E harness driving it) stops and
-   drains an Azure Functions isolated host that shares the database: e.g. a Workers-side `IPausable` gate over
-   function invocations reached through an E2E-only endpoint, or the harness awaiting the triggered
-   invocation's completion, or scoping the triggered run. The design comes back as code snippets under this
-   step; Claude then implements it, runs the E2EAdmin/Workers tiers, and appends the incremental review.
+   per-process. The design decides how the reset stops and drains that Azure Functions host (a Workers-side
+   `IPausable` over invocations, the harness awaiting the invocation it fired, scoping the triggered run) and
+   returns as code snippets here; Claude then implements it and appends the incremental review.
 4. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
    merge PR #18 and restore the preserved unrelated files without committing them.
 
@@ -181,9 +184,6 @@ does not substitute for the P1 review.
   mechanism, its `SetConcertPeriodAsync` and `AsSettlementPayeeAsync` fixture helpers only wrap what this
   branch does through the privileged context, and its `ConcertCompletionCandidate` duplicates what
   `IConcertReadRepository` already reads off the unfiltered stance.
-- Auth moves to `0.2.0-alpha.0.305`. The 0.304 pin existed only because the E2E harness still handed auth a
-  SQL Server database; PR #35 moved it to PostgreSQL and deleted the fixture's separate auth override, so the
-  reason for the pin is gone.
 - N16 is the one open accepted finding. Current-graph qualification and final review remain delivery gates.
 
 ## External/deferred owners
