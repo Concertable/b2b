@@ -7,8 +7,8 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: platform `0.2.0-alpha.0.20` consumed and the reset switched to `HostPauser`; the
-  incremental review, exact-head CI and dispatched E2E are next
+- Current checkpoint: b2b-web's reset pauses the whole web host, but review N16 proved the deadlocking
+  settlement runs in B2B Workers; quiescing Workers across the reset is routed to Astra for design
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
 - Last reconciled: 25 September 2026 against \`origin/main\` \`a1baf9a7\`
 - Ownership: transferred 25 September 2026 to a fresh Claude session in this worktree; no other writer is active
@@ -18,18 +18,11 @@
 P1 slices 1-4, 4.3, 4.1, 4.7 and 4.8 are implemented. The branch has absorbed the current default
 branch's PostgreSQL composition. Canonical review covered all 757 manifest paths; accepted code findings
 N1-N15 are repaired, locally validated, committed and approved by both native/general and
-security/durability lenses. No accepted finding remains open.
+security/durability lenses. Of the later findings, N16 (Workers not paused by the reset) is open.
 
-Ordinary CI passed at head \`5efaa089\` (Backend 17m42s, Frontend 2m14s, ci-complete), but that head
-predates three merges into the default branch, so PR #18 now reports \`CONFLICTING\`/\`DIRTY\` and that green
-run is no evidence about the reconciled result. The one E2E defect attributable to this branch was the reset
-endpoint racing handlers that still held this branch's row locks, and it is repaired through a new platform
-capability rather than a retry or a widened timeout.
-
-The default branch advanced from \`7fd22b46\` to \`61f91a71\` through PR #32 (tenant host bypass), PR #27
-(messaging migration history) and PR #35 (PostgreSQL E2E test kits). PR #27 is therefore already merged; it is
-no longer this branch's to land. This worktree was pruned from disk and has been recreated at the same
-recorded path, clean at \`5efaa089\`.
+The default branch's PR #32, #27 and #35 are merged into this branch at \`1d27cb87\`. The E2E reset defect
+is half repaired: b2b-web now pauses every source of its own work, but the settlement that deadlocks the
+truncate runs in the separate B2B Workers process, which nothing pauses yet.
 
 The provider reconciliation uses the platform PostgreSQL fixture plus B2B-owned database lifecycle,
 Npgsql command transactions and an NTS-configured \`NpgsqlDataSource\`. Command contexts are reset to
@@ -49,10 +42,6 @@ Current slice: close the E2E reset defect and deliver the reconciled head of PR 
 Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
 Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #18 is merged.
 
-The reconciliation merge with `origin/main` `61f91a71` is committed at `1d27cb87`, pushed, and **ordinary
-CI passed at `15dce560`** — build, unit and integration are green on the reconciled graph. PR #18 reports
-`MERGEABLE`. The one thing standing between this branch and delivery is the E2E reset deadlock.
-
 1. **Done: the published host pause is consumed.** Platform is `0.2.0-alpha.0.20` with
    `Concertable.Messaging.AspNetCore` added. `AddB2BE2EAdmin` registers `AddHostPauser()` and `AddGate`
    exempting `/_e2e`, `/health` and `/alive`; `MapB2BE2EAdmin` became `UseB2BE2EAdmin`, which inserts
@@ -63,21 +52,22 @@ CI passed at `15dce560`** — build, unit and integration are green on the recon
    `SeedingScope` out of `Concertable.Seed.Shared.Identity`, so all nine module registrations and
    `DevDbInitializer` changed with it. Names are fixed: Tommy rejected "quiescence/ingress", `-able`
    implementation names and "Composite".
-2. Append the incremental review pass from the recorded watermark `e0cfe596` through the delivered head,
-   covering the reset repair and the platform bump.
-3. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
+2. **Done: incremental review `e0cfe596..0822900d`** — judgment `changes-requested`. N17 (exempt `/hub`)
+   and N18 (assert the reset releases the gate) are repaired. **N16 is open and blocks delivery.**
+3. **Next: quiesce B2B Workers across the reset (N16) — design routed to Astra.** The 5efaa089 diagnostics
+   show `ConcertFinishedFunction`, fired by a test through the Functions admin API and returned on 202,
+   settling 22 seeded concerts from 11:31:11.027 to past 11:31:14 while b2b-web reset at 11:31:11.874 and
+   11:31:13.021; `InvoiceIssuer`'s `InvoiceSequences` read is that process, not b2b-web. `HostPauser` is
+   per-process. The design must decide how a reset in b2b-web (or the E2E harness driving it) stops and
+   drains an Azure Functions isolated host that shares the database: e.g. a Workers-side `IPausable` gate over
+   function invocations reached through an E2E-only endpoint, or the harness awaiting the triggered
+   invocation's completion, or scoping the triggered run. The design comes back as code snippets under this
+   step; Claude then implements it, runs the E2EAdmin/Workers tiers, and appends the incremental review.
+4. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
    merge PR #18 and restore the preserved unrelated files without committing them.
 
-**This workstation cannot run the local tiers.** Free physical memory sat between 0.9 and 1.4 GB of 32 GB
-because Docker Desktop hosts unrelated CRIS work containers (`cris-authz-postgres`, `openfga`, `pgweb`).
-MSBuild worker nodes were killed three times with `MSB4166 Child node exited prematurely`; `-m:1` stopped
-the crashes but a build recorded at 5m10s did not finish in roughly ninety minutes. Integration needs a
-container per fixture and E2E needs the whole Aspire stack, so both are further out of reach. **Validate
-through remote CI and a dispatched E2E workflow instead** — that path is proven working and does not depend
-on this machine. If local runs are needed, the resume condition is free memory above roughly 12 GB.
-
-Also environmental: `GITHUB_PACKAGES_TOKEN` is an expired `ghp_` PAT, so every `Concertable.*` restore
-returns 401. Export `gh auth token` into it for restores here until the variable itself is replaced.
+Local builds, unit, architecture, startup and single-project integration tiers run on this workstation even
+with under 1 GB free; the full integration suite and the Aspire E2E stack are validated remotely.
 
 ## Completed work
 
@@ -109,54 +99,24 @@ returns 401. Export `gh auth token` into it for restores here until the variable
   subscriptions unprovisioned and fan-out dead; \`ceb13880\` kept the messaging migration history across an
   E2E reset (42P07); \`85c7c5a9\` took the release candidate set from the promotion manifest alone, ending
   the drift of four hand-maintained copies.
-- E2E reset quiescence: the reset endpoint now pauses inbound bus consumption, waits for every running
-  handler to finish, resets, and resumes. The capability is \`IBusQuiescence\` in
-  \`Concertable.Messaging.Contracts\`, implemented by the Azure Service Bus receiver over
-  \`StopProcessingAsync\`/\`StartProcessingAsync\`. **This did not fix the reset 500 -
-  see the corrected diagnosis under Decisions.**
+- E2E reset pause: `IBusQuiescence` (receiver only) was replaced by platform `HostPauser` plus the request
+  gate, pausing all of b2b-web's own work; B2B Workers remains unpaused (N16).
 
 ## Verification
 
 - Platform `0.2.0-alpha.0.20` head, 25 September 2026: `dotnet build Concertable.B2B.slnx` passed with 0
-  errors; E2EAdmin integration 9/9 (including the real PostgreSQL reset), architecture 24/24, startup 16/16.
-  Free memory was still under 1 GB, but these tiers completed.
-- Restore: \`dotnet restore Concertable.B2B.slnx --force-evaluate\` passed.
-- Current-graph build: \`dotnet build Concertable.B2B.slnx --no-restore -m:4\` passed with 0 warnings and
-  0 errors in 5m10s.
-- Unit: all 14 backend UnitTests projects passed, 498/498.
-- Architecture: 24/24 passed.
-- Startup/resource composition: 16/16 passed, including the Stripe-aware resource graph.
-- Integration: all 14 projects passed, 435/435 total:
-  Tenant 90, Application 76, Booking 24, Concert 79, Conversations 17, Lifecycle 41, Admin 8,
-  Artist 20, Dashboard 16, Deal 2, Opportunity 14, User 14, Venue 27 and E2EAdmin 7.
-- Provider race regressions passed after their durable repairs: Application accept/reject, Booking/Concert
-  command locking, monotonic Conversation reads, Opportunity activity authorization and Venue profile creation.
-- Migration drift: \`scripts/validate-migrations.ps1 -Configuration Debug\` passed all 11 contexts.
-- Prior full web gate: \`npm run build:web\` passed shared tests 37/37, web-shared tests 18/18 and all four
-  production builds. Current-head affected gates pass shared 39/39, web-shared 18/18 and both package builds.
-- Prior full mobile gate: \`npm run build:mobile\` passed TypeScript validation and Android export (3,864 modules).
-  Current-head mobile navigation passes 4/4 and TypeScript validation.
-- Windows requires a process-local shortened PATH for nested npm wrapper scripts; direct constituent package
-  commands are green. The final full frontend gates must use the shortened PATH.
-- Ordinary remote CI passed at \`85c7c5a9\`.
-- The backend CI category filter still skips seven untagged projects. Run directly they pass 98 of 98
-  across the six unit projects; the seventh, Conversations integration, is covered by the same entry.
-  \`TECH_DEBT.md\` owns the stale affected-list correction.
-- Exact-head remote CI and the separate API/UI E2E workflow remain delivery gates after the reviewed push.
-- **Everything above this line was measured before the reconciliation merge and is not evidence about
-  `1d27cb87`.** At the merged head only the build was attempted, and it did not complete: 88 of roughly 116
-  projects compiled with zero errors and zero warnings, covering every production project — `Web`, `Workers`,
-  `AppHost`, `Migrations` and all module Api/Application/Domain/Infrastructure assemblies. `AppHost` building
-  is the useful signal, because it binds `AddAuthMigrations`/`AddPaymentMigrations` and the five-argument
-  `AddAuth` against platform `0.2.0-alpha.0.17`. The 22 that remain are all test projects, unbuilt for the
-  resource reason under Next Steps rather than for anything found in them. No unit, architecture, startup,
-  integration, migration-drift or E2E tier was run at this head.
-- `dotnet restore --force-evaluate` passed at the merged head, which is what establishes that platform
-  `0.2.0-alpha.0.17` — the quiescence release carrying `IBusQuiescence` — is published and resolvable.
-- The `GITHUB_PACKAGES_TOKEN` in the environment is an expired `ghp_` PAT: every `Concertable.*` restore
-  returns 401 against it, and `api.github.com/user` rejects it outright. The `gh` CLI's active token carries
-  `read:packages` and works, so restores here export that instead. Replacing the variable is the real fix and
-  belongs to whoever owns the PAT.
+  errors; the tagged unit tier, E2EAdmin integration 9/9 (including the real PostgreSQL reset),
+  architecture 24/24 and startup 16/16 passed. Free memory was under 1 GB, but these tiers completed.
+- Ordinary remote CI passed at `15dce560`, covering build, unit and integration on the reconciled graph.
+- Before the reconciliation merge, every local tier was green: unit 498/498, architecture 24/24, startup 16/16,
+  integration 435/435 across 14 projects, provider race regressions, migration drift across all 11 contexts,
+  and the full web and mobile gates. Those runs are evidence about the P1 code, not about the merged graph.
+- Windows needs a process-local shortened PATH for nested npm wrapper scripts in the full frontend gates.
+- The backend CI category filter skips seven untagged projects; run directly they pass. `TECH_DEBT.md` owns
+  the correction.
+- Exact-head remote CI and the separately dispatched API/UI E2E workflow remain delivery gates.
+- `GITHUB_PACKAGES_TOKEN` in this environment is an expired `ghp_` PAT (every `Concertable.*` restore returns
+  401); export `gh auth token` into it for restores until whoever owns the PAT replaces it.
 
 ## Reviews
 
@@ -176,8 +136,6 @@ does not substitute for the P1 review.
 - External payment/blob calls remain outside the database transaction and reuse durable operation identity.
 - The product is pre-launch: a superseded shape is replaced outright, with no parallel path or data retrofit.
 - Migrations stay owned by the filtered context; privileged contexts perform explicit system work.
-- Platform Testing \`0.2.0-alpha.0.14\` exposes only its PostgreSQL fixture. The obsolete local SQL Server
-  fixture and \`Testcontainers.MsSql\` dependency were removed during the durable provider reconciliation.
 - Npgsql geometry requires an NTS-configured data source for raw command transactions, not a replacement
   unconfigured connection.
 - Enlisted contexts must be detached from the root transaction connection after completion so later scoped
@@ -186,20 +144,11 @@ does not substitute for the P1 review.
   and conversation read positions use \`ON CONFLICT ... GREATEST\`.
 - Opportunity creation is restricted to VenueOperator activity; integration handlers and race verification use
   privileged contexts when no interactive tenant exists.
-- **The reset 500 is not fixed, and the earlier diagnosis was incomplete.** The E2E run at \`5efaa089\`
-  carried the quiescence fix and platform \`0.2.0-alpha.0.17\`, and \`ConcertFinishedTests\` still failed its
-  \`InitializeAsync\` reset with \`40P01\`. The run's \`e2e-diagnostics.log\` artifact carries the unredacted
-  Postgres deadlock report, which names both parties: process 84 is Respawn's \`TRUNCATE ... CASCADE\` over
-  roughly fifty tables, waiting for \`AccessExclusiveLock\` on relation 21254; process 92 is
-  \`SELECT i."TenantId", i."NextNumber", i.xmin FROM concert."InvoiceSequences"\`, waiting
-  for \`AccessShareLock\` on relation 21196. That read is \`InvoiceIssuer\` under \`SettlementService\`. The
-  two transactions take their table locks in different orders, so this is a lock-order inversion between the
-  truncate and a live settlement, not the handler-drain race previously recorded. b2b-web logged consumption
-  paused across 18 processors at 11:31:11.874 and the deadlock at 11:31:13.021, so settlement work was still
-  touching the database more than a second after \`StopProcessingAsync\` returned. Pausing the Azure Service
-  Bus receiver is therefore not sufficient to make the host quiescent before a truncate, and any writer that
-  survives the pause also defeats the reset's purpose, because a write landing after the truncate leaves
-  dirty state.
+- **The reset 500 is a lock-order inversion between the truncate and a live settlement.** At \`5efaa089\`,
+  \`ConcertFinishedTests\` failed its \`InitializeAsync\` reset with \`40P01\`: Respawn's \`TRUNCATE ... CASCADE\`
+  waited for \`AccessExclusiveLock\` while \`InvoiceIssuer\`'s \`concert."InvoiceSequences"\` read waited for
+  \`AccessShareLock\`. A writer surviving the pause also leaves dirty state after the truncate. The
+  \`e2e-diagnostics.log\` artifact of run 35721355090 carries the full report and the Workers timeline.
 - **The database-level fence is disproven, with evidence.** \`127600fa\` had the reset terminate every
   other backend on the database before truncating, so that its contract -- nothing else holds a
   transaction across the truncate -- would be literally true. Two dispatched E2E runs rejected it, both
@@ -208,16 +157,12 @@ does not substitute for the P1 review.
   \`NpgsqlHistoryRepository.GetAppliedMigrationsAsync\`), and \`f400b498\`, which discarded both pools in
   the same breath, left b2b-web silent immediately after \`Service Bus consumption paused across 18
   processors\` -- no resume, no exception, no further output. Reverted at \`8a3143a3\`.
-- **Why it cannot work, rather than why it needs another patch.** The reset endpoint is hosted inside
-  b2b-web, so "every other backend" includes that same process's own connections, including ones held by
-  hosted services and the bus receiver. Clearing pools only governs which connection is handed out next;
-  it does nothing for work already holding one. A test endpoint cannot cull the runtime it runs in.
-- **What remains** is quiescing the host's own ingress rather than the database's connections, which is a
-  change to the platform messaging package and another publish-then-bump, exactly as the original
-  quiescence capability was. That is a cross-repository decision and is not taken here. Declaring a lock
-  order for the truncate remains the other candidate and remains insufficient on its own, because it would
-  remove the deadlock while still letting a surviving transaction write onto cleared state.
-- **The ingress pause is the chosen mechanism, delivered as platform `0.2.0-alpha.0.20`.** The reset keeps
+- A test endpoint cannot cull the runtime it runs in: "every other backend" includes b2b-web's own
+  hosted services and bus receiver, and clearing pools does nothing for work already holding a connection.
+- **The earlier "in-flight HTTP request was the deadlocking writer" diagnosis was wrong.** The other party
+  was B2B Workers' `ConcertFinishedFunction` (review N16). The web-host pause is still needed, since it
+  stops b2b-web's own receiver, outbox and requests, but it is not sufficient.
+- **The ingress pause covers b2b-web, delivered as platform `0.2.0-alpha.0.20`.** The reset keeps
   `PauseAsync` inside its `try` so `finally` always resumes every pausable. That matters because
   `HostPauser`'s rollback skips the pausable whose own `PauseAsync` threw, and `GateMiddleware` sets its
   paused flag before awaiting the drain, so a cancelled reset would otherwise leave the gate holding every
@@ -239,10 +184,7 @@ does not substitute for the P1 review.
 - Auth moves to `0.2.0-alpha.0.305`. The 0.304 pin existed only because the E2E harness still handed auth a
   SQL Server database; PR #35 moved it to PostgreSQL and deleted the fixture's separate auth override, so the
   reason for the pin is gone.
-- Container image digests are written out in `AppHost.cs`, `AppFixture.cs` and `e2e.yml` with nothing
-  reconciling them, which is how `e2e.yml` came to pre-pull a stale auth image and two superseded payment
-  digests. Synced here and recorded in `TECH_DEBT.md`.
-- No accepted code finding remains open. Current-graph qualification and final review remain delivery gates.
+- N16 is the one open accepted finding. Current-graph qualification and final review remain delivery gates.
 
 ## External/deferred owners
 

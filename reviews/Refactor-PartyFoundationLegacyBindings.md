@@ -5,9 +5,9 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
+**Reviewed up to commit:** `0822900d1cd6266c997125daebb9fa255c4b1367`  `(2026-09-25)`
 **Security-reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
-**Judgment:** `approved`
+**Judgment:** `changes-requested`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
 dropped, so the first pass below reviews code that no longer exists on any branch. Its F1–F10 are
@@ -64,6 +64,49 @@ Checked in the parent, no lens dispatched:
 The open E2E reset defect is not a finding against this candidate. It is diagnosed, its database-level fix is
 disproven with run evidence, and both are recorded under Decisions in the ledger with the remaining work
 routed to the platform messaging package.
+
+## Review pass — 2026-09-25 — incremental (host pause and platform 0.2.0-alpha.0.20)
+
+**Candidate base:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`
+**Candidate head:** `0822900d1cd6266c997125daebb9fa255c4b1367`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:3491c4d9abae97b277a6338c2563c64c30a7bc06f31cccccb9f9f44d6a9a7c68` `(19 paths)`
+**Candidate patch:** `sha256:0ba2898f720d69e9c7e3137e309f2c5aec4b81b834aa94f7f723b8effb485fd4`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Findings
+
+- [ ] **N16 — HIGH — native — the reset pauses only b2b-web, while the deadlocking settlement runs in B2B Workers.**
+  `local/AppHost/AppHost.cs:63` starts `Concertable.B2B.Workers` in the E2E topology against the same database,
+  and `ConcertFinishedFunction` (`api/src/Concertable.B2B.Workers/Functions/ConcertFinishedFunction.cs:6-9`)
+  runs `CompletionRunner` over every ended concert (`CompletionRunner.cs:30-53`). The E2E tests fire it through
+  the Functions admin API and return on 202 (`WorkersFixture.TriggerAsync`). The 5efaa089 run's diagnostics
+  show the invocation started at 11:31:11.027, found 22 concerts, and was still reading and writing
+  `concert."InvoiceSequences"` at 11:31:14, straight through the resets at 11:31:11.874 and 11:31:13.021;
+  b2b-web logged no settlement at all. `HostPauser` is per-process, so it cannot reach that writer, and a write
+  landing after the truncate also leaves dirty state.
+  **Fix:** quiesce the Workers host across the reset as well. The mechanism crosses a process boundary and is
+  routed to Astra for design; see the progress ledger.
+
+- [x] **N17 — MEDIUM — native — SignalR's non-WebSocket transports are tracked by the gate.**
+  `E2EAdminExtensions.cs:46-51` exempted only `/_e2e`, `/health` and `/alive`, while `/hub/notifications` sits
+  behind the gate. The gate special-cases only a WebSocket upgrade, so a Server-Sent Events or long-polling
+  connection stays in flight and `PauseAsync` waits on it for as long as the connection lives.
+  **Fix:** exempt `/hub`; `NotificationHub` only manages groups and does no database work.
+  **Disposition:** `/hub` is exempt.
+
+- [x] **N18 — LOW — test impact — nothing proves the reset releases the gate.**
+  `Reset_AuthenticatedRequest_ClearsDataAndReturnsNoContent` asserted only what the deleted no-op stub also
+  produced. A gate left paused would wedge every later request against the E2E host.
+  **Fix:** after the reset, send a non-exempt request with a short timeout and assert it completes.
+  **Disposition:** the test now sends one to the host's fallback and asserts the 418 within five seconds.
+
+Considered and dropped: `UseGate()` running ahead of `UseExceptionHandler()`/`UseCors()` changes only the
+response to a request whose client already cancelled it, which nobody reads; `QueueHostedService` is not an
+`IPausable`, but nothing in B2B enqueues onto it.
 
 ## Review pass — 2026-09-15 — full (void: candidate discarded by branch restart)
 

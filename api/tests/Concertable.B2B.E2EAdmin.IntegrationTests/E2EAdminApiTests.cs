@@ -5,6 +5,7 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.E2ETests.Server;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Testing.Integration;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Npgsql;
@@ -91,6 +92,8 @@ public sealed class E2EAdminApiTests
             await using var count = connection.CreateCommand();
             count.CommandText = "SELECT COUNT(*) FROM concert.\"Concerts\"";
             ((long)(await count.ExecuteScalarAsync())!).ShouldBe(0);
+            using var afterReset = await host.Client.GetAsync("/after-reset").WaitAsync(TimeSpan.FromSeconds(5));
+            ((int)afterReset.StatusCode).ShouldBe(StatusCodes.Status418ImATeapot);
         }
         finally
         {

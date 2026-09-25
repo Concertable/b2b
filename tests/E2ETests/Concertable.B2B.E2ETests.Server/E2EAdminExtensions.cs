@@ -48,6 +48,7 @@ public static class E2EAdminExtensions
                 options.ExemptPathPrefixes.Add("/_e2e");
                 options.ExemptPathPrefixes.Add("/health");
                 options.ExemptPathPrefixes.Add("/alive");
+                options.ExemptPathPrefixes.Add("/hub");
             });
             services.AddScoped<B2BDatabaseResetter>();
             services.AddScoped<B2BHostInitializer>();
