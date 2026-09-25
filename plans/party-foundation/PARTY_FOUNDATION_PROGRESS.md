@@ -7,11 +7,11 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: the reconciliation merge with `origin/main` `61f91a71` is committed at `1d27cb87` and
-  remote CI passed at `15dce560`; delivery now gated on the unfixed E2E reset deadlock
+- Current checkpoint: head `90df5496`, clean, 0 behind `origin/main`, ordinary CI green. The platform
+  capability the E2E reset deadlock waited on is published (`0.2.0-alpha.0.20`); consuming it is next
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
-- Last reconciled: 24 September 2026 against merged \`origin/main\` \`61f91a71\`
-- Ownership: transferred 24 September 2026 to a fresh Claude session in this worktree; no other writer is active
+- Last reconciled: 25 September 2026 against \`origin/main\` \`a1baf9a7\`
+- Ownership: transferred 25 September 2026 to a fresh Claude session in this worktree; no other writer is active
 
 ## Current state
 
@@ -53,12 +53,29 @@ The reconciliation merge with `origin/main` `61f91a71` is committed at `1d27cb87
 CI passed at `15dce560`** — build, unit and integration are green on the reconciled graph. PR #18 reports
 `MERGEABLE`. The one thing standing between this branch and delivery is the E2E reset deadlock.
 
-1. **Decide how the reset reaches quiescence, given the fence is ruled out.** The diagnosis and the
-   disproof are both under Decisions. The remaining candidate that addresses the whole problem is host
-   ingress quiescence in the platform messaging package, which means a publish there before this branch
-   can consume it. Until that lands, \`ConcertFinishedTests\` keeps failing its \`InitializeAsync\` reset, and
-   the E2E gate cannot go green. Confirm with Tommy whether PR #18 waits for it or lands with the E2E
-   failure recorded as a known, separately owned defect.
+1. **Consume the published host pause.** Decided and delivered on the platform side. platform-dotnet #26
+   paused every source of work in the host, and #29 renamed it. It is published as `0.2.0-alpha.0.20`;
+   skip `.19`, which carries the rejected names. The contract, in `Concertable.Messaging.*`:
+   - `IPausable` (`PauseAsync` returns once new work stopped and in-flight work finished).
+   - `HostPauser` + `AddHostPauser()`: pauses every `IPausable` in the host, including the ASB receiver and
+     outbox dispatcher (found through `IHostedService`); resolve it by its concrete type.
+   - `GateMiddleware` + `GateOptions` + `AddGate()`/`UseGate()` in the new `Concertable.Messaging.AspNetCore`
+     package: holds new requests and drains in-flight ones, excluding the request driving the pause. The
+     in-flight HTTP request was the actual deadlocking writer.
+
+   Do:
+   - Bump `ConcertableDotNetPlatformVersion` `0.2.0-alpha.0.17` → `0.2.0-alpha.0.20` and add
+     `Concertable.Messaging.AspNetCore`.
+   - In the E2E host only: `AddHostPauser()`, `AddGate(o => ...)` exempting `/_e2e` and health, and
+     `UseGate()` early in the pipeline.
+   - Switch `E2EAdminExtensions.ResetAsync` from `IBusQuiescence` to `HostPauser`, called inline in the reset
+     request so the gate excludes it.
+   - Replace `E2EAdminApiTests`' `NoOpBusQuiescence`.
+
+   Other platform changes in `.17..20` are source-compatible: extension methods moved to C# 14 blocks, and
+   Messaging.Infrastructure's registration classes merged under the same namespace. Names are fixed:
+   Tommy rejected "quiescence/ingress", `-able` implementation names and "Composite", so do not reintroduce
+   them.
 2. Append the final incremental review pass for base `ed76eda6` through the delivered head, covering the
    reconciliation merge `1d27cb87` and the reset repair.
 3. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
