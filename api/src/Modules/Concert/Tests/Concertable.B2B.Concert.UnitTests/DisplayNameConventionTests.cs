@@ -14,7 +14,7 @@ public sealed class DisplayNameConventionTests
         { typeof(ConcertEntity), "Concert" },
         { typeof(InvoiceEntity), "Invoice" },
         { typeof(SelfBillingAgreementEntity), "Self-Billing Agreement" },
-        { typeof(ConcertDetails), "Concert" },
+        { typeof(ConcertOperations), "Concert" },
         { typeof(ArtistSummary), "Artist" },
         { typeof(VenueSummary), "Venue" },
     };

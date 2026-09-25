@@ -5,6 +5,8 @@ using Concertable.B2B.Venue.Contracts;
 using Concertable.B2B.Venue.Api.Responses;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Venue.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using static Concertable.B2B.Venue.IntegrationTests.VenueRequestBuilders;
 using Xunit.Abstractions;
@@ -236,8 +238,8 @@ public sealed class VenueApiTests : IAsyncLifetime
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
         Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Conflict));
         using var scope = fixture.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IVenueRepository>();
-        var profiles = await repository.GetAllByTenantIdAsync(tenantId);
+        var context = scope.ServiceProvider.GetRequiredService<VenuePrivilegedDbContext>();
+        var profiles = await context.Venues.Where(venue => venue.TenantId == tenantId).ToListAsync();
         Assert.Single(profiles);
     }
 

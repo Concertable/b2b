@@ -1,7 +1,6 @@
-using Concertable.B2B.DataAccess.Application;
-using Concertable.B2B.DataAccess.Infrastructure;
+﻿using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
-using Concertable.Seed.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Deal.Infrastructure.Data.Seeders;
@@ -10,19 +9,23 @@ internal sealed class DealDevSeeder : IDevSeeder
 {
     public int Order => 3;
 
-    private readonly DealDbContext context;
+    private readonly DealPrivilegedDbContext context;
+    private readonly DealDbContext migrations;
     private readonly SeedState seed;
-    private readonly ITenantScope tenantScope;
 
-    public DealDevSeeder(DealDbContext context, SeedState seed, ITenantScope tenantScope)
+    public DealDevSeeder(DealPrivilegedDbContext context, DealDbContext migrations, SeedState seed)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seed = seed;
-        this.tenantScope = tenantScope;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
-    public Task SeedAsync(CancellationToken ct = default) =>
-        context.SeedByTenantAsync(tenantScope, seed.Deals, ct);
+    public async Task SeedAsync(CancellationToken ct = default) =>
+        await context.Deals.SeedIfEmptyAsync(async () =>
+        {
+            context.Deals.AddRange(seed.Deals);
+            await context.SaveChangesAsync(ct);
+        });
 }

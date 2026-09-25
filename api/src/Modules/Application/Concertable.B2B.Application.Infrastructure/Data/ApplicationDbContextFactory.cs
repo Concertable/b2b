@@ -8,5 +8,10 @@ internal sealed class ApplicationDbContextFactory : B2BDesignTimeDbContextFactor
     protected override string MigrationsSchema => Schema.Name;
 
     protected override ApplicationDbContext Create(DbContextOptions<ApplicationDbContext> options) =>
-        new(options, DefaultOutboxOptions, new ApplicationConfigurationProvider(), DesignTimeTenantContext.Instance);
+        new(
+            options,
+            DefaultOutboxOptions,
+            new ApplicationConfigurationProvider(),
+            DesignTimeTenantContext.Instance,
+            DesignTimeResourceAccessContext.Instance);
 }

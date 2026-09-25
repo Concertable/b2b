@@ -1,98 +1,81 @@
-using Concertable.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Repositories;
 
-internal sealed class MessageRepository : Repository<MessageEntity>, IMessageRepository
+internal sealed class MessageRepository : IMessageRepository
 {
     private static readonly Expression<Func<MessageEntity, bool>> NotHidden =
-        m => m.HiddenAt == null || (m.RestoredAt != null && m.RestoredAt > m.HiddenAt);
+        message => message.HiddenAt == null || message.RestoredAt != null && message.RestoredAt > message.HiddenAt;
     private readonly ConversationsDbContext context;
 
-    public MessageRepository(ConversationsDbContext context) : base(context)
+    public MessageRepository(ConversationsDbContext context)
     {
         this.context = context;
     }
 
-    public Task<IPagination<MessageEntity>> GetByTenantIdAsync(Guid tenantId, IPageParams pageParams) =>
-        context.Messages
-            .Where(NotHidden)
-            .OrderByDescending(m => m.SentDate)
-            .ToPaginationAsync(pageParams);
+    public Task<MessageEntity?> GetByIdAsync(int messageId, CancellationToken ct = default) =>
+        context.Messages.AsNoTracking().Where(NotHidden)
+            .SingleOrDefaultAsync(message => message.Id == messageId, ct);
 
-    public Task<int> GetUnreadCountByTenantIdAsync(Guid tenantId, Guid userId) =>
-        (from m in context.Messages.Where(m => m.SenderTenantId != tenantId).Where(NotHidden)
-         join p in context.ThreadReadStates.Where(p => p.UserId == userId)
-             on new { m.VenueTenantId, m.ArtistTenantId } equals new { p.VenueTenantId, p.ArtistTenantId } into pointers
-         from p in pointers.DefaultIfEmpty()
-         where p == null || m.SentDate > p.LastReadAt
-         select m.Id)
-        .CountAsync();
-
-    public async Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsAsync(Guid tenantId, Guid userId)
-    {
-        var tenantMessages = context.Messages
-            .Where(NotHidden)
-            .Where(m => m.VenueTenantId == tenantId || m.ArtistTenantId == tenantId);
-        var latestMessageIds = tenantMessages
-            .GroupBy(m => new { m.VenueTenantId, m.ArtistTenantId })
-            .Select(group => group
-                .OrderByDescending(m => m.SentDate)
-                .ThenByDescending(m => m.Id)
-                .Select(m => m.Id)
-                .First());
-
-        return await tenantMessages
+    public async Task<IReadOnlyList<MessageEntity>> GetByConversationIdAsync(
+        int conversationId,
+        CancellationToken ct = default) =>
+        await context.Messages
             .AsNoTracking()
-            .Where(m => latestMessageIds.Contains(m.Id))
-            .OrderByDescending(m => m.SentDate)
-            .ThenByDescending(m => m.Id)
-            .Take(5)
-            .Select(m => new MessagePreview(
-                m.Id,
-                m.VenueTenantId == tenantId ? m.ArtistTenantId : m.VenueTenantId,
-                m.VenueTenantId != tenantId,
-                m.Content,
-                m.SentDate,
-                context.Messages.Where(NotHidden).Any(candidate =>
-                    candidate.VenueTenantId == m.VenueTenantId
-                    && candidate.ArtistTenantId == m.ArtistTenantId
-                    && candidate.SenderTenantId != tenantId
-                    && !context.ThreadReadStates.Any(pointer =>
-                        pointer.UserId == userId
-                        && pointer.VenueTenantId == candidate.VenueTenantId
-                        && pointer.ArtistTenantId == candidate.ArtistTenantId
-                        && pointer.LastReadAt >= candidate.SentDate))))
-            .ToListAsync();
-    }
+            .Where(NotHidden)
+            .Where(message => message.ConversationId == conversationId)
+            .OrderBy(message => message.Sequence)
+            .ToListAsync(ct);
 
-    public async Task<IReadOnlyDictionary<Guid, ParticipantProfile>> GetParticipantProfilesAsync(IReadOnlySet<Guid> tenantIds) =>
-        await context.ParticipantProfiles
-            .Where(p => tenantIds.Contains(p.TenantId))
-            .ToDictionaryAsync(p => p.TenantId);
+    public Task<bool> ContainsSequenceAsync(
+        int conversationId,
+        long sequence,
+        CancellationToken ct = default) =>
+        context.Messages.Where(NotHidden).AnyAsync(
+            message => message.ConversationId == conversationId && message.Sequence == sequence,
+            ct);
 
-    public async Task AdvanceReadPointersAsync(Guid tenantId, Guid userId, DateTime readAt)
+    public Task<int> GetUnreadCountAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default) =>
+        (from message in context.Messages.Where(NotHidden)
+         join position in context.ConversationReadPositions.Where(position =>
+                 position.TenantId == tenantId && position.MembershipId == membershipId)
+             on message.ConversationId equals position.ConversationId into positions
+         from position in positions.DefaultIfEmpty()
+         where message.SenderTenantId != tenantId
+               && (position == null || message.Sequence > position.LastReadSequence)
+         select message.Id).CountAsync(ct);
+
+    public async Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default)
     {
-        var pairs = await context.Messages
-            .Select(m => new { m.VenueTenantId, m.ArtistTenantId })
-            .Distinct()
-            .ToListAsync();
+        var visible = context.Messages.Where(NotHidden);
+        var latestIds = visible
+            .GroupBy(message => message.ConversationId)
+            .Select(group => group.OrderByDescending(message => message.Sequence).Select(message => message.Id).First());
 
-        var pointers = await context.ThreadReadStates
-            .Where(p => p.UserId == userId)
-            .ToDictionaryAsync(p => (p.VenueTenantId, p.ArtistTenantId));
-
-        foreach (var pair in pairs)
-        {
-            if (pointers.TryGetValue((pair.VenueTenantId, pair.ArtistTenantId), out var pointer))
-                pointer.Advance(readAt);
-            else
-                await context.ThreadReadStates.AddAsync(
-                    ThreadReadStateEntity.Create(pair.VenueTenantId, pair.ArtistTenantId, userId, readAt));
-        }
-
-        await context.SaveChangesAsync();
+        return await visible
+            .AsNoTracking()
+            .Where(message => latestIds.Contains(message.Id))
+            .OrderByDescending(message => message.SentAt)
+            .Take(5)
+            .Select(message => new MessagePreview(
+                message.Id,
+                message.ConversationId,
+                message.Content,
+                message.SentAt,
+                message.SenderTenantId != tenantId
+                    && !context.ConversationReadPositions.Any(position =>
+                        position.ConversationId == message.ConversationId
+                        && position.TenantId == tenantId
+                        && position.MembershipId == membershipId
+                        && position.LastReadSequence >= message.Sequence)))
+            .ToListAsync(ct);
     }
 }

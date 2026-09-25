@@ -19,7 +19,9 @@ internal abstract partial record PostConcertError : IError
         InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
             $"A concert in {error.Current} cannot be posted."),
         Superseded(var concertId) => ErrorDefinition.Conflict<Superseded>(
-            $"Concert {concertId} changed while this post was in flight.")
+            $"Concert {concertId} changed while this post was in flight."),
+        NotPermitted => ErrorDefinition.Forbidden<NotPermitted>(
+            "You are not permitted to post this concert.")
     };
 
     [ErrorCode("concert.post.not_found")]
@@ -32,4 +34,7 @@ internal abstract partial record PostConcertError : IError
 
     [ErrorCode("concert.post.superseded")]
     public partial record Superseded(int ConcertId);
+
+    [ErrorCode("concert.post.not_permitted")]
+    public partial record NotPermitted;
 }

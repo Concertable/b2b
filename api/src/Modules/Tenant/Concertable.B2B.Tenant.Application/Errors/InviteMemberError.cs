@@ -15,6 +15,9 @@ internal abstract partial record InviteMemberError : IError
         InvitationPending =>
             ErrorDefinition.Conflict<InvitationPending>(
                 "An invitation for this email is already pending."),
+        NotPermitted =>
+            ErrorDefinition.Forbidden<NotPermitted>(
+                "You cannot assign this role."),
         Unauthenticated =>
             ErrorDefinition.Forbidden<Unauthenticated>("No authenticated user was found.")
     };
@@ -30,4 +33,7 @@ internal abstract partial record InviteMemberError : IError
 
     [ErrorCode("tenant.invite_unauthenticated")]
     public partial record Unauthenticated;
+
+    [ErrorCode("tenant.invite_not_permitted")]
+    public partial record NotPermitted;
 }

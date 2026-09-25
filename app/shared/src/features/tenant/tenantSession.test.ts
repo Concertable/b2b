@@ -1,20 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTenantSession } from "./tenantSession";
+import {
+  createTenantSession,
+  TenantSwitchInProgressError,
+} from "./tenantSession";
 import { useTenantStore } from "./store/useTenantStore";
 import type { Membership, TenantStorage } from "./types";
 
 const venueMemberships: ReadonlyArray<Membership> = [
   {
+    membershipId: "membership-venue-one",
     tenantId: "venue-one",
     legalName: "Venue One",
-    type: "venue",
+    businessActivities: ["venueOperator"],
     role: "owner",
+    permissionVersion: 1,
+    permissions: ["tenant.settings.edit"],
   },
   {
+    membershipId: "membership-venue-two",
     tenantId: "venue-two",
     legalName: "Venue Two",
-    type: "venue",
+    businessActivities: ["venueOperator"],
     role: "staff",
+    permissionVersion: 2,
+    permissions: ["operations.view"],
   },
 ];
 
@@ -173,20 +182,43 @@ describe("tenant session", () => {
       venueMemberships.slice(0, 1),
     );
 
-    const resolution = await session.resolve("venue");
+    const resolution = await session.resolve("venueOperator");
 
     expect(resolution.activeMembership).toEqual(venueMemberships[0]);
     expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-one");
+  });
+
+  it("clears the store and persistence when the final membership is removed", async () => {
+    let memberships = venueMemberships.slice(0, 1);
+    const storage = createStorage();
+    const session = createTenantSession(useTenantStore);
+    await session.configure({
+      storage,
+      memberships: () => memberships,
+      clearMemberships: vi.fn(),
+    });
+    await session.resolve("venueOperator");
+    expect(storage.saveActiveTenantId).toHaveBeenCalledWith("venue-one");
+
+    memberships = [];
+    await session.resolve("venueOperator");
+
+    expect(useTenantStore.getState().activeTenantId).toBeUndefined();
+    expect(session.tenantIdForRequest()).toBeUndefined();
+    expect(storage.clearActiveTenantId).toHaveBeenCalledOnce();
   });
 
   it("selects across all membership types for a cross-platform B2B app", async () => {
     const memberships: ReadonlyArray<Membership> = [
       ...venueMemberships,
       {
+        membershipId: "membership-artist-one",
         tenantId: "artist-one",
         legalName: "Artist One",
-        type: "artist",
+        businessActivities: ["artist"],
         role: "manager",
+        permissionVersion: 3,
+        permissions: ["operations.view"],
       },
     ];
     const { session } = await createSession(memberships);
@@ -208,5 +240,32 @@ describe("tenant session", () => {
     expect(session.tenantIdForRequest()).toBeUndefined();
     expect(storage.clearActiveTenantId).toHaveBeenCalledOnce();
     expect(clearMemberships).toHaveBeenCalledOnce();
+  });
+
+  it("fences old responses and new mutations across a switch generation", async () => {
+    const { session } = await createSession(venueMemberships, "venue-one");
+    const previous = session.captureRequest();
+    let releasePreparation: (() => void) | undefined;
+    const preparation = new Promise<void>((resolve) => {
+      releasePreparation = resolve;
+    });
+
+    const switching = session.switchTo("venue-two", {
+      prepare: () => preparation,
+    });
+
+    expect(() => session.captureRequest(true)).toThrow(
+      TenantSwitchInProgressError,
+    );
+    releasePreparation?.();
+    const selected = await switching;
+
+    expect(previous && session.isCurrent(previous)).toBe(false);
+    expect(session.isCurrent(selected)).toBe(true);
+    expect(selected).toMatchObject({
+      tenantId: "venue-two",
+      membershipId: "membership-venue-two",
+      permissionVersion: 2,
+    });
   });
 });

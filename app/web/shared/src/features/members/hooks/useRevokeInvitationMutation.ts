@@ -7,6 +7,6 @@ export function useRevokeInvitationMutation() {
   return useMutation({
     mutationFn: membersApi.revokeInvitation,
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: invitationsQueryKey }),
+      queryClient.invalidateQueries({ queryKey: invitationsQueryKey() }),
   });
 }

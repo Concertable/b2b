@@ -1,4 +1,6 @@
 global using Concertable.DataAccess.Infrastructure;
+global using Concertable.B2B.Authorization.Contracts;
+global using Concertable.B2B.Authorization.Contracts.Enums;
 global using Concertable.B2B.Tenant.Application.DTOs;
 global using Concertable.B2B.Tenant.Application.Errors;
 global using Concertable.B2B.Tenant.Application.Interfaces;

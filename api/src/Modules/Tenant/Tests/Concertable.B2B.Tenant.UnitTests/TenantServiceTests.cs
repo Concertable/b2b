@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -19,6 +20,7 @@ public sealed class TenantServiceTests
     private readonly Mock<IMembershipRepository> membershipRepository;
     private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
+    private readonly Mock<IPermissionCatalog> permissionCatalog;
     private readonly TenantService service;
 
     public TenantServiceTests()
@@ -27,16 +29,22 @@ public sealed class TenantServiceTests
         this.membershipRepository = new Mock<IMembershipRepository>();
         this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
+        this.permissionCatalog = new Mock<IPermissionCatalog>();
         this.service = new TenantService(
             repository.Object,
             membershipRepository.Object,
             invitationRepository.Object,
             tenantContext.Object,
-            new VatPolicy(new UkVatCalculator()));
+            new VatPolicy(new UkVatCalculator()),
+            permissionCatalog.Object,
+            new ImmediateUnitOfWorkBehavior(),
+            TimeProvider.System,
+            [],
+            Mock.Of<ICurrentUser>());
     }
 
     private static TenantEntity Bare() =>
-        TenantEntity.Create("bare@test.com", Guid.NewGuid(), TenantType.Venue, DateTime.UtcNow);
+        TenantEntity.Create("Bare business", "bare@test.com", Guid.NewGuid(), DateTime.UtcNow);
 
     private static TenantEntity Onboarded(string? vatNumber)
     {
@@ -87,7 +95,9 @@ public sealed class TenantServiceTests
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
-        repository.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync((TenantEntity?)null);
+        repository
+            .Setup(r => r.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TenantEntity?)null);
 
         var result = await service.UpdateAsync(null!);
 
@@ -102,11 +112,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = new TaxComplianceDto
             {
                 SellerIdentifier = "",
@@ -141,11 +153,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "Acme Ltd",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = ValidTaxCompliance() with
             {
                 SellerIdentifier = "",
@@ -170,11 +184,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "Acme Ltd",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = null!
         };
 
@@ -194,11 +210,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "Acme Ltd",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = ValidTaxCompliance() with
             {
                 RegisteredAddress = null!
@@ -223,11 +241,13 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
             LegalName = "",
+            ContactEmail = "contact@acme.test",
+            ExpectedVersion = 1,
             TaxCompliance = ValidTaxCompliance()
         };
 
@@ -238,6 +258,25 @@ public sealed class TenantServiceTests
         Assert.Equal(["LegalName is required."], invalid.Errors.Errors["LegalName"]);
         repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    #endregion
+
+    #region ChangeBusinessActivityAsync
+
+    [Fact]
+    public async Task ActivateBusinessActivityAsync_UndefinedKind_ReturnsInvalidWithoutLoadingTenant()
+    {
+        var request = new ChangeBusinessActivityRequest { ExpectedEligibilityVersion = 1 };
+
+        var result = await service.ActivateBusinessActivityAsync((TenantBusinessActivityKind)999, request);
+
+        Assert.True(result.TryGetError(out var error));
+        var invalid = Assert.IsType<ChangeBusinessActivityError.Invalid>(error);
+        Assert.Equal(["The organization activity is invalid."], invalid.Errors.Errors["kind"]);
+        repository.Verify(
+            value => value.GetByIdForAdministrationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -382,4 +421,23 @@ public sealed class TenantServiceTests
             Country = "United Kingdom"
         }
     };
+
+    [Fact]
+    public async Task GetMembershipsAsync_CarriesTheRolesPermissions()
+    {
+        var tenantId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        membershipRepository
+            .Setup(repository => repository.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new UserMembership(Guid.NewGuid(), tenantId, "Bare Ltd", TenantRole.Door, 1, [])]);
+        permissionCatalog
+            .Setup(catalog => catalog.For(TenantRole.Door))
+            .Returns(new HashSet<TenantPermission> { TenantPermission.OperationsView, TenantPermission.ConcertsCheckIn });
+
+        var memberships = await service.GetMembershipsAsync(userId);
+
+        Assert.Equal(
+            [TenantPermission.ConcertsCheckInName, TenantPermission.OperationsViewName],
+            memberships.Single().Permissions.Order());
+    }
 }

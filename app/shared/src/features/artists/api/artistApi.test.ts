@@ -49,7 +49,7 @@ describe("artistApi", () => {
         about: "About",
         latitude: 51.5,
         longitude: -0.1,
-        genres: ["Rock", "Jazz"],
+        genres: ["rock", "jazz"],
         banner,
         avatar,
       }),
@@ -62,8 +62,8 @@ describe("artistApi", () => {
       ["About", "About"],
       ["Latitude", "51.5"],
       ["Longitude", "-0.1"],
-      ["Genres[0]", "Rock"],
-      ["Genres[1]", "Jazz"],
+      ["Genres[0]", "rock"],
+      ["Genres[1]", "jazz"],
       ["Banner", banner],
       ["Avatar", avatar],
     ]);
@@ -77,7 +77,7 @@ describe("artistApi", () => {
       about: "About",
       latitude: 51.5,
       longitude: -0.1,
-      genres: ["Rock"],
+      genres: ["rock"],
     });
 
     const formData = mocks.put.mock.calls[0][1] as CapturingFormData;

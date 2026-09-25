@@ -4,7 +4,7 @@ import { verificationKeys } from "./verificationKeys";
 
 export function useVerificationQuery() {
   return useQuery({
-    queryKey: verificationKeys.status,
+    queryKey: verificationKeys.status(),
     queryFn: verificationApi.get,
   });
 }

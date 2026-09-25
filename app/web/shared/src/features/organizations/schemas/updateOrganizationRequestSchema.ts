@@ -8,6 +8,12 @@ export const updateOrganizationRequestSchema = z
       .trim()
       .min(1, "Legal name is required")
       .max(200, "Legal name must be 200 characters or fewer"),
+    contactEmail: z
+      .string()
+      .trim()
+      .email("Enter a valid contact email")
+      .max(320, "Contact email must be 320 characters or fewer"),
+    expectedVersion: z.number().int().positive(),
     vatRegistered: z.boolean(),
     vatNumber: z
       .string()
@@ -60,6 +66,8 @@ export const updateOrganizationRequestSchema = z
   .transform(
     (values): UpdateOrganizationRequest => ({
       legalName: values.legalName,
+      contactEmail: values.contactEmail,
+      expectedVersion: values.expectedVersion,
       taxCompliance: {
         vatNumber: values.vatRegistered ? values.vatNumber : undefined,
         sellerIdentifier: values.sellerIdentifier,

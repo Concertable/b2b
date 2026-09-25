@@ -1,4 +1,5 @@
-using System.Net;
+﻿using System.Net;
+using System.Runtime.ExceptionServices;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Application.Models;
@@ -6,106 +7,90 @@ using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.IntegrationTests.Fixtures;
-using Concertable.Kernel.ValueObjects;
 using Concertable.Testing.Integration;
 using Concertable.Kernel.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Reunion;
 
 namespace Concertable.B2B.Concert.IntegrationTests;
 
 public sealed class ConcertApiFixture : ApiFixture
 {
+    private const long ReceiptInsertBarrierKey = 638_457_219;
+
     private IConcertReadDbContext readDbContext = null!;
-    private ConcertDbContext dbContext = null!;
+    private ConcertPrivilegedDbContext dbContext = null!;
     private IScoped<IConcertWorkflow> workflow = null!;
     private ICompletionRunner completionRunner = null!;
-    private IConcertService concertService = null!;
     private ISelfBillingAgreementRepository selfBillingAgreementRepository = null!;
-
-    internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
+    private TimeProvider timeProvider = null!;
+    private string connectionString = null!;
 
     internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
 
-    /// <summary>
-    /// The concert is created by an event dispatched after the request that confirmed the booking has
-    /// returned, so reading it straight after the webhook races the dispatcher.
-    /// </summary>
     internal async Task<HttpResponseMessage> GetConcertByApplicationAsync(HttpClient client, int applicationId)
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
-        HttpResponseMessage response;
         do
         {
-            response = await client.GetAsync($"/api/concert/application/{applicationId}");
-            if (response.StatusCode != HttpStatusCode.NotFound)
-                return response;
+            var concertId = await dbContext.Concerts
+                .AsNoTracking()
+                .Where(concert => concert.ApplicationId == applicationId)
+                .Select(concert => (int?)concert.Id)
+                .SingleOrDefaultAsync();
+            if (concertId is not null)
+                return await client.GetAsync($"/api/concert/{concertId}/operations");
 
             await Task.Delay(100);
         }
         while (DateTimeOffset.UtcNow <= deadline);
 
-        return response;
+        return new HttpResponseMessage(HttpStatusCode.NotFound);
     }
-    internal IQueryable<InvoiceEntity> Invoices => readDbContext.Invoices;
+    internal IQueryable<InvoiceEntity> Invoices => dbContext.Invoices.AsNoTracking();
     internal IQueryable<SelfBillingAgreementEntity> SelfBillingAgreements =>
         readDbContext.SelfBillingAgreements;
 
     internal async Task<Result<SettlementOutcome, FinishConcertError>> FinishConcertAsync(int concertId)
     {
         await EnsureSupplierSelfBillingAgreementAsync(concertId);
-        return await CompleteConcertAsync(concertId);
+        return await workflow.RunAsync(workflow => workflow.CompleteAsync(concertId));
     }
 
     internal Task<Result<SettlementOutcome, FinishConcertError>> CompleteConcertAsync(int concertId) =>
-        AsSettlementPayeeAsync(
-            concertId,
-            () => workflow.RunAsync(workflow => workflow.CompleteAsync(concertId)));
+        workflow.RunAsync(workflow => workflow.CompleteAsync(concertId));
 
-    internal Task DeclareDoorRevenueAsync(int concertId, decimal doorRevenue) =>
-        AsVenueAsync(concertId, () => concertService.DeclareDoorRevenueAsync(concertId, doorRevenue));
+    internal Task<Result<SettlementOutcome, FinishConcertError>> CompleteConcertAsync(
+        int concertId,
+        CancellationToken ct) =>
+        workflow.RunAsync(workflow => workflow.CompleteAsync(concertId, ct));
 
-    /// <summary>
-    /// The sweep and the HTTP terminal both reach the workflow with a tenant established; these helpers
-    /// stand in for it, picking the same tenant that caller would have carried.
-    /// </summary>
-    private async Task<T> AsSettlementPayeeAsync<T>(int concertId, Func<Task<T>> action)
+    internal async Task DeclareDoorRevenueAsync(
+        int concertId,
+        decimal doorRevenue)
     {
-        var concert = await readDbContext.Concerts
-            .SingleOrDefaultAsync(value => value.Id == concertId);
-        if (concert is null)
-            return await action();
+        var entity = await dbContext.Concerts
+            .SingleOrDefaultAsync(concert => concert.Id == concertId);
 
-        using var acting = TenantScope.As(concert.SettlementPayeeTenantId);
-        return await action();
-    }
+        if (entity is not DoorRevenueConcert concert)
+            throw new InvalidOperationException($"Concert {concertId} was not a door-revenue concert.");
 
-    private async Task AsVenueAsync(int concertId, Func<Task> action)
-    {
-        var venueTenantId = await readDbContext.Concerts
-            .Where(concert => concert.Id == concertId)
-            .Select(concert => (Guid?)concert.VenueTenantId)
-            .SingleOrDefaultAsync();
-        if (venueTenantId is null)
-        {
-            await action();
-            return;
-        }
+        var result = concert.DeclareDoorRevenue(doorRevenue);
+        if (result.TryGetError(out var error))
+            throw new InvalidOperationException(error.ToString());
 
-        using var acting = TenantScope.As(venueTenantId.Value);
-        await action();
+        await dbContext.SaveChangesAsync();
     }
 
     /// <summary>
     /// Commits <paramref name="competingChange"/> between the next concert transition's read and its
     /// update, so that transition loses the race and has to rerun against the winner's state.
     /// </summary>
-    internal void ArmConcertConflict(Func<Task> competingChange) =>
-        Conflicts.ArmOnce<ConcertEntity>(competingChange);
-
     // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause,
     // and SQL Server rejects OUTPUT against a table that has an enabled trigger. Stated over the new
     // row alone, it still admits the settlement reservation and rejects only what follows it.
@@ -136,14 +121,6 @@ public sealed class ConcertApiFixture : ApiFixture
         Guid? artistTenantId = null,
         Guid? venueTenantId = null)
     {
-        var owner = await readDbContext.Concerts
-            .Where(concert => concert.Id == concertId)
-            .Select(concert => (Guid?)concert.VenueTenantId)
-            .SingleOrDefaultAsync();
-        if (owner is null)
-            return;
-
-        using var acting = TenantScope.As(owner.Value);
         if (artistTenantId is { } artist)
             await dbContext.Concerts.Where(concert => concert.Id == concertId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(
@@ -154,68 +131,398 @@ public sealed class ConcertApiFixture : ApiFixture
                 .ExecuteUpdateAsync(setters => setters.SetProperty(
                     concert => concert.VenueTenantId,
                     venue));
-    }
 
-    internal async Task SetConcertPeriodAsync(int concertId, DateRange period)
-    {
-        var venueTenantId = await readDbContext.Concerts
-            .Where(concert => concert.Id == concertId)
-            .Select(concert => (Guid?)concert.VenueTenantId)
-            .SingleOrDefaultAsync();
-        if (venueTenantId is null)
-            return;
-
-        await using var scope = Services.CreateAsyncScope();
-        using var acting = TenantScope.As(venueTenantId.Value);
-        var context = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
-        var concert = await context.Concerts.SingleAsync(entity => entity.Id == concertId);
-        context.Entry(concert).ComplexProperty(entity => entity.Period).CurrentValue = period;
-        await context.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
     }
 
     internal async Task AddSelfBillingAgreementsAsync(
         params SelfBillingAgreementEntity[] agreements)
     {
-        foreach (var owned in agreements.GroupBy(agreement => agreement.TenantId))
-        {
-            using var acting = TenantScope.As(owned.Key);
-            dbContext.SelfBillingAgreements.AddRange(owned);
-            await dbContext.SaveChangesAsync();
-        }
+        dbContext.SelfBillingAgreements.AddRange(agreements);
+        await dbContext.SaveChangesAsync();
     }
-
-    private ITenantScope TenantScope => Services.GetRequiredService<ITenantScope>();
 
     internal Task AddSelfBillingAgreementAsync(Guid tenantId, DateTime acceptedAtUtc) =>
         AddSelfBillingAgreementsAsync(CreateAgreement(tenantId, acceptedAtUtc));
 
+    internal async Task<(Guid GrantId, long AccessVersion, DateTime Now)> AddExpiredSummaryShareAsync(
+        int concertId,
+        Guid issuerTenantId,
+        Guid issuerUserId,
+        Guid recipientTenantId)
+    {
+        dbContext.ChangeTracker.Clear();
+        var concert = await dbContext.Concerts
+            .Include(value => value.AccessGrants)
+            .SingleAsync(value => value.Id == concertId);
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var share = concert.ShareSummary(
+            issuerTenantId,
+            issuerUserId,
+            recipientTenantId,
+            null,
+            now.AddDays(-2),
+            now.AddDays(-1));
+        if (!share.TryGetValue(out var grant))
+            throw new InvalidOperationException("Could not seed an expired summary share.");
+
+        dbContext.Add(grant);
+        await dbContext.SaveChangesAsync();
+        return (grant.Id, concert.AccessVersion, now);
+    }
+
+    internal async Task<T> RunWithReceiptInsertBarrierAsync<T>(
+        Func<CancellationToken, Task<T>> action) =>
+        await RunWithReceiptInsertBarrierCoreAsync(action, null);
+
+    internal async Task<T> RunWithReceiptInsertBarrierAsync<T>(
+        Func<CancellationToken, Task<T>> action,
+        Exception injectedFailure) =>
+        await RunWithReceiptInsertBarrierCoreAsync(action, injectedFailure);
+
+    internal async Task<T[]> RunWithInvoiceSequenceAllocationBarrierAsync<T>(
+        Guid supplierTenantId,
+        Func<CancellationToken, Task<T>[]> action)
+    {
+        using var cancellation = new CancellationTokenSource();
+        await using var control = new NpgsqlConnection(connectionString);
+        Task<T[]>? result = null;
+        ExceptionDispatchInfo? failure = null;
+        T[]? outcome = null;
+        var completed = false;
+        var lockHeld = false;
+        var cancellationRequested = false;
+
+        try
+        {
+            await control.OpenAsync();
+            await SetInvoiceSequenceLockAsync(control, supplierTenantId, acquire: true);
+            lockHeld = true;
+            var actions = action(cancellation.Token);
+            result = Task.WhenAll(actions);
+            var firstAction = Task.WhenAny(actions);
+            var waiters = WaitForInvoiceSequenceLockWaitersAsync(connectionString);
+            if (await Task.WhenAny(firstAction, waiters) == firstAction)
+                await await firstAction;
+            await waiters;
+        }
+        catch (Exception exception)
+        {
+            failure = ExceptionDispatchInfo.Capture(exception);
+        }
+
+        if (lockHeld)
+        {
+            try
+            {
+                await SetInvoiceSequenceLockAsync(control, supplierTenantId, acquire: false);
+                lockHeld = false;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+                try
+                {
+                    await control.CloseAsync();
+                }
+                catch (Exception closeException)
+                {
+                    failure ??= ExceptionDispatchInfo.Capture(closeException);
+                }
+            }
+        }
+
+        if (result is not null && !completed)
+        {
+            if (failure is not null)
+            {
+                try
+                {
+                    await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                    cancellationRequested = true;
+                }
+                catch (Exception cancellationException)
+                {
+                    failure ??= ExceptionDispatchInfo.Capture(cancellationException);
+                }
+            }
+
+            try
+            {
+                outcome = await result.WaitAsync(TimeSpan.FromSeconds(10));
+                completed = true;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+                if (!cancellationRequested)
+                {
+                    try
+                    {
+                        await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                    }
+                    catch (Exception cancellationException)
+                    {
+                        failure ??= ExceptionDispatchInfo.Capture(cancellationException);
+                    }
+                }
+            }
+        }
+
+        failure?.Throw();
+        if (!completed)
+            throw new InvalidOperationException("The invoice sequence allocation action did not complete.");
+        return outcome!;
+    }
+
+    internal async Task<bool> CanAcquireInvoiceSequenceLockAsync(Guid supplierTenantId)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT pg_try_advisory_lock(hashtextextended(CAST(@tenantId AS text), 0))";
+        command.Parameters.AddWithValue("tenantId", supplierTenantId);
+        var acquired = (bool)(await command.ExecuteScalarAsync() ?? false);
+        if (acquired)
+            await SetInvoiceSequenceLockAsync(connection, supplierTenantId, acquire: false);
+        return acquired;
+    }
+
+    private async Task<T> RunWithReceiptInsertBarrierCoreAsync<T>(
+        Func<CancellationToken, Task<T>> action,
+        Exception? injectedFailure)
+    {
+        using var cancellation = new CancellationTokenSource();
+        await using var control = new NpgsqlConnection(connectionString);
+        Task<T>? result = null;
+        ExceptionDispatchInfo? failure = null;
+        T? outcome = default;
+        var completed = false;
+        var lockHeld = false;
+
+        try
+        {
+            await control.OpenAsync();
+            await ExecuteAsync(control, """
+                CREATE OR REPLACE FUNCTION concert.block_receipt_insert_for_test()
+                RETURNS trigger
+                LANGUAGE plpgsql
+                AS $$
+                BEGIN
+                    PERFORM pg_advisory_xact_lock_shared(638457219);
+                    RETURN NEW;
+                END;
+                $$;
+                DROP TRIGGER IF EXISTS block_receipt_insert_for_test
+                    ON concert."ConcertCommandReceipts";
+                CREATE TRIGGER block_receipt_insert_for_test
+                    BEFORE INSERT ON concert."ConcertCommandReceipts"
+                    FOR EACH ROW EXECUTE FUNCTION concert.block_receipt_insert_for_test();
+                """);
+            await ExecuteAsync(control, $"SELECT pg_advisory_lock({ReceiptInsertBarrierKey})");
+            lockHeld = true;
+            result = action(cancellation.Token);
+            await WaitForReceiptInsertWaitersAsync(connectionString);
+            if (injectedFailure is not null)
+                throw injectedFailure;
+            await ExecuteAsync(control, $"SELECT pg_advisory_unlock({ReceiptInsertBarrierKey})");
+            lockHeld = false;
+            outcome = await result;
+            completed = true;
+        }
+        catch (Exception exception)
+        {
+            failure = ExceptionDispatchInfo.Capture(exception);
+            try
+            {
+                await cancellation.CancelAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception cancellationException)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(cancellationException);
+            }
+        }
+
+        if (lockHeld)
+        {
+            try
+            {
+                await ExecuteAsync(control, $"SELECT pg_advisory_unlock({ReceiptInsertBarrierKey})");
+                lockHeld = false;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+                try
+                {
+                    await control.CloseAsync();
+                }
+                catch (Exception closeException)
+                {
+                    failure ??= ExceptionDispatchInfo.Capture(closeException);
+                }
+            }
+        }
+
+        if (result is not null && !completed)
+        {
+            try
+            {
+                outcome = await result.WaitAsync(TimeSpan.FromSeconds(10));
+                completed = true;
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+        }
+
+        try
+        {
+            using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await using var cleanup = new NpgsqlConnection(connectionString);
+            await cleanup.OpenAsync(cleanupCancellation.Token);
+            await ExecuteAsync(cleanup, """
+                SET lock_timeout = '5s';
+                DROP TRIGGER IF EXISTS block_receipt_insert_for_test
+                    ON concert."ConcertCommandReceipts";
+                DROP FUNCTION IF EXISTS concert.block_receipt_insert_for_test();
+                """, cleanupCancellation.Token);
+        }
+        catch (Exception exception)
+        {
+            failure ??= ExceptionDispatchInfo.Capture(exception);
+        }
+
+        failure?.Throw();
+        if (!completed)
+            throw new InvalidOperationException("The receipt insert barrier action did not complete.");
+        return outcome!;
+    }
+
+    internal async Task<bool> HasReceiptInsertBarrierAsync()
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM pg_trigger
+                WHERE tgname = 'block_receipt_insert_for_test'
+                  AND NOT tgisinternal)
+            OR EXISTS (
+                SELECT 1
+                FROM pg_proc AS procedure
+                INNER JOIN pg_namespace AS schema ON schema.oid = procedure.pronamespace
+                WHERE schema.nspname = 'concert'
+                  AND procedure.proname = 'block_receipt_insert_for_test')
+            """;
+        return (bool)(await command.ExecuteScalarAsync() ?? true);
+    }
+
+    private static async Task WaitForReceiptInsertWaitersAsync(string connectionString)
+    {
+        await using var observer = new NpgsqlConnection(connectionString);
+        await observer.OpenAsync();
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
+        do
+        {
+            await using var command = observer.CreateCommand();
+            command.CommandText = """
+                SELECT count(*)
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid <> pg_backend_pid()
+                  AND wait_event_type = 'Lock'
+                  AND query LIKE '%ConcertCommandReceipts%'
+                """;
+            if ((long)(await command.ExecuteScalarAsync() ?? 0L) >= 2)
+                return;
+            await Task.Delay(20);
+        }
+        while (DateTimeOffset.UtcNow < deadline);
+
+        throw new TimeoutException("Two receipt inserts did not reach the database barrier.");
+    }
+
+    private static async Task WaitForInvoiceSequenceLockWaitersAsync(string connectionString)
+    {
+        await using var observer = new NpgsqlConnection(connectionString);
+        await observer.OpenAsync();
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
+        do
+        {
+            await using var command = observer.CreateCommand();
+            command.CommandText = """
+                SELECT count(*)
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid <> pg_backend_pid()
+                  AND wait_event_type = 'Lock'
+                  AND query LIKE '%pg_advisory_xact_lock%'
+                """;
+            if ((long)(await command.ExecuteScalarAsync() ?? 0L) >= 2)
+                return;
+            await Task.Delay(20);
+        }
+        while (DateTimeOffset.UtcNow < deadline);
+
+        throw new TimeoutException("Two invoice sequence allocations did not reach the database barrier.");
+    }
+
+    private static async Task SetInvoiceSequenceLockAsync(
+        NpgsqlConnection connection,
+        Guid supplierTenantId,
+        bool acquire)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = acquire
+            ? "SELECT pg_advisory_lock(hashtextextended(CAST(@tenantId AS text), 0))"
+            : "SELECT pg_advisory_unlock(hashtextextended(CAST(@tenantId AS text), 0))";
+        command.Parameters.AddWithValue("tenantId", supplierTenantId);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private static async Task ExecuteAsync(
+        NpgsqlConnection connection,
+        string sql,
+        CancellationToken cancellationToken = default)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     protected override void OnConfigureServices(IServiceCollection services)
     {
-        services.AddResettables(Conflicts);
-        services.ConfigureDbContext<ConcertDbContext>(
-            (_, options) => options.AddInterceptors(Conflicts));
     }
 
     protected override void OnReset(IServiceScope scope)
     {
         readDbContext = scope.ServiceProvider.GetRequiredService<IConcertReadDbContext>();
-        dbContext = scope.ServiceProvider.GetRequiredService<ConcertDbContext>();
+        dbContext = scope.ServiceProvider.GetRequiredService<ConcertPrivilegedDbContext>();
         workflow = scope.ServiceProvider.GetRequiredService<IScoped<IConcertWorkflow>>();
         completionRunner = scope.ServiceProvider.GetRequiredService<ICompletionRunner>();
-        concertService = scope.ServiceProvider.GetRequiredService<IConcertService>();
         selfBillingAgreementRepository = scope.ServiceProvider
             .GetRequiredService<ISelfBillingAgreementRepository>();
+        timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
+        connectionString = scope.ServiceProvider
+            .GetRequiredService<IConfiguration>()
+            .GetConnectionString(B2BDb.Name)
+            ?? throw new InvalidOperationException($"Connection string '{B2BDb.Name}' is required.");
     }
 
     internal async Task EnsureSupplierSelfBillingAgreementAsync(int concertId)
     {
-        var concert = await readDbContext.Concerts.SingleOrDefaultAsync(value => value.Id == concertId);
+        var concert = await dbContext.Concerts.SingleOrDefaultAsync(value => value.Id == concertId);
         if (concert is null)
             return;
 
         var supplierTenantId = concert.SettlementPayeeTenantId;
         var now = SeedNow;
-        if (await readDbContext.SelfBillingAgreements.AnyAsync(
+        if (await dbContext.SelfBillingAgreements.AnyAsync(
                 agreement => agreement.TenantId == supplierTenantId && agreement.ExpiresAtUtc > now))
             return;
 

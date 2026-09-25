@@ -92,7 +92,7 @@ public sealed class ResourceGraphTests
         var authEnvironment = await GetRawEnvironmentAsync(auth, CancellationToken.None);
         Assert.DoesNotContain("Auth__PublicUrl", authEnvironment.Keys);
         using var app = validBuilder.Build();
-        var builder = AppHost.CreateBuilder([]);
+        var builder = AppHost.CreateBuilder(["--Stripe:SecretKey="]);
         builder.Services.AddInvalidLifetimeGraph();
         Assert.ThrowsAny<Exception>(() => builder.Build());
     }
@@ -213,7 +213,13 @@ public sealed class ResourceGraphTests
 
         Assert.Equal(expected, B2BLocalSpaSurfaces.All);
         Assert.Equal(
-            new[] { (expected[0], "Venue"), (expected[1], "Artist"), (expected[3], "Admin") },
+            new[]
+            {
+                (expected[0], "Venue"),
+                (expected[1], "Artist"),
+                (expected[2], "Business"),
+                (expected[3], "Admin")
+            },
             B2BLocalSpaSurfaces.AuthClients);
         Assert.Equal(expected.Length, B2BLocalSpaSurfaces.All.Select(surface => surface.ResourceName).Distinct().Count());
         Assert.Equal(expected.Length, B2BLocalSpaSurfaces.All.Select(surface => surface.HttpsPort).Distinct().Count());
@@ -239,7 +245,7 @@ public sealed class ResourceGraphTests
         var b2bEnvironment = b2bConfiguration.EnvironmentVariables.ToDictionary();
         Assert.Equal("true", authEnvironment["Auth__SpaClients__RestrictToEnabledClients"]);
         Assert.Equal(
-            new[] { "Venue", "Artist", "Admin" },
+            new[] { "Venue", "Artist", "Business", "Admin" },
             authEnvironment
                 .Where(pair => pair.Key.StartsWith("Auth__SpaClients__EnabledClients__", StringComparison.Ordinal))
                 .OrderBy(pair => pair.Key)

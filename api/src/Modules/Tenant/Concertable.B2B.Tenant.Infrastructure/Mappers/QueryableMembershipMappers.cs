@@ -6,11 +6,22 @@ internal static class QueryableMembershipMappers
     {
         // Filter on the membership entity's own columns before projecting — a predicate over the
         // projected record doesn't translate, so any Where must sit on TenantMembershipEntity.
-        public IQueryable<UserMembership> ToUserMemberships(IQueryable<TenantEntity> tenants) =>
+        public IQueryable<UserMembership> ToUserMemberships(
+            IQueryable<TenantEntity> tenants,
+            IQueryable<TenantBusinessActivityEntity> businessActivities) =>
             memberships.Join(
                 tenants,
                 m => m.TenantId,
                 t => t.Id,
-                (m, t) => new UserMembership(m.TenantId, t.LegalName, t.Type, m.Role));
+                (m, t) => new UserMembership(
+                    m.Id,
+                    m.TenantId,
+                    t.LegalName,
+                    m.Role,
+                    m.PermissionVersion,
+                    businessActivities
+                        .Where(p => p.TenantId == m.TenantId && p.RetiredAt == null)
+                        .Select(p => p.Kind)
+                        .ToList()));
     }
 }

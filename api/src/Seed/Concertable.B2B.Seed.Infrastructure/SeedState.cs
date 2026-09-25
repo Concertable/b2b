@@ -187,7 +187,7 @@ public sealed class SeedState
         // Tax-complete but never submitted for verification, unlike SeedUsers' bare operators below (also
         // tax-incomplete) — isolates the verification gate from the tax-compliance gate. See the property doc.
         UnverifiedTenant = TenantFactory.Create(
-            UnverifiedTenantUserId, "tenant-verification-gate@test.com", TenantType.Venue, now,
+            UnverifiedTenantUserId, "tenant-verification-gate@test.com", TenantBusinessActivityKind.VenueOperator, now,
             taxComplianceComplete: true);
 
         Users = [Admin, .. ArtistManagers, .. VenueManagers, UnverifiedVenueManager];
@@ -346,7 +346,7 @@ public sealed class SeedState
         var bareTenantUserIds = new HashSet<Guid> { VenueManagerNoVenue.Id, ArtistManagerNoArtist.Id };
         Tenants = SeedUsers.Managers
             .Select(m => TenantFactory.Create(
-                m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantType.Venue : TenantType.Artist, now,
+                m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantBusinessActivityKind.VenueOperator : TenantBusinessActivityKind.Artist, now,
                 taxComplianceComplete: !bareTenantUserIds.Contains(m.Id)))
             .ToList();
         Verifications = SeedUsers.Managers
@@ -595,15 +595,17 @@ public sealed class SeedState
 
         Concerts = catalog.Concerts
             .Where(spec => spec.ConcertId != AwaitingPaymentBooking.Id)
-            .Select(spec => ConcertFactory.Create(spec, Bookings[spec.ConcertId - 1], Contracts[spec.ConcertId - 1]))
+            .Select(spec => ConcertFactory.Create(
+                spec,
+                Bookings[spec.ConcertId - 1],
+                Contracts[spec.ConcertId - 1],
+                now))
             .ToList();
         ConcertAvailabilities = Concerts.Select(concert => ConcertAvailabilityEntity.Create(
             concert.Id,
             concert.OpportunityId,
             concert.ArtistId,
             concert.VenueId,
-            concert.VenueTenantId,
-            concert.ArtistTenantId,
             concert.Period.Start)).ToList();
     }
 

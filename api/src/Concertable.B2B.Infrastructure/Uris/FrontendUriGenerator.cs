@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using Concertable.B2B.Tenant.Contracts.Enums;
 using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Infrastructure.Uris;
@@ -7,7 +6,7 @@ namespace Concertable.B2B.Infrastructure.Uris;
 internal sealed class FrontendUriGenerator : IFrontendUriGenerator
 {
     private readonly IUriGenerator uris;
-    private readonly FrozenDictionary<TenantType, string> frontends;
+    private readonly FrozenDictionary<FrontendSurface, string> frontends;
 
     public FrontendUriGenerator(IUriGenerator uris, IOptions<FrontendUrlSettings> settings)
     {
@@ -15,6 +14,6 @@ internal sealed class FrontendUriGenerator : IFrontendUriGenerator
         this.frontends = settings.Value.Frontends.ToFrozenDictionary();
     }
 
-    public Uri Create(TenantType tenantType, string path, IDictionary<string, string>? query = null) =>
-        uris.Create(frontends[tenantType], path, query);
+    public Uri Create(FrontendSurface surface, string path, IDictionary<string, string>? query = null) =>
+        uris.Create(frontends[surface], path, query);
 }

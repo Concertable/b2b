@@ -11,6 +11,8 @@ internal abstract partial record RejectApplicationError : IError
     {
         ApplicationNotFound(var applicationId) =>
             ErrorDefinition.NotFound<ApplicationNotFound>($"Application {applicationId} was not found."),
+        NotPermitted => ErrorDefinition.Forbidden<NotPermitted>(
+            "You are not permitted to reject this application."),
         InvalidTransition(var error) =>
             ErrorDefinition.Conflict<InvalidTransition>($"Cannot reject an application from {error.Current}."),
         Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
@@ -19,6 +21,9 @@ internal abstract partial record RejectApplicationError : IError
 
     [ErrorCode("application.reject.not_found")]
     public partial record ApplicationNotFound(int ApplicationId);
+
+    [ErrorCode("application.reject.not_permitted")]
+    public partial record NotPermitted;
 
     [ErrorCode("application.reject.invalid_state")]
     public partial record InvalidTransition(TransitionError<ApplicationState, ApplicationTrigger> Error);

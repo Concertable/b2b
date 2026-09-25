@@ -11,6 +11,7 @@
     <Project Path="api/src/Concertable.B2B.DataAccess/Concertable.B2B.DataAccess.Application/Concertable.B2B.DataAccess.Application.csproj" />
     <Project Path="api/src/Concertable.B2B.DataAccess/Concertable.B2B.DataAccess.Infrastructure/Concertable.B2B.DataAccess.Infrastructure.csproj" />
     <Project Path="api/src/Concertable.B2B.DataAccess/Tests/Concertable.B2B.DataAccess.UnitTests/Concertable.B2B.DataAccess.UnitTests.csproj" />
+    <Project Path="api/src/Concertable.B2B.DataAccess/Tests/Concertable.B2B.DataAccess.IntegrationTests/Concertable.B2B.DataAccess.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/Seed/">
     <Project Path="api/src/Seed/Concertable.B2B.Seed.Contracts/Concertable.B2B.Seed.Contracts.csproj" />
@@ -27,6 +28,13 @@
   <Folder Name="/Modules/Admin/Tests/">
     <Project Path="api/src/Modules/Admin/Tests/Concertable.B2B.Admin.IntegrationTests/Concertable.B2B.Admin.IntegrationTests.csproj" />
     <Project Path="api/src/Modules/Admin/Tests/Concertable.B2B.Admin.UnitTests/Concertable.B2B.Admin.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Authorization/">
+    <Project Path="api/src/Modules/Authorization/Concertable.B2B.Authorization.Contracts/Concertable.B2B.Authorization.Contracts.csproj" />
+    <Project Path="api/src/Modules/Authorization/Concertable.B2B.Authorization.Infrastructure/Concertable.B2B.Authorization.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Modules/Authorization/Tests/">
+    <Project Path="api/src/Modules/Authorization/Tests/Concertable.B2B.Authorization.UnitTests/Concertable.B2B.Authorization.UnitTests.csproj" />
   </Folder>
   <Folder Name="/Modules/Artist/">
     <Project Path="api/src/Modules/Artist/Concertable.B2B.Artist.Api/Concertable.B2B.Artist.Api.csproj" />

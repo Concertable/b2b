@@ -1,29 +1,32 @@
-using Concertable.B2B.Concert.Domain.Entities;
-using Concertable.B2B.Concert.Infrastructure.Data;
+﻿using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Tenant.Contracts;
-using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class InvoiceIssuer
 {
     private readonly ITenantModule tenantModule;
+    private readonly IInvoicePrivilegedRepository invoiceRepository;
+    private readonly IInvoiceSequenceRepository sequenceRepository;
     private readonly TimeProvider timeProvider;
 
     public InvoiceIssuer(
         ITenantModule tenantModule,
+        IInvoicePrivilegedRepository invoiceRepository,
+        IInvoiceSequenceRepository sequenceRepository,
         TimeProvider timeProvider)
     {
         this.tenantModule = tenantModule;
+        this.invoiceRepository = invoiceRepository;
+        this.sequenceRepository = sequenceRepository;
         this.timeProvider = timeProvider;
     }
 
     public async Task IssueAsync(
-        ConcertDbContext context,
         ConcertEntity concert,
         CancellationToken ct = default)
     {
-        if (await context.Invoices.AnyAsync(invoice => invoice.BookingId == concert.BookingId, ct))
+        if (await this.invoiceRepository.ExistsByBookingIdAsync(concert.BookingId, ct))
             return;
 
         var gross = concert.SettlementGross;
@@ -47,12 +50,11 @@ internal sealed class InvoiceIssuer
             value => value,
             _ => throw new InvalidOperationException($"Supplier tenant {supplierTenantId} not found at invoice time."));
 
-        var sequence = await context.InvoiceSequences
-            .SingleOrDefaultAsync(value => value.TenantId == supplierTenantId, ct);
+        var sequence = await this.sequenceRepository.GetByTenantIdForUpdateAsync(supplierTenantId, ct);
         if (sequence is null)
         {
             sequence = InvoiceSequenceEntity.Create(supplierTenantId);
-            await context.InvoiceSequences.AddAsync(sequence, ct);
+            await this.sequenceRepository.AddAsync(sequence, ct);
         }
         var sequenceNumber = sequence.Allocate();
         var invoiceNumber = $"INV-{supplierTax.SellerIdentifier}-{sequenceNumber:D6}";
@@ -67,7 +69,7 @@ internal sealed class InvoiceIssuer
             concert.Period.End,
             timeProvider.GetUtcNow().UtcDateTime);
 
-        await context.Invoices.AddAsync(invoice, ct);
+        await this.invoiceRepository.AddAsync(invoice, ct);
     }
 
     private async Task<InvoiceParty> BuildPartyAsync(Guid tenantId, TaxComplianceDto tax, CancellationToken ct)

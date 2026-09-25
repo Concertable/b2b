@@ -45,6 +45,106 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertAccessGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("IssuedByTenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "MembershipId")
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.HasIndex("TenantId", "Scope", "ResourceId", "MembershipId")
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ConcertAccessGrants_Tenant")
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ConcertAccessGrants_Membership")
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
+
+                    b.ToTable("ConcertAccessGrants", "concert");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertCommandReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("IssuedByTenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IssuedByTenantId", "Operation", "RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ConcertCommandReceipts_Request");
+
+                    b.ToTable("ConcertCommandReceipts", "concert");
+                });
+
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -56,6 +156,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.Property<string>("About")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<long>("AccessVersion")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("ApplicationId")
                         .HasColumnType("integer");
@@ -219,6 +322,67 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.ToTable("ConcertImages", "concert");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.InvoiceAccessGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("IssuedByTenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "MembershipId")
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.HasIndex("TenantId", "Scope", "ResourceId", "MembershipId")
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_InvoiceAccessGrants_Tenant")
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_InvoiceAccessGrants_Membership")
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
+
+                    b.ToTable("InvoiceAccessGrants", "concert");
+                });
+
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.InvoiceEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -231,6 +395,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<int>("BookingId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ConcertId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -362,6 +529,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BookingId")
+                        .IsUnique();
+
+                    b.HasIndex("ConcertId")
                         .IsUnique();
 
                     b.ToTable("Invoices", "concert");
@@ -586,6 +756,25 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.ToTable("VenueReadModels", "concert");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.DataAccess.Application.MembershipAuthority", b =>
+                {
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("PermissionVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("MembershipAuthority", "tenant");
+                });
+
             modelBuilder.Entity("Concertable.B2B.Venue.Domain.ReadModels.VenueRatingProjection", b =>
                 {
                     b.Property<int>("VenueId")
@@ -734,6 +923,15 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     b.HasDiscriminator().HasValue(2);
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertAccessGrant", b =>
+                {
+                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.ConcertEntity", null)
+                        .WithMany("AccessGrants")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModel", "Artist")
@@ -762,6 +960,15 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Concert");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.InvoiceAccessGrant", b =>
+                {
+                    b.HasOne("Concertable.B2B.Concert.Domain.Entities.InvoiceEntity", null)
+                        .WithMany("AccessGrants")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModel", b =>
@@ -835,7 +1042,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.ConcertEntity", b =>
                 {
+                    b.Navigation("AccessGrants");
+
                     b.Navigation("Images");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Concert.Domain.Entities.InvoiceEntity", b =>
+                {
+                    b.Navigation("AccessGrants");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Concert.Domain.ReadModels.ArtistReadModel", b =>

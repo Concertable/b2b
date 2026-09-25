@@ -2,7 +2,6 @@ using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -14,20 +13,14 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<RefundEscrowDeferredEvent>,
     IIntegrationEventHandler<RefundEscrowRejectedEvent>
 {
-    private readonly BookingDbContext context;
-    private readonly IBookingReadDbContext readDbContext;
-    private readonly ITenantScope tenantScope;
-    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+    private readonly BookingPrivilegedDbContext context;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
 
     public CancellationFinancialOperationOutcomeProcessor(
-        BookingDbContext context,
-        IBookingReadDbContext readDbContext,
-        ITenantScope tenantScope,
-        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
+        BookingPrivilegedDbContext context,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
     {
         this.context = context;
-        this.readDbContext = readDbContext;
-        this.tenantScope = tenantScope;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
     }
 
@@ -65,26 +58,12 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
             throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
     }
 
-    private async Task ProcessAsync(
+    private Task ProcessAsync(
         Guid operationId,
         MessageEnvelope envelope,
         Action<BookingEntity> action,
-        CancellationToken ct)
-    {
-        // A refund outcome names only its operation, so the owner comes off the row itself through the
-        // unfiltered read stance; the transition then runs as that tenant, where the filter can see it.
-        var venueTenantId = await readDbContext.Bookings
-            .Where(value => value.CancellationOperationId == operationId)
-            .Select(value => (Guid?)value.VenueTenantId)
-            .SingleOrDefaultAsync(ct);
-        if (venueTenantId is null)
-        {
-            await outboxUnitOfWorkBehavior.ExecuteAsync(() => TryRecordInboxAsync(envelope, ct), ct);
-            return;
-        }
-
-        using var acting = tenantScope.As(venueTenantId.Value);
-        await outboxUnitOfWorkBehavior.ExecuteAsync(async () =>
+        CancellationToken ct) =>
+        outboxUnitOfWorkBehavior.ExecuteAsync(async () =>
         {
             if (!await TryRecordInboxAsync(envelope, ct))
                 return;
@@ -94,7 +73,6 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
             if (booking is not null)
                 action(booking);
         }, ct);
-    }
 
     private async Task<bool> TryRecordInboxAsync(MessageEnvelope envelope, CancellationToken ct)
     {

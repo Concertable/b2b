@@ -3,6 +3,9 @@ import { NavigationContainer } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { ActivityIndicator, View } from "react-native";
 import {
+  isPrivateQuery,
+  settlePendingMutations,
+  tenantSession,
   useB2bIdentityQuery,
   useTenant,
 } from "@concertable/b2b/features/tenant";
@@ -15,8 +18,9 @@ import { ActiveTenantProvider } from "../features/tenant/ActiveTenantContext";
 import { TenantChooser } from "../features/tenant/components/TenantChooser";
 import { TenantSwitcher } from "../features/tenant/components/TenantSwitcher";
 import { initializeTenantSession } from "../lib/b2bClient";
-import { ArtistTabs } from "./ArtistTabs";
-import { VenueTabs } from "./VenueTabs";
+import { BusinessNavigator } from "./BusinessNavigator";
+import { PublicTabs } from "./PublicTabs";
+import { rootNavigationTarget } from "./rootNavigation";
 
 function LoadingScreen() {
   return (
@@ -35,13 +39,18 @@ function AuthenticatedNavigator() {
     async (tenantId: string) => {
       setSelectionError(false);
       try {
-        await tenant.selectTenant(tenantId);
-        await queryClient.invalidateQueries();
+        await tenantSession.switchTo(tenantId, {
+          prepare: async () => {
+            await queryClient.cancelQueries({ predicate: isPrivateQuery });
+            await settlePendingMutations(queryClient);
+            queryClient.removeQueries({ predicate: isPrivateQuery });
+          },
+        });
       } catch {
         setSelectionError(true);
       }
     },
-    [queryClient, tenant.selectTenant],
+    [queryClient],
   );
 
   if (identityQuery.isLoading) return <LoadingScreen />;
@@ -59,13 +68,17 @@ function AuthenticatedNavigator() {
     return (
       <View className="flex-1 items-center justify-center bg-background px-6">
         <Text className="text-center text-muted-foreground">
-          You do not have an active artist or venue membership.
+          You do not have an active organization membership.
         </Text>
       </View>
     );
   }
 
-  if (tenant.selectionRequired || tenant.activeMembership === undefined) {
+  if (
+    tenant.isSelectionPending ||
+    tenant.selectionRequired ||
+    tenant.activeMembership === undefined
+  ) {
     return (
       <TenantChooser
         memberships={tenant.memberships}
@@ -90,11 +103,10 @@ function AuthenticatedNavigator() {
       ) : null}
       <ActiveTenantProvider tenantId={tenant.activeMembership.tenantId}>
         <NavigationContainer key={tenant.activeMembership.tenantId}>
-          {tenant.activeMembership.type === "venue" ? (
-            <VenueTabs />
-          ) : (
-            <ArtistTabs />
-          )}
+          <BusinessNavigator
+            activities={tenant.activeMembership.businessActivities}
+            permissions={tenant.permissions}
+          />
         </NavigationContainer>
       </ActiveTenantProvider>
     </View>
@@ -134,10 +146,10 @@ export function RootNavigator() {
     );
   }
 
-  if (user === undefined) {
+  if (rootNavigationTarget(user !== undefined) === "public") {
     return (
       <NavigationContainer>
-        <ArtistTabs />
+        <PublicTabs />
       </NavigationContainer>
     );
   }

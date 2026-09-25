@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { currentPrivateQueryKey } from "../../tenant/queryKeys";
 import venueApi from "../api/venueApi";
 
 export const venueKeys = {
-  all: () => ["venue"] as const,
-  my: () => ["venue", "my"] as const,
+  all: () => currentPrivateQueryKey("venue"),
+  my: () => currentPrivateQueryKey("venue", "my"),
   myForTenant: (tenantId: string | undefined) =>
-    ["venue", "my", tenantId] as const,
+    currentPrivateQueryKey("venue", "my", tenantId),
   byId: (id: number) => ["venue", id] as const,
 };
 

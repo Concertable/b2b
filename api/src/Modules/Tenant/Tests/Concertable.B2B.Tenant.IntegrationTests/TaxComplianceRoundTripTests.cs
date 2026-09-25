@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
@@ -29,9 +29,11 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private static UpdateTenantRequest BuildRequest() => new()
+    private static UpdateTenantRequest BuildRequest(long expectedVersion) => new()
     {
         LegalName = "The Grand Venue Ltd",
+        ContactEmail = "accounts@grandvenue.test",
+        ExpectedVersion = expectedVersion,
         TaxCompliance = new TaxComplianceDto
         {
             VatNumber = "GB123456789",
@@ -72,15 +74,17 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
     {
         var manager = fixture.SeedState.VenueManager1;
         var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
-        var request = BuildRequest();
+        var current = fixture.Tenants.Single(tenant => tenant.Id == tenantId);
+        var request = BuildRequest(current.Version);
 
         var client = fixture.CreateClient(manager);
         var response = await client.PutAsJsonAsync("/api/organization", request);
         await response.ShouldBe(HttpStatusCode.OK);
 
-        var read = await client.GetFromJsonAsync<TenantDetails>("/api/organization");
+        var read = await (await client.GetAsync("/api/organization")).Content.ReadAsync<TenantDetails>();
         Assert.NotNull(read);
         Assert.Equal(request.LegalName, read!.LegalName);
+        Assert.Equal(request.ContactEmail, read.ContactEmail);
         // Same DTO shape for read and write, so it round-trips by value; presence == complete.
         Assert.Equal(request.TaxCompliance, read.TaxCompliance);
 
@@ -105,13 +109,17 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
     public async Task Update_ReplacesExistingTaxCompliance()
     {
         var manager = fixture.SeedState.VenueManager1;
+        var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
         var client = fixture.CreateClient(manager);
 
-        await (await client.PutAsJsonAsync("/api/organization", BuildRequest())).ShouldBe(HttpStatusCode.OK);
+        var first = BuildRequest(fixture.Tenants.Single(tenant => tenant.Id == tenantId).Version);
+        await (await client.PutAsJsonAsync("/api/organization", first)).ShouldBe(HttpStatusCode.OK);
 
         var replacement = new UpdateTenantRequest
         {
             LegalName = "Grand Venue Holdings Ltd",
+            ContactEmail = "finance@grandvenue.test",
+            ExpectedVersion = fixture.Tenants.Single(tenant => tenant.Id == tenantId).Version,
             TaxCompliance = new TaxComplianceDto
             {
                 VatNumber = null,
@@ -130,7 +138,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
         };
         await (await client.PutAsJsonAsync("/api/organization", replacement)).ShouldBe(HttpStatusCode.OK);
 
-        var read = await client.GetFromJsonAsync<TenantDetails>("/api/organization");
+        var read = await (await client.GetAsync("/api/organization")).Content.ReadAsync<TenantDetails>();
         Assert.NotNull(read);
         Assert.Equal(replacement.LegalName, read!.LegalName);
         Assert.Equal(replacement.TaxCompliance, read.TaxCompliance);
@@ -140,15 +148,34 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
     public async Task Update_InvalidVatNumberFormat_ReturnsBadRequest()
     {
         var manager = fixture.SeedState.VenueManager1;
-        var request = BuildRequest() with
+        var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
+        var request = BuildRequest(fixture.Tenants.Single(tenant => tenant.Id == tenantId).Version) with
         {
-            TaxCompliance = BuildRequest().TaxCompliance with { VatNumber = "NOTAVATNUMBER" },
+            TaxCompliance = BuildRequest(1).TaxCompliance with { VatNumber = "NOTAVATNUMBER" },
         };
 
         var client = fixture.CreateClient(manager);
         var response = await client.PutAsJsonAsync("/api/organization", request);
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Update_StaleVersion_ReturnsConflictWithoutMutation()
+    {
+        var manager = fixture.SeedState.VenueManager1;
+        var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == manager.Id).Id;
+        var current = fixture.Tenants.Single(tenant => tenant.Id == tenantId);
+        var request = BuildRequest(current.Version + 1);
+
+        var response = await fixture.CreateClient(manager)
+            .PutAsJsonAsync("/api/organization", request);
+
+        await response.ShouldBe(HttpStatusCode.Conflict);
+        var unchanged = fixture.Tenants.Single(tenant => tenant.Id == tenantId);
+        Assert.Equal(current.LegalName, unchanged.LegalName);
+        Assert.Equal(current.ContactEmail, unchanged.ContactEmail);
+        Assert.Equal(current.Version, unchanged.Version);
     }
 
     [Fact]
@@ -166,7 +193,7 @@ public sealed class TaxComplianceRoundTripTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.Admin);
 
-        var response = await client.PutAsJsonAsync("/api/organization", BuildRequest());
+        var response = await client.PutAsJsonAsync("/api/organization", BuildRequest(1));
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }

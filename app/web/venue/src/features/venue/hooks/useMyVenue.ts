@@ -11,7 +11,7 @@ import { useTenant } from "@concertable/web-b2b/features/tenant/hooks/useTenant"
 
 export function useMyVenue() {
   const queryClient = useQueryClient();
-  const { activeMembership } = useTenant("venue");
+  const { activeMembership } = useTenant("venueOperator");
   const tenantId = activeMembership?.tenantId;
   const venueQuery = useVenueQuery(tenantId);
   const venueId = venueQuery.data?.id ?? 0;

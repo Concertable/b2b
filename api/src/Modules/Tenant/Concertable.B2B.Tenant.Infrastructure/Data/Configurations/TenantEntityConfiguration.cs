@@ -10,8 +10,19 @@ internal sealed class TenantEntityConfiguration : IEntityTypeConfiguration<Tenan
         builder.ToTable(Schema.Tables.Tenants, Schema.Name);
         builder.HasKey(o => o.Id);
         builder.Property(o => o.LegalName).IsRequired().HasMaxLength(200);
-        builder.Property(o => o.Type).IsRequired();
+        builder.Property(o => o.DisplayName).IsRequired().HasMaxLength(200);
+        builder.Property(o => o.DisplayVersion).IsRequired();
+        builder.Property(o => o.Version).IsRequired().IsConcurrencyToken();
+        builder.Property(o => o.ContactEmail).IsRequired().HasMaxLength(320);
+        builder.Property(o => o.EligibilityVersion).IsRequired();
         builder.Property(o => o.CreatedAt).IsRequired();
+        builder.HasIndex(o => o.CreatedByUserId).IsUnique();
+
+        builder.HasMany(o => o.BusinessActivities)
+            .WithOne()
+            .HasForeignKey(p => p.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Navigation(o => o.BusinessActivities).AutoInclude();
 
         builder.OwnsOne(o => o.TaxCompliance, c =>
         {

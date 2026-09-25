@@ -1,5 +1,8 @@
 import { useState } from "react";
-import type { MyConcert } from "@concertable/web-b2b/features/concerts/types";
+import type {
+  ConcertFinance,
+  ConcertOperations,
+} from "@concertable/web-b2b/features/concerts/types";
 import { Button } from "@concertable/web/components/ui/button";
 import { NumberInput } from "@concertable/web/components/ui/NumberInput";
 import { Label } from "@concertable/web/components/ui/label";
@@ -14,15 +17,16 @@ import {
 import { useDeclareDoorRevenue } from "../hooks/useDeclareDoorRevenue";
 
 interface Props {
-  concert: MyConcert;
+  concert: ConcertOperations;
+  finance: ConcertFinance;
 }
 
-export function DeclareDoorRevenueButton({ concert }: Readonly<Props>) {
+export function DeclareDoorRevenueButton({ concert, finance }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [touched, setTouched] = useState(false);
   const { errorMessage, concertableSales, external, total, declare, isPending } =
-    useDeclareDoorRevenue(concert, value);
+    useDeclareDoorRevenue(concert, finance, value);
 
   const error = touched ? errorMessage : undefined;
 

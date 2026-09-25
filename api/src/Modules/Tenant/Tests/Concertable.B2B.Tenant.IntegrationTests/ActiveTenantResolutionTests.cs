@@ -2,6 +2,7 @@ using System.Net;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
+using Microsoft.AspNetCore.Mvc;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
@@ -87,6 +88,30 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task MalformedTenantHeader_ReturnsBadRequestProblemDetails()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        client.DefaultRequestHeaders.Add(TenantHeaders.TenantId, "not-a-tenant-id");
+
+        var response = await client.GetAsync("/api/organization");
+
+        await AssertBadTenantHeaderAsync(response);
+    }
+
+    [Fact]
+    public async Task DuplicateTenantHeaders_ReturnBadRequestProblemDetails()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        client.DefaultRequestHeaders.TryAddWithoutValidation(
+            TenantHeaders.TenantId,
+            [Guid.NewGuid().ToString(), Guid.NewGuid().ToString()]);
+
+        var response = await client.GetAsync("/api/organization");
+
+        await AssertBadTenantHeaderAsync(response);
+    }
+
+    [Fact]
     public async Task Me_ReturnsCallerMemberships()
     {
         var manager = fixture.SeedState.VenueManager1;
@@ -97,8 +122,20 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
         var me = await response.Content.ReadAsync<MeView>();
         var membership = Assert.Single(me!.Memberships);
         Assert.Equal(TenantOf(manager.Id), membership.TenantId);
-        Assert.Equal(TenantType.Venue, membership.Type);
         Assert.Equal(TenantRole.Owner, membership.Role);
+        Assert.Equal([TenantBusinessActivityKind.VenueOperator], membership.BusinessActivities);
+    }
+
+    private static async Task AssertBadTenantHeaderAsync(HttpResponseMessage response)
+    {
+        await response.ShouldBe(HttpStatusCode.BadRequest);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal(400, problem.Status);
+        Assert.Equal("Bad Request", problem.Title);
+        Assert.Equal("'X-Tenant-Id' is present but is not a tenant id.", problem.Detail);
     }
 
     /// <summary>The additive slice of <c>/api/auth/me</c> this phase introduces — the rest of the polymorphic user payload is ignored.</summary>

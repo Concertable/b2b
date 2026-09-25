@@ -33,6 +33,9 @@ public sealed class B2BTestClient
     public async Task<int> GetConcertStateByApplicationAsync(int applicationId, CancellationToken cancellationToken = default) =>
         await client.GetFromJsonAsync<int>($"/_e2e/applications/{applicationId}/concert-state", cancellationToken);
 
+    public async Task<int> GetConcertIdByApplicationAsync(int applicationId, CancellationToken cancellationToken = default) =>
+        await client.GetFromJsonAsync<int>($"/_e2e/applications/{applicationId}/concert-id", cancellationToken);
+
     public async Task<string> OpenMethodVerificationAsync(
         int applicationId,
         CancellationToken cancellationToken = default)

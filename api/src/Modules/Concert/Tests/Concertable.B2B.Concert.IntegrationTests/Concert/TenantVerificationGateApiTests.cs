@@ -23,6 +23,11 @@ public sealed class TenantVerificationGateApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
+    private async Task RepointArtistTenantAsync(int concertId, Guid artistTenantId)
+    {
+        await fixture.RepointConcertTenantsAsync(concertId, artistTenantId: artistTenantId);
+    }
+
     private Task<ConcertEntity> ConcertAsync(int concertId) =>
         fixture.Concerts.FirstAsync(concert => concert.Id == concertId);
 
@@ -30,7 +35,7 @@ public sealed class TenantVerificationGateApiTests : IAsyncLifetime
     public async Task Finish_Defers_WhenPayeeArtistNotVerified_EvenThoughTaxComplianceComplete()
     {
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking).Id;
-        await fixture.RepointConcertTenantsAsync(concertId, artistTenantId: fixture.SeedState.UnverifiedTenant.Id);
+        await RepointArtistTenantAsync(concertId, fixture.SeedState.UnverifiedTenant.Id);
 
         await fixture.FinishConcertAsync(concertId);
 

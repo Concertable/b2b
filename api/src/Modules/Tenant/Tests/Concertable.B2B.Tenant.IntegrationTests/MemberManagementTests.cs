@@ -189,9 +189,9 @@ public sealed class MemberManagementTests : IAsyncLifetime
     [Fact]
     public async Task DeleteTenant_AsOwner_DeletesTenantAndMemberships()
     {
-        var owner = fixture.SeedState.VenueManager1;
+        var owner = fixture.SeedState.VenueManagerNoVenue;
         var tenantId = TenantOf(owner.Id);
-        await fixture.AddMembershipAsync(tenantId, fixture.SeedState.VenueManagerNoVenue.Id, TenantRole.Staff);
+        await fixture.AddMembershipAsync(tenantId, fixture.SeedState.ArtistManagerNoArtist.Id, TenantRole.Staff);
 
         var response = await fixture.CreateClient(owner).DeleteAsync("/api/organization");
 

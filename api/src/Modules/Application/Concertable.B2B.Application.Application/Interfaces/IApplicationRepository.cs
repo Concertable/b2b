@@ -1,12 +1,15 @@
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
-using Concertable.B2B.DataAccess.Application;
+using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Application.Application.Interfaces;
 
-internal interface IApplicationRepository : IVenueArtistTenantScopedRepository<ApplicationEntity>
+internal interface IApplicationRepository : IRepository<ApplicationEntity, int>
 {
+    Task<ApplicationEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default);
+    Task<ApplicationEntity?> GetSummaryByIdAsync(int id, CancellationToken ct = default);
+    Task<ApplicationEntity?> GetProposalByIdAsync(int id, CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default);

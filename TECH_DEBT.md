@@ -57,9 +57,9 @@ before the entities are migrated.
 The backend workflow runs the solution with `--filter
 "Category=Unit|Category=Integration|Category=Architecture|Category=Startup"`. Several projects contain
 tests but no matching category traits, so `dotnet test` reports "No test matches" and exits successfully.
-The affected non-E2E projects observed during the PostgreSQL cut-over are DataAccess unit, Application unit,
-Artist unit, Booking unit, Conversations integration, Conversations unit, User unit, and Venue unit. The
-workflow therefore presents a green backend gate without executing those assemblies.
+The affected non-E2E projects are Application unit, Artist unit, Booking unit, Conversations integration,
+Conversations unit, User unit, and Venue unit. All seven pass when run directly — 117 tests — and CI never
+runs any of them, so the workflow presents a green backend gate without executing those assemblies.
 
 **Resolves when:** every intended backend test project either supplies a matching assembly/test category or
 the workflow selects projects by an explicit tier manifest, and CI fails when any intended project discovers
@@ -229,6 +229,27 @@ each module handles the integration event for its own rows, mirroring how creati
 nothing by key. The realistic next member is a cross-module *read* that varies by tenant type, such as a
 Tenant-side "has this tenant provisioned its profile yet?" over `ExistsByTenantIdAsync`.
 
+### Container image digests are hand-maintained in three places that nothing reconciles
+
+`local/AppHost/AppHost.cs` pins auth, auth-migrations, payment-web, payment-workers and
+payment-migrations; `tests/E2ETests/Concertable.B2B.E2ETests/AppFixture.cs` pins the search trio and
+overrides payment-web/payment-workers with their E2E digests; and `.github/workflows/e2e.yml` pre-pulls
+its own literal copy of that whole set to fail fast on registry access. Nothing compares the three.
+
+The `origin/main` reconciliation is what exposed it. That branch bumped every auth, payment and search
+digest and added two migration images, but never touched `e2e.yml` — so the workflow was left pulling a
+stale auth image and two payment digests the fixture no longer runs, and the merge would have inherited
+that drift silently. This is the same failure shape as the release-candidate set before `85c7c5a9`: a set
+written out more than once, where missing a copy stays invisible until CI fails for an unrelated-looking
+reason.
+
+The workflow's copy is the one with no compiler behind it. The durable fix is to derive the pull list
+from the two C# sources rather than restate it — the digests are already `const string` fields, so a
+small script can emit the list the workflow consumes.
+
+**Resolves when:** `e2e.yml` no longer contains literal image digests, and the set it pulls is generated
+from, or verified against, the `AppHost`/`AppFixture` constants by a step that fails on divergence.
+
 ---
 
 ## RESOLVED
@@ -249,6 +270,14 @@ the Versus concert was a real gap the old simulator catalog (concerts 13/12/10) 
 ---
 
 ## LOW
+
+### Committed Reqnroll `.feature.cs` files carry trailing blank lines the generator no longer emits
+
+The eleven generated files under `tests/E2ETests/Concertable.B2B.E2ETests.Ui/Features/` each end with 30
+trailing blank lines past what the current Reqnroll generator produces, so any build that regenerates them
+dirties the working tree with a whitespace-only diff in all eleven. Nothing else differs.
+
+**Resolves when:** either the regenerated output is committed, or the generated files stop being tracked.
 
 ### Action-link hrefs are hand-interpolated instead of generated from routes
 
@@ -362,7 +391,7 @@ report-content work it was applied in exactly one place (`VenueController.Approv
 As an *authorization axis* this is correct and sufficient — it answers "is this caller a platform
 operator?", which is precisely what those endpoints ask, and it is deliberately not tenant RBAC
 (a `TenantRole` is scoped to one tenant and must never let a venue Owner moderate someone else's
-thread; an integration test asserts a tenant Owner gets 403 on every moderation endpoint). As an
+conversation; an integration test asserts a tenant Owner gets 403 on every moderation endpoint). As an
 *operations surface* it is not sufficient:
 
 - **No admin SPA**, so moderation is Swagger/curl-driven at launch.
@@ -378,28 +407,17 @@ to drive moderation — at which point the Swagger/curl workaround and this entr
 
 ---
 
-### Conversations has no thread aggregate, no per-thread read, and no retention policy
+### Conversations has no retention policy
 
-A "thread" in Conversations is implicit — it is whatever shares a `(VenueTenantId, ArtistTenantId)`
-pair. There is a `MessageEntity` and a `ThreadReadStateEntity` but no `ThreadEntity`, and consequently:
-
-- **No per-thread view exists.** `GetByTenantIdAsync` returns one flat inbox ordered by `SentDate`
-  across every counterparty. That is right for the notification bell it currently feeds and wrong the
-  moment anyone wants an actual conversation UI.
-- **`AdvanceReadPointersAsync` is O(threads) per call** — it loads every distinct pair, loads every
-  pointer for the member, then loops in memory. Invisible at ten threads, not at a thousand.
-- **Messages accumulate forever.** Nothing prunes them, and the Online Safety Act work deliberately
-  hides rather than deletes, so hidden content accumulates too.
+Messages accumulate forever. Nothing prunes them, and the Online Safety Act work deliberately hides
+rather than deletes, so hidden content accumulates too.
 
 The storage choice itself is not the debt — a relational store is correct for booking correspondence
 that must be transactional with the booking flow and queryable for a regulator, and the specialised
-stores chat products use would trade away exactly the properties this needs. The debt is the missing
-aggregate and the missing lifecycle.
+stores chat products use would trade away exactly the properties this needs.
 
-**Resolves when:** a thread aggregate exists with a per-thread paged read, the read-pointer advance is
-a set-based update rather than a per-pair loop, and a retention policy is implemented — the last of
-which is gated on the solicitor-owned retention artifact in the OSA compliance pack, so it cannot be
-invented here.
+**Resolves when:** a retention policy is implemented. Its duration remains gated on the solicitor-owned
+retention artifact in the OSA compliance pack, so it cannot be invented here.
 
 ---
 
@@ -411,9 +429,9 @@ attaches to **user-generated content**, and this platform has more of it: venue 
 concert descriptions, uploaded images, and customer reviews. The Customer/marketplace OSA scope is
 explicitly deferred with the marketplace, which is when those become in-scope.
 
-The entity will not stretch to cover them. It carries a typed `MessageId` and is
-`IVenueArtistTenantScoped` — it holds a **thread pair**. A report against a venue profile has no thread
-pair, so neither the foreign key nor the tenancy shape fits.
+The entity will not stretch to cover them. It carries a typed `MessageId` and a `ConversationId`, and is
+reached through the conversation's access grants. A report against a venue profile belongs to no conversation, so
+neither the foreign key nor the access shape fits.
 
 **Resolves when:** a second reportable content type is actually required, at which point choose
 deliberately between a polymorphic `(ContentType, ContentId)` report with per-type tenancy resolution,

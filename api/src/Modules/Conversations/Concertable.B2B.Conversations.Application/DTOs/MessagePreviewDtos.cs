@@ -2,15 +2,15 @@ namespace Concertable.B2B.Conversations.Application.DTOs;
 
 internal sealed record MessagePreview(
     int Id,
-    Guid CounterpartTenantId,
-    bool CounterpartIsVenue,
+    int ConversationId,
     string Preview,
     DateTime At,
     bool Unread);
 
 internal sealed record MessagePreviewDto(
     int Id,
-    string OtherPartyName,
+    int ConversationId,
+    IReadOnlyList<ConversationParticipant> Participants,
     string Preview,
     DateTime At,
     bool Unread,

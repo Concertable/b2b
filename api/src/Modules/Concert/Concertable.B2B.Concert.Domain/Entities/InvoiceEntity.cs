@@ -1,4 +1,5 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts;
 using Concertable.Kernel;
@@ -12,11 +13,12 @@ namespace Concertable.B2B.Concert.Domain.Entities;
 /// both the supplier and the customer can read it, and no one else.
 /// </summary>
 [DisplayName(DisplayNames.Invoice)]
-public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
+public sealed class InvoiceEntity : IIdEntity
 {
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
+    public int ConcertId { get; private set; }
     public int BookingId { get; private set; }
 
     /// <summary>The party who made the supply and on whose behalf the invoice is self-billed — the settlement payee.</summary>
@@ -37,6 +39,9 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
+    private readonly List<InvoiceAccessGrant> accessGrants = [];
+    public IReadOnlyList<InvoiceAccessGrant> AccessGrants => accessGrants;
+
     private InvoiceEntity() { }
 
     public static InvoiceEntity Create(
@@ -53,8 +58,9 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
         if (concert.VenueTenantId == Guid.Empty || concert.ArtistTenantId == Guid.Empty)
             throw new InvalidOperationException("An invoice cannot inherit unresolved concert tenants.");
 
-        return new()
+        var invoice = new InvoiceEntity
         {
+            ConcertId = concert.Id,
             BookingId = concert.BookingId,
             VenueTenantId = concert.VenueTenantId,
             ArtistTenantId = concert.ArtistTenantId,
@@ -68,5 +74,20 @@ public sealed class InvoiceEntity : IIdEntity, IVenueArtistTenantScoped
             CreatedAtUtc = createdAtUtc,
             PdfBlobName = $"invoices/{concert.BookingId}-{Guid.NewGuid():N}.pdf"
         };
+
+        foreach (var tenantId in new[] { concert.VenueTenantId, concert.ArtistTenantId }.Distinct())
+        {
+            invoice.accessGrants.Add(InvoiceAccessGrant.Issue(
+                invoice.Id,
+                tenantId,
+                membershipId: null,
+                InvoiceAccessScope.Read,
+                issuedByTenantId: concert.VenueTenantId,
+                issuedByUserId: null,
+                ResourceGrantKind.Principal,
+                createdAtUtc));
+        }
+
+        return invoice;
     }
 }

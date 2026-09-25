@@ -30,8 +30,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NoContent);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.AwaitingConfirmation, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
     [Fact]
@@ -91,8 +90,6 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(
             await fixture.WaitForNotificationsAsync("VerifyPaymentFailed"));
@@ -106,8 +103,6 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         await fixture.PaymentSimulator.SendWebhookAsync();
-        var beforeAccept = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await beforeAccept.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
 
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -127,11 +122,11 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
                 eSignature = new { signatoryName = "Test Signatory" }
             });
 
-    private static async Task<ConcertBoundaryResponse> GetConcertAsync(
+    private async Task<ConcertBoundaryResponse> GetConcertAsync(
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/concert/application/{applicationId}");
+        var response = await fixture.GetCreatedConcertOperationsAsync(client);
         await response.ShouldBe(HttpStatusCode.OK);
         var concert = await response.Content.ReadAsync<ConcertBoundaryResponse>();
         Assert.NotNull(concert);
@@ -143,7 +138,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
         int applicationId)
     {
         var response = await client.GetAsync(
-            $"/api/booking/application/{applicationId}");
+            $"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var financial = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(financial);

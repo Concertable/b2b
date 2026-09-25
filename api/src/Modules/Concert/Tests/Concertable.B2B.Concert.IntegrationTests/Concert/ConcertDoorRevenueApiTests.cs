@@ -32,17 +32,19 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var appId = fixture.SeedState.PastDoorSplitApp.Id;
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
-        var before = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
-        Assert.NotNull(before!.Actions!.DeclareDoorRevenue); // offered while ended, Booked, undeclared
+        var before = await (await client.GetAsync($"/api/concert/{concertId}/finance"))
+            .Content.ReadAsync<FinanceResponse>();
+        Assert.NotNull(before!.Actions.DeclareDoorRevenue);
 
         // Act
         var response = await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
 
         // Assert — persisted; the action clears now the take is declared.
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var after = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
+        var after = await (await client.GetAsync($"/api/concert/{concertId}/finance"))
+            .Content.ReadAsync<FinanceResponse>();
         Assert.Equal(DoorRevenue, after!.DoorRevenue);
-        Assert.Null(after.Actions!.DeclareDoorRevenue);
+        Assert.Null(after.Actions.DeclareDoorRevenue);
 
         // ...and settlement now charges the artist's share of the declared take.
         await fixture.FinishConcertAsync(concertId);
@@ -59,18 +61,22 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.PaymentSimulator.SendWebhookAsync();
 
-        var concert = await (await client.GetAsync($"/api/concert/application/{appId}")).Content.ReadAsync<MyDetailsResponse>();
-        Assert.Null(concert!.Actions!.DeclareDoorRevenue);
+        var concertId = await fixture.Concerts
+            .Where(concert => concert.ApplicationId == appId)
+            .Select(concert => concert.Id)
+            .SingleAsync();
+        var concert = await (await client.GetAsync($"/api/concert/{concertId}/finance"))
+            .Content.ReadAsync<FinanceResponse>();
+        Assert.Null(concert!.Actions.DeclareDoorRevenue);
     }
 
     [Fact]
-    public async Task Declare_ShouldReturn403_WhenCallerIsArtist()
+    public async Task Declare_ShouldReturn403_WhenCallerIsNotVenuePrincipal()
     {
-        // Declaring the door take is a venue decision; the artist lacks the permission.
-        var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
-        var response = await artistClient.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
+        var response = await client.PostAsync($"/api/concert/{concertId}/door-revenue", new { doorRevenue = DoorRevenue });
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
         var persisted = await fixture.Concerts.SingleAsync(value => value.Id == concertId);

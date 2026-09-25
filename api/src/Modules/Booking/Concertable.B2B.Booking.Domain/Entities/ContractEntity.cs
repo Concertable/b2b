@@ -1,6 +1,7 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
@@ -13,12 +14,13 @@ using Concertable.Payment.Contracts;
 namespace Concertable.B2B.Booking.Domain.Entities;
 
 [DisplayName(Booking.Contracts.DisplayNames.Contract)]
-public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
+public abstract class ContractEntity : IIdEntity
 {
     public int Id { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public int BookingId { get; private set; }
+    public int ApplicationId { get; private set; }
     public string VenueName { get; private set; } = null!;
     public string ArtistName { get; private set; } = null!;
     public DateRange Period { get; private set; } = null!;
@@ -32,6 +34,9 @@ public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
     internal Signature VenueSignature { get; private set; } = null!;
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
+
+    private readonly List<ContractAccessGrant> accessGrants = [];
+    public IReadOnlyList<ContractAccessGrant> AccessGrants => accessGrants;
 
     protected ContractEntity() { }
 
@@ -48,6 +53,7 @@ public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
         var opportunity = application.Opportunity;
         var contract = snapshot.Contract;
         BookingId = bookingId;
+        ApplicationId = application.Id;
         VenueTenantId = opportunity.Venue.TenantId;
         ArtistTenantId = application.Artist.TenantId;
         VenueName = opportunity.Venue.Name;
@@ -63,6 +69,24 @@ public abstract class ContractEntity : IIdEntity, IVenueArtistTenantScoped
         VenueSignature = Sign(contract.VenueSignature);
         CreatedAtUtc = createdAtUtc;
         PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf";
+        IssuePrincipalGrants(createdAtUtc);
+    }
+
+    // Attached through the navigation so EF supplies the generated ResourceId; there is no key yet here.
+    private void IssuePrincipalGrants(DateTime at)
+    {
+        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
+        {
+            accessGrants.Add(ContractAccessGrant.Issue(
+                Id,
+                tenantId,
+                membershipId: null,
+                ContractAccessScope.Read,
+                issuedByTenantId: VenueTenantId,
+                issuedByUserId: VenueSignature.UserId,
+                ResourceGrantKind.Principal,
+                at));
+        }
     }
 
     private static Signature Sign(ContractSignature signature) =>

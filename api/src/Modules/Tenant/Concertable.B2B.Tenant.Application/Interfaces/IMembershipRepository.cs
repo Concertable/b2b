@@ -3,7 +3,13 @@ using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Tenant.Application.Interfaces;
 
-internal sealed record UserMembership(Guid TenantId, string LegalName, TenantType Type, TenantRole Role);
+internal sealed record UserMembership(
+    Guid MembershipId,
+    Guid TenantId,
+    string LegalName,
+    TenantRole Role,
+    long PermissionVersion,
+    IReadOnlyList<TenantBusinessActivityKind> BusinessActivities);
 
 internal interface IMembershipRepository : IRepository<TenantMembershipEntity, Guid>
 {
@@ -18,8 +24,17 @@ internal interface IMembershipRepository : IRepository<TenantMembershipEntity, G
     /// <summary>Every membership row of a tenant — the members-management list (mapped to emails via <c>IUserModule</c>).</summary>
     Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
+
     /// <summary>A single tracked membership row to mutate (change role) or remove; null if the user isn't a member.</summary>
     Task<TenantMembershipEntity?> FindMembershipAsync(Guid tenantId, Guid userId, CancellationToken ct = default);
+
+    Task<TenantMembershipEntity?> FindMembershipByIdAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default);
 
     /// <summary>Owners currently in the tenant — the last-Owner invariant reads this before a demote/remove.</summary>
     Task<int> CountOwnersAsync(Guid tenantId, CancellationToken ct = default);

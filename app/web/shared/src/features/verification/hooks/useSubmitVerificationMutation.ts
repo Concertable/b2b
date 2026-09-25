@@ -9,6 +9,6 @@ export function useSubmitVerificationMutation() {
     mutationFn: (request: SubmitVerificationRequest) =>
       verificationApi.submitDocuments(request),
     onSuccess: (verification) =>
-      queryClient.setQueryData(verificationKeys.status, verification),
+      queryClient.setQueryData(verificationKeys.status(), verification),
   });
 }

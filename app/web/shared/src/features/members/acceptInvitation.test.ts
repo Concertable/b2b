@@ -5,10 +5,13 @@ import type { Membership } from "@b2b/features/tenant";
 describe("invitation acceptance", () => {
   it("waits for tenant selection before navigating", async () => {
     const membership: Membership = {
+      membershipId: "accepted-membership",
       tenantId: "accepted-tenant",
       legalName: "Accepted Venue",
-      type: "venue",
+      businessActivities: ["venueOperator"],
       role: "staff",
+      permissionVersion: 1,
+      permissions: ["operations.view"],
     };
     let completeSelection: (() => void) | undefined;
     const selection = new Promise<void>((resolve) => {

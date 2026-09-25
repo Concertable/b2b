@@ -13,7 +13,9 @@ internal sealed class TenantInvitationEntityConfiguration : IEntityTypeConfigura
         builder.Property(i => i.Email).IsRequired();
         builder.Property(i => i.Role).IsRequired();
         builder.Property(i => i.Status).IsRequired();
-        builder.Property(i => i.CreatedByUserId).IsRequired();
+        builder.Property(i => i.InviterMembershipId).IsRequired();
+        builder.Property(i => i.InviterPermissionVersion).IsRequired();
+        builder.Property(i => i.Version).IsRequired().IsConcurrencyToken();
         builder.Property(i => i.CreatedAt).IsRequired();
         builder.Property(i => i.ExpiresAt).IsRequired();
 

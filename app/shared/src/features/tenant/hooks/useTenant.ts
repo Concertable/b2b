@@ -1,28 +1,41 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { resolveTenant } from "../memberships";
-import { permissionsForRole } from "../permissions";
 import { useTenantStore } from "../store/useTenantStore";
 import { tenantSession } from "../tenantSession";
-import type { Membership, TenantType } from "../types";
+import type { Membership, TenantBusinessActivity } from "../types";
 
 export function useTenant(
   memberships: ReadonlyArray<Membership>,
-  tenantType?: TenantType,
+  businessActivity?: TenantBusinessActivity,
 ) {
   const activeTenantId = useTenantStore((state) => state.activeTenantId);
   const isSelectionPending = useTenantStore(
     (state) => state.isSelectionPending,
   );
-  const resolution = resolveTenant(memberships, tenantType, activeTenantId);
+  const resolution = resolveTenant(memberships, businessActivity, activeTenantId);
 
   useEffect(() => {
-    if (memberships.length > 0) void tenantSession.resolve(tenantType);
-  }, [memberships, tenantType]);
+    void tenantSession.resolve(businessActivity);
+  }, [memberships, businessActivity]);
+
+  const permissions = useMemo(
+    () => new Set(resolution.activeMembership?.permissions ?? []),
+    [resolution.activeMembership],
+  );
+  const session = useMemo(
+    () => (isSelectionPending ? undefined : tenantSession.current()),
+    [
+      isSelectionPending,
+      resolution.activeMembership?.membershipId,
+      resolution.activeMembership?.permissionVersion,
+      resolution.activeMembership?.tenantId,
+    ],
+  );
 
   return {
     ...resolution,
-    permissions: permissionsForRole(resolution.activeMembership?.role),
+    permissions,
+    session,
     isSelectionPending,
-    selectTenant: tenantSession.select,
   };
 }

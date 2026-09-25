@@ -9,8 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- AuthorizeAttribute for [HasPermission], the cross-module authz surface. -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Authorization\Concertable.B2B.Authorization.Contracts\Concertable.B2B.Authorization.Contracts.csproj" />
   </ItemGroup>
 
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->

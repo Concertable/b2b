@@ -9,7 +9,7 @@ internal static class QueryableConcertMappers
 {
     extension(IQueryable<ConcertEntity> query)
     {
-        public IQueryable<ConcertDetails> ToDetails(
+        public IQueryable<ConcertOperations> ToOperations(
             IQueryable<ConcertRatingProjection> concertRatings,
             IQueryable<ArtistRatingProjection> artistRatings,
             IQueryable<VenueRatingProjection> venueRatings) =>
@@ -20,26 +20,22 @@ internal static class QueryableConcertMappers
             from artistRating in arg.DefaultIfEmpty()
             join vr in venueRatings on c.VenueId equals vr.VenueId into vrg
             from venueRating in vrg.DefaultIfEmpty()
-            select new ConcertDetails
+            select new ConcertOperations
             {
                 Id = c.Id,
+                ApplicationId = c.ApplicationId,
                 Name = c.Name,
                 About = c.About,
                 BannerUrl = c.BannerUrl ?? c.Artist.BannerUrl,
                 Avatar = c.Avatar ?? c.Artist.Avatar,
                 Rating = (double?)concertRating.AverageRating ?? 0.0,
-                Price = c.Price,
                 TotalTickets = c.TotalTickets,
                 AvailableTickets = 0,
+                Price = c.Price,
                 DatePosted = c.DatePosted,
                 StartDate = c.Period.Start,
                 EndDate = c.Period.End,
                 State = c.State,
-                IsRevenueShare = c is DoorRevenueConcert,
-                TicketsSold = c.TicketsSold,
-                DoorRevenue = c is DoorRevenueConcert
-                    ? ((DoorRevenueConcert)c).DoorRevenue
-                    : null,
                 Genres = c.Genres,
                 Venue = new ConcertVenue
                 {
@@ -63,33 +59,25 @@ internal static class QueryableConcertMappers
                 }
             };
 
-        public IQueryable<ConcertSummary> ToSummary(
-            IQueryable<ArtistRatingProjection> artistRatings,
-            IQueryable<VenueRatingProjection> venueRatings) =>
-            from c in query
-            join ar in artistRatings on c.ArtistId equals ar.ArtistId into arg
-            from artistRating in arg.DefaultIfEmpty()
-            join vr in venueRatings on c.VenueId equals vr.VenueId into vrg
-            from venueRating in vrg.DefaultIfEmpty()
-            select new ConcertSummary
-            {
-                Id = c.Id,
-                Name = c.Name,
-                ImageUrl = c.Avatar ?? c.Artist.Avatar,
-                Price = c.Price,
-                TotalTickets = c.TotalTickets,
-                AvailableTickets = 0,
-                DatePosted = c.DatePosted,
-                StartDate = c.Period.Start,
-                EndDate = c.Period.End,
-                Venue = new ConcertVenueSummary(c.Venue.Id, c.Venue.Name, (double?)venueRating.AverageRating ?? 0.0),
-                Artist = new ConcertArtistSummary
-                {
-                    Id = c.Artist.Id,
-                    Name = c.Artist.Name,
-                    Rating = (double?)artistRating.AverageRating ?? 0.0,
-                    Genres = c.Artist.Genres.Select(g => g.Genre)
-                }
-            };
+        public IQueryable<ConcertSummary> ToSummary() =>
+            query.Select(c => new ConcertSummary(
+                c.Id,
+                c.Name,
+                c.Period.Start,
+                c.Period.End,
+                c.Venue.Name,
+                c.Artist.Name,
+                c.State));
+
+        public IQueryable<PublishedConcert> ToPublished() =>
+            query.Select(c => new PublishedConcert(
+                c.Id,
+                c.Name,
+                c.About,
+                c.Period.Start,
+                c.Period.End,
+                c.Venue.Name,
+                c.Artist.Name,
+                c.Price));
     }
 }

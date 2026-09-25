@@ -120,7 +120,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
             new { eSignature = new { signatoryName = "Test Signatory" } });
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-        var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
+        var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}/summary");
         await bookingResponse.ShouldBe(HttpStatusCode.OK);
         var booking = await bookingResponse.Content.ReadAsync<JsonElement>();
         Assert.Equal("awaitingConfirmation", booking.GetProperty("status").GetString());

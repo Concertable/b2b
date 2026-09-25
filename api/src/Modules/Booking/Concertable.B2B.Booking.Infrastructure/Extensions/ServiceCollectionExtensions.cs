@@ -1,3 +1,4 @@
+﻿using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Booking.Contracts;
@@ -23,7 +24,7 @@ using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
+using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Booking.Infrastructure.Extensions;
 
@@ -40,9 +41,15 @@ public static class ServiceCollectionExtensions
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
-                        provider.GetRequiredService<VenueArtistTenantInterceptor>(),
-                        provider.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(provider));
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
+            services.AddDbContext<BookingPrivilegedDbContext>((provider, options) =>
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                    .AddInterceptors(
+                        provider.GetRequiredService<AuditInterceptor>(),
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
             services.AddDbContext<BookingReadDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
@@ -53,13 +60,19 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IBookingRepository, BookingRepository>();
+            services.AddScoped<IBookingPrivilegedRepository, BookingPrivilegedRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();
-            services.AddScoped<IBookingWorkflow, BookingWorkflow>();
+            services.AddScoped<BookingWorkflow>();
+            services.AddScoped<IBookingWorkflow>(provider =>
+                provider.GetRequiredService<BookingWorkflow>());
             services.AddScoped<IBookingService, BookingService>();
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
             services.AddScoped<IBookingModule, BookingModule>();
+            services.AddScoped<ITenantDeletionGuard, BookingTenantDeletionGuard>();
             services.AddBookingDealStrategies();
             services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,
                 ApplicationAcceptedDomainEventHandler>();

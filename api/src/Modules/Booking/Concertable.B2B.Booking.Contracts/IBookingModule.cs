@@ -24,10 +24,7 @@ public interface IBookingModule
 public sealed record BookingSummary(
     int BookingId,
     int ApplicationId,
-    BookingStatus Status,
-    Guid OperationId,
-    string? FailureCode,
-    string? FailureMessage);
+    BookingStatus Status);
 
 public sealed record ContractPdf(byte[] Content, string FileName, string ContentType);
 

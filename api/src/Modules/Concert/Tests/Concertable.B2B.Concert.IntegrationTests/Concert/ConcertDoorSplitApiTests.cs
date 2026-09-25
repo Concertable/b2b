@@ -1,6 +1,7 @@
 using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Application.Models;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Concertable.Payment.Contracts.Events;
@@ -35,7 +36,11 @@ public sealed class ConcertDoorSplitApiTests : IAsyncLifetime
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         // Act
-        await fixture.FinishConcertAsync(concert.Id);
+        var result = await fixture.FinishConcertAsync(concert.Id);
+        Assert.True(
+            result.TryGetValue(out var outcome),
+            result.TryGetError(out var error) ? error.ToString() : "No settlement outcome returned.");
+        Assert.Equal(SettlementOutcome.Settled, outcome);
 
         // Assert — booking awaits the off-session settlement payment; completion happens on the webhook
         var payment = Assert.Single(fixture.SettlementClient.Payments);

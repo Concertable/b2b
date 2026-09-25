@@ -21,29 +21,31 @@ export function ArtistInboxWidget() {
       )}
       {data && data.length > 0 && (
         <ul className="divide-border flex flex-col divide-y">
-          {data.map((thread) => (
-            <li key={thread.id} className="py-2.5 first:pt-0 last:pb-0">
-              <Link to={thread.href} className="flex items-start gap-2.5">
-                {thread.unread && (
+          {data.map((conversation) => (
+            <li key={conversation.id} className="py-2.5 first:pt-0 last:pb-0">
+              <Link to={conversation.href} className="flex items-start gap-2.5">
+                {conversation.unread && (
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-rose-500" />
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <span
                       className={
-                        thread.unread
+                        conversation.unread
                           ? "truncate text-sm font-semibold"
                           : "truncate text-sm"
                       }
                     >
-                      {thread.otherPartyName}
+                      {conversation.participants
+                        .map((participant) => participant.displayName)
+                        .join(", ")}
                     </span>
                     <span className="text-muted-foreground shrink-0 text-xs">
-                      {dayjs(thread.at).format("D MMM")}
+                      {dayjs(conversation.at).format("D MMM")}
                     </span>
                   </div>
                   <p className="text-muted-foreground line-clamp-1 text-xs">
-                    {thread.preview}
+                    {conversation.preview}
                   </p>
                 </div>
               </Link>

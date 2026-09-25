@@ -10,7 +10,7 @@ export const venueConcertKeys = {
 export function useConcertByApplicationQuery(applicationId: number) {
   return useQuery({
     queryKey: venueConcertKeys.byApplication(applicationId),
-    queryFn: () => venueConcertApi.getByApplication(applicationId),
+    queryFn: () => venueConcertApi.getDraftByApplication(applicationId),
     refetchInterval: (query) =>
       query.state.status === "success" && query.state.data === null
         ? 1_000

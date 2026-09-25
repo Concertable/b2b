@@ -5,12 +5,6 @@ using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data;
 
-/// <summary>
-/// The Conversations module's platform-admin stance: the same anemic configuration as
-/// <see cref="ConversationsDbContext"/>, writable, with neither the tenant filter nor the tenant write
-/// guard — a platform operator moderates threads they are not party to, and the guard refuses a write with
-/// no current tenant. The tenant-filtered, guarded counterpart is <see cref="ConversationsDbContext"/>.
-/// </summary>
 internal sealed class ConversationsPrivilegedDbContext(
     DbContextOptions<ConversationsPrivilegedDbContext> options,
     IOptions<OutboxOptions> outboxOptions,
@@ -18,5 +12,10 @@ internal sealed class ConversationsPrivilegedDbContext(
     : PrivilegedDbContext(options, outboxOptions, provider, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
+    public DbSet<ConversationAccessGrant> ConversationAccessGrants => Set<ConversationAccessGrant>();
+    public DbSet<ConversationCreationReceipt> ConversationCreationReceipts => Set<ConversationCreationReceipt>();
+    public DbSet<ConversationReadPosition> ConversationReadPositions => Set<ConversationReadPosition>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
+    public DbSet<ConversationEntity> Conversations => Set<ConversationEntity>();
+    public DbSet<TenantDisplay> TenantDisplays => Set<TenantDisplay>();
 }

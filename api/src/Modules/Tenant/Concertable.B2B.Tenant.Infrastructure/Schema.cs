@@ -7,6 +7,7 @@ internal static class Schema
     public static class Tables
     {
         public const string Tenants = "Tenants";
+        public const string BusinessActivities = "BusinessActivities";
         public const string Memberships = "Memberships";
         public const string Invitations = "Invitations";
         public const string Activities = "Activities";

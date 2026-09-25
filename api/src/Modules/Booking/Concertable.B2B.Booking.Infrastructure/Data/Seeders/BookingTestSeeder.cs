@@ -1,7 +1,6 @@
-using Concertable.B2B.DataAccess.Application;
-using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.Seed.Infrastructure;
+﻿using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Data.Seeders;
@@ -10,19 +9,23 @@ internal sealed class BookingTestSeeder : ITestSeeder
 {
     public int Order => 6;
 
-    private readonly BookingDbContext context;
+    private readonly BookingPrivilegedDbContext context;
+    private readonly BookingDbContext migrations;
     private readonly SeedState seed;
-    private readonly ITenantScope tenantScope;
 
-    public BookingTestSeeder(BookingDbContext context, SeedState seed, ITenantScope tenantScope)
+    public BookingTestSeeder(BookingPrivilegedDbContext context, BookingDbContext migrations, SeedState seed)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seed = seed;
-        this.tenantScope = tenantScope;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
-    public Task SeedAsync(CancellationToken ct = default) =>
-        context.SeedByVenueTenantAsync(tenantScope, seed.Bookings, ct);
+    public async Task SeedAsync(CancellationToken ct = default) =>
+        await context.Bookings.SeedIfEmptyAsync(async () =>
+        {
+            context.Bookings.AddRange(seed.Bookings);
+            await context.SaveChangesAsync(ct);
+        });
 }

@@ -17,11 +17,15 @@ const artist = {
 describe("artist tenant scope", () => {
   beforeEach(() => useArtistStore.getState().endEdit());
 
-  it("uses a distinct active-profile cache key for each tenant", () => {
+  it("uses a private session-prefixed cache key for each tenant", () => {
     expect(artistKeys.myForTenant("tenant-a")).not.toEqual(
       artistKeys.myForTenant("tenant-b"),
     );
     expect(artistKeys.myForTenant("tenant-a")).toEqual([
+      "tenant",
+      "unselected",
+      "unselected",
+      0,
       "artist",
       "my",
       "tenant-a",

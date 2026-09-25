@@ -60,8 +60,7 @@ public sealed class ConcertPostingLifecycleTests : IAsyncLifetime
             $"/api/application/{fixture.SeedState.VenueHireApp.Id}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.PaymentSimulator.SendWebhookAsync();
-        var concertResponse = await client.GetAsync(
-            $"/api/concert/application/{fixture.SeedState.VenueHireApp.Id}");
+        var concertResponse = await fixture.GetCreatedConcertOperationsAsync(client);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         using var concertPayload = JsonDocument.Parse(await concertResponse.Content.ReadAsStringAsync());
         var concertId = concertPayload.RootElement.GetProperty("id").GetInt32();

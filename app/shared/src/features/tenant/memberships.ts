@@ -1,4 +1,4 @@
-import type { Membership, TenantType } from "./types";
+import type { Membership, TenantBusinessActivity } from "./types";
 
 export interface TenantResolution {
   readonly memberships: ReadonlyArray<Membership>;
@@ -6,23 +6,25 @@ export interface TenantResolution {
   readonly selectionRequired: boolean;
 }
 
-export function filterMembershipsByTenantType(
+export function filterMembershipsByActivity(
   memberships: ReadonlyArray<Membership>,
-  tenantType?: TenantType,
+  businessActivity?: TenantBusinessActivity,
 ): ReadonlyArray<Membership> {
-  return tenantType === undefined
+  return businessActivity === undefined
     ? memberships
-    : memberships.filter((membership) => membership.type === tenantType);
+    : memberships.filter((membership) =>
+        membership.businessActivities.includes(businessActivity),
+      );
 }
 
 export function resolveActiveMembership(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType | undefined,
+  businessActivity: TenantBusinessActivity | undefined,
   activeTenantId: string | undefined,
 ): Membership | undefined {
-  const matchingMemberships = filterMembershipsByTenantType(
+  const matchingMemberships = filterMembershipsByActivity(
     memberships,
-    tenantType,
+    businessActivity,
   );
   return (
     matchingMemberships.find(
@@ -33,12 +35,12 @@ export function resolveActiveMembership(
 
 export function hasPendingTenantChoice(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType | undefined,
+  businessActivity: TenantBusinessActivity | undefined,
   activeTenantId: string | undefined,
 ): boolean {
-  const matchingMemberships = filterMembershipsByTenantType(
+  const matchingMemberships = filterMembershipsByActivity(
     memberships,
-    tenantType,
+    businessActivity,
   );
   return (
     matchingMemberships.length > 1 &&
@@ -50,19 +52,19 @@ export function hasPendingTenantChoice(
 
 export function resolveTenant(
   memberships: ReadonlyArray<Membership>,
-  tenantType: TenantType | undefined,
+  businessActivity: TenantBusinessActivity | undefined,
   activeTenantId: string | undefined,
 ): TenantResolution {
   return {
-    memberships: filterMembershipsByTenantType(memberships, tenantType),
+    memberships: filterMembershipsByActivity(memberships, businessActivity),
     activeMembership: resolveActiveMembership(
       memberships,
-      tenantType,
+      businessActivity,
       activeTenantId,
     ),
     selectionRequired: hasPendingTenantChoice(
       memberships,
-      tenantType,
+      businessActivity,
       activeTenantId,
     ),
   };

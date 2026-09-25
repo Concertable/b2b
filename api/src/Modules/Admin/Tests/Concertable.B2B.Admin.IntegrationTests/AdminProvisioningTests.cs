@@ -44,6 +44,8 @@ public sealed class AdminProvisioningTests : IAsyncLifetime
         var invitation = await fixture.AddAdminInvitationAsync(newEmail, inviter.Id, DateTime.UtcNow.AddDays(7));
         await RegisterAsync(new CredentialRegisteredEvent(newUserId, newEmail, InteractiveClientInfo.Get(InteractiveClient.Admin).Id));
 
+        Assert.True(await fixture.UserExistsAsync(newUserId));
+
         await fixture.LogInAsync(newUserId, newEmail);
 
         Assert.True(await fixture.IsAdminAsync(newUserId));

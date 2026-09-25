@@ -9,5 +9,6 @@ internal static class Schema
         public const string Applications = "Applications";
         public const string ConcertAvailabilities = "ConcertAvailabilities";
         public const string VerifyPayments = "VerifyPayments";
+        public const string ApplicationAccessGrants = "ApplicationAccessGrants";
     }
 }

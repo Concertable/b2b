@@ -33,8 +33,8 @@ internal sealed class ArtistReviewController : ControllerBase
         Ok(await reviewService.GetSummaryAsync(artistId));
 
     [HttpGet($"/api/organization/{ArtistController.RouteSegment}/{RouteSegment}/recent")]
-    [RequiredTenantType(TenantType.Artist)]
-    [HasPermission(SharedPermissions.OperationsView)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
+    [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<RecentReviewResponse>>> GetRecentForCurrent(
         CancellationToken ct) =>
         Ok((await reviewService.GetRecentForCurrentAsync(5, ct)).ToResponses());

@@ -7,6 +7,6 @@ export function useRemoveMemberMutation() {
   return useMutation({
     mutationFn: membersApi.removeMember,
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: membersQueryKey }),
+      queryClient.invalidateQueries({ queryKey: membersQueryKey() }),
   });
 }

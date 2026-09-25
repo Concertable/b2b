@@ -1,7 +1,6 @@
-using Concertable.B2B.Concert.Application.Interfaces;
+﻿using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -12,24 +11,21 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
-    private readonly ConcertDbContext context;
-    private readonly IConcertReadDbContext readDbContext;
-    private readonly ITenantScope tenantScope;
+    private readonly ConcertPrivilegedDbContext context;
+    private readonly IConcertPrivilegedRepository concertRepository;
     private readonly ISettlementService settlementService;
-    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly ILogger<SettlementPaymentFailedProcessor> logger;
 
     public SettlementPaymentFailedProcessor(
-        ConcertDbContext context,
-        IConcertReadDbContext readDbContext,
-        ITenantScope tenantScope,
+        ConcertPrivilegedDbContext context,
+        IConcertPrivilegedRepository concertRepository,
         ISettlementService settlementService,
-        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         ILogger<SettlementPaymentFailedProcessor> logger)
     {
         this.context = context;
-        this.readDbContext = readDbContext;
-        this.tenantScope = tenantScope;
+        this.concertRepository = concertRepository;
         this.settlementService = settlementService;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
         this.logger = logger;
@@ -42,38 +38,37 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
             || !@event.Metadata.TryGetOperationId(out var operationId))
             return;
         logger.SettlementPaymentFailed(concertId, @event.FailureCode, @event.FailureMessage);
-        // A settlement outcome names only the concert, so the owner comes off the row itself through the
-        // unfiltered read stance; the failure is then recorded as that tenant.
-        var venueTenantId = await readDbContext.Concerts
-            .Where(value => value.Id == concertId)
-            .Select(value => (Guid?)value.VenueTenantId)
-            .SingleOrDefaultAsync(ct);
-        if (venueTenantId is null)
-        {
-            logger.SettlementOutcomeForUnknownConcert(concertId);
-            await RecordInboxAsync(envelope, ct);
-            return;
-        }
-
-        using var acting = tenantScope.As(venueTenantId.Value);
-        await settlementService.RecordFailureAsync(
-            concertId,
-            operationId,
-            @event.FailureCode ?? "unknown",
-            @event.FailureMessage ?? "Settlement payment failed.",
-            ct);
-        await RecordInboxAsync(envelope, ct);
-    }
-
-    private async Task RecordInboxAsync(MessageEnvelope envelope, CancellationToken ct)
-    {
         try
         {
             await outboxUnitOfWorkBehavior.ExecuteAsync(async () =>
             {
-                if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentFailedProcessor), ct))
+                if (await context.IsInboxMessageProcessedAsync(
+                        envelope.MessageId,
+                        nameof(SettlementPaymentFailedProcessor),
+                        ct))
                     return;
 
+                var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
+                if (concert is null)
+                {
+                    logger.SettlementOutcomeForUnknownConcert(concertId);
+                    throw new InvalidOperationException(
+                        $"Settlement outcome names concert {concertId}, which does not exist.");
+                }
+
+                if (concert.SettlementOperationId != operationId)
+                {
+                    logger.SettlementOutcomeForUnknownConcert(concertId);
+                    throw new InvalidOperationException(
+                        $"Settlement outcome names operation {operationId}, which concert {concertId} is not running.");
+                }
+
+                await settlementService.RecordFailureAsync(
+                    concertId,
+                    operationId,
+                    @event.FailureCode ?? "unknown",
+                    @event.FailureMessage ?? "Settlement payment failed.",
+                    ct);
                 context.AddInboxMessage(envelope, nameof(SettlementPaymentFailedProcessor));
             }, ct);
         }

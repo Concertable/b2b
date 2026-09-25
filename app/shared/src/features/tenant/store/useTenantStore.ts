@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { filterMembershipsByTenantType } from "../memberships";
-import type { Membership, TenantType } from "../types";
+import { filterMembershipsByActivity } from "../memberships";
+import type { Membership, TenantBusinessActivity } from "../types";
 
 export interface TenantStoreState {
   readonly activeTenantId: string | undefined;
@@ -12,7 +12,7 @@ export interface TenantStoreState {
   readonly clearTenant: () => void;
   readonly synchronizeTenant: (
     memberships: ReadonlyArray<Membership>,
-    tenantType?: TenantType,
+    businessActivity?: TenantBusinessActivity,
   ) => string | undefined;
 }
 
@@ -25,10 +25,10 @@ export const useTenantStore = create<TenantStoreState>()((set, get) => ({
   endSelection: () => set({ isSelectionPending: false }),
   clearTenant: () =>
     set({ activeTenantId: undefined, isSelectionPending: false }),
-  synchronizeTenant: (memberships, tenantType) => {
-    const matchingMemberships = filterMembershipsByTenantType(
+  synchronizeTenant: (memberships, businessActivity) => {
+    const matchingMemberships = filterMembershipsByActivity(
       memberships,
-      tenantType,
+      businessActivity,
     );
     const activeTenantId = get().activeTenantId;
     const nextTenantId = matchingMemberships.some(

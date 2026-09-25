@@ -1,7 +1,7 @@
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Validators;
 using FluentValidation;
@@ -11,8 +11,8 @@ using Concertable.B2B.Conversations.Infrastructure.Data.Seeders;
 using Concertable.B2B.Conversations.Infrastructure.Handlers;
 using Concertable.B2B.Conversations.Infrastructure.Repositories;
 using Concertable.B2B.Conversations.Infrastructure.Services;
-using Concertable.B2B.Artist.Contracts.Events;
-using Concertable.B2B.Venue.Contracts.Events;
+using Concertable.B2B.Conversations.Contracts.Events;
+using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,12 +32,8 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<VenueArtistTenantInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
-        // No TenantInterceptor: this stance exists so an operator can write rows no tenant owns, and the
-        // write guard now throws on exactly that rather than standing aside for it.
         services.AddDbContext<ConversationsPrivilegedDbContext>((sp, opts) =>
             opts.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
@@ -54,18 +50,22 @@ public static class ServiceCollectionExtensions
         services.Configure<SafetySettings>(configuration.GetSection(SafetySettings.SectionName));
 
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IConversationPrivilegedRepository, ConversationPrivilegedRepository>();
+        services.AddScoped<IConversationReadPositionRepository, ConversationReadPositionRepository>();
         services.AddScoped<IContentReportRepository, ContentReportRepository>();
         services.AddScoped<IMessagePrivilegedRepository, MessagePrivilegedRepository>();
         services.AddScoped<IContentReportPrivilegedRepository, ContentReportPrivilegedRepository>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
-        services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
-        services.AddScoped<IMessageService, MessageService>();
+        services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
+        services.AddScoped<ConversationService>();
+        services.AddScoped<IConversationService>(provider => provider.GetRequiredService<ConversationService>());
         services.AddScoped<IContentReportNotifier, ContentReportNotifier>();
         services.AddScoped<IContentReportService, ContentReportService>();
         services.AddScoped<IModerationService, ModerationService>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
-        services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistParticipantProfileProjectionHandler>();
-        services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueParticipantProfileProjectionHandler>();
+        services.AddScoped<IIntegrationEventHandler<TenantDisplayChanged>, TenantDisplayChangedHandler>();
+        services.AddScoped<IIntegrationEventHandler<ConversationChanged>, ConversationChangedHandler>();
 
         return services;
     }

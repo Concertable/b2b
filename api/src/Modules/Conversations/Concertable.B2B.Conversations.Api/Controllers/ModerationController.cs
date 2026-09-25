@@ -8,11 +8,6 @@ using Reunion.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Conversations.Api.Controllers;
 
-/// <summary>
-/// Platform moderation of reported content. Gated on <see cref="AdminAttribute"/>, never on tenant RBAC:
-/// a tenant role is scoped to one tenant, and an operator acting on someone else's thread is a platform
-/// question. There is no admin SPA yet, so these are driven from Swagger/curl.
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Admin]

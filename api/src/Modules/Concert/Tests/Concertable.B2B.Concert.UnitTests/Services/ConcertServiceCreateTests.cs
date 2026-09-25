@@ -1,3 +1,6 @@
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Application.Interfaces;
@@ -16,7 +19,7 @@ namespace Concertable.B2B.Concert.UnitTests;
 public sealed class ConcertServiceCreateTests
 {
     private readonly ConfirmedBookingSnapshot booking;
-    private readonly Mock<IConcertRepository> repository;
+    private readonly Mock<IConcertPrivilegedRepository> repository;
     private readonly ConcertService service;
     private ConcertEntity? addedConcert;
 
@@ -41,7 +44,8 @@ public sealed class ConcertServiceCreateTests
             Name = "Venue",
             About = "About"
         };
-        repository = new Mock<IConcertRepository>();
+        repository = new Mock<IConcertPrivilegedRepository>();
+        var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var artists = new Mock<IArtistReadModelRepository>();
         var venues = new Mock<IVenueReadModelRepository>();
         repository
@@ -57,20 +61,31 @@ public sealed class ConcertServiceCreateTests
         venues
             .Setup(value => value.GetByTenantIdAsync(venueTenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(venue);
+        unitOfWork
+            .Setup(value => value.ExecuteAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()))
+            .Returns((Func<Task> action, CancellationToken _) => action());
         service = new ConcertService(
+            Mock.Of<IConcertRepository>(),
             repository.Object,
+            unitOfWork.Object,
             Mock.Of<IConcertReadRepository>(),
-            Mock.Of<IInvoiceRepository>(),
             Mock.Of<IConcertValidator>(),
             Mock.Of<IConcertWorkflow>(),
             artists.Object,
             venues.Object,
             Mock.Of<IBookingConfirmationEmailSender>(),
             Mock.Of<IBus>(),
-            Mock.Of<IBookingModule>(),
             Mock.Of<IUnitOfWork>(),
+            Mock.Of<IPrivilegedUnitOfWork>(),
             TimeProvider.System,
+            Mock.Of<IConcertCommandReceiptRepository>(),
+            Mock.Of<ITenantCommandFacts>(),
             Mock.Of<ITenantContext>(),
+            Mock.Of<IMembershipContext>(),
+            Mock.Of<IMembershipAuthorityFence>(),
+            Mock.Of<IPermissionCatalog>(),
+            Mock.Of<ICommandExecutor>(),
+            Mock.Of<IResourceAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());
     }
 
@@ -94,7 +109,7 @@ public sealed class ConcertServiceCreateTests
     {
         repository
             .Setup(value => value.GetByBookingIdAsync(booking.BookingId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ConcertEntity.CreateDraft(booking, new ConcertDraft("Existing", "About", [Genre.Rock])));
+            .ReturnsAsync(ConcertEntity.CreateDraft(booking, new ConcertDraft("Existing", "About", [Genre.Rock]), DateTime.UnixEpoch));
 
         await service.CreateAsync(booking);
 

@@ -1,12 +1,11 @@
+﻿using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Concert.Application.Mappers;
-using Concertable.B2B.Concert.Application.Resolvers;
 using Concertable.B2B.Concert.Application.Strategies;
 using Concertable.B2B.Concert.Application.Validators;
 using Concertable.B2B.Booking.Contracts;
@@ -40,6 +39,7 @@ using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Concertable.Kernel;
+using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Concert.Infrastructure.Extensions;
 
@@ -57,9 +57,16 @@ public static class ServiceCollectionExtensions
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
                         sp.GetRequiredService<TenantInterceptor>(),
-                        sp.GetRequiredService<VenueArtistTenantInterceptor>(),
-                        sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(sp), ServiceLifetime.Scoped);
+                        sp.GetRequiredService<IDomainEventDispatchInterceptor>()), ServiceLifetime.Scoped);
+
+            services.AddDbContextFactory<ConcertPrivilegedDbContext>((sp, opts) =>
+                opts.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)
+                            .UseNetTopologySuite())
+                    .AddInterceptors(
+                        sp.GetRequiredService<AuditInterceptor>(),
+                        sp.GetRequiredService<IDomainEventDispatchInterceptor>()), ServiceLifetime.Scoped);
 
             services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
                 opts.UseNpgsql(
@@ -69,13 +76,22 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IConcertReadDbContext>(sp => sp.GetRequiredService<ConcertReadDbContext>());
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<IUnitOfWorkBoundary, FactoryUnitOfWork>();
+            services.AddScoped<IPrivilegedUnitOfWork, PrivilegedUnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
+            services.AddScoped<IConcertPrivilegedRepository, ConcertPrivilegedRepository>();
+            services.AddScoped<IInvoicePrivilegedRepository, InvoicePrivilegedRepository>();
+            services.AddScoped<IInvoiceSequenceRepository, InvoiceSequenceRepository>();
 
             // Services
-            services.AddScoped<IConcertService, ConcertService>();
-            services.AddScoped<IConcertWorkflow, ConcertWorkflow>();
+            services.AddScoped<ConcertService>();
+            services.AddScoped<IConcertService>(provider =>
+                provider.GetRequiredService<ConcertService>());
+            services.AddScoped<ConcertWorkflow>();
+            services.AddScoped<IConcertWorkflow>(provider =>
+                provider.GetRequiredService<ConcertWorkflow>());
             services.AddScoped<ISettlementService, SettlementService>();
             services.AddScoped<IConcertNotifier, ConcertNotifier>();
             services.AddScoped<IBookingConfirmationEmailSender, BookingConfirmationEmailSender>();
@@ -99,6 +115,7 @@ public static class ServiceCollectionExtensions
 
             // Repositories
             services.AddScoped<IConcertRepository, ConcertRepository>();
+            services.AddScoped<IConcertCommandReceiptRepository, ConcertCommandReceiptRepository>();
             services.AddScoped<IConcertReadRepository, ConcertReadRepository>();
             services.AddScoped<IArtistReadModelRepository, ArtistReadModelRepository>();
             services.AddScoped<IVenueReadModelRepository, VenueReadModelRepository>();
@@ -113,6 +130,7 @@ public static class ServiceCollectionExtensions
             // Mappers
             // Module facades
             services.AddScoped<IConcertModule, ConcertModule>();
+            services.AddScoped<ITenantDeletionGuard, ConcertTenantDeletionGuard>();
 
             // Domain event -> integration event + read-model projection handlers
             services.AddScoped<IDomainEventHandler<ConcertChangedDomainEvent>, ConcertChangedDomainEventHandler>();
@@ -140,31 +158,26 @@ public static class ServiceCollectionExtensions
 
         internal IServiceCollection AddConcertDealStrategies()
         {
-            services.AddScoped<IDealPayeeResolver, DealPayeeResolver>();
             services.AddScoped<ISettlementAmountResolver, SettlementAmountResolver>();
 
             return services.AddConcertDealStrategies(builder =>
             {
                 builder.For(DealType.FlatFee)
-                    .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddSingleton<ISettlementAmountResolver, FlatFeeSettlementAmount>()
                     .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>()
                     .AddScoped<ICancelStep, RefundEscrowCancelStep>();
 
                 builder.For(DealType.DoorSplit)
-                    .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddScoped<ISettlementAmountResolver, DoorSplitSettlementAmount>()
                     .AddScoped<ICompleteStep, PayoutCompleteStep>()
                     .AddScoped<ICancelStep, ImmediateCancelStep>();
 
                 builder.For(DealType.Versus)
-                    .AddSingleton<IDealPayeeResolver, VenuePaysArtistDealPayeeResolver>()
                     .AddScoped<ISettlementAmountResolver, VersusSettlementAmount>()
                     .AddScoped<ICompleteStep, PayoutCompleteStep>()
                     .AddScoped<ICancelStep, ImmediateCancelStep>();
 
                 builder.For(DealType.VenueHire)
-                    .AddSingleton<IDealPayeeResolver, ArtistPaysVenueDealPayeeResolver>()
                     .AddSingleton<ISettlementAmountResolver, VenueHireSettlementAmount>()
                     .AddScoped<ICompleteStep, ReleaseEscrowCompleteStep>()
                     .AddScoped<ICancelStep, RefundEscrowCancelStep>();

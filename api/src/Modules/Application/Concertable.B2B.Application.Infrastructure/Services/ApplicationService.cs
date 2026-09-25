@@ -1,5 +1,9 @@
+﻿using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Mappers;
+using Concertable.B2B.Application.Contracts.Enums;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
@@ -13,6 +17,7 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 internal sealed class ApplicationService : IApplicationService
 {
     private readonly IApplicationRepository applicationRepository;
+    private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IApplicationValidator validator;
     private readonly IApplicationNotifier notifier;
     private readonly IApplicationWorkflow workflow;
@@ -23,11 +28,15 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationCheckoutService checkoutService;
     private readonly IApplicationMapper mapper;
     private readonly TimeProvider timeProvider;
-    private readonly IUnitOfWork unitOfWork;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
+    private readonly IMembershipContext membership;
+    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IPermissionCatalog permissionCatalog;
+    private readonly ICommandExecutor commandExecutor;
 
     public ApplicationService(
         IApplicationRepository applicationRepository,
+        IApplicationPrivilegedRepository privilegedRepository,
         IApplicationValidator validator,
         IApplicationNotifier notifier,
         IApplicationWorkflow workflow,
@@ -38,10 +47,14 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationCheckoutService checkoutService,
         IApplicationMapper mapper,
         TimeProvider timeProvider,
-        IUnitOfWork unitOfWork,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
+        IMembershipContext membership,
+        IMembershipAuthorityFence authorityFence,
+        IPermissionCatalog permissionCatalog,
+        ICommandExecutor commandExecutor)
     {
         this.applicationRepository = applicationRepository;
+        this.privilegedRepository = privilegedRepository;
         this.validator = validator;
         this.notifier = notifier;
         this.workflow = workflow;
@@ -52,69 +65,90 @@ internal sealed class ApplicationService : IApplicationService
         this.checkoutService = checkoutService;
         this.mapper = mapper;
         this.timeProvider = timeProvider;
-        this.unitOfWork = unitOfWork;
-        this.unitOfWorkBehavior = unitOfWorkBehavior;
+        this.privilegedUnitOfWork = privilegedUnitOfWork;
+        this.membership = membership;
+        this.authorityFence = authorityFence;
+        this.permissionCatalog = permissionCatalog;
+        this.commandExecutor = commandExecutor;
     }
 
-    public Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id) =>
-        applicationRepository.GetByIdAsync(id)
+    public Task<Result<ApplicationSummaryDto, ApplicationError>> GetSummaryAsync(
+        int id,
+        CancellationToken ct = default) =>
+        applicationRepository.GetSummaryByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(application => mapper.ToDtoAsync(application));
+            .MapAsync(application => mapper.ToSummaryAsync(application, ct));
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id)
+    public Task<Result<ApplicationProposalDto, ApplicationError>> GetProposalAsync(
+        int id,
+        CancellationToken ct = default) =>
+        applicationRepository.GetProposalByIdAsync(id, ct)
+            .ToOption()
+            .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
+            .MapAsync(application => mapper.ToProposalAsync(application, ct));
+
+    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetByOpportunityIdAsync(
+        int id,
+        CancellationToken ct = default)
     {
-        var opportunityOption = await opportunityModule.GetAsync(id);
+        var opportunityOption = await opportunityModule.GetAsync(id, ct);
         if (!opportunityOption.TryGetValue(out var opportunity) ||
             opportunity.VenueTenantId != tenantContext.TenantId)
             return new ApplicationError.OpportunityForbidden(id);
 
-        var applications = await applicationRepository.GetByOpportunityIdAsync(id);
-        return new Success<IReadOnlyList<ApplicationDto>>(await mapper.ToDtosAsync(applications));
+        var applications = await applicationRepository.GetByOpportunityIdAsync(id, ct);
+        return new Success<IReadOnlyList<ApplicationProposalDto>>(await mapper.ToProposalsAsync(applications, ct));
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync()
+    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetPendingForArtistAsync(
+        CancellationToken ct = default)
     {
-        var artistOption = await artistModule.GetCurrentProfileAsync();
+        var artistOption = await artistModule.GetCurrentProfileAsync(ct);
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationError.MissingArtist();
 
         var applications = await applicationRepository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
-            ApplicationState.Applied);
-        var dtos = await mapper.ToDtosAsync(applications);
-        return new Success<IReadOnlyList<ApplicationDto>>(
+            ApplicationState.Applied,
+            ct);
+        var dtos = await mapper.ToProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposalDto>>(
             dtos.Where(application => application.Opportunity.StartDate > timeProvider.GetUtcNow())
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync()
+    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetRecentDeniedForArtistAsync(
+        CancellationToken ct = default)
     {
-        var artistOption = await artistModule.GetCurrentProfileAsync();
+        var artistOption = await artistModule.GetCurrentProfileAsync(ct);
         if (!artistOption.TryGetValue(out var artist))
             return new ApplicationError.MissingArtist();
 
         var applications = await applicationRepository.GetByArtistTenantIdAndStateAsync(
             artist.TenantId,
-            ApplicationState.Rejected);
-        var dtos = await mapper.ToDtosAsync(applications);
-        return new Success<IReadOnlyList<ApplicationDto>>(
+            ApplicationState.Rejected,
+            ct);
+        var dtos = await mapper.ToProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposalDto>>(
             dtos.OrderByDescending(application => application.Opportunity.EndDate)
                 .Take(5)
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForCurrentVenueAsync()
+    public async Task<Result<IReadOnlyList<ApplicationSummaryDto>, ApplicationError>> GetPendingForCurrentVenueAsync(
+        CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
             return new ApplicationError.MissingVenue();
 
         var applications = await applicationRepository.GetByVenueTenantIdAndStateAsync(
             tenantId,
-            ApplicationState.Applied);
+            ApplicationState.Applied,
+            ct);
         var now = timeProvider.GetUtcNow();
-        var dtos = await mapper.ToDtosAsync(applications);
-        return new Success<IReadOnlyList<ApplicationDto>>(
+        var dtos = await mapper.ToSummariesAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationSummaryDto>>(
             dtos.Where(application => application.Opportunity.EndDate > now)
                 .OrderBy(application => application.Opportunity.StartDate)
                 .ThenBy(application => application.Id)
@@ -122,15 +156,16 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetCurrentForCurrentArtistAsync()
+    public async Task<Result<IReadOnlyList<ApplicationSummaryDto>, ApplicationError>> GetCurrentForCurrentArtistAsync(
+        CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
             return new ApplicationError.MissingArtist();
 
-        var applications = await applicationRepository.GetCurrentByArtistTenantIdAsync(tenantId);
+        var applications = await applicationRepository.GetCurrentByArtistTenantIdAsync(tenantId, ct);
         var now = timeProvider.GetUtcNow();
-        var dtos = await mapper.ToDtosAsync(applications);
-        return new Success<IReadOnlyList<ApplicationDto>>(
+        var dtos = await mapper.ToSummariesAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationSummaryDto>>(
             dtos.Where(application => application.Opportunity.EndDate > now)
                 .OrderBy(application => application.Opportunity.StartDate)
                 .ThenBy(application => application.Id)
@@ -138,7 +173,7 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
-    public Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
+    public Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
@@ -174,38 +209,101 @@ internal sealed class ApplicationService : IApplicationService
         CancellationToken ct = default) =>
         workflow.AcceptAsync(applicationId, eSignature, ct);
 
-    public Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
+    public async Task<UnitResult<WithdrawApplicationError>> WithdrawAsync(
         int applicationId,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => WithdrawCoreAsync(applicationId, ct),
-            exception => exception.IsApplicationConcurrencyConflict(applicationId),
-            _ => ClassifyWithdrawConflictAsync(applicationId, ct),
-            ct);
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new WithdrawApplicationError.NotPermitted();
 
-    public Task<UnitResult<RejectApplicationError>> RejectAsync(
-        int applicationId,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => RejectCoreAsync(applicationId, ct),
-            exception => exception.IsApplicationConcurrencyConflict(applicationId),
-            _ => ClassifyRejectConflictAsync(applicationId, ct),
-            ct);
+        try
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
+                (service, token) => service.WithdrawCommandAsync(applicationId, actor, token),
+                (service, _, token) => service.ValidateSubmitAuthorityAsync(applicationId, actor, token),
+                () => new WithdrawApplicationError.NotPermitted(),
+                ct);
+        }
+        catch (DbUpdateException exception)
+            when (exception.IsApplicationConcurrencyConflict(applicationId))
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
+                (service, token) => service.ClassifyWithdrawConflictAsync(applicationId, token),
+                ct);
+        }
+    }
 
-    public Task<UnitResult<CancelApplicationError>> CancelAsync(
+    public async Task<UnitResult<RejectApplicationError>> RejectAsync(
         int applicationId,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => CancelCoreAsync(applicationId, ct),
-            exception => exception.IsApplicationConcurrencyConflict(applicationId),
-            _ => ClassifyCancelConflictAsync(applicationId, ct),
-            ct);
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new RejectApplicationError.NotPermitted();
+
+        try
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
+                (service, token) => service.RejectCommandAsync(applicationId, actor, token),
+                (service, _, token) => service.ValidateDecideAuthorityAsync(applicationId, actor, token),
+                () => new RejectApplicationError.NotPermitted(),
+                ct);
+        }
+        catch (DbUpdateException exception)
+            when (exception.IsApplicationConcurrencyConflict(applicationId))
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
+                (service, token) => service.ClassifyRejectConflictAsync(applicationId, token),
+                ct);
+        }
+    }
+
+    public async Task<UnitResult<CancelApplicationError>> CancelAsync(
+        int applicationId,
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new CancelApplicationError.NotPermitted();
+
+        try
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
+                (service, token) => service.CancelCommandAsync(applicationId, actor, token),
+                (service, _, token) => service.ValidateDecideAuthorityAsync(applicationId, actor, token),
+                () => new CancelApplicationError.NotPermitted(),
+                ct);
+        }
+        catch (DbUpdateException exception)
+            when (exception.IsApplicationConcurrencyConflict(applicationId))
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
+                (service, token) => service.ClassifyCancelConflictAsync(applicationId, token),
+                ct);
+        }
+    }
+
+    private Task<UnitResult<WithdrawApplicationError>> WithdrawCommandAsync(
+        int applicationId,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(() => WithdrawCoreAsync(applicationId, actor, ct), ct);
+
+    private Task<UnitResult<RejectApplicationError>> RejectCommandAsync(
+        int applicationId,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(() => RejectCoreAsync(applicationId, actor, ct), ct);
+
+    private Task<UnitResult<CancelApplicationError>> CancelCommandAsync(
+        int applicationId,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(() => CancelCoreAsync(applicationId, actor, ct), ct);
 
     private async Task<UnitResult<WithdrawApplicationError>> ClassifyWithdrawConflictAsync(
         int applicationId,
         CancellationToken ct)
     {
-        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Withdrawn)
+        if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Withdrawn)
             return new Success();
 
         return new WithdrawApplicationError.Superseded(applicationId);
@@ -213,16 +311,29 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<WithdrawApplicationError>> WithdrawCoreAsync(
         int applicationId,
+        MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            return new WithdrawApplicationError.NotPermitted();
+
+        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
+        if (application.ArtistTenantId != actor.TenantId
+            || !ResourceGrantPolicy.Allows(
+                application.AccessGrants,
+                ApplicationAccessScope.Proposal,
+                actor,
+                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsSubmit),
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new WithdrawApplicationError.NotPermitted();
         if (application.Withdraw().TryGetError(out var transitionError))
             return new WithdrawApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Withdrawn);
-        await unitOfWork.SaveChangesAsync(ct);
-        await notifier.WithdrawnAsync(applicationId);
+        await notifier.WithdrawnAsync(application);
         return new Success();
     }
 
@@ -230,7 +341,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Rejected)
+        if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Rejected)
             return new Success();
 
         return new RejectApplicationError.Superseded(applicationId);
@@ -238,16 +349,29 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<RejectApplicationError>> RejectCoreAsync(
         int applicationId,
+        MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return new RejectApplicationError.NotPermitted();
+
+        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
+        if (application.VenueTenantId != actor.TenantId
+            || !ResourceGrantPolicy.Allows(
+                application.AccessGrants,
+                ApplicationAccessScope.Proposal,
+                actor,
+                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new RejectApplicationError.NotPermitted();
         if (application.Reject().TryGetError(out var transitionError))
             return new RejectApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Rejected);
-        await unitOfWork.SaveChangesAsync(ct);
-        await notifier.RejectedAsync(applicationId);
+        await notifier.RejectedAsync(application);
         return new Success();
     }
 
@@ -255,7 +379,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Cancelled)
+        if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Cancelled)
             return new Success();
 
         return new CancelApplicationError.Superseded(applicationId);
@@ -263,16 +387,29 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<CancelApplicationError>> CancelCoreAsync(
         int applicationId,
+        MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return new CancelApplicationError.NotPermitted();
+
+        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
+        if (application.VenueTenantId != actor.TenantId
+            || !ResourceGrantPolicy.Allows(
+                application.AccessGrants,
+                ApplicationAccessScope.Proposal,
+                actor,
+                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new CancelApplicationError.NotPermitted();
         if (application.Cancel().TryGetError(out var transitionError))
             return new CancelApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.ApplicationCancelled);
-        await unitOfWork.SaveChangesAsync(ct);
-        await notifier.CancelledAsync(applicationId);
+        await notifier.CancelledAsync(application);
         return new Success();
     }
 
@@ -294,7 +431,7 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanAcceptAsync(int applicationId)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId);
+        var application = await applicationRepository.GetProposalByIdAsync(applicationId);
         if (application is null)
             return new ApplicationEligibilityError.ApplicationNotFound();
 
@@ -307,5 +444,41 @@ internal sealed class ApplicationService : IApplicationService
     {
         var result = await eligibility.CanAcceptAsync(application, ct);
         return result.TryGetError(out var error) ? error : new Success();
+    }
+
+    private async Task<bool> ValidateSubmitAuthorityAsync(
+        int applicationId,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct)
+    {
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            return false;
+
+        return await privilegedRepository.CanSubmitAsync(
+            applicationId,
+            actor,
+            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsSubmit),
+            timeProvider.GetUtcNow().UtcDateTime,
+            ct);
+    }
+
+    private async Task<bool> ValidateDecideAuthorityAsync(
+        int applicationId,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct)
+    {
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return false;
+
+        return await privilegedRepository.CanDecideAsync(
+            applicationId,
+            actor,
+            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+            timeProvider.GetUtcNow().UtcDateTime,
+            ct);
     }
 }

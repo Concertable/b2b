@@ -1,9 +1,9 @@
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
 using Concertable.B2B.Deal.Application.Services;
@@ -24,6 +24,14 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddDealModule(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddDbContext<DealPrivilegedDbContext>((sp, opt) =>
+            opt.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
         services.AddDbContext<DealDbContext>((sp, opt) =>
             opt.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
@@ -31,12 +39,12 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddScoped<IDealRepository, DealRepository>();
         services.AddScoped<IDealService, DealService>();
         services.AddScoped<IDealModule, DealModule>();
+        services.AddScoped<IDealCommandFacts, DealCommandFacts>();
 
         services.AddDealStrategies();
 

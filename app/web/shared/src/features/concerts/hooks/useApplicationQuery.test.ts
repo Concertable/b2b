@@ -30,7 +30,7 @@ describe("useAcceptApplicationMutation", () => {
     options.onSuccess(undefined, { applicationId: 42 });
 
     expect(mocks.setQueryData).toHaveBeenCalledWith(
-      ["applications", 42],
+      ["tenant", "unselected", "unselected", 0, "applications", 42],
       expect.any(Function),
     );
     const update = mocks.setQueryData.mock.calls[0][1];
@@ -39,7 +39,15 @@ describe("useAcceptApplicationMutation", () => {
       status: "accepted",
     });
     expect(mocks.invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ["applications", "opportunity", 11],
+      queryKey: [
+        "tenant",
+        "unselected",
+        "unselected",
+        0,
+        "applications",
+        "opportunity",
+        11,
+      ],
     });
   });
 });
