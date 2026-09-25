@@ -7,8 +7,8 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: head `90df5496`, clean, 0 behind `origin/main`, ordinary CI green. The platform
-  capability the E2E reset deadlock waited on is published (`0.2.0-alpha.0.20`); consuming it is next
+- Current checkpoint: platform `0.2.0-alpha.0.20` consumed and the reset switched to `HostPauser`; the
+  incremental review, exact-head CI and dispatched E2E are next
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
 - Last reconciled: 25 September 2026 against \`origin/main\` \`a1baf9a7\`
 - Ownership: transferred 25 September 2026 to a fresh Claude session in this worktree; no other writer is active
@@ -53,31 +53,18 @@ The reconciliation merge with `origin/main` `61f91a71` is committed at `1d27cb87
 CI passed at `15dce560`** — build, unit and integration are green on the reconciled graph. PR #18 reports
 `MERGEABLE`. The one thing standing between this branch and delivery is the E2E reset deadlock.
 
-1. **Consume the published host pause.** Decided and delivered on the platform side. platform-dotnet #26
-   paused every source of work in the host, and #29 renamed it. It is published as `0.2.0-alpha.0.20`;
-   skip `.19`, which carries the rejected names. The contract, in `Concertable.Messaging.*`:
-   - `IPausable` (`PauseAsync` returns once new work stopped and in-flight work finished).
-   - `HostPauser` + `AddHostPauser()`: pauses every `IPausable` in the host, including the ASB receiver and
-     outbox dispatcher (found through `IHostedService`); resolve it by its concrete type.
-   - `GateMiddleware` + `GateOptions` + `AddGate()`/`UseGate()` in the new `Concertable.Messaging.AspNetCore`
-     package: holds new requests and drains in-flight ones, excluding the request driving the pause. The
-     in-flight HTTP request was the actual deadlocking writer.
-
-   Do:
-   - Bump `ConcertableDotNetPlatformVersion` `0.2.0-alpha.0.17` → `0.2.0-alpha.0.20` and add
-     `Concertable.Messaging.AspNetCore`.
-   - In the E2E host only: `AddHostPauser()`, `AddGate(o => ...)` exempting `/_e2e` and health, and
-     `UseGate()` early in the pipeline.
-   - Switch `E2EAdminExtensions.ResetAsync` from `IBusQuiescence` to `HostPauser`, called inline in the reset
-     request so the gate excludes it.
-   - Replace `E2EAdminApiTests`' `NoOpBusQuiescence`.
-
-   Other platform changes in `.17..20` are source-compatible: extension methods moved to C# 14 blocks, and
-   Messaging.Infrastructure's registration classes merged under the same namespace. Names are fixed:
-   Tommy rejected "quiescence/ingress", `-able` implementation names and "Composite", so do not reintroduce
-   them.
-2. Append the final incremental review pass for base `ed76eda6` through the delivered head, covering the
-   reconciliation merge `1d27cb87` and the reset repair.
+1. **Done: the published host pause is consumed.** Platform is `0.2.0-alpha.0.20` with
+   `Concertable.Messaging.AspNetCore` added. `AddB2BE2EAdmin` registers `AddHostPauser()` and `AddGate`
+   exempting `/_e2e`, `/health` and `/alive`; `MapB2BE2EAdmin` became `UseB2BE2EAdmin`, which inserts
+   `UseGate()` ahead of the whole host pipeline. The reset pauses through `HostPauser` inline in its request
+   and resumes in `finally`. `NoOpBusQuiescence` is deleted, and a new `E2EAdminApiTests` case drives the real
+   reset against PostgreSQL. The bump was **not** source-compatible, contrary to the earlier note: platform #23
+   deleted `UseSeedingSupport` (its only body registered the SQL Server identity-insert interceptor) and moved
+   `SeedingScope` out of `Concertable.Seed.Shared.Identity`, so all nine module registrations and
+   `DevDbInitializer` changed with it. Names are fixed: Tommy rejected "quiescence/ingress", `-able`
+   implementation names and "Composite".
+2. Append the incremental review pass from the recorded watermark `e0cfe596` through the delivered head,
+   covering the reset repair and the platform bump.
 3. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
    merge PR #18 and restore the preserved unrelated files without committing them.
 
@@ -130,6 +117,9 @@ returns 401. Export `gh auth token` into it for restores here until the variable
 
 ## Verification
 
+- Platform `0.2.0-alpha.0.20` head, 25 September 2026: `dotnet build Concertable.B2B.slnx` passed with 0
+  errors; E2EAdmin integration 9/9 (including the real PostgreSQL reset), architecture 24/24, startup 16/16.
+  Free memory was still under 1 GB, but these tiers completed.
 - Restore: \`dotnet restore Concertable.B2B.slnx --force-evaluate\` passed.
 - Current-graph build: \`dotnet build Concertable.B2B.slnx --no-restore -m:4\` passed with 0 warnings and
   0 errors in 5m10s.
@@ -227,6 +217,12 @@ does not substitute for the P1 review.
   quiescence capability was. That is a cross-repository decision and is not taken here. Declaring a lock
   order for the truncate remains the other candidate and remains insufficient on its own, because it would
   remove the deadlock while still letting a surviving transaction write onto cleared state.
+- **The ingress pause is the chosen mechanism, delivered as platform `0.2.0-alpha.0.20`.** The reset keeps
+  `PauseAsync` inside its `try` so `finally` always resumes every pausable. That matters because
+  `HostPauser`'s rollback skips the pausable whose own `PauseAsync` threw, and `GateMiddleware` sets its
+  paused flag before awaiting the drain, so a cancelled reset would otherwise leave the gate holding every
+  request. The platform defect is recorded in platform-dotnet `src/Concertable.Messaging/TECH_DEBT.md` through
+  [platform-dotnet #30](https://github.com/Concertable/platform-dotnet/pull/30), open for Tommy's review.
 - The two FlatFee checkout 409s are not attributable to this branch. A control run of the default branch
   plus only the Outbox fix scored 8 of 10 with exactly those two failing, against 6-7 of 10 here. The cause
   is the checkout operation identity being composed from a database id that Respawn reseeds, so a reused id

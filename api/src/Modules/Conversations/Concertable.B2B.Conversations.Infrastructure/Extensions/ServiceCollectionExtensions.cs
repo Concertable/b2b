@@ -2,7 +2,6 @@
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Validators;
 using FluentValidation;
@@ -33,8 +32,7 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddDbContext<ConversationsPrivilegedDbContext>((sp, opts) =>
             opts.UseNpgsql(
@@ -42,8 +40,7 @@ public static class ServiceCollectionExtensions
                     npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddSingleton<ConversationsConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConversationsConfigurationProvider>());

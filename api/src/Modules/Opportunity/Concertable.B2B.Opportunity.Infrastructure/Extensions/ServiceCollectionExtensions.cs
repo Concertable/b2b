@@ -20,7 +20,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Extensions;
@@ -35,8 +34,7 @@ public static class ServiceCollectionExtensions
                 options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
                         npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
-                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>())
-                    .UseSeedingSupport(sp));
+                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
 
             services.AddDbContext<OpportunityDbContext>((sp, options) =>
                 options.UseNpgsql(
@@ -44,8 +42,7 @@ public static class ServiceCollectionExtensions
                         npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
-                        sp.GetRequiredService<TenantInterceptor>())
-                    .UseSeedingSupport(sp));
+                        sp.GetRequiredService<TenantInterceptor>()));
 
             services.AddDbContext<OpportunityReadDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))

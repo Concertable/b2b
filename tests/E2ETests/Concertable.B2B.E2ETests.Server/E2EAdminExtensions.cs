@@ -6,7 +6,9 @@ using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel;
-using Concertable.Messaging.Contracts;
+using Concertable.Messaging.AspNetCore.Extensions;
+using Concertable.Messaging.Infrastructure;
+using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Dapper;
@@ -40,6 +42,13 @@ public static class E2EAdminExtensions
                 configuration.GetConnectionString(B2BDb.Name)
                     ?? throw new InvalidOperationException($"Connection string '{B2BDb.Name}' is required by the B2B E2E host.")));
             services.AddHttpContextAccessor();
+            services.AddHostPauser();
+            services.AddGate(options =>
+            {
+                options.ExemptPathPrefixes.Add("/_e2e");
+                options.ExemptPathPrefixes.Add("/health");
+                options.ExemptPathPrefixes.Add("/alive");
+            });
             services.AddScoped<B2BDatabaseResetter>();
             services.AddScoped<B2BHostInitializer>();
             return services;
@@ -48,9 +57,10 @@ public static class E2EAdminExtensions
 
     extension(WebApplication app)
     {
-        public WebApplication MapB2BE2EAdmin()
+        public WebApplication UseB2BE2EAdmin()
         {
             E2EAdminSecurity.RequireE2EEnvironment(app.Environment);
+            app.UseGate();
             var group = app.MapGroup("/_e2e")
                 .AddEndpointFilter(AuthorizeAsync);
 
@@ -83,18 +93,18 @@ public static class E2EAdminExtensions
     private static async Task<IResult> ResetAsync(
         B2BDatabaseResetter resetter,
         B2BHostInitializer initializer,
-        IBusQuiescence quiescence,
+        HostPauser pauser,
         CancellationToken cancellationToken)
     {
         try
         {
-            await quiescence.PauseAsync(cancellationToken);
+            await pauser.PauseAsync(cancellationToken);
             await resetter.ResetAsync(cancellationToken);
             await initializer.InitializeAsync();
         }
         finally
         {
-            await quiescence.ResumeAsync();
+            await pauser.ResumeAsync();
         }
 
         return Results.NoContent();

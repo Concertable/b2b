@@ -10,7 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
-    <PackageReference Include="Concertable.Messaging.Contracts" />
+    <PackageReference Include="Concertable.Messaging.AspNetCore" />
+    <PackageReference Include="Concertable.Messaging.Infrastructure" />
     <PackageReference Include="Concertable.DataAccess.Application" />
     <PackageReference Include="Concertable.Payment.Client" />
     <PackageReference Include="Concertable.Payment.Contracts" />

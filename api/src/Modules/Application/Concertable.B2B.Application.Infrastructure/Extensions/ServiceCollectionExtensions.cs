@@ -29,7 +29,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Application.Infrastructure.Extensions;
 
@@ -47,8 +46,7 @@ public static class ServiceCollectionExtensions
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
-                        provider.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(provider));
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
             services.AddDbContext<ApplicationPrivilegedDbContext>((provider, options) =>
                 options.UseNpgsql(
@@ -56,8 +54,7 @@ public static class ServiceCollectionExtensions
                         npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
-                        provider.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(provider));
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
             services.AddDbContext<ApplicationReadDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))

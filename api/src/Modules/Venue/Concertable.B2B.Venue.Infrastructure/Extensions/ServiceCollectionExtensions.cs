@@ -6,7 +6,6 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Venue.Application.Validators;
 using Concertable.B2B.Venue.Domain.Events;
 using Concertable.B2B.Venue.Infrastructure.Data;
@@ -33,8 +32,7 @@ public static class ServiceCollectionExtensions
                         .UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddDbContext<VenueDbContext>((sp, opt) =>
             opt.UseNpgsql(
@@ -44,8 +42,7 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddDbContext<VenueReadDbContext>((sp, opt) =>
             opt.UseNpgsql(

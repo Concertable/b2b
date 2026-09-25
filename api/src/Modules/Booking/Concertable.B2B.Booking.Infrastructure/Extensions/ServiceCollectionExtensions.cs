@@ -24,7 +24,6 @@ using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Booking.Infrastructure.Extensions;
@@ -42,8 +41,7 @@ public static class ServiceCollectionExtensions
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
-                        provider.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(provider));
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
             services.AddDbContext<BookingPrivilegedDbContext>((provider, options) =>
                 options.UseNpgsql(
@@ -51,8 +49,7 @@ public static class ServiceCollectionExtensions
                         npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
-                        provider.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(provider));
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
             services.AddDbContext<BookingReadDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))

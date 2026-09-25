@@ -3,7 +3,6 @@ using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.B2B.Concert.Application.Mappers;
@@ -58,8 +57,7 @@ public static class ServiceCollectionExtensions
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
                         sp.GetRequiredService<TenantInterceptor>(),
-                        sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(sp), ServiceLifetime.Scoped);
+                        sp.GetRequiredService<IDomainEventDispatchInterceptor>()), ServiceLifetime.Scoped);
 
             services.AddDbContextFactory<ConcertPrivilegedDbContext>((sp, opts) =>
                 opts.UseNpgsql(
@@ -68,8 +66,7 @@ public static class ServiceCollectionExtensions
                             .UseNetTopologySuite())
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
-                        sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(sp), ServiceLifetime.Scoped);
+                        sp.GetRequiredService<IDomainEventDispatchInterceptor>()), ServiceLifetime.Scoped);
 
             services.AddDbContext<ConcertReadDbContext>((sp, opts) =>
                 opts.UseNpgsql(

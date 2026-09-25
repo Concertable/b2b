@@ -4,7 +4,6 @@ using System.Net.Http.Json;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.E2ETests.Server;
 using Concertable.B2B.Seed.Infrastructure;
-using Concertable.Messaging.Contracts;
 using Concertable.Testing.Integration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -66,6 +65,40 @@ public sealed class E2EAdminApiTests
     }
 
     [Fact]
+    public async Task Reset_AuthenticatedRequest_ClearsDataAndReturnsNoContent()
+    {
+        var postgres = new PostgresFixture();
+        await postgres.InitializeAsync();
+        try
+        {
+            await using var connection = new NpgsqlConnection(postgres.ConnectionString);
+            await connection.OpenAsync();
+            await using var seed = connection.CreateCommand();
+            seed.CommandText = """
+                CREATE SCHEMA concert;
+                CREATE TABLE concert."Concerts" ("Id" integer PRIMARY KEY);
+                INSERT INTO concert."Concerts" ("Id") VALUES (23);
+                """;
+            await seed.ExecuteNonQueryAsync();
+
+            await using var host = await StartHostAsync(connection, postgres.ConnectionString);
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/_e2e/reset");
+            request.Headers.Add(AdminKeyHeader, AdminKey);
+
+            using var response = await host.Client.SendAsync(request);
+
+            response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+            await using var count = connection.CreateCommand();
+            count.CommandText = "SELECT COUNT(*) FROM concert.\"Concerts\"";
+            ((long)(await count.ExecuteScalarAsync())!).ShouldBe(0);
+        }
+        finally
+        {
+            await postgres.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task GetConcertId_AuthenticatedRequest_ReturnsSeededConcert()
     {
         var postgres = new PostgresFixture();
@@ -100,26 +133,22 @@ public sealed class E2EAdminApiTests
         }
     }
 
-    private static Task<E2EAdminTestHost> StartHostAsync(IDbConnection? connection = null) =>
+    private static Task<E2EAdminTestHost> StartHostAsync(
+        IDbConnection? connection = null,
+        string? connectionString = null) =>
         E2EAdminTestHost.StartAsync(
             AdminKey,
             B2BDb.Name,
             (services, configuration, environment) =>
             {
+                if (connectionString is not null)
+                    configuration[$"ConnectionStrings:{B2BDb.Name}"] = connectionString;
                 services.AddSingleton<SeedState>(_ => throw new NotSupportedException());
-                services.AddSingleton<IBusQuiescence, NoOpBusQuiescence>();
                 if (connection is null)
                     services.AddSingleton<IDbConnection>(_ => throw new NotSupportedException());
                 else
                     services.AddSingleton<IDbConnection>(connection);
                 services.AddB2BE2EAdmin(configuration, environment);
             },
-            app => app.MapB2BE2EAdmin());
-
-    private sealed class NoOpBusQuiescence : IBusQuiescence
-    {
-        public Task PauseAsync(CancellationToken ct = default) => Task.CompletedTask;
-
-        public Task ResumeAsync(CancellationToken ct = default) => Task.CompletedTask;
-    }
+            app => app.UseB2BE2EAdmin());
 }
