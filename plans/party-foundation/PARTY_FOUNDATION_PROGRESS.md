@@ -7,8 +7,8 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: N16 proven by E2E at `ff7dd3cb`; N21 (settled application status) repaired locally;
-  push and a fresh exact-head E2E are next
+- Current checkpoint: `31597095` passes CI and API E2E at `main`'s bar; UI E2E failed. Login and sign-up
+  repaired in `3d32203c` (unpushed); header-inbox cutover design routed to Astra (`MAILBOX_DESIGN.md`)
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
 - Last reconciled: 25 September 2026 against \`origin/main\` \`a1baf9a7\`
 - Ownership: transferred 25 September 2026 to a fresh Claude session in this worktree; no other writer is active
@@ -75,9 +75,22 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
    venue `dto.Status`. The unified summary now reports `Confirmed` once the booking confirms, and the
    escrow-backed polls waited for the transient `Accepted`. Earlier runs passed only because their first
    read beat the confirmation. Both escrow-backed polls now wait for `Confirmed`.
-7. **Next:** push, require ordinary CI plus a separately dispatched `.github/workflows/e2e.yml` at that exact
-   SHA, merge PR #18, and restore the preserved unrelated files without committing them. The E2E pass bar is
-   `main`'s: only the two FlatFee checkout 409s, owned by P2's unstable checkout-identity work, may fail.
+7. **Done: API E2E at `31597095`** scored 8/10, with only the two FlatFee checkout 409s failing, matching
+   `main`. CI passed. The UI suite had never run on this branch, because the API failures skip it.
+   Dispatched alone as run 36320557054, it failed 11 of 32:
+   - 6 FlatFee scenarios never reach `e-sign` on checkout. This is presumed to be the same checkout 409;
+     `main`'s UI-only baseline, run 36321731466, decides that.
+   - Login and both sign-ups drove the business gateway that slice 4.8 replaced. They are repaired in
+     `3d32203c`: sign-in uses the landing page's `home-sign-in`, and sign-up starts at each profile SPA's
+     `/login?redirect=%2Fcreate`.
+   - Group inbox and content report fail because every B2B SPA layout still renders
+     `@concertable/web`'s Mailbox. That component calls the `/message/*` routes 4.7 deleted, so the header
+     inbox is broken. The replacement's data flow is undecided, because `MessagePreviewDto` lacks sender,
+     sequence and report action. It is routed to Astra, whose design lands in
+     `plans/party-foundation/MAILBOX_DESIGN.md`.
+8. **Next:** implement Astra's mailbox design, push, and require CI plus API and UI E2E at that exact SHA.
+   Then merge PR #18 and restore the preserved unrelated files without committing them. The pass bar is
+   `main`'s: only scenarios that also fail on `main` may fail, and only with an owning debt entry.
 
 Local builds, unit, architecture, startup and single-project integration tiers run on this workstation even
 with under 1 GB free; the full integration suite and the Aspire E2E stack are validated remotely.
