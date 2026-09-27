@@ -135,4 +135,6 @@ jobs:
           path: |
             **/TestResults/*.trx
             **/e2e-diagnostics.log
+            **/playwright-failures/*.png
+            **/playwright-traces/*.zip
           if-no-files-found: warn
