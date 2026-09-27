@@ -5,7 +5,7 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `f8ac2131a67d5278c487c018ce166f97bb99920b`  `(2026-09-27)`
+**Reviewed up to commit:** `a340eeb4b8362a3ed5a04de179594319cc6603eb`  `(2026-09-27)`
 **Security-reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
 **Judgment:** `approved`
 
@@ -224,6 +224,43 @@ The run's other failures are not findings against this candidate. The two FlatFe
 most recently 36307012628, and are owned by P2's unstable checkout-identity work. Payment Workers'
 "`escrow/booking:48` has no provider transaction" also appears in `main`'s run and is Payment's own HIGH
 `TECH_DEBT.md` entry.
+
+## Review pass — 2026-09-27 — incremental (UI E2E repairs and the header inbox)
+
+**Candidate base:** `f8ac2131a67d5278c487c018ce166f97bb99920b`
+**Candidate head:** `a340eeb4b8362a3ed5a04de179594319cc6603eb`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:deb03218ae5dbffe66c371cf359ed82ab4abd07b0dc80f0e3f7eadbe2d79d917` `(49 paths)`
+**Candidate patch:** `sha256:3632d4ffa059408bdffcc18a677e71a2894ae864b8629d5e66b582535dbd51fb`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Scope
+
+This pass covers `3d32203c`, which moves login and sign-up off the removed business gateway, and
+`a340eeb4`, the B2B header inbox from `plans/party-foundation/MAILBOX_DESIGN.md`. That commit includes the
+paged preview query with its any-unread-inbound predicate, the seeded artist tenant named "The Rockers", and
+the booking-confirmation test asserting legal names. It also covers the reviews-only stamp `31597095` and the
+ledger checkpoint `e948f150`. The native review ran in the parent. A fresh read-only lens reviewed the whole
+range against the design, the two inbox scenarios' page object and steps, and every seed-name consumer. No path
+in the range is security-sensitive.
+
+### Findings
+
+No new findings. The design owned the mechanism decisions, and the implementation follows them with one
+recorded deviation: the report dialog keeps the platform's generic `Select`, which the `AriaRole.Combobox`
+and `AriaRole.Option` selectors already drive elsewhere.
+
+The following evidence also counts toward the pass:
+
+- The Conversations integration suite passed 22/22 against real PostgreSQL. That run proves the correlated
+  unread predicate translates, which the lens could not settle by reading.
+- The repaired booking-confirmation lifecycle test passed 1/1. It had failed on the seed rename, because it
+  equated each party's legal name with its manager's email.
+- `build:web` passed. It includes `@concertable/b2b` 39/39, `web-b2b` 30/30 (with the four new
+  conversations suites), and all four SPA builds. `web-admin` passed 1/1 and venue `test:tenant` 4/4.
 
 ## Review pass — 2026-09-15 — full (void: candidate discarded by branch restart)
 
