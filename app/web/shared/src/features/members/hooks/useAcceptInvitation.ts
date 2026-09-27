@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   b2bIdentityKeys,
   identityApi,
-  isPrivateQuery,
+  isTenantSwitchQuery,
   settlePendingMutations,
   tenantSession,
 } from "@concertable/b2b/features/tenant";
@@ -28,9 +28,9 @@ export function useAcceptInvitation(
           });
           await tenantSession.switchTo(tenantId, {
             prepare: async () => {
-              await queryClient.cancelQueries({ predicate: isPrivateQuery });
+              await queryClient.cancelQueries({ predicate: isTenantSwitchQuery });
               await settlePendingMutations(queryClient);
-              queryClient.removeQueries({ predicate: isPrivateQuery });
+              queryClient.removeQueries({ predicate: isTenantSwitchQuery });
             },
           });
           await tenantSession.resolve(businessActivity);

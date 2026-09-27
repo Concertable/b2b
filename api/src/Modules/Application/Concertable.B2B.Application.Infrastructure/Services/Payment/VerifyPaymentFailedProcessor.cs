@@ -74,15 +74,16 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
             owned = status.IsSuccess;
         }
 
+        string? notificationMessage;
         try
         {
-            await unitOfWork.ExecuteAsync(async () =>
+            notificationMessage = await unitOfWork.ExecuteAsync(async () =>
             {
                 context.AddInboxMessage(envelope, nameof(VerifyPaymentFailedProcessor));
                 if (!owned)
                 {
                     logger.VerifyOutcomeNotOwnedByVenue(@event.Reference.ClientReference, applicationId);
-                    return;
+                    return (string?)null;
                 }
 
                 var code = string.IsNullOrWhiteSpace(@event.FailureCode)
@@ -95,13 +96,16 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
                 await paymentVerificationRecorder.RecordAsync(
                     new VerifyPaymentFailed(applicationId, new VerifyPaymentError(code, message)),
                     ct);
-
-                await applicationNotifier.VerifyPaymentFailedAsync(applicationId, message);
+                return message;
             }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {
             logger.DuplicateInboxMessage(envelope.MessageId);
+            return;
         }
+
+        if (notificationMessage is not null)
+            await applicationNotifier.VerifyPaymentFailedAsync(applicationId, notificationMessage);
     }
 }

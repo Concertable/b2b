@@ -16,7 +16,10 @@ internal abstract partial record UpdateTenantError : IError
                 errors),
         Superseded =>
             ErrorDefinition.Conflict<Superseded>(
-                "The organization settings changed. Reload them and try again.")
+                "The organization settings changed. Reload them and try again."),
+        NotPermitted =>
+            ErrorDefinition.Forbidden<NotPermitted>(
+                "The current membership cannot manage this organization.")
     };
 
     [ErrorCode("tenant.update_not_found")]
@@ -26,4 +29,6 @@ internal abstract partial record UpdateTenantError : IError
 
     [ErrorCode("tenant.update_superseded")]
     public partial record Superseded;
+    [ErrorCode("tenant.update_not_permitted")]
+    public partial record NotPermitted;
 }

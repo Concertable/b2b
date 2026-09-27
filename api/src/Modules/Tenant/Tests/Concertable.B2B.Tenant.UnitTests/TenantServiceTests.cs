@@ -20,6 +20,8 @@ public sealed class TenantServiceTests
     private readonly Mock<IMembershipRepository> membershipRepository;
     private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
+    private readonly Mock<IMembershipContext> membershipContext;
+    private readonly Mock<IMembershipAuthorityFence> authorityFence;
     private readonly Mock<IPermissionCatalog> permissionCatalog;
     private readonly TenantService service;
 
@@ -29,12 +31,25 @@ public sealed class TenantServiceTests
         this.membershipRepository = new Mock<IMembershipRepository>();
         this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
+        this.membershipContext = new Mock<IMembershipContext>();
+        this.authorityFence = new Mock<IMembershipAuthorityFence>();
+        this.membershipContext.SetupGet(context => context.Membership).Returns(() =>
+            new MembershipSnapshot(Guid.NewGuid(), tenantContext.Object.TenantId ?? Guid.Empty,
+                Guid.NewGuid(), TenantRole.Owner, 1));
+        this.authorityFence.Setup(fence => fence.RequireCurrentAsync(
+                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
         this.permissionCatalog = new Mock<IPermissionCatalog>();
+        this.permissionCatalog.Setup(catalog => catalog.Grants(
+                TenantRole.Owner, It.IsAny<TenantPermission>()))
+            .Returns(true);
         this.service = new TenantService(
             repository.Object,
             membershipRepository.Object,
             invitationRepository.Object,
             tenantContext.Object,
+            membershipContext.Object,
+            authorityFence.Object,
             new VatPolicy(new UkVatCalculator()),
             permissionCatalog.Object,
             new ImmediateUnitOfWorkBehavior(),
@@ -104,6 +119,41 @@ public sealed class TenantServiceTests
         Assert.True(result.TryGetError(out var error));
         Assert.Equal("tenant.update_not_found", error.Definition.Code);
         Assert.Equal(ErrorKind.NotFound, error.Definition.Kind);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RevokedMembershipAfterLock_IsForbidden()
+    {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Bare());
+        authorityFence.Setup(fence => fence.RequireCurrentAsync(
+                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MembershipSnapshot?)null);
+
+        var result = await service.UpdateAsync(null!);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<UpdateTenantError.NotPermitted>(error);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RevokedMembershipAfterLock_IsForbidden()
+    {
+        var tenantId = Guid.NewGuid();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Bare());
+        authorityFence.Setup(fence => fence.RequireCurrentAsync(
+                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MembershipSnapshot?)null);
+
+        var result = await service.DeleteAsync();
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<DeleteTenantError.NotPermitted>(error);
+        repository.Verify(value => value.Remove(It.IsAny<TenantEntity>()), Times.Never);
     }
 
     [Fact]

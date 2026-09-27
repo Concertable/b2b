@@ -15,7 +15,10 @@ internal abstract partial record ChangeBusinessActivityError : IError
                 errors),
         Superseded =>
             ErrorDefinition.Conflict<Superseded>(
-                "The organization activities changed. Reload them and try again.")
+                "The organization activities changed. Reload them and try again."),
+        NotPermitted =>
+            ErrorDefinition.Forbidden<NotPermitted>(
+                "The current membership cannot manage this organization.")
     };
 
     [ErrorCode("tenant.activity_tenant_not_found")]
@@ -25,4 +28,6 @@ internal abstract partial record ChangeBusinessActivityError : IError
 
     [ErrorCode("tenant.activity_superseded")]
     public partial record Superseded;
+    [ErrorCode("tenant.activity_not_permitted")]
+    public partial record NotPermitted;
 }

@@ -7,6 +7,7 @@ import type { Membership, TenantBusinessActivity } from "../types";
 export function useTenant(
   memberships: ReadonlyArray<Membership>,
   businessActivity?: TenantBusinessActivity,
+  identityLoaded = true,
 ) {
   const activeTenantId = useTenantStore((state) => state.activeTenantId);
   const isSelectionPending = useTenantStore(
@@ -15,8 +16,8 @@ export function useTenant(
   const resolution = resolveTenant(memberships, businessActivity, activeTenantId);
 
   useEffect(() => {
-    void tenantSession.resolve(businessActivity);
-  }, [memberships, businessActivity]);
+    if (identityLoaded) void tenantSession.resolve(businessActivity);
+  }, [memberships, businessActivity, identityLoaded]);
 
   const permissions = useMemo(
     () => new Set(resolution.activeMembership?.permissions ?? []),

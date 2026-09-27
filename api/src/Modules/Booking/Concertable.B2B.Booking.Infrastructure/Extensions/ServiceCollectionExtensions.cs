@@ -13,6 +13,7 @@ using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.Booking.Domain.Factories;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
@@ -70,6 +71,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
             services.AddScoped<IBookingModule, BookingModule>();
+            services.AddScoped<ITenantDeletionGuard, BookingTenantDeletionGuard>();
             services.AddBookingDealStrategies();
             services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,
                 ApplicationAcceptedDomainEventHandler>();

@@ -33,16 +33,16 @@ internal sealed class ConcertReadRepository : IConcertReadRepository
             .SingleOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
-        DateTime endedBeforeUtc, int take, CancellationToken ct = default) =>
+        DateTime endedBeforeUtc, int afterId, int take, CancellationToken ct = default) =>
         await context.Concerts
             .Where(concert =>
                 concert.State == ConcertState.Draft ||
                 concert.State == ConcertState.Posted ||
                 concert.State == ConcertState.SettlementFailed ||
                 concert.State == ConcertState.AwaitingSettlement)
-            .Where(concert => concert.Period.End <= endedBeforeUtc)
+            .Where(concert => concert.Period.End <= endedBeforeUtc && concert.Id > afterId)
             .Where(endedSpecification.And(doorRevenueOutstanding.Not()).ToExpression())
-            .OrderBy(concert => concert.Period.End)
+            .OrderBy(concert => concert.Id)
             .Take(take)
             .Select(concert => concert.Id)
             .ToListAsync(ct);

@@ -8,7 +8,7 @@ export { useTenant } from "./hooks/useTenant";
 export { tenantSession } from "./tenantSession";
 export {
   currentPrivateQueryKey,
-  isPrivateQuery,
+  isTenantSwitchQuery,
   privateQueryKey,
   settlePendingMutations,
 } from "./queryKeys";

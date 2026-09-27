@@ -35,7 +35,7 @@ public sealed class CompletionRunnerTests
     public async Task RunAsync_CompletesEveryEndedConcert()
     {
         this.repository
-            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([1, 2, 3]);
 
         await sut.RunAsync();
@@ -46,10 +46,32 @@ public sealed class CompletionRunnerTests
     }
 
     [Fact]
+    public async Task RunAsync_PagesPastDeferredConcerts()
+    {
+        var firstPage = Enumerable.Range(1, 200).ToArray();
+        this.repository
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(
+                It.IsAny<DateTime>(), 0, 200, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(firstPage);
+        this.repository
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(
+                It.IsAny<DateTime>(), 200, 200, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([201]);
+        this.workflow
+            .Setup(workflow => workflow.CompleteAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<SettlementOutcome, FinishConcertError>(
+                SettlementOutcome.DeferredPendingVerification));
+
+        await sut.RunAsync();
+
+        this.workflow.Verify(workflow => workflow.CompleteAsync(201, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task RunAsync_ContinuesWhenCompletionIsRefused()
     {
         this.repository
-            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([1, 2, 3]);
         this.workflow
             .Setup(workflow => workflow.CompleteAsync(2, It.IsAny<CancellationToken>()))
@@ -67,7 +89,7 @@ public sealed class CompletionRunnerTests
     public async Task RunAsync_PropagatesInfrastructureFailure()
     {
         this.repository
-            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([1, 2, 3]);
         this.workflow
             .Setup(workflow => workflow.CompleteAsync(2, It.IsAny<CancellationToken>()))
@@ -84,7 +106,7 @@ public sealed class CompletionRunnerTests
     public async Task RunAsync_DoesNothingWhenNoConcertHasEnded()
     {
         this.repository
-            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetEndedPendingCompletionIdsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         await sut.RunAsync();

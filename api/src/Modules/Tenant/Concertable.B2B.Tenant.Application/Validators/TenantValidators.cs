@@ -20,6 +20,7 @@ internal sealed class CreateTenantRequestValidator : AbstractValidator<CreateTen
             .MaximumLength(320);
 
         RuleFor(x => x.Activities)
+            .Cascade(CascadeMode.Stop)
             .NotNull()
             .Must(activities => activities.Count == activities.Distinct().Count())
             .WithMessage("Activities must not contain duplicates.");

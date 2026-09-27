@@ -28,6 +28,7 @@ export type BusinessTabParamList = {
   Venue: NavigatorScreenParams<MyVenueStackParamList>;
   Artist: NavigatorScreenParams<MyArtistStackParamList>;
   Organization: undefined;
+  ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 export type VenueTabParamList = {

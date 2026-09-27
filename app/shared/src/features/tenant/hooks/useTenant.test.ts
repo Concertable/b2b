@@ -45,6 +45,25 @@ describe("useTenant", () => {
     useTenantStore.getState().clearTenant();
   });
 
+  it("keeps a hydrated choice while identity is loading", async () => {
+    const clearActiveTenantId = vi.fn();
+    await tenantSession.configure({
+      storage: {
+        loadActiveTenantId: () => "tenant-one",
+        saveActiveTenantId: vi.fn(),
+        clearActiveTenantId,
+      },
+      memberships: () => [],
+      clearMemberships: vi.fn(),
+    });
+
+    useTenant([], "venueOperator", false);
+    await Promise.resolve();
+
+    expect(useTenantStore.getState().activeTenantId).toBe("tenant-one");
+    expect(clearActiveTenantId).not.toHaveBeenCalled();
+  });
+
   it("clears the final tenant from the store, session, and persistence", async () => {
     let memberships: ReadonlyArray<Membership> = [membership];
     let persistedTenantId: string | undefined;

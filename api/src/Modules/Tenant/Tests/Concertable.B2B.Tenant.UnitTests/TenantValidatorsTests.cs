@@ -36,6 +36,17 @@ public sealed class TenantValidatorsTests
     };
 
     [Fact]
+    public void MissingActivities_ReturnsValidationError()
+    {
+        var request = new CreateTenantRequest("Acme Ltd", "contact@acme.test", null!);
+
+        var result = new CreateTenantRequestValidator().Validate(request);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.PropertyName == "Activities");
+    }
+
+    [Fact]
     public void InvalidVatNumber_FailsWithTheComposedRegionMessage()
     {
         var result = Validator().Validate(Request("NOPE"));

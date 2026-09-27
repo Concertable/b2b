@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { ActivityIndicator, View } from "react-native";
 import {
-  isPrivateQuery,
+  isTenantSwitchQuery,
   settlePendingMutations,
   tenantSession,
   useB2bIdentityQuery,
@@ -33,7 +33,11 @@ function LoadingScreen() {
 function AuthenticatedNavigator() {
   const queryClient = useQueryClient();
   const identityQuery = useB2bIdentityQuery();
-  const tenant = useTenant(identityQuery.data?.memberships ?? []);
+  const tenant = useTenant(
+    identityQuery.data?.memberships ?? [],
+    undefined,
+    identityQuery.data !== undefined,
+  );
   const [selectionError, setSelectionError] = useState(false);
   const selectTenant = useCallback(
     async (tenantId: string) => {
@@ -41,9 +45,9 @@ function AuthenticatedNavigator() {
       try {
         await tenantSession.switchTo(tenantId, {
           prepare: async () => {
-            await queryClient.cancelQueries({ predicate: isPrivateQuery });
+            await queryClient.cancelQueries({ predicate: isTenantSwitchQuery });
             await settlePendingMutations(queryClient);
-            queryClient.removeQueries({ predicate: isPrivateQuery });
+            queryClient.removeQueries({ predicate: isTenantSwitchQuery });
           },
         });
       } catch {

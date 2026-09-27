@@ -4,7 +4,7 @@ import { useRouter } from "@tanstack/react-router";
 import {
   b2bIdentityKeys,
   identityApi,
-  isPrivateQuery,
+  isTenantSwitchQuery,
   settlePendingMutations,
   tenantSession,
   useB2bIdentityQuery,
@@ -21,7 +21,11 @@ export function useTenant(businessActivity?: TenantBusinessActivity) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: identity } = useTenantIdentity();
-  const tenant = useCoreTenant(identity?.memberships ?? [], businessActivity);
+  const tenant = useCoreTenant(
+    identity?.memberships ?? [],
+    businessActivity,
+    identity !== undefined,
+  );
 
   const selectTenant = useCallback(
     async (tenantId: string) => {
@@ -36,15 +40,26 @@ export function useTenant(businessActivity?: TenantBusinessActivity) {
           staleTime: 0,
         });
       }
-      await tenantSession.switchTo(tenantId, {
-        prepare: async () => {
-          await queryClient.cancelQueries({ predicate: isPrivateQuery });
-          await notificationConnection.stop();
-          await settlePendingMutations(queryClient);
-          queryClient.removeQueries({ predicate: isPrivateQuery });
-        },
-        activate: () => notificationConnection.start(),
-      });
+      let notificationsStopped = false;
+      try {
+        await tenantSession.switchTo(tenantId, {
+          prepare: async () => {
+            await queryClient.cancelQueries({ predicate: isTenantSwitchQuery });
+            await notificationConnection.stop();
+            notificationsStopped = true;
+            await settlePendingMutations(queryClient);
+            queryClient.removeQueries({ predicate: isTenantSwitchQuery });
+          },
+          activate: async () => {
+            await notificationConnection.start();
+            notificationsStopped = false;
+          },
+        });
+      } catch (error) {
+        if (notificationsStopped && tenantSession.current() !== undefined)
+          await notificationConnection.start();
+        throw error;
+      }
       await router.invalidate();
     },
     [identity, queryClient, router],

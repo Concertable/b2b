@@ -1,0 +1,113 @@
+# Code review — Refactor/PartyFoundationAccess
+
+
+
+> **This file is a work order, not a discussion.** Fix open `[ ]` findings directly and record their disposition.
+
+
+
+**Review status:** `complete`
+**Reviewed up to commit:** `498119854487c485d5f4e476ce2fa729051ace1c`  `(2026-09-28)`
+
+**Judgment:** `changes-requested`
+
+
+
+## Review pass — 2026-09-27 — staged
+
+
+
+**Candidate base:** `9bf08dcf1c3dc11e6642faf77e2e8ced35026a16`
+
+**Candidate head:** `498119854487c485d5f4e476ce2fa729051ace1c`
+
+**Candidate branch:** `Refactor/PartyFoundationAccess`
+
+**Candidate scope:** `all`
+
+**Candidate path-set:** `sha256:101c0c2516a991020de37e0b542603ce0b79466778e19986ec90f38bc9472f4a` `(543 paths)`
+
+**Candidate patch:** `sha256:eee3c2c1f6f626e22e9b01ca01cc0b272d969a0c9001b3de6bbf96abcb90b8c5`
+
+**Candidate bundle:** `C:/Users/TommySeery/source/repos/Concertable/b2b/.git/agent-workflow/runs/party-access-review-20260927/review/5744e829ee5ce8fd6847d5e19a20eb7a6bc95ce17d43cb9c242de967b64be58c`
+
+**Candidate bundle identity:** `sha256:2b97de42a8f91e165c03666577eaec2f9247f02e9151915a9f9d442a9df01965`
+
+**Work-order path:** `reviews/Refactor-PartyFoundationAccess.md`
+
+**Work-order mode:** `new`
+
+**Pass judgment:** `changes-requested`
+
+**Synchronization:** `origin` fetched once; parent `9bf08dcf1` unchanged; candidate was clean and already based on parent.
+
+
+
+### Findings
+
+
+
+- [x] **A1 — P1 — tenant authority** — `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Services/TenantService.cs:135`
+  Tenant update, activity, and deletion operations trust request-time membership after waiting for the tenant lock. Revalidate membership identity, permission version, and permission under the lock.
+- [x] **A2 — P1 — deletion obligations** — `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Services/TenantService.cs:202`
+  Accepted bookings and frozen contracts exist before a concert. Add a Booking deletion guard so tenant deletion cannot orphan them.
+- [x] **A3 — P2 — validation** — `api/src/Modules/Tenant/Concertable.B2B.Tenant.Application/Validators/TenantValidators.cs:24`
+  Null activities reach a duplicate validator that dereferences the collection and returns a 500. Stop validation after the null failure.
+- [x] **A4 — P2 — tenant hydration** — `app/shared/src/features/tenant/hooks/useTenant.ts:17`
+  The hook resolves an empty loading fallback and clears the persisted tenant choice. Resolve only after the identity query has completed.
+- [x] **A5 — P1 — tenant cache isolation** — `app/web/shared/src/features/tenant/hooks/useTenant.ts:40`
+  Tenant switching clears only keys starting with `tenant`; the legacy tenant-scoped mailbox and venue draft query keys survive. Clear all non-identity queries during the switch.
+- [x] **A6 — P2 — mailbox refresh** — `app/web/artist/src/features/notifications/hooks/useArtistNotifications.ts:11`
+  Artist and venue notification hooks removed `MessageReceived` invalidation while both still mount the legacy mailbox. Restore session-guarded invalidation.
+- [x] **A7 — P2 — mobile navigation** — `app/mobile/src/navigation/BusinessNavigator.tsx:66`
+  Authenticated business tabs omit ProfileStack, leaving no profile edit, location, or sign-out route. Restore the profile tab.
+- [x] **A8 — P2 — failed switch recovery** — `app/web/shared/src/features/tenant/hooks/useTenant.ts:40`
+  A failed tenant selection rolls back session state but leaves SignalR stopped. Restart notifications on failure.
+- [x] **A9 — P2 — payment alert ordering** — `api/src/Modules/Application/Concertable.B2B.Application.Infrastructure/Services/Payment/VerifyPaymentFailedProcessor.cs:99`
+  External failure alerts are sent before the inbox transaction commits. Concurrent duplicate deliveries can alert twice before one fails the inbox uniqueness check. Send only after commit.
+- [x] **A10 — P1 — settlement sweep fairness** — `api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Repositories/ConcertReadRepository.cs:35`
+  A fixed first page of 200 deferred concerts repeats on every sweep and starves later eligible concerts. Page through all eligible IDs with a stable cursor.
+
+
+
+## Coverage
+
+
+
+- [x] Authority infrastructure and hosting — 67 files — `Authorization`, `DataAccess`, shared infrastructure, Web, Workers, solution
+
+- [x] Tenant and profiles — 150 files — `Tenant`, `Artist`, `Venue`, `Dashboard`
+
+- [x] Remaining modules and lifecycle — 71 files — `Application`, `Booking`, `Opportunity`, `Deal`, `Conversations`, Seed and lifecycle tests
+
+- [x] Concert access and processing — 116 files — `api/src/Modules/Concert/**`
+
+- [x] Frontend and mobile — 139 files — `app/**`, `package-lock.json`
+
+
+
+## Rules manifest
+
+
+
+Route source: frozen tree has no `.agents/skill-routes.json`; installed technical skills and nearest `AGENTS.md` guidance are applied by domain. Root `AGENTS.md`, `CODE_PATTERNS.md`, Concert `AGENTS.md`, web shared `AGENTS.md`, and changed test directory guidance apply where relevant. Security: yes for all five stages.
+
+
+
+## Cross-area notes
+
+
+
+The foundation lens also flagged `TryExecuteAsync`'s nested error handler. The current settlement reservation acquires a PostgreSQL `FOR UPDATE` concert row lock before reading and mutating the row, so two completion requests serialize at that lock. No demonstrated concurrent-completion path reaches the skipped EF concurrency handler; keep this as a transaction follow-up rather than a finding on this candidate.
+
+
+
+## Parent finalization
+
+
+
+**Cross-area notes status:** `complete`
+
+**Parent summary status:** `complete`
+
+All 543 frozen candidate paths are covered by the five areas. Ten confirmed findings require repair. Post-anchor edits will be reviewed as a separate incremental pass.

@@ -42,9 +42,12 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("@concertable/b2b/features/tenant", () => ({
   b2bIdentityKeys: { all: () => ["auth", "me"] },
   identityApi: { getMe: mocks.getMe },
-  isPrivateQuery: vi.fn(),
+  isTenantSwitchQuery: vi.fn(),
   settlePendingMutations: mocks.settlePendingMutations,
-  tenantSession: { switchTo: mocks.switchTenant },
+  tenantSession: {
+    current: () => ({ tenantId: "existing-tenant" }),
+    switchTo: mocks.switchTenant,
+  },
   useB2bIdentityQuery: () => ({ data: mocks.identity }),
   useTenant: () => ({
     activeMembership: undefined,
@@ -100,6 +103,19 @@ describe("web tenant selection", () => {
     expect(order[0]).toBe("refresh");
     expect(order).toContain("select");
     expect(order.at(-1)).toBe("router");
+  });
+
+  it("restarts notifications when a tenant switch fails", async () => {
+    mocks.switchTenant.mockImplementation(async (_tenantId, boundary) => {
+      await boundary.prepare();
+      throw new Error("selection failed");
+    });
+
+    const { selectTenant } = useTenant("venueOperator");
+    await expect(selectTenant("existing-tenant")).rejects.toThrow("selection failed");
+
+    expect(mocks.stopNotifications).toHaveBeenCalledOnce();
+    expect(mocks.startNotifications).toHaveBeenCalledOnce();
   });
 
   it("restarts notifications around a tenant switch", async () => {

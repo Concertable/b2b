@@ -1,5 +1,5 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { BriefcaseBusiness, Building2, Music2, Settings } from "lucide-react-native";
+import { BriefcaseBusiness, Building2, Music2, Settings, User } from "lucide-react-native";
 import type {
   TenantBusinessActivity,
   TenantPermission,
@@ -8,6 +8,7 @@ import { OperationsScreen } from "../features/business/screens/OperationsScreen"
 import { OrganizationScreen } from "../features/business/screens/OrganizationScreen";
 import { MyArtistStack } from "./MyArtistStack";
 import { MyVenueStack } from "./MyVenueStack";
+import { ProfileStack } from "./ProfileStack";
 import { theme } from "@concertable/mobile/lib/theme";
 import type { BusinessTabParamList } from "./types";
 import { includesOperationsTab } from "./businessNavigation";
@@ -63,6 +64,16 @@ export function BusinessNavigator({
           }}
         />
       ) : null}
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileStack}
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <User size={size} color={color} />
+          ),
+        }}
+      />
       <Tab.Screen
         name="Organization"
         component={OrganizationScreen}

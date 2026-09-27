@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { tenantSession } from "@concertable/b2b/features/tenant";
 import type { TenantSession } from "@concertable/b2b/features/tenant/types";
@@ -7,9 +8,14 @@ import type { ApplicationAcceptedPayload } from "@concertable/web/features/notif
 
 export function useArtistNotifications(session: TenantSession | undefined) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (session === undefined) return;
+    notificationConnection.on("MessageReceived", () => {
+      if (!tenantSession.isCurrent(session)) return;
+      void queryClient.invalidateQueries({ queryKey: ["messages"] });
+    });
     notificationConnection.on(
       "ApplicationAccepted",
       (payload: ApplicationAcceptedPayload) => {
@@ -22,7 +28,8 @@ export function useArtistNotifications(session: TenantSession | undefined) {
     );
 
     return () => {
+      notificationConnection.off("MessageReceived");
       notificationConnection.off("ApplicationAccepted");
     };
-  }, [router, session]);
+  }, [queryClient, router, session]);
 }

@@ -29,26 +29,36 @@ internal sealed class CompletionRunner : ICompletionRunner
 
     public async Task RunAsync(CancellationToken ct = default)
     {
-        var concertIds = await readRepository.GetEndedPendingCompletionIdsAsync(
-            timeProvider.GetUtcNow().UtcDateTime, BatchSize, ct);
-
-        logger.FoundConcertsToSettle(concertIds.Count);
-
-        foreach (var concertId in concertIds)
+        var endedBeforeUtc = timeProvider.GetUtcNow().UtcDateTime;
+        var afterId = 0;
+        while (true)
         {
-            var result = await workflow.RunAsync(workflow => workflow.CompleteAsync(concertId, ct));
+            var concertIds = await readRepository.GetEndedPendingCompletionIdsAsync(
+                endedBeforeUtc, afterId, BatchSize, ct);
+            if (concertIds.Count == 0)
+                break;
 
-            if (result.TryGetError(out var error))
-                logger.ConcertCompletionRefused(
-                    concertId,
-                    error.Definition.Code,
-                    error.Definition.Message);
-            else
+            logger.FoundConcertsToSettle(concertIds.Count);
+            foreach (var concertId in concertIds)
             {
-                result.TryGetValue(out var outcome);
-                if (outcome == SettlementOutcome.Settled)
-                    logger.ConcertFinished(concertId);
+                var result = await workflow.RunAsync(workflow => workflow.CompleteAsync(concertId, ct));
+
+                if (result.TryGetError(out var error))
+                    logger.ConcertCompletionRefused(
+                        concertId,
+                        error.Definition.Code,
+                        error.Definition.Message);
+                else
+                {
+                    result.TryGetValue(out var outcome);
+                    if (outcome == SettlementOutcome.Settled)
+                        logger.ConcertFinished(concertId);
+                }
             }
+
+            afterId = concertIds[^1];
+            if (concertIds.Count < BatchSize)
+                break;
         }
     }
 }

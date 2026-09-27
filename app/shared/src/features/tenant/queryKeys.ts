@@ -21,7 +21,9 @@ export const currentPrivateQueryKey = (...parts: ReadonlyArray<unknown>) => {
     : privateQueryKey(session, ...parts);
 };
 
-export const isPrivateQuery = (query: Query) => query.queryKey[0] === "tenant";
+export const isTenantSwitchQuery = (query: Query) =>
+  query.queryKey[0] !== "invitation" &&
+  (query.queryKey[0] !== "auth" || query.queryKey[1] !== "me");
 
 export async function settlePendingMutations(queryClient: QueryClient) {
   if (queryClient.isMutating() === 0) return;

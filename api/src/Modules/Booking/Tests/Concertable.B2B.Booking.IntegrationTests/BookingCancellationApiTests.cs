@@ -28,6 +28,20 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
+    public async Task DeleteTenant_AcceptedBookingWithoutConcert_IsConflict()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var bookingId = await AcceptFlatFeeAsync(client);
+        Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
+
+        var response = await client.DeleteAsync("/api/organization");
+
+        await response.ShouldBe(HttpStatusCode.Conflict);
+        Assert.True(await fixture.Bookings.AnyAsync(booking => booking.Id == bookingId));
+        Assert.True(await fixture.Contracts.AnyAsync(contract => contract.BookingId == bookingId));
+    }
+
+    [Fact]
     public async Task Cancel_ShouldRefundEscrowAndMarkCancelled_FromAwaitingConfirmation()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
