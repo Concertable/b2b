@@ -8,6 +8,7 @@ public sealed class DbFixture
 {
     private readonly B2BTestClient b2b;
     private readonly PaymentTestClient payment;
+    private readonly WorkersFixture workers;
 
     public OpportunityDb Opportunity { get; }
     public ApplicationDb Application { get; }
@@ -15,10 +16,11 @@ public sealed class DbFixture
     public ConcertDb Concert { get; }
     public PaymentOperationsDb Payment { get; }
 
-    public DbFixture(B2BTestClient b2b, PaymentTestClient payment)
+    public DbFixture(B2BTestClient b2b, PaymentTestClient payment, WorkersFixture workers)
     {
         this.b2b = b2b;
         this.payment = payment;
+        this.workers = workers;
         Opportunity = new OpportunityDb(b2b);
         Application = new ApplicationDb(b2b);
         Booking = new BookingDb(b2b);
@@ -28,7 +30,15 @@ public sealed class DbFixture
 
     public async Task ResetAsync()
     {
-        await payment.ResetAsync();
-        await b2b.ResetAsync();
+        try
+        {
+            await workers.DrainAsync();
+            await payment.ResetAsync();
+            await b2b.ResetAsync();
+        }
+        finally
+        {
+            await workers.ResumeAsync();
+        }
     }
 }

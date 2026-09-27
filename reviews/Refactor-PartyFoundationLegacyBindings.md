@@ -79,7 +79,7 @@ routed to the platform messaging package.
 
 ### Findings
 
-- [ ] **N16 — HIGH — native — the reset pauses only b2b-web, while the deadlocking settlement runs in B2B Workers.**
+- [x] **N16 — HIGH — native — the reset pauses only b2b-web, while the deadlocking settlement runs in B2B Workers.**
   `local/AppHost/AppHost.cs:63` starts `Concertable.B2B.Workers` in the E2E topology against the same database,
   and `ConcertFinishedFunction` (`api/src/Concertable.B2B.Workers/Functions/ConcertFinishedFunction.cs:6-9`)
   runs `CompletionRunner` over every ended concert (`CompletionRunner.cs:30-53`). The E2E tests fire it through
@@ -88,8 +88,13 @@ routed to the platform messaging package.
   `concert."InvoiceSequences"` at 11:31:14, straight through the resets at 11:31:11.874 and 11:31:13.021;
   b2b-web logged no settlement at all. `HostPauser` is per-process, so it cannot reach that writer, and a write
   landing after the truncate also leaves dirty state.
-  **Fix:** quiesce the Workers host across the reset as well. The mechanism crosses a process boundary and is
-  routed to Astra for design; see the progress ledger.
+  **Fix:** quiesce the Workers host across the reset as well.
+  **Disposition:** `DbFixture.ResetAsync` drains the Functions host before resetting either database and
+  resumes it in `finally`. `WorkersFixture.DrainAsync` posts `/admin/host/drain` and waits for
+  `/admin/host/drain/status` to report `Completed`, meaning zero outstanding invocations and retries.
+  `ResumeAsync` posts `/admin/host/resume`, which restarts the host with its listeners. A local Core Tools
+  probe showed the drain holding at `InProgress` with one outstanding invocation until that invocation
+  returned. After resume, the admin invoke was accepted again.
 
 - [x] **N17 — MEDIUM — native — SignalR's non-WebSocket transports are tracked by the gate.**
   `E2EAdminExtensions.cs:46-51` exempted only `/_e2e`, `/health` and `/alive`, while `/hub/notifications` sits

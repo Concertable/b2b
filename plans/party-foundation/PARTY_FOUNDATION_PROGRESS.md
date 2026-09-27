@@ -7,8 +7,8 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: `4bd2f1d6` pushed, ordinary CI green; review N16 (B2B Workers is not paused by the
-  E2E reset) is the one open finding and the next action
+- Current checkpoint: N16 repaired locally (the E2E reset drains B2B Workers); incremental review from
+  `0822900d`, push and exact-head E2E are next
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
 - Last reconciled: 25 September 2026 against \`origin/main\` \`a1baf9a7\`
 - Ownership: transferred 25 September 2026 to a fresh Claude session in this worktree; no other writer is active
@@ -18,11 +18,11 @@
 P1 slices 1-4, 4.3, 4.1, 4.7 and 4.8 are implemented. The branch has absorbed the current default
 branch's PostgreSQL composition. Canonical review covered all 757 manifest paths; accepted code findings
 N1-N15 are repaired, locally validated, committed and approved by both native/general and
-security/durability lenses. Of the later findings, N16 (Workers not paused by the reset) is open.
+security/durability lenses. The later findings N16-N18 are repaired.
 
-The default branch's PR #32, #27 and #35 are merged into this branch at \`1d27cb87\`. The E2E reset defect
-is half repaired: b2b-web now pauses every source of its own work, but the settlement that deadlocks the
-truncate runs in the separate B2B Workers process, which nothing pauses yet.
+The default branch's PR #32, #27 and #35 are merged into this branch at \`1d27cb87\`. The E2E reset now
+quiesces both writers of the B2B database: b2b-web pauses every source of its own work, and the harness
+drains the B2B Workers Functions host around every reset.
 
 The provider reconciliation uses the platform PostgreSQL fixture plus B2B-owned database lifecycle,
 Npgsql command transactions and an NTS-configured \`NpgsqlDataSource\`. Command contexts are reset to
@@ -53,20 +53,18 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
    `DevDbInitializer` changed with it. Names are fixed: Tommy rejected "quiescence/ingress", `-able`
    implementation names and "Composite".
 2. **Done: incremental review `e0cfe596..0822900d`** — judgment `changes-requested`. N17 (exempt `/hub`)
-   and N18 (assert the reset releases the gate) are repaired. **N16 is open and blocks delivery.**
-3. **Next: fix N16 — stop B2B Workers across every E2E reset.** Evidence (run 35721355090's
-   `e2e-diagnostics.log`): `ConcertFinishedFunction`, fired by a test through the Functions admin API and
-   returned on 202, settled 22 seeded concerts from 11:31:11.027 to past 11:31:14 while b2b-web reset at
-   11:31:11.874 and 11:31:13.021. `HostPauser` is per-process. Verified lead, from the Functions host's
-   `HostController`: `POST /admin/host/drain` stops listeners; `GET /admin/host/drain/status` returns
-   `{"state":"Completed"}` once outstanding invocations and retries are zero; `POST /admin/host/resume`
-   restarts the host (409 unless `Running`). The harness already calls that admin API
-   (`WorkersFixture.TriggerAsync`), and every reset runs through `AppFixture` (`InitializeAsync`, and
-   `ResetAsync` behind `resetGate`) into `DbFixture.ResetAsync`. Unverified: that Core Tools under Aspire
-   registers the drain service (the endpoint returns 503 otherwise). Decide the mechanism, implement it, run
-   the E2EAdmin tier, and append the incremental review from `0822900d`.
-4. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
-   merge PR #18 and restore the preserved unrelated files without committing them.
+   and N18 (assert the reset releases the gate) are repaired.
+3. **Done: N16, B2B Workers stopped across every E2E reset.** `DbFixture.ResetAsync` drains the Functions
+   host through `WorkersFixture.DrainAsync`, which posts `/admin/host/drain` and polls
+   `/admin/host/drain/status` until `Completed`, then resets both databases and resumes the host in
+   `finally` via `/admin/host/resume`. The run 35721355090 evidence put `ConcertFinishedFunction` settling
+   22 concerts straight through two b2b-web resets. A throwaway isolated app under local Core Tools 4.8.0
+   confirmed the endpoints. Drain returned 202, and status reported `InProgress` with one outstanding
+   invocation for the 15 s it ran, then `Completed`. Resume returned 200 and restarted the host, and an
+   admin invoke was accepted afterwards. CI's 4.12.1 under Aspire is exercised only by the remote E2E run.
+4. **Next:** append the incremental review from `0822900d`. Then push, require ordinary CI plus a separately
+   dispatched `.github/workflows/e2e.yml` at that exact SHA, merge PR #18, and restore the preserved
+   unrelated files without committing them.
 
 Local builds, unit, architecture, startup and single-project integration tiers run on this workstation even
 with under 1 GB free; the full integration suite and the Aspire E2E stack are validated remotely.
@@ -102,7 +100,7 @@ with under 1 GB free; the full integration suite and the Aspire E2E stack are va
   E2E reset (42P07); \`85c7c5a9\` took the release candidate set from the promotion manifest alone, ending
   the drift of four hand-maintained copies.
 - E2E reset pause: `IBusQuiescence` (receiver only) was replaced by platform `HostPauser` plus the request
-  gate, pausing all of b2b-web's own work; B2B Workers remains unpaused (N16).
+  gate, pausing all of b2b-web's own work; the harness drains the B2B Workers Functions host (N16).
 
 ## Verification
 
@@ -183,7 +181,9 @@ does not substitute for the P1 review.
   mechanism, its `SetConcertPeriodAsync` and `AsSettlementPayeeAsync` fixture helpers only wrap what this
   branch does through the privileged context, and its `ConcertCompletionCandidate` duplicates what
   `IConcertReadRepository` already reads off the unfiltered stance.
-- N16 is the one open accepted finding. Current-graph qualification and final review remain delivery gates.
+- No accepted finding is open. The exact-head E2E run and the final review remain delivery gates.
+- **Workers is quiesced from the harness, not from b2b-web.** The Functions host's own drain/resume admin API
+  is what `WorkersFixture.TriggerAsync` already calls, so no reset endpoint crosses into another process.
 
 ## External/deferred owners
 
