@@ -25,13 +25,13 @@ public sealed class LoginSteps
 
     [When(@"they click sign in")]
     public Task ClickSignIn() =>
-        browser.Page.GetByTestId("header-login").ClickAsync();
+        browser.Page.GetByTestId("home-sign-in").ClickAsync();
 
     [When(@"they submit seeded venue manager credentials")]
     public Task SubmitVenueManagerCredentials() =>
         loginPage.SignInAsync(fixture.App.SeedState.VenueManager1.Email, SeedState.TestPassword);
 
-    [Then(@"they are returned to the business home page")]
-    public Task ReturnedToBusinessHomePage() =>
-        browser.Page.WaitForLoadStateAsync(LoadState.Load);
+    [Then(@"they land on the business operations page")]
+    public Task LandedOnBusinessOperationsPage() =>
+        browser.Page.WaitForURLAsync($"{fixture.App.BusinessSpaUrl}/app", new() { Timeout = 30_000 });
 }

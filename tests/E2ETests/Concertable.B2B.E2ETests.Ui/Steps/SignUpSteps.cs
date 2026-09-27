@@ -10,7 +10,6 @@ public sealed class SignUpSteps
     private readonly Browser browser;
     private readonly WorkflowState state;
 
-    private BusinessGatewayPage businessGateway = null!;
     private LoginPage loginPage = null!;
     private RegisterPage registerPage = null!;
     private CreateVenuePage createVenuePage = null!;
@@ -25,29 +24,20 @@ public sealed class SignUpSteps
         this.state = state;
     }
 
-    [Given(@"a visitor is on the business gateway")]
-    public async Task VisitorOnBusinessGateway()
-    {
-        businessGateway = new BusinessGatewayPage(browser.Page, fixture.App.BusinessSpaUrl);
-        loginPage = new LoginPage(browser.Page, fixture.App.BusinessSpaUrl);
-        registerPage = new RegisterPage(browser.Page, fixture.App.AuthUrl);
-        await businessGateway.GotoAsync();
-    }
-
-    [When(@"they click get started as a venue")]
-    public async Task ClickGetStartedVenue()
+    [Given(@"a visitor starts sign-up on the venue surface")]
+    public async Task VisitorStartsVenueSignUp()
     {
         surfaceUrl = fixture.App.VenueSpaUrl;
         createVenuePage = new CreateVenuePage(browser.Page, surfaceUrl);
-        await businessGateway.ClickGetStartedVenueAsync();
+        await StartSignUpAsync();
     }
 
-    [When(@"they click get started as an artist")]
-    public async Task ClickGetStartedArtist()
+    [Given(@"a visitor starts sign-up on the artist surface")]
+    public async Task VisitorStartsArtistSignUp()
     {
         surfaceUrl = fixture.App.ArtistSpaUrl;
         createArtistPage = new CreateArtistPage(browser.Page, surfaceUrl);
-        await businessGateway.ClickGetStartedArtistAsync();
+        await StartSignUpAsync();
     }
 
     [When(@"they click the sign up link")]
@@ -115,6 +105,15 @@ public sealed class SignUpSteps
     [Then(@"they land on the artist surface authenticated")]
     public Task LandedOnArtistSurface() =>
         browser.Page.WaitForURLAsync($"{fixture.App.ArtistSpaUrl}/", new() { Timeout = 30_000 });
+
+    private Task StartSignUpAsync()
+    {
+        loginPage = new LoginPage(browser.Page, surfaceUrl);
+        registerPage = new RegisterPage(browser.Page, fixture.App.AuthUrl);
+        return browser.Page.GotoAsync(
+            $"{surfaceUrl}/login?redirect=%2Fcreate",
+            new() { WaitUntil = WaitUntilState.Load });
+    }
 
     private static string FixturePath(string name) =>
         Path.Combine(AppContext.BaseDirectory, "Fixtures", name);

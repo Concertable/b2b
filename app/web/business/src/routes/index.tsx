@@ -20,7 +20,12 @@ function MarketingPage() {
           Work as a venue, artist, promoter or neutral production business from one organization account.
         </p>
         <div className="flex gap-3">
-          <Link className="rounded-md bg-primary px-5 py-3 font-medium text-primary-foreground" to="/login" search={{ redirect: "/app" }}>
+          <Link
+            className="rounded-md bg-primary px-5 py-3 font-medium text-primary-foreground"
+            data-testid="home-sign-in"
+            to="/login"
+            search={{ redirect: "/app" }}
+          >
             Sign in
           </Link>
           <Link className="rounded-md border border-border px-5 py-3 font-medium" to="/register">
