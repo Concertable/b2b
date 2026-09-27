@@ -185,7 +185,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var preview = Assert.Single(await GetPreviewsAsync(venue));
         Assert.Equal(2, preview.Participants.Count);
         Assert.Equal("Test inbox message — venue to artist.", preview.Preview);
-        Assert.False(preview.Unread);
+        Assert.True(preview.Unread);
         Assert.Equal("/?inbox=open", preview.Href);
 
         var latest = (await GetMessagesAsync(venue, preview.ConversationId)).Single(message =>
@@ -198,6 +198,55 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         var visible = Assert.Single(await GetPreviewsAsync(venue));
         Assert.Equal("Test inbox message — artist to venue.", visible.Preview);
         Assert.False(visible.Unread);
+    }
+
+    [Fact]
+    public async Task Previews_PageThroughConversationsAndRejectAnInvalidPage()
+    {
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var defaultPage = await GetPreviewsAsync(venue);
+
+        Assert.Equal(
+            defaultPage.Select(preview => preview.ConversationId),
+            (await GetPreviewsAsync(venue, pageNumber: 1)).Select(preview => preview.ConversationId));
+        Assert.Empty(await GetPreviewsAsync(venue, pageNumber: 2));
+        await (await venue.GetAsync("/api/conversations/previews?pageNumber=0"))
+            .ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task ReadPosition_IsIndependentPerMembershipOfTheSameTenant()
+    {
+        var tenantId = TenantSeedIds.For(fixture.SeedState.VenueManager1.Id);
+        var owner = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var colleague = fixture.CreateClient(fixture.SeedState.VenueManager3);
+        colleague.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
+        var conversationId = Assert.Single(await GetPreviewsAsync(owner)).ConversationId;
+        var delivered = await GetMessagesAsync(owner, conversationId);
+
+        await (await owner.PutAsync(
+                $"/api/conversations/{conversationId}/read-position",
+                new { throughSequence = delivered.Max(message => message.Sequence) }))
+            .ShouldBe(HttpStatusCode.NoContent);
+
+        Assert.Equal(0, await GetUnreadCountAsync(owner));
+        Assert.False(Assert.Single(await GetPreviewsAsync(owner)).Unread);
+        Assert.Equal(1, await GetUnreadCountAsync(colleague));
+        Assert.True(Assert.Single(await GetPreviewsAsync(colleague)).Unread);
+    }
+
+    [Fact]
+    public async Task Participants_CarryTheSenderTenantsDisplayName()
+    {
+        var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var preview = Assert.Single(await GetPreviewsAsync(venue));
+        var inbound = (await GetMessagesAsync(venue, preview.ConversationId))
+            .Single(message => message.Sequence == 1);
+
+        var sender = Assert.Single(preview.Participants, participant =>
+            participant.TenantId == inbound.SenderTenantId);
+        Assert.Equal(TenantSeedIds.For(fixture.SeedState.ArtistManager1.Id), sender.TenantId);
+        Assert.Equal("The Rockers", sender.DisplayName);
     }
 
     [Fact]
@@ -340,6 +389,10 @@ public sealed class MessagingInboxTests : IAsyncLifetime
 
     private static async Task<List<MessagePreview>> GetPreviewsAsync(HttpClient client) =>
         (await (await client.GetAsync("/api/conversations/previews"))
+            .Content.ReadAsync<List<MessagePreview>>())!;
+
+    private static async Task<List<MessagePreview>> GetPreviewsAsync(HttpClient client, int pageNumber) =>
+        (await (await client.GetAsync($"/api/conversations/previews?pageNumber={pageNumber}"))
             .Content.ReadAsync<List<MessagePreview>>())!;
 
     private static async Task<List<Message>> GetMessagesAsync(HttpClient client, int conversationId) =>

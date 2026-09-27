@@ -356,11 +356,14 @@ internal sealed class ConversationService : IConversationService
             ? messageRepository.GetUnreadCountAsync(actor.TenantId, actor.MembershipId, ct)
             : Task.FromResult(0);
 
-    public async Task<IReadOnlyList<MessagePreviewDto>> GetRecentPreviewsAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<MessagePreviewDto>> GetRecentPreviewsAsync(
+        int pageNumber,
+        CancellationToken ct = default)
     {
         if (membership.Membership is not { } actor)
             return [];
-        var previews = await messageRepository.GetRecentPreviewsAsync(actor.TenantId, actor.MembershipId, ct);
+        var previews = await messageRepository.GetRecentPreviewsByTenantIdAsync(
+            actor.TenantId, actor.MembershipId, pageNumber, ct);
         var results = new List<MessagePreviewDto>(previews.Count);
         foreach (var preview in previews)
         {

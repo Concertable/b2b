@@ -6,6 +6,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Repositories;
 
 internal sealed class MessageRepository : IMessageRepository
 {
+    private const int PreviewPageSize = 5;
     private static readonly Expression<Func<MessageEntity, bool>> NotHidden =
         message => message.HiddenAt == null || message.RestoredAt != null && message.RestoredAt > message.HiddenAt;
     private readonly ConversationsDbContext context;
@@ -50,9 +51,10 @@ internal sealed class MessageRepository : IMessageRepository
                && (position == null || message.Sequence > position.LastReadSequence)
          select message.Id).CountAsync(ct);
 
-    public async Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsAsync(
+    public async Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsByTenantIdAsync(
         Guid tenantId,
         Guid membershipId,
+        int pageNumber,
         CancellationToken ct = default)
     {
         var visible = context.Messages.Where(NotHidden);
@@ -64,18 +66,22 @@ internal sealed class MessageRepository : IMessageRepository
             .AsNoTracking()
             .Where(message => latestIds.Contains(message.Id))
             .OrderByDescending(message => message.SentAt)
-            .Take(5)
+            .ThenByDescending(message => message.Id)
+            .Skip((pageNumber - 1) * PreviewPageSize)
+            .Take(PreviewPageSize)
             .Select(message => new MessagePreview(
                 message.Id,
                 message.ConversationId,
                 message.Content,
                 message.SentAt,
-                message.SenderTenantId != tenantId
+                visible.Any(inbound =>
+                    inbound.ConversationId == message.ConversationId
+                    && inbound.SenderTenantId != tenantId
                     && !context.ConversationReadPositions.Any(position =>
-                        position.ConversationId == message.ConversationId
+                        position.ConversationId == inbound.ConversationId
                         && position.TenantId == tenantId
                         && position.MembershipId == membershipId
-                        && position.LastReadSequence >= message.Sequence)))
+                        && position.LastReadSequence >= inbound.Sequence))))
             .ToListAsync(ct);
     }
 }

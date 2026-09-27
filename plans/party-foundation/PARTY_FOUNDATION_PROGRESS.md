@@ -78,8 +78,9 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
 7. **Done: API E2E at `31597095`** scored 8/10, with only the two FlatFee checkout 409s failing, matching
    `main`. CI passed. The UI suite had never run on this branch, because the API failures skip it.
    Dispatched alone as run 36320557054, it failed 11 of 32:
-   - 6 FlatFee scenarios never reach `e-sign` on checkout. This is presumed to be the same checkout 409;
-     `main`'s UI-only baseline, run 36321731466, decides that.
+   - 6 FlatFee scenarios never reach `e-sign` on checkout. Payment's escrow authorize returns "could not be
+     safely classified", the same P2-owned checkout-identity failure. `main`'s UI-only baseline, run
+     36321731466, scored 26/32 and failed exactly these 6.
    - Login and both sign-ups drove the business gateway that slice 4.8 replaced. They are repaired in
      `3d32203c`: sign-in uses the landing page's `home-sign-in`, and sign-up starts at each profile SPA's
      `/login?redirect=%2Fcreate`.
@@ -88,9 +89,21 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
      inbox is broken. The replacement's data flow is undecided, because `MessagePreviewDto` lacks sender,
      sequence and report action. It is routed to Astra, whose design lands in
      `plans/party-foundation/MAILBOX_DESIGN.md`.
-8. **Next:** implement Astra's mailbox design, push, and require CI plus API and UI E2E at that exact SHA.
-   Then merge PR #18 and restore the preserved unrelated files without committing them. The pass bar is
-   `main`'s: only scenarios that also fail on `main` may fail, and only with an owning debt entry.
+8. **In progress: Astra's mailbox design is implemented locally.** Changes:
+   - A B2B `Mailbox` in `app/web/shared/src/features/conversations`, keyed on the tenant session and mounted in
+     each layout's `headerSlot`. That drops the platform `AppLayout`'s `{user && messagingSlot}` gate, the
+     likely cause of the detach loop.
+   - Previews are paged, and a preview is unread when any inbound message is unread.
+   - The seeded artist tenant is named "The Rockers".
+   - The dashboard inbox cards use the shared preview query.
+   - The group-inbox scenario asserts that the trigger's DOM node survives opening.
+
+   One deviation from the design: the report dialog keeps the platform's generic `Select`, which the page
+   object's combobox and option selectors already drove on `main`. It does not use the `ui/select` primitives.
+9. **Next:** pass the Conversations integration tests, `web-b2b` tests and `build:web`, then commit and run
+   an incremental review. After that, push and require CI plus API and UI E2E at that exact SHA, merge PR #18,
+   and restore the preserved unrelated files without committing them. The pass bar is `main`'s: only
+   scenarios that also fail on `main` may fail, and only with an owning debt entry.
 
 Local builds, unit, architecture, startup and single-project integration tiers run on this workstation even
 with under 1 GB free; the full integration suite and the Aspire E2E stack are validated remotely.
@@ -225,3 +238,9 @@ does not substitute for the P1 review.
 P2-P5, dependency publication, configurable-workflow documentation, configurable RBAC, tenant retirement,
 sales evidence, payment quote disclosure and transport qualification retain their existing plan owners and
 gates. No sibling checkout is modified by this P1 run.
+
+`platform-frontend` still publishes the `/message/*` messaging feature (`@concertable/web/features/messaging`
+and `@concertable/shared/features/messaging`), which B2B no longer consumes. That repository owns its removal.
+It closes when that feature and its exports are deleted once no real consumer remains, the package version is
+published, and the affected consumers build against it. Design context:
+[`MAILBOX_DESIGN.md`](MAILBOX_DESIGN.md#platform-follow-up-and-scope-closure).

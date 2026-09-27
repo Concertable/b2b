@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@concertable/web/components/AppLayout";
-import { Mailbox } from "@concertable/web/features/messaging";
+import { Mailbox } from "@concertable/web-b2b/features/conversations";
 import {
   TenantChooser,
   TenantSwitcher,
@@ -14,14 +14,25 @@ const links = [
 ];
 
 function BusinessLayout() {
-  const { selectionRequired } = useTenant();
+  const { selectionRequired, session, permissions } = useTenant();
   if (selectionRequired) return <TenantChooser />;
+  const mailbox =
+    session !== undefined && permissions.has("messages.read") ? (
+      <Mailbox
+        key={`${session.tenantId}:${session.membershipId}:${session.permissionVersion}:${session.generation}`}
+        session={session}
+      />
+    ) : undefined;
   return (
     <AppLayout
       links={links}
       profileItems={links}
-      headerSlot={<TenantSwitcher />}
-      messagingSlot={<Mailbox />}
+      headerSlot={
+        <>
+          <TenantSwitcher />
+          {mailbox}
+        </>
+      }
     />
   );
 }

@@ -41,5 +41,7 @@ internal interface IConversationService
         CancellationToken ct = default);
 
     Task<int> GetUnreadCountAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<MessagePreviewDto>> GetRecentPreviewsAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<MessagePreviewDto>> GetRecentPreviewsAsync(
+        int pageNumber,
+        CancellationToken ct = default);
 }

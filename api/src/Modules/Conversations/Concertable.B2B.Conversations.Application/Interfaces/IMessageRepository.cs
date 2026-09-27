@@ -16,8 +16,9 @@ internal interface IMessageRepository
         Guid tenantId,
         Guid membershipId,
         CancellationToken ct = default);
-    Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsAsync(
+    Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsByTenantIdAsync(
         Guid tenantId,
         Guid membershipId,
+        int pageNumber,
         CancellationToken ct = default);
 }

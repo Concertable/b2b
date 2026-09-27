@@ -12,16 +12,18 @@ public static class TenantFactory
         string email,
         TenantBusinessActivityKind? businessActivity,
         DateTime createdAt,
-        bool taxComplianceComplete = true)
+        bool taxComplianceComplete = true,
+        string? displayName = null)
     {
-        var tenant = TenantEntity.Create(email, email, userId, createdAt, TenantSeedIds.For(userId));
+        var name = displayName ?? email;
+        var tenant = TenantEntity.Create(name, email, userId, createdAt, TenantSeedIds.For(userId));
 
         if (businessActivity is { } kind)
             tenant.ActivateBusinessActivity(kind, createdAt);
 
         return !taxComplianceComplete
             ? tenant
-            : tenant.UpdateLegalDetails(email, SeedTaxCompliance).Match(
+            : tenant.UpdateLegalDetails(name, SeedTaxCompliance).Match(
                 () => tenant,
                 errors => throw new InvalidOperationException(
                     $"Seed tenant {tenant.Id} is invalid: {Format(errors)}"));

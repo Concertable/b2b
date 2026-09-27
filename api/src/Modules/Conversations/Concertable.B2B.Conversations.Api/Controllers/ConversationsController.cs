@@ -4,6 +4,7 @@ using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.RateLimiting;
@@ -98,8 +99,10 @@ internal sealed class ConversationsController : ControllerBase
 
     [HasPermission(TenantPermission.MessagesReadName)]
     [HttpGet("previews")]
-    public async Task<ActionResult<IReadOnlyList<MessagePreviewDto>>> GetRecentPreviews(CancellationToken ct) =>
-        Ok(await conversationService.GetRecentPreviewsAsync(ct));
+    public async Task<ActionResult<IReadOnlyList<MessagePreviewDto>>> GetRecentPreviews(
+        CancellationToken ct,
+        [FromQuery, Range(1, int.MaxValue / 5)] int pageNumber = 1) =>
+        Ok(await conversationService.GetRecentPreviewsAsync(pageNumber, ct));
 
     [HasPermission(TenantPermission.MessagesReadName)]
     [EnableRateLimiting(RateLimitPolicies.Messaging)]
