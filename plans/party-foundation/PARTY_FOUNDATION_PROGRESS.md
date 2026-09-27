@@ -7,8 +7,8 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: N16 and N19 repaired (the E2E reset drains B2B Workers and never resumes it); push
-  and exact-head E2E are next
+- Current checkpoint: N16 proven by E2E at `ff7dd3cb`; N21 (settled application status) repaired locally;
+  push and a fresh exact-head E2E are next
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
 - Last reconciled: 25 September 2026 against \`origin/main\` \`a1baf9a7\`
 - Ownership: transferred 25 September 2026 to a fresh Claude session in this worktree; no other writer is active
@@ -18,7 +18,7 @@
 P1 slices 1-4, 4.3, 4.1, 4.7 and 4.8 are implemented. The branch has absorbed the current default
 branch's PostgreSQL composition. Canonical review covered all 757 manifest paths; accepted code findings
 N1-N15 are repaired, locally validated, committed and approved by both native/general and
-security/durability lenses. The later findings N16-N20 are repaired.
+security/durability lenses. The later findings N16-N21 are repaired.
 
 The default branch's PR #32, #27 and #35 are merged into this branch at \`1d27cb87\`. The E2E reset now
 quiesces both writers of the B2B database: b2b-web pauses every source of its own work, and the harness
@@ -68,8 +68,16 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
    load. Resume was deleted.
 5. **Done: incremental review `2e2d5610..4633c3dd`**, judgment `approved`. N20 widened the first drain's
    budget to five minutes, since it now gates fixture startup.
-6. **Next:** push, require ordinary CI plus a separately dispatched `.github/workflows/e2e.yml` at that exact
-   SHA, merge PR #18, and restore the preserved unrelated files without committing them.
+6. **Done: exact-head gates at `ff7dd3cb`.** CI run 36317770567 passed. E2E run 36317790394 scored 7/10, and
+   all four `ConcertFinishedTests` passed where earlier branch runs failed them in reset, so N16 is proven
+   remotely. Two of the failures are the FlatFee checkout 409s that `main`'s nightly also fails. The third,
+   the VenueHire draft poll, was this branch's (N21). The deleted `ApplicationSide` mapping had shown the
+   venue `dto.Status`. The unified summary now reports `Confirmed` once the booking confirms, and the
+   escrow-backed polls waited for the transient `Accepted`. Earlier runs passed only because their first
+   read beat the confirmation. Both escrow-backed polls now wait for `Confirmed`.
+7. **Next:** push, require ordinary CI plus a separately dispatched `.github/workflows/e2e.yml` at that exact
+   SHA, merge PR #18, and restore the preserved unrelated files without committing them. The E2E pass bar is
+   `main`'s: only the two FlatFee checkout 409s, owned by P2's unstable checkout-identity work, may fail.
 
 Local builds, unit, architecture, startup and single-project integration tiers run on this workstation even
 with under 1 GB free; the full integration suite and the Aspire E2E stack are validated remotely.
@@ -190,6 +198,11 @@ does not substitute for the P1 review.
 - **Workers is quiesced from the harness, not from b2b-web.** The harness already calls the Functions host's
   admin API from `WorkersFixture.TriggerAsync`, and its drain comes from the same API, so no reset endpoint
   crosses into another process.
+- **Both principals see one settled application status.** With `ApplicationSide` deleted, a confirmed booking
+  reads `Confirmed` for the venue as well as the artist. An escrow-backed accept is therefore only briefly
+  `Accepted`, and a test must wait for `Confirmed` (N21).
+- Payment Workers dead-letters `payment-succeeded` for every escrow deposit ("has no provider transaction"),
+  on `main` as well. Payment's `TECH_DEBT.md` HIGH entry owns it, and no B2B scenario depends on it.
 - **The drained Workers host is never resumed.** `/admin/host/resume` restarts the script host over the
   surviving isolated worker, which rejects the duplicate function loads, so every later invocation fails
   behind a 202 (N19). Drain stops only listeners: admin invocations still run, and the tests use nothing else.

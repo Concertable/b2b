@@ -53,7 +53,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
                 await response.ShouldBe(HttpStatusCode.OK);
                 return await response.Content.ReadAsync<ApplicationResponse>();
             },
-            app => app?.Status == ApplicationStatus.Accepted,
+            app => app?.Status == ApplicationStatus.Confirmed,
             timeout: TimeSpan.FromSeconds(15));
     }
 
@@ -82,7 +82,7 @@ public sealed class ConcertDraftTests : IAsyncLifetime
                 await response.ShouldBe(HttpStatusCode.OK);
                 return await response.Content.ReadAsync<ApplicationResponse>();
             },
-            app => app?.Status == ApplicationStatus.Accepted,
+            app => app?.Status == ApplicationStatus.Confirmed,
             timeout: TimeSpan.FromSeconds(15));
     }
 
