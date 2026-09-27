@@ -5,7 +5,7 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `ff7dd3cb6ffbd1f89b494373d6537d52128e0c93`  `(2026-09-27)`
+**Reviewed up to commit:** `f8ac2131a67d5278c487c018ce166f97bb99920b`  `(2026-09-27)`
 **Security-reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
 **Judgment:** `approved`
 
@@ -190,6 +190,40 @@ reset propagates exactly as it did before the drain existed.
 No new findings. The code change is the single N20 timeout constant, and the drain-status wait keeps its own
 two-minute budget. The ledger and work-order edits match the repaired mechanism. No path in the range, or
 anywhere since the security watermark `e0cfe596`, is security-sensitive.
+
+## Review pass — 2026-09-27 — incremental (exact-head E2E and settled status)
+
+**Candidate base:** `ff7dd3cb6ffbd1f89b494373d6537d52128e0c93`
+**Candidate head:** `f8ac2131a67d5278c487c018ce166f97bb99920b`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:8e6328b65f9e44c2f4d3881bb50cff3e14d7f570104ffc24452f6eb61c55d4a0` `(3 paths)`
+**Candidate patch:** `sha256:8e84e60107e0422c11e9e759eb9577dac96155fcc9982546e80f0f2d4c648ff1`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+- [x] **N21 — MEDIUM — E2E — the escrow-backed draft polls wait for a status the venue no longer settles on.**
+  E2E run 36317790394 at `ff7dd3cb` timed out in
+  `ConcertDraftTests.ShouldCreateDraftAndPayVenue_WhenVenueHireApplicationAccepted` (`ConcertDraftTests.cs:78`).
+  The server side was healthy: b2b-web logged the accept of application 66 at 12:11:25.8, then
+  `application-accepted`, `deposit-escrow-succeeded`, the draft for booking 48 and `booking-confirmed` by
+  12:11:28.2, and the poll logged no failed request. `ApplicationMappers.ToStatus` reports `Confirmed` once the
+  booking is `Confirmed`. On `main` only the artist's view mapped that, and the venue's view returned
+  `dto.Status`. Deleting `ApplicationSide` gave both principals the artist's mapping, so after an
+  escrow-backed accept `Accepted` lasts only until the deposit confirms the booking. The earlier branch runs
+  passed only when the first read won that race. The FlatFee poll has the same shape behind its checkout 409.
+  **Fix:** wait for the settled `Confirmed`. DoorSplit and Versus confirm through `VerifiedConfirmStep`, a
+  no-op, so their immediate `Accepted` read is stable.
+  **Disposition:** both escrow-backed polls wait for `ApplicationStatus.Confirmed`; the E2E project builds.
+
+The run's other failures are not findings against this candidate. The two FlatFee checkout 409s
+(`payment.operation.unknown` on `/api/application/68/checkout`) also fail on every nightly run of `main`,
+most recently 36307012628, and are owned by P2's unstable checkout-identity work. Payment Workers'
+"`escrow/booking:48` has no provider transaction" also appears in `main`'s run and is Payment's own HIGH
+`TECH_DEBT.md` entry.
 
 ## Review pass — 2026-09-15 — full (void: candidate discarded by branch restart)
 
