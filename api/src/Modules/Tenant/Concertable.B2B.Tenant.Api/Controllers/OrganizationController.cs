@@ -2,6 +2,7 @@ using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Contracts.Enums;
 using Reunion.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,15 +30,37 @@ internal sealed class OrganizationController : ControllerBase
             () => NoContent());
     }
 
+    [HttpPost]
+    public async Task<ActionResult<TenantDetails>> Create(
+        CreateTenantRequest request,
+        CancellationToken ct) =>
+        (await tenantService.CreateAsync(request, ct)).ToCreatedOrProblem(tenant => $"/api/organization/{tenant.Id}");
+
     [HttpPut]
-    [HasPermission(SharedPermissions.TenantSettingsEdit)]
+    [HasPermission(TenantPermission.TenantSettingsEditName)]
     public async Task<ActionResult<TenantDetails>> Update(
         UpdateTenantRequest request,
         CancellationToken ct) =>
         (await tenantService.UpdateAsync(request, ct)).ToOkOrProblem();
 
+    [HttpPut("activities/{kind}")]
+    [HasPermission(TenantPermission.TenantSettingsEditName)]
+    public async Task<ActionResult<TenantDetails>> ActivateActivity(
+        TenantBusinessActivityKind kind,
+        ChangeBusinessActivityRequest request,
+        CancellationToken ct) =>
+        (await tenantService.ActivateBusinessActivityAsync(kind, request, ct)).ToOkOrProblem();
+
+    [HttpDelete("activities/{kind}")]
+    [HasPermission(TenantPermission.TenantSettingsEditName)]
+    public async Task<ActionResult<TenantDetails>> RetireActivity(
+        TenantBusinessActivityKind kind,
+        [FromBody] ChangeBusinessActivityRequest request,
+        CancellationToken ct) =>
+        (await tenantService.RetireBusinessActivityAsync(kind, request, ct)).ToOkOrProblem();
+
     [HttpDelete]
-    [HasPermission(SharedPermissions.TenantDelete)]
+    [HasPermission(TenantPermission.TenantDeleteName)]
     public async Task<IActionResult> Delete(CancellationToken ct) =>
         (await tenantService.DeleteAsync(ct)).ToNoContentOrProblem();
 }

@@ -29,10 +29,10 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         await AcceptFlatFeeAsync(client, applicationId);
 
         var before = await GetApplicationAsync(client, applicationId);
-        Assert.Equal(ApplicationBoundaryStatus.Accepted, before.Status);
+        Assert.Equal(ApplicationBoundaryStatus.AwaitingPayment, before.Status);
         Assert.Null(before.Actions.Cancel);
         Assert.Null(before.Actions.Withdraw);
-        Assert.Null(before.Actions.Reject);
+        Assert.Null(before.Actions.Decline);
         Assert.DoesNotContain(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
 
         var bookingId = (await GetBookingAsync(client, applicationId)).BookingId;
@@ -44,7 +44,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         Assert.Equal(ApplicationBoundaryStatus.Cancelled, after.Status);
         Assert.Null(after.Actions.Cancel);
         Assert.Null(after.Actions.Withdraw);
-        Assert.Null(after.Actions.Reject);
+        Assert.Null(after.Actions.Decline);
         Assert.Contains(await fixture.GetStagedEmailsAsync(), email =>
             email.To == fixture.SeedState.ArtistManager1.Email &&
             email.Subject == "Concert Booking Cancelled");
@@ -68,8 +68,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         await fixture.CompleteLatestFinancialOperationAsync<RefundEscrowCommand>();
 
         Assert.Equal(2, refunds.Count(command => command.Reference == PaymentOperationReferences.Escrow(bookingId)));
-        var concertResponse = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concertResponse.ShouldBe(HttpStatusCode.NotFound);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
     [Fact]
@@ -111,7 +110,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         var bookingId = (await GetBookingAsync(client, applicationId)).BookingId;
         await fixture.PaymentSimulator.SendWebhookAsync();
         Assert.DoesNotContain(await GetOpportunitiesAsync(client), value => value.Id == opportunityId);
-        var concertResponse = await client.GetAsync($"/api/concert/application/{applicationId}");
+        var concertResponse = await fixture.GetCreatedConcertOperationsAsync(client);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<ConcertBoundaryResponse>();
         Assert.NotNull(concert);
@@ -168,7 +167,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/application/{applicationId}");
+        var response = await client.GetAsync($"/api/application/{applicationId}/proposal");
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();
         Assert.NotNull(application);
@@ -177,16 +176,16 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
 
     private static async Task<BookingSummary> GetBookingAsync(HttpClient client, int applicationId)
     {
-        var response = await client.GetAsync($"/api/booking/application/{applicationId}");
+        var response = await client.GetAsync($"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var booking = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(booking);
         return booking;
     }
 
-    private static async Task<ConcertBoundaryResponse> GetConcertAsync(HttpClient client, int applicationId)
+    private async Task<ConcertBoundaryResponse> GetConcertAsync(HttpClient client, int applicationId)
     {
-        var response = await client.GetAsync($"/api/concert/application/{applicationId}");
+        var response = await fixture.GetCreatedConcertOperationsAsync(client);
         await response.ShouldBe(HttpStatusCode.OK);
         var concert = await response.Content.ReadAsync<ConcertBoundaryResponse>();
         Assert.NotNull(concert);
@@ -213,7 +212,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
 
     private sealed record ApplicationActionsBoundaryResponse(
         ActionBoundaryResponse? Withdraw,
-        ActionBoundaryResponse? Reject,
+        ActionBoundaryResponse? Decline,
         ActionBoundaryResponse? Cancel);
 
     private sealed record ActionBoundaryResponse(string Href);
@@ -227,6 +226,8 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         Rejected,
         Withdrawn,
         Accepted,
+        AwaitingPayment,
+        Confirmed,
         Cancelled
     }
 }

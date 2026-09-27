@@ -1,3 +1,4 @@
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Opportunity.Application.Mappers;
 using Concertable.B2B.Opportunity.Application.Validators;
@@ -19,7 +20,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
+using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Extensions;
 
@@ -29,14 +30,19 @@ public static class ServiceCollectionExtensions
     {
         public IServiceCollection AddOpportunityModule(IConfiguration configuration)
         {
+            services.AddDbContext<OpportunityPrivilegedDbContext>((sp, options) =>
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
+
             services.AddDbContext<OpportunityDbContext>((sp, options) =>
                 options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
                         npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
-                        sp.GetRequiredService<TenantInterceptor>())
-                    .UseSeedingSupport(sp));
+                        sp.GetRequiredService<TenantInterceptor>()));
 
             services.AddDbContext<OpportunityReadDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
@@ -46,11 +52,14 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IOpportunityRepository, OpportunityRepository>();
             services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
             services.AddScoped<IOpportunityService, OpportunityService>();
             services.AddScoped<IOpportunitySyncer, OpportunitySyncer>();
             services.AddScoped<IOpportunityModule, OpportunityModule>();
+            services.AddScoped<ITenantDeletionGuard, OpportunityTenantDeletionGuard>();
+            services.AddScoped<IOpportunityCommandFacts, OpportunityCommandFacts>();
             services.AddScoped<OpportunityCancellationIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<BookingCancelledEvent>>(provider =>
                 provider.GetRequiredService<OpportunityCancellationIntegrationEventHandler>());

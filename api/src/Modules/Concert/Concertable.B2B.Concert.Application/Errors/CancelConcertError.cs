@@ -14,7 +14,9 @@ internal abstract partial record CancelConcertError : IError
         InvalidTransition(var error) => ErrorDefinition.Conflict<InvalidTransition>(
             $"A concert in {error.Current} cannot be cancelled."),
         Superseded(var concertId) => ErrorDefinition.Conflict<Superseded>(
-            $"Concert {concertId} changed while this cancellation was in flight.")
+            $"Concert {concertId} changed while this cancellation was in flight."),
+        NotPermitted => ErrorDefinition.Forbidden<NotPermitted>(
+            "You are not permitted to cancel this concert.")
     };
 
     [ErrorCode("concert.cancel.not_found")]
@@ -25,4 +27,7 @@ internal abstract partial record CancelConcertError : IError
 
     [ErrorCode("concert.cancel.superseded")]
     public partial record Superseded(int ConcertId);
+
+    [ErrorCode("concert.cancel.not_permitted")]
+    public partial record NotPermitted;
 }

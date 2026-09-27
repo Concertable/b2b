@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Infrastructure.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
@@ -27,6 +28,7 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Workers;
@@ -39,6 +41,7 @@ internal static class ServiceCollectionExtensions
         {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
+        services.AddCommandTransactions();
         services.AddUris(configuration);
         services.AddSharedBlob(configuration);
         services.AddSharedEmail(configuration);
@@ -54,7 +57,7 @@ internal static class ServiceCollectionExtensions
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
-        services.AddScoped<VenueArtistTenantInterceptor>();
+        services.AddScoped<IResourceAccessContext, ResourceAccessContext>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();
@@ -64,6 +67,7 @@ internal static class ServiceCollectionExtensions
 
         services.AddCurrentUser();
         services.AddAdminModule(configuration);
+        services.AddAuthorizationModule();
         services.AddTenantModule(configuration);
         services.AddUserModule(configuration);
         services.AddArtistModule(configuration);

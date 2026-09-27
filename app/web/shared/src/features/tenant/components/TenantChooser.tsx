@@ -1,10 +1,10 @@
-import type { TenantType } from "@concertable/b2b/features/tenant/types";
+import type { TenantBusinessActivity } from "@concertable/b2b/features/tenant/types";
 import { Button } from "@concertable/web/components/ui/button";
 import { useTenant } from "../hooks/useTenant";
 
-export function TenantChooser({ tenantType }: Readonly<{ tenantType: TenantType }>) {
+export function TenantChooser({ businessActivity }: Readonly<{ businessActivity?: TenantBusinessActivity }>) {
   const { memberships, isSelectionPending, selectTenant } =
-    useTenant(tenantType);
+    useTenant(businessActivity);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6">

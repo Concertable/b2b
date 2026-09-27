@@ -1,3 +1,4 @@
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Artist.Application.Validators;
 using Concertable.B2B.Artist.Contracts;
@@ -11,7 +12,6 @@ using Concertable.B2B.Artist.Infrastructure.Services;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +26,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddArtistModule(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddDbContext<ArtistPrivilegedDbContext>((sp, opt) =>
+            opt.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)
+                        .UseNetTopologySuite())
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
         services.AddDbContext<ArtistDbContext>((sp, opt) =>
             opt.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
@@ -34,8 +43,7 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddDbContext<ArtistReadDbContext>((sp, opt) =>
             opt.UseNpgsql(
@@ -49,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IArtistRepository, ArtistRepository>();
         services.AddScoped<IArtistReviewRepository, ArtistReviewRepository>();
         services.AddScoped<IArtistReadRepository, ArtistReadRepository>();
+        services.AddScoped<IArtistCommandFacts, ArtistCommandFacts>();
         services.AddScoped<IArtistModule, ArtistModule>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ArtistReviewProjectionHandler>();

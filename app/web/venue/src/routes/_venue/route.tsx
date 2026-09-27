@@ -10,7 +10,7 @@ import { useVenueNotifications } from "../../features/notifications";
 import { requireVenue } from "../../features/venue";
 import { AppLayout } from "@concertable/web/components/AppLayout";
 import type { ProfileMenuItem } from "@concertable/web/components/ProfileMenu";
-import { Mailbox } from "@concertable/web/features/messaging";
+import { Mailbox } from "@concertable/web-b2b/features/conversations";
 
 const links = [
   { label: "Dashboard", to: "/" },
@@ -25,15 +25,26 @@ const profileItems: ProfileMenuItem[] = [
 ];
 
 function VenueLayout() {
-  useVenueNotifications();
-  const { selectionRequired } = useTenant("venue");
-  if (selectionRequired) return <TenantChooser tenantType="venue" />;
+  const { selectionRequired, session, permissions } = useTenant("venueOperator");
+  useVenueNotifications(session);
+  if (selectionRequired) return <TenantChooser businessActivity="venueOperator" />;
+  const mailbox =
+    session !== undefined && permissions.has("messages.read") ? (
+      <Mailbox
+        key={`${session.tenantId}:${session.membershipId}:${session.permissionVersion}:${session.generation}`}
+        session={session}
+      />
+    ) : undefined;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher tenantType="venue" />}
-      messagingSlot={<Mailbox />}
+      headerSlot={
+        <>
+          <TenantSwitcher businessActivity="venueOperator" />
+          {mailbox}
+        </>
+      }
     />
   );
 }
@@ -44,7 +55,7 @@ export const Route = createFileRoute("/_venue")({
       await requireLocalB2bAuth({ location });
       return;
     }
-    const { selectionRequired } = await resolveTenantRoute("venue");
+    const { selectionRequired } = await resolveTenantRoute("venueOperator");
     if (selectionRequired) return;
     await requireVenue({ pathname: location.pathname });
   },

@@ -10,7 +10,7 @@ import { useArtistNotifications } from "../../features/notifications";
 import { requireArtist } from "../../features/artist";
 import { AppLayout } from "@concertable/web/components/AppLayout";
 import type { ProfileMenuItem } from "@concertable/web/components/ProfileMenu";
-import { Mailbox } from "@concertable/web/features/messaging";
+import { Mailbox } from "@concertable/web-b2b/features/conversations";
 
 const links = [
   { label: "Dashboard", to: "/" },
@@ -25,15 +25,26 @@ const profileItems: ProfileMenuItem[] = [
 ];
 
 function ArtistLayout() {
-  useArtistNotifications();
-  const { selectionRequired } = useTenant("artist");
-  if (selectionRequired) return <TenantChooser tenantType="artist" />;
+  const { selectionRequired, session, permissions } = useTenant("artist");
+  useArtistNotifications(session);
+  if (selectionRequired) return <TenantChooser businessActivity="artist" />;
+  const mailbox =
+    session !== undefined && permissions.has("messages.read") ? (
+      <Mailbox
+        key={`${session.tenantId}:${session.membershipId}:${session.permissionVersion}:${session.generation}`}
+        session={session}
+      />
+    ) : undefined;
   return (
     <AppLayout
       links={links}
       profileItems={profileItems}
-      headerSlot={<TenantSwitcher tenantType="artist" />}
-      messagingSlot={<Mailbox />}
+      headerSlot={
+        <>
+          <TenantSwitcher businessActivity="artist" />
+          {mailbox}
+        </>
+      }
     />
   );
 }

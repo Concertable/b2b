@@ -1,0 +1,258 @@
+# Party foundation progress
+
+- Plan: `plans/party-foundation/PARTY_FOUNDATION_PLAN.md`
+- Roadmap: `plans/party-foundation/PARTY_FOUNDATION_ROADMAP.md`
+- Roadmap item: `party-foundation/core`
+- Worktree: \`C:\Users\TommySeery\source\repos\Concertable\b2b\.worktrees\Refactor-PartyFoundationLegacyBindings\`
+- Branch: \`Refactor/PartyFoundationLegacyBindings\`
+- PR: [#18](https://github.com/Concertable/b2b/pull/18)
+- Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
+- Current checkpoint: `31597095` passes CI and API E2E at `main`'s bar; UI E2E failed. Login and sign-up
+  repaired in `3d32203c` (unpushed); header-inbox cutover design routed to Astra (`MAILBOX_DESIGN.md`)
+- Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
+- Last reconciled: 25 September 2026 against \`origin/main\` \`a1baf9a7\`
+- Ownership: transferred 25 September 2026 to a fresh Claude session in this worktree; no other writer is active
+
+## Current state
+
+P1 slices 1-4, 4.3, 4.1, 4.7 and 4.8 are implemented. The branch has absorbed the current default
+branch's PostgreSQL composition. Canonical review covered all 757 manifest paths; accepted code findings
+N1-N15 are repaired, locally validated, committed and approved by both native/general and
+security/durability lenses. The later findings N16-N21 are repaired.
+
+The default branch's PR #32, #27 and #35 are merged into this branch at \`1d27cb87\`. The E2E reset now
+quiesces both writers of the B2B database: b2b-web pauses every source of its own work, and the harness
+drains the B2B Workers Functions host around every reset.
+
+The provider reconciliation uses the platform PostgreSQL fixture plus B2B-owned database lifecycle,
+Npgsql command transactions and an NTS-configured \`NpgsqlDataSource\`. Command contexts are reset to
+independent owned connections after commit or rollback. PostgreSQL row locks and the atomic conversation
+read-position upsert replace SQL Server lock hints. All eleven current InitialCreate snapshots are aligned
+to PostgreSQL; Tenant's migration retains the hand-authored \`tenant.MembershipAuthority\` view.
+
+Preserve the unrelated \`.claude/settings.json\`, \`.codex/\` and generated
+\`tests/E2ETests/**/*.feature.cs\` changes throughout delivery. The first two remain in stash
+\`4fecf8ee3a850423cec8959d279b6ff75bc24097\`; the generated-file backup is
+\`3c04f1a67ed73382eb729724120ce9ed1e0b2996\`, and the current generated feature files remain unstaged.
+
+## Next Steps
+
+Scope: current slice only; full plan remains incomplete.
+Current slice: close the E2E reset defect and deliver the reconciled head of PR #18.
+Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
+Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #18 is merged.
+
+1. **Done: the published host pause is consumed.** Platform is `0.2.0-alpha.0.20` with
+   `Concertable.Messaging.AspNetCore` added. `AddB2BE2EAdmin` registers `AddHostPauser()` and `AddGate`
+   exempting `/_e2e`, `/health` and `/alive`; `MapB2BE2EAdmin` became `UseB2BE2EAdmin`, which inserts
+   `UseGate()` ahead of the whole host pipeline. The reset pauses through `HostPauser` inline in its request
+   and resumes in `finally`. `NoOpBusQuiescence` is deleted, and a new `E2EAdminApiTests` case drives the real
+   reset against PostgreSQL. The bump was **not** source-compatible, contrary to the earlier note: platform #23
+   deleted `UseSeedingSupport` (its only body registered the SQL Server identity-insert interceptor) and moved
+   `SeedingScope` out of `Concertable.Seed.Shared.Identity`, so all nine module registrations and
+   `DevDbInitializer` changed with it. Names are fixed: Tommy rejected "quiescence/ingress", `-able`
+   implementation names and "Composite".
+2. **Done: incremental review `e0cfe596..0822900d`** — judgment `changes-requested`. N17 (exempt `/hub`)
+   and N18 (assert the reset releases the gate) are repaired.
+3. **Done: N16, B2B Workers stopped across every E2E reset.** `DbFixture.ResetAsync` drains the Functions
+   host through `WorkersFixture.DrainAsync` before resetting either database. That posts
+   `/admin/host/drain` and polls `/admin/host/drain/status` until `Completed`. The host is never resumed.
+   The run 35721355090 evidence put `ConcertFinishedFunction` settling 22 concerts straight through two
+   b2b-web resets. A throwaway isolated app ran on local Core Tools 4.8.0, with Worker 2.51.0 and Azurite, and
+   a timer function invoked through `/admin/functions/{name}`. The drain held at `InProgress` with one
+   outstanding invocation until that invocation returned. A drained host kept executing admin invocations,
+   and a repeated drain waited for the in-flight one. CI's 4.12.1 under Aspire is exercised only by the
+   remote E2E run.
+4. **Done: incremental review `0822900d..2e2d5610`**, judgment `changes-requested`. N19 found that
+   `/admin/host/resume` keeps the isolated worker and every later invocation fails on a duplicate function
+   load. Resume was deleted.
+5. **Done: incremental review `2e2d5610..4633c3dd`**, judgment `approved`. N20 widened the first drain's
+   budget to five minutes, since it now gates fixture startup.
+6. **Done: exact-head gates at `ff7dd3cb`.** CI run 36317770567 passed. E2E run 36317790394 scored 7/10, and
+   all four `ConcertFinishedTests` passed where earlier branch runs failed them in reset, so N16 is proven
+   remotely. Two of the failures are the FlatFee checkout 409s that `main`'s nightly also fails. The third,
+   the VenueHire draft poll, was this branch's (N21). The deleted `ApplicationSide` mapping had shown the
+   venue `dto.Status`. The unified summary now reports `Confirmed` once the booking confirms, and the
+   escrow-backed polls waited for the transient `Accepted`. Earlier runs passed only because their first
+   read beat the confirmation. Both escrow-backed polls now wait for `Confirmed`.
+7. **Done: API E2E at `31597095`** scored 8/10, with only the two FlatFee checkout 409s failing, matching
+   `main`. CI passed. The UI suite had never run on this branch, because the API failures skip it.
+   Dispatched alone as run 36320557054, it failed 11 of 32:
+   - 6 FlatFee scenarios never reach `e-sign` on checkout. Payment's escrow authorize returns "could not be
+     safely classified", the same P2-owned checkout-identity failure. `main`'s UI-only baseline, run
+     36321731466, scored 26/32 and failed exactly these 6.
+   - Login and both sign-ups drove the business gateway that slice 4.8 replaced. They are repaired in
+     `3d32203c`: sign-in uses the landing page's `home-sign-in`, and sign-up starts at each profile SPA's
+     `/login?redirect=%2Fcreate`.
+   - Group inbox and content report fail because every B2B SPA layout still renders
+     `@concertable/web`'s Mailbox. That component calls the `/message/*` routes 4.7 deleted, so the header
+     inbox is broken. The replacement's data flow is undecided, because `MessagePreviewDto` lacks sender,
+     sequence and report action. It is routed to Astra, whose design lands in
+     `plans/party-foundation/MAILBOX_DESIGN.md`.
+8. **In progress: Astra's mailbox design is implemented locally.** Changes:
+   - A B2B `Mailbox` in `app/web/shared/src/features/conversations`, keyed on the tenant session and mounted in
+     each layout's `headerSlot`. That drops the platform `AppLayout`'s `{user && messagingSlot}` gate, the
+     likely cause of the detach loop.
+   - Previews are paged, and a preview is unread when any inbound message is unread.
+   - The seeded artist tenant is named "The Rockers".
+   - The dashboard inbox cards use the shared preview query.
+   - The group-inbox scenario asserts that the trigger's DOM node survives opening.
+
+   One deviation from the design: the report dialog keeps the platform's generic `Select`, which the page
+   object's combobox and option selectors already drove on `main`. It does not use the `ui/select` primitives.
+9. **Done: the inbox landed as `a340eeb4`**, reviewed with no findings. CI and API E2E (8/10) passed. UI E2E
+   scored 24/32: login and both sign-ups now pass, but both inbox scenarios still failed. The retained
+   screenshot showed the real cause. The venue home page crashed with "Cannot read properties of undefined
+   (reading '$type')". Slice 4.2 had turned `GET /api/application/venue/current` and `/artist/current` into
+   summary responses, which carry no deal and no actions. The venue and artist dashboard widgets still call
+   `dealSummary(opportunity.deal)`, so a tenant with a current application crashed its home page. That also
+   explains the original "detached from the DOM" symptom: the page rendered, dashboard data arrived, and the
+   error boundary replaced the tree.
+
+   Both lists now return proposal responses gated by `terms.read`, as section 4.2 prescribes for deal
+   details. Their integration tests now assert each item carries a deal and actions; before, they only
+   checked for an array. `aa15ea3c` makes the E2E upload keep failure screenshots and Playwright traces.
+10. **Next:** pass the Application integration tests, then commit, review the delta and push. After that,
+    require CI plus UI and API E2E at that exact SHA, merge PR #18, and restore the preserved unrelated files
+    without committing them. The pass bar is `main`'s: only scenarios that also fail on `main` may fail,
+    and only with an owning debt entry.
+
+Local builds, unit, architecture, startup and single-project integration tiers run on this workstation even
+with under 1 GB free; the full integration suite and the Aspire E2E stack are validated remotely.
+
+## Completed work
+
+- Slice 1, commit \`5ab4356b\`: membership snapshots, audiences, module-local exact grants, principal issuance,
+  Concert summary sharing/member assignment and deletion of generic Application/Booking sharing.
+- Slice 2, commit \`b2001b2f\`: deleted ambient host privilege; explicit privileged processing, published
+  Concert projection and outcome receipt correctness.
+- Slice 3, commit \`f6ecc9bf\`: regenerated access migrations, authority view, grant keys/indexes and seeding.
+- Slice 4: independent ordinary connections plus one enlisted root command transaction, quiescent
+  event/outbox flushing, authority validation and settlement/invoice atomicity.
+- Slice 4.3: Application, Booking and Concert mutations use exact command policy, resource/grant locks,
+  durable share replay and provider-real race coverage; \`ApplicationSide\` is deleted.
+- Slice 4.1: typed permission identity end to end, strict ASP.NET name parsing, typed catalogs and client
+  serialization at the wire boundary, with value/policy/catalog tests.
+- Slice 4.7: explicit Conversation identity/audience, idempotent create/send, exact grants, sequenced messages,
+  monotonic read positions, Tenant displays, invalidation-only delivery and complete contract cutover.
+- Slice 4.8, commit \`6d466a87\`: authenticated Business web/mobile journeys, tenant-session boundaries and
+  neutral tenant naming across shared clients.
+- Backend completion checkpoint \`d073fb75\`: neutral tenant lifecycle, resource access, conversation and
+  client journeys before default-branch reconciliation.
+- Current-main reconciliation: PostgreSQL hosting/migrations/fixtures, provider-correct locks, geometry mapping,
+  command-transaction connection ownership and current composition merged from \`7fd22b46\`.
+- Canonical remediation N1-N14: command cancellation/locking, provider-real races, invitation seeding,
+  PostgreSQL E2E lookup, tenant-session clearing, exact frontend roles and mobile permission/auth navigation.
+- Delivery repairs on this branch: \`a387e19a\` declared the Reunion reference the Application tests use;
+  \`0e9f9d05\` pinned auth to the image that knows the Business client, which every API E2E test had been
+  failing its readiness poll without; \`f580b53f\` named this branch's new contracts in the release set and
+  declared \`TenantDisplayChanged\`/\`ConversationChanged\` in the bus topology, which had left their
+  subscriptions unprovisioned and fan-out dead; \`ceb13880\` kept the messaging migration history across an
+  E2E reset (42P07); \`85c7c5a9\` took the release candidate set from the promotion manifest alone, ending
+  the drift of four hand-maintained copies.
+- E2E reset pause: `IBusQuiescence` (receiver only) was replaced by platform `HostPauser` plus the request
+  gate, pausing all of b2b-web's own work; the harness drains the B2B Workers Functions host (N16).
+
+## Verification
+
+- Platform `0.2.0-alpha.0.20` head, 25 September 2026: `dotnet build Concertable.B2B.slnx` passed with 0
+  errors; the tagged unit tier, E2EAdmin integration 9/9 (including the real PostgreSQL reset),
+  architecture 24/24 and startup 16/16 passed. Free memory was under 1 GB, but these tiers completed.
+- Ordinary remote CI passed at `15dce560`, covering build, unit and integration on the reconciled graph.
+- Before the reconciliation merge, every local tier was green: unit 498/498, architecture 24/24, startup 16/16,
+  integration 435/435 across 14 projects, provider race regressions, migration drift across all 11 contexts,
+  and the full web and mobile gates. Those runs are evidence about the P1 code, not about the merged graph.
+- Windows needs a process-local shortened PATH for nested npm wrapper scripts in the full frontend gates.
+- The backend CI category filter skips seven untagged projects; run directly they pass. `TECH_DEBT.md` owns
+  the correction.
+- Exact-head remote CI and the separately dispatched API/UI E2E workflow remain delivery gates.
+- `GITHUB_PACKAGES_TOKEN` in this environment is an expired `ghp_` PAT (every `Concertable.*` restore returns
+  401); export `gh auth token` into it for restores until whoever owns the PAT replaces it.
+
+## Reviews
+
+Canonical review covered all 757 manifest paths and accepted N1-N15. N1-N14 are repaired and approved by both
+native/general and security/durability lenses through commit \`ed76eda6\`. N15 is this planning-graph
+reconciliation; after its incremental approval, current-graph qualification and the final canonical pass remain.
+Existing \`reviews/Refactor-PostgresB2BReplacement.md\` belongs to the merged default-branch provider work and
+does not substitute for the P1 review.
+
+## Decisions, discoveries, blockers, and deviations
+
+- Tenant remains the business/legal/membership/settlement identity; tokens remain identity-only.
+- Eligibility, membership permission and resource audience remain separate facts.
+- No ambient host bypass, query-filter bypass, generic private-details endpoint or unchecked load/save.
+- P1 external disclosure is Concert Summary only; member assignments stay inside a principal tenant.
+- Protected commands use one local transaction; ordinary and parallel reads use independent connections.
+- External payment/blob calls remain outside the database transaction and reuse durable operation identity.
+- The product is pre-launch: a superseded shape is replaced outright, with no parallel path or data retrofit.
+- Migrations stay owned by the filtered context; privileged contexts perform explicit system work.
+- Npgsql geometry requires an NTS-configured data source for raw command transactions, not a replacement
+  unconfigured connection.
+- Enlisted contexts must be detached from the root transaction connection after completion so later scoped
+  reads do not reuse a disposed connection.
+- PostgreSQL \`FOR UPDATE\` protects mutable command facts, \`FOR SHARE\` protects membership-authority fences,
+  and conversation read positions use \`ON CONFLICT ... GREATEST\`.
+- Opportunity creation is restricted to VenueOperator activity; integration handlers and race verification use
+  privileged contexts when no interactive tenant exists.
+- **The reset 500 is a lock-order inversion between the truncate and a live settlement.** At \`5efaa089\`,
+  \`ConcertFinishedTests\` failed its \`InitializeAsync\` reset with \`40P01\`: Respawn's \`TRUNCATE ... CASCADE\`
+  waited for \`AccessExclusiveLock\` while \`InvoiceIssuer\`'s \`concert."InvoiceSequences"\` read waited for
+  \`AccessShareLock\`. A writer surviving the pause also leaves dirty state after the truncate. The
+  \`e2e-diagnostics.log\` artifact of run 35721355090 carries the full report and the Workers timeline.
+- **The database-level fence is disproven, with evidence.** \`127600fa\` had the reset terminate every
+  other backend on the database before truncating, so that its contract -- nothing else holds a
+  transaction across the truncate -- would be literally true. Two dispatched E2E runs rejected it, both
+  strictly worse than the 3 failures it set out to fix, at 10 of 10 failing at fixture startup:
+  \`127600fa\` alone died reseeding through a connection pooled before the cull (\`57P01\` in
+  \`NpgsqlHistoryRepository.GetAppliedMigrationsAsync\`), and \`f400b498\`, which discarded both pools in
+  the same breath, left b2b-web silent immediately after \`Service Bus consumption paused across 18
+  processors\` -- no resume, no exception, no further output. Reverted at \`8a3143a3\`.
+- A test endpoint cannot cull the runtime it runs in: "every other backend" includes b2b-web's own
+  hosted services and bus receiver, and clearing pools does nothing for work already holding a connection.
+- **The earlier "in-flight HTTP request was the deadlocking writer" diagnosis was wrong.** The other party
+  was B2B Workers' `ConcertFinishedFunction` (review N16). The web-host pause is still needed, since it
+  stops b2b-web's own receiver, outbox and requests, but it is not sufficient.
+- **The ingress pause covers b2b-web, delivered as platform `0.2.0-alpha.0.20`.** The reset keeps
+  `PauseAsync` inside its `try` so `finally` always resumes every pausable. That matters because
+  `HostPauser`'s rollback skips the pausable whose own `PauseAsync` threw, and `GateMiddleware` sets its
+  paused flag before awaiting the drain, so a cancelled reset would otherwise leave the gate holding every
+  request. The platform defect is recorded in platform-dotnet `src/Concertable.Messaging/TECH_DEBT.md` through
+  [platform-dotnet #30](https://github.com/Concertable/platform-dotnet/pull/30), open for Tommy's review.
+- The two FlatFee checkout 409s are not attributable to this branch. A control run of the default branch
+  plus only the Outbox fix scored 8 of 10 with exactly those two failing, against 6-7 of 10 here. The cause
+  is the checkout operation identity being composed from a database id that Respawn reseeds, so a reused id
+  collides with a retained Payment operation. That is the unstable-checkout-ID debt P2 already owns at
+  \`PARTY_FOUNDATION_PLAN.md\` section P2.
+- The default branch's `ITenantScope` is rejected rather than merged. PR #32 introduced it as an AsyncLocal
+  a request-less writer sets to name the tenant it writes as, which is the ambient-authority shape section 4.6
+  deletes; this branch had already answered the same question with composed privileged stances, and carrying
+  both would leave two mechanisms for one job. `ITenantScope`, `TenantScope`, `TenantScopedSeeding` and the
+  callers that arrived with them are deleted. Verified as lossless: main's every conflicting change was that
+  mechanism, its `SetConcertPeriodAsync` and `AsSettlementPayeeAsync` fixture helpers only wrap what this
+  branch does through the privileged context, and its `ConcertCompletionCandidate` duplicates what
+  `IConcertReadRepository` already reads off the unfiltered stance.
+- No accepted finding is open. The exact-head E2E run and the final review remain delivery gates.
+- **Workers is quiesced from the harness, not from b2b-web.** The harness already calls the Functions host's
+  admin API from `WorkersFixture.TriggerAsync`, and its drain comes from the same API, so no reset endpoint
+  crosses into another process.
+- **Both principals see one settled application status.** With `ApplicationSide` deleted, a confirmed booking
+  reads `Confirmed` for the venue as well as the artist. An escrow-backed accept is therefore only briefly
+  `Accepted`, and a test must wait for `Confirmed` (N21).
+- Payment Workers dead-letters `payment-succeeded` for every escrow deposit ("has no provider transaction"),
+  on `main` as well. Payment's `TECH_DEBT.md` HIGH entry owns it, and no B2B scenario depends on it.
+- **The drained Workers host is never resumed.** `/admin/host/resume` restarts the script host over the
+  surviving isolated worker, which rejects the duplicate function loads, so every later invocation fails
+  behind a 202 (N19). Drain stops only listeners: admin invocations still run, and the tests use nothing else.
+
+## External/deferred owners
+
+P2-P5, dependency publication, configurable-workflow documentation, configurable RBAC, tenant retirement,
+sales evidence, payment quote disclosure and transport qualification retain their existing plan owners and
+gates. No sibling checkout is modified by this P1 run.
+
+`platform-frontend` still publishes the `/message/*` messaging feature (`@concertable/web/features/messaging`
+and `@concertable/shared/features/messaging`), which B2B no longer consumes. That repository owns its removal.
+It closes when that feature and its exports are deleted once no real consumer remains, the package version is
+published, and the affected consumers build against it. Design context:
+[`MAILBOX_DESIGN.md`](MAILBOX_DESIGN.md#platform-follow-up-and-scope-closure).

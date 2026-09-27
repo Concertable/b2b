@@ -66,6 +66,6 @@ public sealed class ConcertValidatorTests
     {
         var booking = ConfirmedBookings.FlatFee(100m);
 
-        return ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", [Genre.Rock]));
+        return ConcertEntity.CreateDraft(booking, new ConcertDraft("Concert", "About", [Genre.Rock]), DateTime.UnixEpoch);
     }
 }

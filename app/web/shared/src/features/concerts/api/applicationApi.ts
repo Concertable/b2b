@@ -3,14 +3,14 @@ import type {
   Checkout,
   ESignatureRequest,
 } from "@concertable/shared/features/concerts/types";
-import type { Application } from "../types";
+import type { ApplicationProposal } from "../types";
 
 const applicationApi = {
   applyToOpportunity: async (
     opportunityId: number,
     eSignature: ESignatureRequest,
-  ): Promise<Application> => {
-    const { data } = await apiClient.post<Application>(
+  ): Promise<ApplicationProposal> => {
+    const { data } = await apiClient.post<ApplicationProposal>(
       `/application/${opportunityId}`,
       { eSignature },
     );
@@ -33,16 +33,16 @@ const applicationApi = {
 
   getApplicationsByOpportunityId: async (
     opportunityId: number,
-  ): Promise<Application[]> => {
-    const { data } = await apiClient.get<Application[]>(
+  ): Promise<ApplicationProposal[]> => {
+    const { data } = await apiClient.get<ApplicationProposal[]>(
       `/application/opportunity/${opportunityId}`,
     );
     return data;
   },
 
-  getApplicationById: async (applicationId: number): Promise<Application> => {
-    const { data } = await apiClient.get<Application>(
-      `/application/${applicationId}`,
+  getProposal: async (applicationId: number): Promise<ApplicationProposal> => {
+    const { data } = await apiClient.get<ApplicationProposal>(
+      `/application/${applicationId}/proposal`,
     );
     return data;
   },
@@ -80,15 +80,15 @@ const applicationApi = {
     await apiClient.post(`/application/${applicationId}/cancel`);
   },
 
-  getPendingForArtist: async (): Promise<Application[]> => {
-    const { data } = await apiClient.get<Application[]>(
+  getPendingForArtist: async (): Promise<ApplicationProposal[]> => {
+    const { data } = await apiClient.get<ApplicationProposal[]>(
       `/application/artist/pending`,
     );
     return data;
   },
 
-  getRecentDeniedForArtist: async (): Promise<Application[]> => {
-    const { data } = await apiClient.get<Application[]>(
+  getRecentDeniedForArtist: async (): Promise<ApplicationProposal[]> => {
+    const { data } = await apiClient.get<ApplicationProposal[]>(
       `/application/artist/recently-denied`,
     );
     return data;

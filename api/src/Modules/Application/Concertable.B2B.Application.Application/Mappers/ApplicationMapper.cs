@@ -26,48 +26,80 @@ internal sealed class ApplicationMapper : IApplicationMapper
         this.dealModule = dealModule;
     }
 
-    public async Task<ApplicationDto> ToDtoAsync(
+    public async Task<ApplicationSummaryDto> ToSummaryAsync(
         ApplicationEntity application,
         CancellationToken ct = default) =>
-        (await ToDtosAsync([application], ct)).Single();
+        (await ToSummariesAsync([application], ct)).Single();
 
-    public async Task<IReadOnlyList<ApplicationDto>> ToDtosAsync(
+    public async Task<IReadOnlyList<ApplicationSummaryDto>> ToSummariesAsync(
         IEnumerable<ApplicationEntity> applications,
         CancellationToken ct = default)
     {
-        var applicationList = applications.ToList();
-        var artistsById = (await artistModule.GetSummariesAsync(
-                applicationList.Select(application => application.ArtistId).Distinct().ToArray(), ct))
-            .ToDictionary(artist => artist.Id);
-        var opportunitiesById = (await opportunityModule.GetAsync(
-                applicationList.Select(application => application.OpportunityId).Distinct().ToArray(), ct))
-            .ToDictionary(opportunity => opportunity.Id);
-        var dealsById = (await dealModule.GetByIdsAsync(
-                opportunitiesById.Values.Select(opportunity => opportunity.DealId).Distinct(), ct))
-            .ToDictionary(deal => deal.Id);
-        var venuesById = (await venueModule.GetProfilesAsync(
-                opportunitiesById.Values.Select(opportunity => opportunity.VenueId).Distinct().ToArray(), ct))
-            .ToDictionary(venue => venue.Id);
-
-        return applicationList.Select(application =>
+        var facts = await LoadFactsAsync(applications, ct);
+        return facts.Applications.Select(application =>
         {
-            if (!artistsById.TryGetValue(application.ArtistId, out var artist))
-                throw new InvalidOperationException(
+            var artist = facts.Artists.GetValueOrDefault(application.ArtistId)
+                ?? throw new InvalidOperationException(
                     $"Artist {application.ArtistId} not found for application {application.Id}.");
-            if (!opportunitiesById.TryGetValue(application.OpportunityId, out var opportunity))
-                throw new InvalidOperationException(
+            var opportunity = facts.Opportunities.GetValueOrDefault(application.OpportunityId)
+                ?? throw new InvalidOperationException(
                     $"Opportunity {application.OpportunityId} not found for application {application.Id}.");
-            if (!dealsById.TryGetValue(opportunity.DealId, out var deal))
-                throw new InvalidOperationException(
-                    $"Deal {opportunity.DealId} not found for opportunity {opportunity.Id}.");
-            if (!venuesById.TryGetValue(opportunity.VenueId, out var venue))
-                throw new InvalidOperationException(
+            var venue = facts.Venues.GetValueOrDefault(opportunity.VenueId)
+                ?? throw new InvalidOperationException(
                     $"Venue {opportunity.VenueId} not found for opportunity {opportunity.Id}.");
 
-            return new ApplicationDto(
+            return new ApplicationSummaryDto(
                 application.Id,
+                application.VenueTenantId,
+                application.ArtistTenantId,
                 artist,
                 new OpportunitySummary(
+                    opportunity.Id,
+                    opportunity.VenueId,
+                    venue.Name,
+                    opportunity.StartDate,
+                    opportunity.EndDate,
+                    opportunity.Genres),
+                application.State.ToStatus(),
+                application.State);
+        }).ToList();
+    }
+
+    public async Task<ApplicationProposalDto> ToProposalAsync(
+        ApplicationEntity application,
+        CancellationToken ct = default) =>
+        (await ToProposalsAsync([application], ct)).Single();
+
+    public async Task<IReadOnlyList<ApplicationProposalDto>> ToProposalsAsync(
+        IEnumerable<ApplicationEntity> applications,
+        CancellationToken ct = default)
+    {
+        var facts = await LoadFactsAsync(applications, ct);
+        var deals = (await dealModule.GetByIdsAsync(
+                facts.Opportunities.Values.Select(opportunity => opportunity.DealId).Distinct(), ct))
+            .ToDictionary(deal => deal.Id);
+
+        return facts.Applications.Select(application =>
+        {
+            var artist = facts.Artists.GetValueOrDefault(application.ArtistId)
+                ?? throw new InvalidOperationException(
+                    $"Artist {application.ArtistId} not found for application {application.Id}.");
+            var opportunity = facts.Opportunities.GetValueOrDefault(application.OpportunityId)
+                ?? throw new InvalidOperationException(
+                    $"Opportunity {application.OpportunityId} not found for application {application.Id}.");
+            var venue = facts.Venues.GetValueOrDefault(opportunity.VenueId)
+                ?? throw new InvalidOperationException(
+                    $"Venue {opportunity.VenueId} not found for opportunity {opportunity.Id}.");
+            var deal = deals.GetValueOrDefault(opportunity.DealId)
+                ?? throw new InvalidOperationException(
+                    $"Deal {opportunity.DealId} not found for opportunity {opportunity.Id}.");
+
+            return new ApplicationProposalDto(
+                application.Id,
+                application.VenueTenantId,
+                application.ArtistTenantId,
+                artist,
+                new OpportunityProposal(
                     opportunity.Id,
                     opportunity.VenueId,
                     venue.Name,
@@ -79,4 +111,27 @@ internal sealed class ApplicationMapper : IApplicationMapper
                 application.State);
         }).ToList();
     }
+
+    private async Task<ApplicationFacts> LoadFactsAsync(
+        IEnumerable<ApplicationEntity> applications,
+        CancellationToken ct)
+    {
+        var applicationList = applications.ToList();
+        var artists = (await artistModule.GetSummariesAsync(
+                applicationList.Select(application => application.ArtistId).Distinct().ToArray(), ct))
+            .ToDictionary(artist => artist.Id);
+        var opportunities = (await opportunityModule.GetAsync(
+                applicationList.Select(application => application.OpportunityId).Distinct().ToArray(), ct))
+            .ToDictionary(opportunity => opportunity.Id);
+        var venues = (await venueModule.GetProfilesAsync(
+                opportunities.Values.Select(opportunity => opportunity.VenueId).Distinct().ToArray(), ct))
+            .ToDictionary(venue => venue.Id);
+        return new ApplicationFacts(applicationList, artists, opportunities, venues);
+    }
+
+    private sealed record ApplicationFacts(
+        IReadOnlyList<ApplicationEntity> Applications,
+        IReadOnlyDictionary<int, ArtistSummary> Artists,
+        IReadOnlyDictionary<int, OpportunityDto> Opportunities,
+        IReadOnlyDictionary<int, VenueProfile> Venues);
 }

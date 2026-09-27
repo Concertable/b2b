@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System.Net;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Interfaces;
@@ -6,116 +6,191 @@ using Concertable.B2B.Application.Application.Mappers;
 using Concertable.B2B.Application.Application.Requests;
 using Concertable.B2B.Application.Application.Strategies;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Domain;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
-using Concertable.Kernel.DependencyInjection;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Concertable.B2B.Application.Infrastructure.Specifications;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ApplicationWorkflow : IApplicationWorkflow
 {
-    private readonly IApplicationRepository applicationRepository;
-    private readonly IApplicationValidator validator;
+    private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IApplicationNotifier notifier;
-    private readonly IApplicationEligibility eligibility;
-    private readonly IArtistModule artistModule;
-    private readonly IOpportunityModule opportunityModule;
-    private readonly IVenueModule venueModule;
-    private readonly IDealModule dealModule;
-    private readonly ITenantContext tenantContext;
-    private readonly ICurrentUser currentUser;
+    private readonly IArtistCommandFacts artistFacts;
+    private readonly IOpportunityCommandFacts opportunityFacts;
+    private readonly IVenueCommandFacts venueFacts;
+    private readonly IDealCommandFacts dealFacts;
     private readonly IClientContext clientContext;
     private readonly IDealStrategyFactory<IApplyStep> applyFactory;
     private readonly IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory;
-    private readonly IApplicationMapper mapper;
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
-    private readonly IUnitOfWork unitOfWork;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
-    private readonly IScoped<ApplicationWorkflow> acceptance;
+    private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
+    private readonly IMembershipContext membership;
+    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IPermissionCatalog permissionCatalog;
+    private readonly ICommandExecutor commandExecutor;
+    private readonly CommandTransactionAccessor transactions;
 
     public ApplicationWorkflow(
-        IApplicationRepository applicationRepository,
-        IApplicationValidator validator,
+        IApplicationPrivilegedRepository privilegedRepository,
         IApplicationNotifier notifier,
-        IApplicationEligibility eligibility,
-        IArtistModule artistModule,
-        IOpportunityModule opportunityModule,
-        IVenueModule venueModule,
-        IDealModule dealModule,
-        ITenantContext tenantContext,
-        ICurrentUser currentUser,
+        IArtistCommandFacts artistFacts,
+        IOpportunityCommandFacts opportunityFacts,
+        IVenueCommandFacts venueFacts,
+        IDealCommandFacts dealFacts,
         IClientContext clientContext,
         IDealStrategyFactory<IApplyStep> applyFactory,
         IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory,
-        IApplicationMapper mapper,
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider,
-        IUnitOfWork unitOfWork,
-        IUnitOfWorkBehavior unitOfWorkBehavior,
-        IScoped<ApplicationWorkflow> acceptance)
+        IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
+        IMembershipContext membership,
+        IMembershipAuthorityFence authorityFence,
+        IPermissionCatalog permissionCatalog,
+        ICommandExecutor commandExecutor,
+        CommandTransactionAccessor transactions)
     {
-        this.applicationRepository = applicationRepository;
-        this.validator = validator;
+        this.privilegedRepository = privilegedRepository;
         this.notifier = notifier;
-        this.eligibility = eligibility;
-        this.artistModule = artistModule;
-        this.opportunityModule = opportunityModule;
-        this.venueModule = venueModule;
-        this.dealModule = dealModule;
-        this.tenantContext = tenantContext;
-        this.currentUser = currentUser;
+        this.artistFacts = artistFacts;
+        this.opportunityFacts = opportunityFacts;
+        this.venueFacts = venueFacts;
+        this.dealFacts = dealFacts;
         this.clientContext = clientContext;
         this.applyFactory = applyFactory;
         this.commitmentFactory = commitmentFactory;
-        this.mapper = mapper;
         this.legal = legal.Value;
         this.timeProvider = timeProvider;
-        this.unitOfWork = unitOfWork;
-        this.unitOfWorkBehavior = unitOfWorkBehavior;
-        this.acceptance = acceptance;
+        this.privilegedUnitOfWork = privilegedUnitOfWork;
+        this.membership = membership;
+        this.authorityFence = authorityFence;
+        this.permissionCatalog = permissionCatalog;
+        this.commandExecutor = commandExecutor;
+        this.transactions = transactions;
     }
 
-    public async Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
+    public async Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
-        var artistOption = await artistModule.GetCurrentProfileAsync(ct);
-        if (!artistOption.TryGetValue(out var artist))
+        if (membership.Membership is not { } actor)
+            return new ApplyApplicationError.NotPermitted();
+
+        var ipAddress = clientContext.IpAddress;
+        var userAgent = clientContext.UserAgent;
+        try
+        {
+            return await ExecuteApplyAsync(
+                opportunityId,
+                eSignature,
+                actor,
+                ipAddress,
+                userAgent,
+                ct);
+        }
+        catch (DbUpdateException exception) when (exception.IsDuplicateKey())
+        {
+            return await commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposalDto, ApplyApplicationError>>(
+                (workflow, token) => workflow.ClassifyApplyConflictAsync(opportunityId, actor, token),
+                ct);
+        }
+    }
+
+    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ExecuteApplyAsync(
+        int opportunityId,
+        ESignatureRequest eSignature,
+        MembershipSnapshot actor,
+        IPAddress ipAddress,
+        string? userAgent,
+        CancellationToken ct) =>
+        commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposalDto, ApplyApplicationError>>(
+            (workflow, token) => workflow.ApplyCommandAsync(
+                opportunityId,
+                eSignature,
+                actor,
+                ipAddress,
+                userAgent,
+                token),
+            (workflow, result, token) => workflow.ValidateApplyAuthorityAsync(result, actor, token),
+            () => (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.NotPermitted(),
+            ct);
+
+    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyCommandAsync(
+        int opportunityId,
+        ESignatureRequest eSignature,
+        MembershipSnapshot actor,
+        IPAddress ipAddress,
+        string? userAgent,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(
+            () => ApplyCoreAsync(
+                opportunityId,
+                eSignature,
+                actor,
+                ipAddress,
+                userAgent,
+                ct),
+            ct);
+
+    private async Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyCoreAsync(
+        int opportunityId,
+        ESignatureRequest eSignature,
+        MembershipSnapshot expectedActor,
+        IPAddress ipAddress,
+        string? userAgent,
+        CancellationToken ct)
+    {
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            return new ApplyApplicationError.NotPermitted();
+
+        var artist = await artistFacts.GetByTenantIdAsync(actor.TenantId, ct);
+        if (artist is null)
             return new ApplyApplicationError.MissingArtist();
 
-        if (tenantContext.TenantId is not { } artistTenantId)
-            return new ApplyApplicationError.MissingTenant();
-
-        var opportunityOption = await opportunityModule.GetOpenAsync(opportunityId, ct);
-        if (!opportunityOption.TryGetValue(out var opportunity))
+        var opportunity = await opportunityFacts.GetByIdAsync(opportunityId, ct);
+        if (opportunity is null || !opportunity.IsOpen)
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
-        if (await applicationRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
-                opportunityId, artist.TenantId, ct))
+        if (await privilegedRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
+                opportunityId,
+                actor.TenantId,
+                ct))
             return new ApplyApplicationError.AlreadyApplied();
 
-        var validation = await validator.CanApplyAsync(opportunity, artist.Id, ct);
-        if (validation.TryGetErrors(out var errors))
-            return new ApplyApplicationError.Invalid(new ValidationErrors(errors.ToDictionary()));
+        var validationErrors = new List<string>();
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        if (opportunity.StartDate < now)
+            validationErrors.Add("This concert opportunity has already passed");
+        if (await privilegedRepository.OpportunityHasConcertAsync(opportunity.Id, ct))
+            validationErrors.Add("This concert opportunity has already been booked for a concert");
+        if (await privilegedRepository.ArtistHasConcertOnDateAsync(artist.Id, opportunity.StartDate, ct))
+            validationErrors.Add("You already have a concert on this day");
+        if (validationErrors.Count > 0)
+            return new ApplyApplicationError.Invalid(new ValidationErrors(
+                new Dictionary<string, string[]> { ["application"] = validationErrors.ToArray() }));
 
         if (opportunity.Genres.Count > 0 && !artist.Genres.Overlaps(opportunity.Genres))
             return new ApplyApplicationError.GenreMismatch();
 
-        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId, ct);
-        if (!dealOption.TryGetValue(out var deal))
+        var deal = await dealFacts.GetByIdAsync(opportunity.DealId, ct);
+        if (deal is null)
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
         var applied = await applyFactory.Create(deal.DealType).ApplyAsync(
@@ -123,125 +198,202 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             opportunityId,
             deal.DealType,
             opportunity.VenueTenantId,
-            artistTenantId,
+            actor.TenantId,
+            now,
             ct);
         if (applied.TryGetError(out var applyError))
             return applyError;
         if (!applied.TryGetValue(out var application))
             throw new InvalidOperationException("Apply succeeded without an application.");
 
-        if (currentUser.Id is not { } userId)
-            return new ApplyApplicationError.MissingUser();
-
         application.RecordArtistESignature(
-            eSignature.ToSignature(userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent),
+            eSignature.ToSignature(actor.UserId, now, ipAddress, userAgent),
             CalculateTermsFingerprint(deal, opportunity));
         application.NotifyCounterparty(ApplicationNotification.Applied);
+        await privilegedRepository.AddAsync(application, ct);
+        await (transactions.Current
+            ?? throw new InvalidOperationException("Apply requires an active command transaction."))
+            .FlushAsync(ct);
+        await notifier.AppliedAsync(application);
 
-        await applicationRepository.AddAsync(application, ct);
-        if (!await unitOfWork.TrySaveChangesAsync(static exception => exception.IsDuplicateKey(), ct))
+        var artistSummary = await artistFacts.GetSummaryByIdAsync(artist.Id, ct)
+            ?? throw new InvalidOperationException($"Artist {artist.Id} disappeared during apply.");
+        var venue = await venueFacts.GetByIdAsync(opportunity.VenueId, ct)
+            ?? throw new InvalidOperationException($"Venue {opportunity.VenueId} disappeared during apply.");
+        return new ApplicationProposalDto(
+            application.Id,
+            application.VenueTenantId,
+            application.ArtistTenantId,
+            artistSummary,
+            new OpportunityProposal(
+                opportunity.Id,
+                opportunity.VenueId,
+                venue.Name,
+                opportunity.StartDate,
+                opportunity.EndDate,
+                opportunity.Genres,
+                deal),
+            application.State.ToStatus(),
+            application.State);
+    }
+
+    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ClassifyApplyConflictAsync(
+        int opportunityId,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(async () =>
         {
-            if (await applicationRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
-                    opportunityId, artist.TenantId, ct))
-                return new ApplyApplicationError.AlreadyApplied();
+            var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+            if (actor is null
+                || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+                return (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
+
+            if (await privilegedRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
+                    opportunityId,
+                    actor.TenantId,
+                    ct))
+                return (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.AlreadyApplied();
 
             throw new InvalidOperationException("Application save failed without creating an application.");
-        }
+        }, ct);
 
-        await notifier.AppliedAsync(application.Id);
-        return await mapper.ToDtoAsync(application, ct);
-    }
-
-    public Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+    public async Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,
         ESignatureRequest eSignature,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => AcceptCoreAsync(applicationId, eSignature, ct),
-            exception => exception.IsApplicationAcceptanceConflict(applicationId),
-            _ => ClassifyAcceptConflictAsync(applicationId, eSignature, ct),
-            ct);
-
-    internal Task<UnitResult<AcceptApplicationError>> AcceptOnceAsync(
-        int applicationId,
-        ESignatureRequest eSignature,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(
-            () => AcceptCoreAsync(applicationId, eSignature, ct),
-            ct);
-
-    private async Task<UnitResult<AcceptApplicationError>> ClassifyAcceptConflictAsync(
-        int applicationId,
-        ESignatureRequest eSignature,
-        CancellationToken ct)
+        CancellationToken ct = default)
     {
-        var opportunityId = await applicationRepository.GetByIdAsync(
-            applicationId,
-            ApplicationSpecification.CreateOpportunityId(),
-            ct);
-        if (opportunityId is { } opportunity &&
-            await applicationRepository.AnyAcceptedByOpportunityIdAsync(opportunity, ct))
-            return new AcceptApplicationError.AlreadyAccepted();
-        if (await applicationRepository.GetStateByIdAsync(applicationId, ct) is not ApplicationState.Applied)
-            return new AcceptApplicationError.Superseded(applicationId);
+        if (membership.Membership is not { } actor)
+            return new AcceptApplicationError.NotPermitted();
 
-        // Nothing about the application forbids the acceptance, so the loss was to a change the acceptance
-        // reads -- a payment verification landing mid-flight -- and rerunning in a FRESH scope decides on the
-        // recorded outcome. The rerun does not rerun again, so a second loss is reported.
-        return await acceptance.RunAsync(fresh =>
-            fresh.AcceptOnceAsync(applicationId, eSignature, ct));
+        try
+        {
+            return await ExecuteAcceptAsync(applicationId, eSignature, actor, ct);
+        }
+        catch (DbUpdateException exception)
+            when (exception.IsApplicationAcceptanceConflict(applicationId))
+        {
+            try
+            {
+                return await ExecuteAcceptAsync(applicationId, eSignature, actor, ct);
+            }
+            catch (DbUpdateException retryException)
+                when (retryException.IsApplicationAcceptanceConflict(applicationId))
+            {
+                return new AcceptApplicationError.Superseded(applicationId);
+            }
+        }
     }
+
+    private Task<UnitResult<AcceptApplicationError>> ExecuteAcceptAsync(
+        int applicationId,
+        ESignatureRequest eSignature,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        commandExecutor.ExecuteAsync<ApplicationWorkflow, UnitResult<AcceptApplicationError>>(
+            (workflow, token) => workflow.AcceptCommandAsync(
+                applicationId,
+                eSignature,
+                actor,
+                token),
+            (workflow, _, token) => workflow.ValidateDecideAuthorityAsync(applicationId, actor, token),
+            () => new AcceptApplicationError.NotPermitted(),
+            ct);
+
+    private Task<UnitResult<AcceptApplicationError>> AcceptCommandAsync(
+        int applicationId,
+        ESignatureRequest eSignature,
+        MembershipSnapshot actor,
+        CancellationToken ct) =>
+        privilegedUnitOfWork.ExecuteAsync(
+            () => AcceptCoreAsync(applicationId, eSignature, actor, ct),
+            ct);
 
     private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
         int applicationId,
         ESignatureRequest eSignature,
+        MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var application = await applicationRepository.GetByIdAsync(applicationId, ct);
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return new AcceptApplicationError.NotPermitted();
+
+        var application = await privilegedRepository.GetDecisionByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
 
-        // The application's own state gates first. Once it has left Applied the opportunity is
-        // legitimately no longer open, and reporting that as an eligibility problem answers a lifecycle
-        // conflict with a 400 about someone else's resource.
+        var audience = permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide);
+        if (application.VenueTenantId != actor.TenantId
+            || !ResourceGrantPolicy.Allows(
+                application.AccessGrants,
+                ApplicationAccessScope.Proposal,
+                actor,
+                audience,
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new AcceptApplicationError.NotPermitted();
+
         if (application.ValidateAccept().TryGetError(out var acceptError))
             return new AcceptApplicationError.InvalidTransition(acceptError);
 
-        var eligibilityResult = await eligibility.CanAcceptAsync(application, ct)
-            .MapError(error => (AcceptApplicationError)new AcceptApplicationError.Ineligible(error));
-        if (eligibilityResult.TryGetError(out var eligibilityError))
-            return await applicationRepository.AnyAcceptedByOpportunityIdAsync(application.OpportunityId, ct)
-                // A rival acceptance closes the opportunity, and reporting that as an eligibility problem
-                // answers a lifecycle conflict with a 404 about someone else's resource.
-                ? new AcceptApplicationError.AlreadyAccepted()
-                : eligibilityError;
-        if (!eligibilityResult.TryGetValue(out var opportunity))
-            throw new InvalidOperationException("Eligibility check succeeded without an opportunity value.");
-
-        var dealOption = await dealModule.GetByIdAsync(opportunity.DealId, ct);
-        if (!dealOption.TryGetValue(out var deal))
+        var opportunity = await opportunityFacts.GetByIdAsync(application.OpportunityId, ct);
+        if (opportunity is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
-        var artistOption = await artistModule.GetProfileAsync(application.ArtistId, ct);
-        if (!artistOption.TryGetValue(out var artist))
+
+        var validationErrors = new List<string>();
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        if (opportunity.VenueTenantId != actor.TenantId)
+            validationErrors.Add("You do not own this concert opportunity");
+        if (!opportunity.IsOpen)
+            validationErrors.Add("This concert opportunity is no longer open");
+        if (opportunity.StartDate < now)
+            validationErrors.Add("This concert opportunity has already passed");
+        if (await privilegedRepository.OpportunityHasConcertAsync(opportunity.Id, ct))
+            validationErrors.Add("This concert opportunity already has a concert booked");
+        if (await privilegedRepository.ArtistHasConcertOnDateAsync(
+                application.ArtistId,
+                opportunity.StartDate,
+                ct))
+            validationErrors.Add("This artist already has a concert on this day");
+        if (await privilegedRepository.VenueHasConcertOnDateAsync(
+                opportunity.VenueId,
+                opportunity.StartDate,
+                ct))
+            validationErrors.Add("You already have a concert on this day");
+        if (validationErrors.Count > 0)
+        {
+            if (await privilegedRepository.AnyAcceptedByOpportunityIdAsync(application.OpportunityId, ct))
+                return new AcceptApplicationError.AlreadyAccepted();
+
+            return new AcceptApplicationError.Ineligible(
+                new ApplicationEligibilityError.Invalid(new ValidationErrors(
+                    new Dictionary<string, string[]> { ["application"] = validationErrors.ToArray() })));
+        }
+
+        var deal = await dealFacts.GetByIdAsync(opportunity.DealId, ct);
+        if (deal is null)
+            return new AcceptApplicationError.Ineligible(
+                new ApplicationEligibilityError.OpportunityNotFound());
+        var artist = await artistFacts.GetByIdAsync(application.ArtistId, ct);
+        if (artist is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
-        var venueOption = await venueModule.GetProfileAsync(opportunity.VenueId, ct);
-        if (!venueOption.TryGetValue(out var venue))
+        var venue = await venueFacts.GetByIdAsync(opportunity.VenueId, ct);
+        if (venue is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
 
         if (application.TermsFingerprint != CalculateTermsFingerprint(deal, opportunity))
             return new AcceptApplicationError.TermsChanged();
 
-        if (currentUser.Id is not { } userId)
-            return new AcceptApplicationError.Ineligible(
-                new ApplicationEligibilityError.ApplicationNotFound());
-
-        var operationId = application.BeginAcceptance();
+        var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
         var venueSignature = eSignature.ToSignature(
-            userId, timeProvider.GetUtcNow().UtcDateTime, clientContext.IpAddress, clientContext.UserAgent);
+            actor.UserId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            clientContext.IpAddress,
+            clientContext.UserAgent);
         var snapshot = new ApplicationAcceptanceSnapshot(
             operationId,
             new ApplicationSnapshot(
@@ -270,19 +422,65 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 deal.Terms));
         var acceptedApplication = new AcceptedApplication(snapshot);
 
+        application.BeginAcceptance(operationId);
         if (application.Accept(acceptedApplication).TryGetError(out var transitionError))
             return new AcceptApplicationError.InvalidTransition(transitionError);
         application.NotifyCounterparty(ApplicationNotification.Accepted);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        var rejectedApplicationIds = await applicationRepository.RejectAllExceptAsync(
+        var rejectedApplications = await privilegedRepository.RejectAllExceptAsync(
             application.OpportunityId, application.Id, ct);
-        foreach (var rejectedApplicationId in rejectedApplicationIds)
-            await notifier.RejectedAsync(rejectedApplicationId);
-        await notifier.AcceptedAsync(applicationId);
+        foreach (var rejectedApplication in rejectedApplications)
+            await notifier.RejectedAsync(rejectedApplication);
+        await notifier.AcceptedAsync(application);
         return new Success();
     }
 
     private static string CalculateTermsFingerprint(DealDto deal, OpportunityDto opportunity) =>
         ApplicationTermsFingerprint.Calculate(deal, new DateRange(opportunity.StartDate, opportunity.EndDate));
+
+    private async Task<bool> ValidateApplyAuthorityAsync(
+        Result<ApplicationProposalDto, ApplyApplicationError> result,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct)
+    {
+        if (!result.TryGetValue(out var application))
+            return true;
+
+        return await ValidateSubmitAuthorityAsync(application.Id, expectedActor, ct);
+    }
+
+    private async Task<bool> ValidateSubmitAuthorityAsync(
+        int applicationId,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct)
+    {
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            return false;
+
+        return await privilegedRepository.CanSubmitAsync(
+            applicationId,
+            actor,
+            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsSubmit),
+            timeProvider.GetUtcNow().UtcDateTime,
+            ct);
+    }
+
+    private async Task<bool> ValidateDecideAuthorityAsync(
+        int applicationId,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct)
+    {
+        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
+        if (actor is null
+            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            return false;
+
+        return await privilegedRepository.CanDecideAsync(
+            applicationId,
+            actor,
+            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+            timeProvider.GetUtcNow().UtcDateTime,
+            ct);
+    }
 }

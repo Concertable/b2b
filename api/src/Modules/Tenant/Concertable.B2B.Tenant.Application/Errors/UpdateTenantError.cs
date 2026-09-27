@@ -13,11 +13,17 @@ internal abstract partial record UpdateTenantError : IError
         Invalid(var errors) =>
             ErrorDefinition.Validation<Invalid>(
                 "The organization update is invalid.",
-                errors)
+                errors),
+        Superseded =>
+            ErrorDefinition.Conflict<Superseded>(
+                "The organization settings changed. Reload them and try again.")
     };
 
     [ErrorCode("tenant.update_not_found")]
     public partial record TenantNotFound(Guid TenantId);
 
     public partial record Invalid(ValidationErrors Errors);
+
+    [ErrorCode("tenant.update_superseded")]
+    public partial record Superseded;
 }

@@ -9,3 +9,5 @@ global using Concertable.Kernel.Identity;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
 global using Concertable.B2B.Conversations.Domain.Enums;
+global using Reunion;
+global using Reunion.Errors;

@@ -1,6 +1,7 @@
-using Concertable.B2B.Admin.Domain.Entities;
+﻿using Concertable.B2B.Admin.Domain.Entities;
 using Concertable.B2B.Admin.Infrastructure.Data;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.User.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -9,12 +10,16 @@ namespace Concertable.B2B.Admin.IntegrationTests;
 public sealed class AdminApiFixture : ApiFixture
 {
     private AdminDbContext dbContext = null!;
+    private IUserModule userModule = null!;
 
     public IQueryable<AdminInvitationEntity> AdminInvitations =>
         dbContext.AdminInvitations.AsNoTracking();
 
     public Task<bool> IsAdminAsync(Guid sub) =>
         dbContext.AdminProfiles.AnyAsync(profile => profile.Sub == sub);
+
+    public async Task<bool> UserExistsAsync(Guid userId) =>
+        (await userModule.GetEmailsByIdsAsync([userId])).ContainsKey(userId);
 
     public async Task LogInAsync(Guid userId, string email)
     {
@@ -48,5 +53,6 @@ public sealed class AdminApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+        userModule = scope.ServiceProvider.GetRequiredService<IUserModule>();
     }
 }

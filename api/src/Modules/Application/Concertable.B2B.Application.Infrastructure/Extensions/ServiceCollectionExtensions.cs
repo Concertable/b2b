@@ -1,3 +1,4 @@
+﻿using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Application.Application.Interfaces;
@@ -10,6 +11,7 @@ using Concertable.B2B.Application.Infrastructure.Data.Seeders;
 using Concertable.B2B.Application.Infrastructure.Events;
 using Concertable.B2B.Application.Infrastructure.Repositories;
 using Concertable.B2B.Application.Infrastructure.Services;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Application.Infrastructure.Services.Payment;
 using Concertable.B2B.Application.Infrastructure.Strategies;
 using Concertable.B2B.Application.Infrastructure.Validators;
@@ -27,7 +29,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Application.Infrastructure.Extensions;
 
@@ -45,9 +46,15 @@ public static class ServiceCollectionExtensions
                     .AddInterceptors(
                         provider.GetRequiredService<AuditInterceptor>(),
                         provider.GetRequiredService<TenantInterceptor>(),
-                        provider.GetRequiredService<VenueArtistTenantInterceptor>(),
-                        provider.GetRequiredService<IDomainEventDispatchInterceptor>())
-                    .UseSeedingSupport(provider));
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
+            services.AddDbContext<ApplicationPrivilegedDbContext>((provider, options) =>
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                    .AddInterceptors(
+                        provider.GetRequiredService<AuditInterceptor>(),
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
             services.AddDbContext<ApplicationReadDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
@@ -57,12 +64,16 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
+            services.AddScoped<IApplicationPrivilegedRepository, ApplicationPrivilegedRepository>();
             services.AddScoped<IApplicationEligibility, ApplicationEligibility>();
             services.AddScoped<ApplicationWorkflow>();
             services.AddScoped<IApplicationWorkflow>(provider =>
                 provider.GetRequiredService<ApplicationWorkflow>());
-            services.AddScoped<IApplicationService, ApplicationService>();
+            services.AddScoped<ApplicationService>();
+            services.AddScoped<IApplicationService>(provider =>
+                provider.GetRequiredService<ApplicationService>());
             services.AddScoped<IApplicationDashboardService, ApplicationDashboardService>();
             services.AddScoped<IApplicationMapper, ApplicationMapper>();
             services.AddScoped<IApplicationNotifier, ApplicationNotifier>();
@@ -88,6 +99,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IApplicationCheckoutService, ApplicationCheckoutService>();
             services.AddApplicationDealStrategies();
             services.AddScoped<IApplicationModule, ApplicationModule>();
+            services.AddScoped<ITenantDeletionGuard, ApplicationTenantDeletionGuard>();
 
             services.AddSingleton<ApplicationConfigurationProvider>();
             services.AddSingleton<IEntityTypeConfigurationProvider>(provider =>

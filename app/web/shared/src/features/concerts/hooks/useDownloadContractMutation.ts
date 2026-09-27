@@ -1,16 +1,18 @@
 import { useMutation } from "@tanstack/react-query";
-import concertApi from "@concertable/shared/features/concerts/api/concertApi";
+import { apiClient } from "@concertable/shared/lib/apiClient";
 
-// Web-only: the object-URL + anchor download uses the DOM, so it can't live in the
-// cross-platform @concertable/shared core. Gated on the concert's actions.contract link.
 export function useDownloadContractMutation() {
   return useMutation({
-    mutationFn: async (concertId: number) => {
-      const blob = await concertApi.getContractPdf(concertId);
+    mutationFn: async (applicationId: number) => {
+      const { data } = await apiClient.get<ArrayBuffer>(
+        `/application/${applicationId}/contract/pdf`,
+        { responseType: "arraybuffer" },
+      );
+      const blob = new Blob([data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `contract-${concertId}.pdf`;
+      anchor.download = `contract-${applicationId}.pdf`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

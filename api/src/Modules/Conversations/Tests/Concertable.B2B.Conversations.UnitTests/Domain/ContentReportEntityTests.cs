@@ -8,24 +8,33 @@ public sealed class ContentReportEntityTests
     private static readonly Guid VenueTenantId = Guid.NewGuid();
     private static readonly Guid ArtistTenantId = Guid.NewGuid();
 
+    private const int ConversationId = 3;
+
     private static MessageEntity Message(string content = "reported content") =>
-        MessageEntity.Create(VenueTenantId, ArtistTenantId, senderTenantId: ArtistTenantId,
-            sentByUserId: Guid.NewGuid(), content, new DateTime(2026, 1, 1));
+        MessageEntity.Create(
+            ConversationId,
+            1,
+            Guid.NewGuid(),
+            "payload",
+            ArtistTenantId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            content,
+            new DateTime(2026, 1, 1));
 
     [Fact]
-    public void Create_SnapshotsThePairReporterAndReportedParty()
+    public void Create_SnapshotsTheConversationReporterAndReportedParty()
     {
-        var reportedByUserId = Guid.NewGuid();
+        var reporterUserId = Guid.NewGuid();
         var submittedAt = new DateTime(2026, 8, 14, 10, 30, 0);
 
-        var report = ContentReportEntity.Create(Message(), VenueTenantId, reportedByUserId,
+        var report = ContentReportEntity.Create(Message(), VenueTenantId, reporterUserId,
             ReportCategory.IllegalContent, "please review", submittedAt);
 
-        Assert.Equal(VenueTenantId, report.VenueTenantId);
-        Assert.Equal(ArtistTenantId, report.ArtistTenantId);
+        Assert.Equal(ConversationId, report.ConversationId);
         Assert.Equal(VenueTenantId, report.ReporterTenantId);
         Assert.Equal(ArtistTenantId, report.ReportedTenantId);
-        Assert.Equal(reportedByUserId, report.ReportedByUserId);
+        Assert.Equal(reporterUserId, report.ReporterUserId);
         Assert.Equal(ReportCategory.IllegalContent, report.Category);
         Assert.Equal("please review", report.Details);
         Assert.Equal("reported content", report.MessageExcerpt);

@@ -33,5 +33,29 @@ public sealed class WorkersFixture : IDisposable
             timeout: TimeSpan.FromSeconds(60));
     }
 
+    public async Task DrainAsync()
+    {
+        await polling.UntilAsync(
+            async () =>
+            {
+                using var response = await client.PostAsync("/admin/host/drain", content: null);
+                return response.StatusCode == HttpStatusCode.Accepted;
+            },
+            timeout: TimeSpan.FromMinutes(5));
+
+        await polling.UntilAsync(
+            async () =>
+            {
+                using var response = await client.GetAsync("/admin/host/drain/status");
+                if (response.StatusCode != HttpStatusCode.OK)
+                    return false;
+                var status = await response.Content.ReadFromJsonAsync<DrainStatus>();
+                return status?.State == "Completed";
+            },
+            timeout: TimeSpan.FromMinutes(2));
+    }
+
     public void Dispose() => client.Dispose();
+
+    private sealed record DrainStatus(string State);
 }

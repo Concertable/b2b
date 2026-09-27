@@ -1,9 +1,10 @@
-using Concertable.Auth.Contracts.Events;
+﻿using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Application.Contracts.Events;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Commands;
 using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.B2B.Conversations.Contracts.Events;
 using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
@@ -36,6 +37,8 @@ public static class B2BTopology
                     .Publish<TenantActivityRecordedEvent>()
                     .Publish<ApplicationAcceptedEvent>()
                     .Publish<BookingConfirmedEvent>()
+                    .Publish<TenantDisplayChanged>()
+                    .Publish<ConversationChanged>()
                     .Subscribe<CustomerReviewSubmittedEvent>()
                     .Subscribe<CredentialRegisteredEvent>()
                     .Subscribe<PaymentSucceededEvent>()
@@ -50,6 +53,8 @@ public static class B2BTopology
                     .Subscribe<RefundEscrowRejectedEvent>()
                     .Subscribe<ApplicationAcceptedEvent>()
                     .Subscribe<BookingConfirmedEvent>()
+                    .Subscribe<TenantDisplayChanged>()
+                    .Subscribe<ConversationChanged>()
                     .Queue<SendEmailCommand>()
                     .Queue<NotifyConcertDraftCreatedCommand>();
 

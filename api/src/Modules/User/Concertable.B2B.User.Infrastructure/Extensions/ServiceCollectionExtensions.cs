@@ -1,9 +1,9 @@
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
 using Concertable.DataAccess;
 using Concertable.B2B.User.Infrastructure.Mappers;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.User.Application.Validators;
 using Concertable.B2B.User.Infrastructure.Data;
@@ -30,8 +30,7 @@ public static class ServiceCollectionExtensions
                         .UseNetTopologySuite())
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddScoped<IUserMapper, UserMapper>();
         services.AddScoped<IUserService, UserService>();

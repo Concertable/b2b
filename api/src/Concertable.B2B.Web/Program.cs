@@ -1,4 +1,7 @@
+﻿using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Web;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.AddB2BWebHost();
 

@@ -22,6 +22,7 @@ public sealed class TenantInvitationEntityTests
         Assert.Equal(InvitationStatus.Accepted, invitation.Status);
         Assert.Equal(userId, invitation.AcceptedByUserId);
         Assert.Equal(acceptedAt, invitation.AcceptedAt);
+        Assert.Equal(2, invitation.Version);
     }
 
     [Fact]
@@ -62,6 +63,7 @@ public sealed class TenantInvitationEntityTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(InvitationStatus.Revoked, invitation.Status);
+        Assert.Equal(2, invitation.Version);
     }
 
     [Fact]
@@ -88,10 +90,10 @@ public sealed class TenantInvitationEntityTests
 
     private static TenantInvitationEntity Create() => TenantInvitationEntity.Create(
         Guid.NewGuid(),
-        TenantType.Venue,
         "member@example.com",
         TenantRole.Staff,
         Guid.NewGuid(),
+        1,
         CreatedAt,
         TimeSpan.FromDays(7));
 
@@ -100,39 +102,47 @@ public sealed class TenantInvitationEntityTests
     {
         var tenantId = Guid.NewGuid();
         var inviter = Guid.NewGuid();
+        const long inviterPermissionVersion = 4;
         var at = DateTime.UtcNow;
 
         var invitation = TenantInvitationEntity.Create(
-            tenantId, TenantType.Venue, "invitee@example.com", TenantRole.Manager, inviter, at, TimeSpan.FromDays(7));
+            tenantId,
+            "invitee@example.com",
+            TenantRole.Manager,
+            inviter,
+            inviterPermissionVersion,
+            at,
+            TimeSpan.FromDays(7));
 
         Assert.NotEqual(Guid.Empty, invitation.Id);
         Assert.Equal(tenantId, invitation.TenantId);
         Assert.Equal("invitee@example.com", invitation.Email);
         Assert.Equal(TenantRole.Manager, invitation.Role);
         Assert.Equal(InvitationStatus.Pending, invitation.Status);
-        Assert.Equal(inviter, invitation.CreatedByUserId);
+        Assert.Equal(inviter, invitation.InviterMembershipId);
+        Assert.Equal(inviterPermissionVersion, invitation.InviterPermissionVersion);
+        Assert.Equal(1, invitation.Version);
         Assert.Equal(at, invitation.CreatedAt);
         Assert.Equal(at.AddDays(7), invitation.ExpiresAt);
     }
 
     [Fact]
-    public void Create_RaisesInvitationCreatedDomainEvent_CarryingInviteeAndPortalType()
+    public void Create_RaisesInvitationCreatedDomainEvent_CarryingInviteeAndRole()
     {
         var invitation = TenantInvitationEntity.Create(
-            Guid.NewGuid(), TenantType.Artist, "invitee@example.com", TenantRole.Staff, Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
+            Guid.NewGuid(), "invitee@example.com", TenantRole.Staff, Guid.NewGuid(), 1, DateTime.UtcNow, TimeSpan.FromDays(7));
 
         var raised = Assert.IsType<TenantInvitationCreatedDomainEvent>(Assert.Single(invitation.DomainEvents));
         Assert.Equal(invitation.Id, raised.InvitationId);
         Assert.Equal("invitee@example.com", raised.Email);
         Assert.Equal(TenantRole.Staff, raised.Role);
-        Assert.Equal(TenantType.Artist, raised.TenantType);
     }
 
     [Fact]
     public void ClearDomainEvents_RemovesTheRaisedEvent()
     {
         var invitation = TenantInvitationEntity.Create(
-            Guid.NewGuid(), TenantType.Venue, "invitee@example.com", TenantRole.Manager, Guid.NewGuid(), DateTime.UtcNow, TimeSpan.FromDays(7));
+            Guid.NewGuid(), "invitee@example.com", TenantRole.Manager, Guid.NewGuid(), 1, DateTime.UtcNow, TimeSpan.FromDays(7));
 
         invitation.ClearDomainEvents();
 

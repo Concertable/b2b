@@ -1,9 +1,9 @@
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Options;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
-using Concertable.Messaging.Infrastructure.Outbox;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 

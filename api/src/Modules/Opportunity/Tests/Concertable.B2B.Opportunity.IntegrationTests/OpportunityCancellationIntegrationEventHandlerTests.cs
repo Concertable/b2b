@@ -1,12 +1,13 @@
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
-using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.Application.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.ExceptionServices;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Opportunity.IntegrationTests;
@@ -28,60 +29,211 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
     [Fact]
     public async Task HandleAsync_BookingCancelledForFilledOpportunity_Reopens()
     {
-        var opportunityId = await MarkFilledAsync();
+        const int applicationId = 1;
+        var opportunityId = await MarkFilledAsync(applicationId);
         await using var scope = fixture.Services.CreateAsyncScope();
         var handler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<BookingCancelledEvent>>()
             .Single(value => value.GetType().Name == "OpportunityCancellationIntegrationEventHandler");
 
         await handler.HandleAsync(
-            new BookingCancelledEvent(1, 1, opportunityId),
+            new BookingCancelledEvent(1, applicationId, opportunityId),
             MessageEnvelope.Create<BookingCancelledEvent>(DateTimeOffset.UtcNow));
 
-        var reopened = await ReadStateAsync(opportunityId);
-        Assert.Equal(OpportunityState.Open, reopened);
+        var reopened = await ReadAsync(opportunityId);
+        Assert.Equal(OpportunityState.Open, reopened.State);
+        Assert.Null(reopened.FilledByApplicationId);
     }
 
     [Fact]
     public async Task HandleAsync_ReplayedMessageId_IsNoOp()
     {
-        var opportunityId = await MarkFilledAsync();
+        const int applicationId = 1;
+        var opportunityId = await MarkFilledAsync(applicationId);
         await using var scope = fixture.Services.CreateAsyncScope();
         var handler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<ConcertCancelledEvent>>()
             .Single(value => value.GetType().Name == "OpportunityCancellationIntegrationEventHandler");
         var envelope = MessageEnvelope.Create<ConcertCancelledEvent>(DateTimeOffset.UtcNow);
-        var cancelled = new ConcertCancelledEvent(1, 1, opportunityId);
+        var cancelled = new ConcertCancelledEvent(1, applicationId, opportunityId);
         await handler.HandleAsync(cancelled, envelope);
-        await MarkFilledAsync(opportunityId);
+        await MarkFilledAsync(opportunityId, 2);
 
         await handler.HandleAsync(cancelled, envelope);
 
-        var stillFilled = await ReadStateAsync(opportunityId);
-        Assert.Equal(OpportunityState.Filled, stillFilled);
+        var stillFilled = await ReadAsync(opportunityId);
+        Assert.Equal(OpportunityState.Filled, stillFilled.State);
+        Assert.Equal(2, stillFilled.FilledByApplicationId);
     }
 
-    private async Task<int> MarkFilledAsync()
+    [Fact]
+    public async Task HandleAsync_DelayedCancellationForPreviousFill_DoesNotReopenCurrentFill()
+    {
+        const int previousApplicationId = 1;
+        const int currentApplicationId = 2;
+        var opportunityId = await MarkFilledAsync(previousApplicationId);
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider
+            .GetServices<IIntegrationEventHandler<BookingCancelledEvent>>()
+            .Single(value => value.GetType().Name == "OpportunityCancellationIntegrationEventHandler");
+
+        await handler.HandleAsync(
+            new BookingCancelledEvent(1, previousApplicationId, opportunityId),
+            MessageEnvelope.Create<BookingCancelledEvent>(DateTimeOffset.UtcNow));
+        await MarkFilledAsync(opportunityId, currentApplicationId);
+        await handler.HandleAsync(
+            new BookingCancelledEvent(1, previousApplicationId, opportunityId),
+            MessageEnvelope.Create<BookingCancelledEvent>(DateTimeOffset.UtcNow));
+
+        var stillFilled = await ReadAsync(opportunityId);
+        Assert.Equal(OpportunityState.Filled, stillFilled.State);
+        Assert.Equal(currentApplicationId, stillFilled.FilledByApplicationId);
+    }
+
+    [Fact]
+    public async Task HandleAsync_CancellationBeforeAcceptance_DoesNotFill()
+    {
+        const int applicationId = 1;
+        var opportunity = await fixture.Opportunities
+            .FirstAsync(value => value.State == OpportunityState.Open);
+
+        await CancelAsync(opportunity.Id, applicationId);
+        await AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId);
+
+        var current = await ReadAsync(opportunity.Id);
+        Assert.Equal(OpportunityState.Open, current.State);
+        Assert.Null(current.FilledByApplicationId);
+        Assert.Contains(applicationId, current.CancelledApplicationIds);
+    }
+
+    [Fact]
+    public async Task HandleAsync_CancellationHoldsLockUntilCompetingAcceptanceCanObserveIt()
+    {
+        const int applicationId = 1;
+        var opportunity = await fixture.Opportunities
+            .FirstAsync(value => value.State == OpportunityState.Open);
+
+        await AssertCompetingHandlerBlocksAsync(
+            () => CancelAsync(opportunity.Id, applicationId),
+            ct => AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId, ct));
+
+        var current = await ReadAsync(opportunity.Id);
+        Assert.Equal(OpportunityState.Open, current.State);
+        Assert.Null(current.FilledByApplicationId);
+        Assert.Contains(applicationId, current.CancelledApplicationIds);
+    }
+
+    [Fact]
+    public async Task HandleAsync_AcceptanceHoldsLockUntilCompetingCancellationCanReopenIt()
+    {
+        const int applicationId = 1;
+        var opportunity = await fixture.Opportunities
+            .FirstAsync(value => value.State == OpportunityState.Open);
+
+        await AssertCompetingHandlerBlocksAsync(
+            () => AcceptAsync(opportunity.Id, applicationId, opportunity.TenantId),
+            ct => CancelAsync(opportunity.Id, applicationId, ct));
+
+        var current = await ReadAsync(opportunity.Id);
+        Assert.Equal(OpportunityState.Open, current.State);
+        Assert.Null(current.FilledByApplicationId);
+        Assert.Contains(applicationId, current.CancelledApplicationIds);
+    }
+
+    private async Task<int> MarkFilledAsync(int applicationId)
     {
         var opportunityId = await fixture.Opportunities.Select(value => value.Id).FirstAsync();
-        await MarkFilledAsync(opportunityId);
+        await MarkFilledAsync(opportunityId, applicationId);
         return opportunityId;
     }
 
-    private async Task MarkFilledAsync(int opportunityId)
+    private async Task MarkFilledAsync(int opportunityId, int applicationId)
     {
-        var tenantId = await fixture.Opportunities
-            .Where(value => value.Id == opportunityId)
-            .Select(value => value.TenantId)
-            .SingleAsync();
         await using var scope = fixture.Services.CreateAsyncScope();
-        using var acting = scope.ServiceProvider.GetRequiredService<ITenantScope>().As(tenantId);
-        var context = scope.ServiceProvider.GetRequiredService<OpportunityDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<OpportunityPrivilegedDbContext>();
         var opportunity = await context.Opportunities.SingleAsync(value => value.Id == opportunityId);
-        opportunity.MarkFilled();
+        opportunity.MarkFilled(applicationId);
         await context.SaveChangesAsync();
     }
 
-    private async Task<OpportunityState> ReadStateAsync(int opportunityId) =>
-        (await fixture.Opportunities.SingleAsync(value => value.Id == opportunityId)).State;
+    private async Task CancelAsync(
+        int opportunityId,
+        int applicationId,
+        CancellationToken ct = default)
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider
+            .GetServices<IIntegrationEventHandler<BookingCancelledEvent>>()
+            .Single(value => value.GetType().Name == "OpportunityCancellationIntegrationEventHandler");
+        await handler.HandleAsync(
+            new BookingCancelledEvent(1, applicationId, opportunityId),
+            MessageEnvelope.Create<BookingCancelledEvent>(DateTimeOffset.UtcNow),
+            ct);
+    }
+
+    private async Task AcceptAsync(
+        int opportunityId,
+        int applicationId,
+        Guid tenantId,
+        CancellationToken ct = default)
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var handler = scope.ServiceProvider
+            .GetServices<IIntegrationEventHandler<ApplicationAcceptedEvent>>()
+            .Single(value => value.GetType().Name == "ApplicationAcceptedIntegrationEventHandler");
+        await handler.HandleAsync(
+            new ApplicationAcceptedEvent(applicationId, opportunityId, tenantId),
+            MessageEnvelope.Create<ApplicationAcceptedEvent>(DateTimeOffset.UtcNow),
+            ct);
+    }
+
+    private async Task AssertCompetingHandlerBlocksAsync(
+        Func<Task> first,
+        Func<CancellationToken, Task> competing)
+    {
+        using var competingCancellation = new CancellationTokenSource();
+        Task? competingTask = null;
+        fixture.ArmOpportunitySave(async () =>
+        {
+            competingTask = competing(competingCancellation.Token);
+            await fixture.LifecycleRace.WaitForCompetingLockWaitAsync();
+            Assert.False(competingTask.IsCompleted);
+        });
+
+        Exception? firstFailure = null;
+        try
+        {
+            await first();
+        }
+        catch (Exception exception)
+        {
+            firstFailure = exception;
+        }
+        finally
+        {
+            if (firstFailure is not null)
+                await competingCancellation.CancelAsync();
+            if (competingTask is not null)
+            {
+                try
+                {
+                    await competingTask.WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch when (firstFailure is not null)
+                {
+                }
+            }
+        }
+
+        if (firstFailure is not null)
+            ExceptionDispatchInfo.Capture(firstFailure).Throw();
+        Assert.NotNull(competingTask);
+    }
+
+    private async Task<OpportunityEntity> ReadAsync(int opportunityId)
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<OpportunityPrivilegedDbContext>();
+        return await context.Opportunities.AsNoTracking().SingleAsync(value => value.Id == opportunityId);
+    }
 }

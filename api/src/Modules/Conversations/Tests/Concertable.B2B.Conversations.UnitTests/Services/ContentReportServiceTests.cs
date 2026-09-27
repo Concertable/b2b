@@ -11,13 +11,23 @@ namespace Concertable.B2B.Conversations.UnitTests.Services;
 
 public sealed class ContentReportServiceTests
 {
+    private const int ConversationId = 3;
+
     private static readonly Guid VenueTenantId = Guid.NewGuid();
     private static readonly Guid ArtistTenantId = Guid.NewGuid();
     private static readonly Guid ReportingUserId = Guid.NewGuid();
 
     private static MessageEntity Message() =>
-        MessageEntity.Create(VenueTenantId, ArtistTenantId, senderTenantId: ArtistTenantId,
-            sentByUserId: Guid.NewGuid(), "reported content", new DateTime(2026, 1, 1));
+        MessageEntity.Create(
+            ConversationId,
+            1,
+            Guid.NewGuid(),
+            "payload-hash",
+            ArtistTenantId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "reported content",
+            new DateTime(2026, 1, 1));
 
     private static ContentReportService Service(
         Mock<IMessageRepository> messages,
@@ -50,13 +60,16 @@ public sealed class ContentReportServiceTests
         var notifier = new Mock<IContentReportNotifier>();
 
         var result = await Service(messages, reports, notifier)
-            .SubmitAsync(7, new ReportMessageRequest { Category = ReportCategory.IllegalContent, Details = "why" });
+            .SubmitAsync(
+                ConversationId,
+                7,
+                new ReportMessageRequest { Category = ReportCategory.IllegalContent, Details = "why" });
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(persisted);
         Assert.Equal(VenueTenantId, persisted.ReporterTenantId);
         Assert.Equal(ArtistTenantId, persisted.ReportedTenantId);
-        Assert.Equal(ReportingUserId, persisted.ReportedByUserId);
+        Assert.Equal(ReportingUserId, persisted.ReporterUserId);
         Assert.Equal(ReportCategory.IllegalContent, persisted.Category);
         reports.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         notifier.Verify(n => n.SubmittedAsync(persisted), Times.Once);
@@ -65,8 +78,16 @@ public sealed class ContentReportServiceTests
     [Fact]
     public async Task Submit_OwnTenantsOutboundMessage_IsNotFound_AndRecordsNothing()
     {
-        var outbound = MessageEntity.Create(VenueTenantId, ArtistTenantId, senderTenantId: VenueTenantId,
-            sentByUserId: ReportingUserId, "our own message", new DateTime(2026, 1, 1));
+        var outbound = MessageEntity.Create(
+            ConversationId,
+            1,
+            Guid.NewGuid(),
+            "payload-hash",
+            VenueTenantId,
+            Guid.NewGuid(),
+            ReportingUserId,
+            "our own message",
+            new DateTime(2026, 1, 1));
 
         var messages = new Mock<IMessageRepository>();
         messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(outbound);
@@ -75,7 +96,10 @@ public sealed class ContentReportServiceTests
         var notifier = new Mock<IContentReportNotifier>();
 
         var result = await Service(messages, reports, notifier)
-            .SubmitAsync(7, new ReportMessageRequest { Category = ReportCategory.Harassment });
+            .SubmitAsync(
+                ConversationId,
+                7,
+                new ReportMessageRequest { Category = ReportCategory.Harassment });
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<ReportMessageError.MessageNotFound>(error);
@@ -98,14 +122,17 @@ public sealed class ContentReportServiceTests
             .ThrowsAsync(new InvalidOperationException("smtp is down"));
 
         var result = await Service(messages, reports, notifier)
-            .SubmitAsync(7, new ReportMessageRequest { Category = ReportCategory.Spam });
+            .SubmitAsync(
+                ConversationId,
+                7,
+                new ReportMessageRequest { Category = ReportCategory.Spam });
 
         Assert.True(result.IsSuccess);
         reports.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Submit_MessageOutsideTheTenantsThreads_IsNotFound()
+    public async Task Submit_MessageOutsideTheTenantsConversations_IsNotFound()
     {
         var messages = new Mock<IMessageRepository>();
         messages.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((MessageEntity?)null);
@@ -114,7 +141,31 @@ public sealed class ContentReportServiceTests
         var notifier = new Mock<IContentReportNotifier>();
 
         var result = await Service(messages, reports, notifier)
-            .SubmitAsync(404, new ReportMessageRequest { Category = ReportCategory.Spam });
+            .SubmitAsync(
+                ConversationId,
+                404,
+                new ReportMessageRequest { Category = ReportCategory.Spam });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<ReportMessageError.MessageNotFound>(error);
+        reports.Verify(r => r.AddAsync(It.IsAny<ContentReportEntity>(), It.IsAny<CancellationToken>()), Times.Never);
+        notifier.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Submit_MessageFromAnotherConversation_IsNotFound()
+    {
+        var messages = new Mock<IMessageRepository>();
+        messages.Setup(r => r.GetByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(Message());
+
+        var reports = new Mock<IContentReportRepository>();
+        var notifier = new Mock<IContentReportNotifier>();
+
+        var result = await Service(messages, reports, notifier)
+            .SubmitAsync(
+                ConversationId + 1,
+                7,
+                new ReportMessageRequest { Category = ReportCategory.Spam });
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<ReportMessageError.MessageNotFound>(error);

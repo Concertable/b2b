@@ -11,5 +11,6 @@ internal interface IApplyStep : IDealStep
         DealType dealType,
         Guid venueTenantId,
         Guid artistTenantId,
+        DateTime createdAtUtc,
         CancellationToken ct = default);
 }

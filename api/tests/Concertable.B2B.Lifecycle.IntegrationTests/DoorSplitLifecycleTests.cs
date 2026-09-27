@@ -30,8 +30,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.NoContent);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.AwaitingConfirmation, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
+        Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
     [Fact]
@@ -46,7 +45,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         await fixture.PaymentSimulator.SendWebhookAsync();
 
         var application = await GetApplicationAsync(client, applicationId);
-        Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
+        Assert.Equal(ApplicationBoundaryStatus.Confirmed, application.Status);
         var concert = await GetConcertAsync(client, applicationId);
         Assert.Null(concert.DatePosted);
         var financial = await GetFinancialOperationAsync(client, applicationId);
@@ -93,8 +92,6 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         var notification = Assert.Single(
             await fixture.WaitForNotificationsAsync("VerifyPaymentFailed"));
@@ -108,8 +105,6 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         await fixture.PaymentSimulator.SendWebhookAsync();
-        var beforeAccept = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await beforeAccept.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
 
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -135,8 +130,6 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
         Assert.Single(await fixture.WaitForNotificationsAsync("VerifyPaymentFailed"));
     }
@@ -153,18 +146,18 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/application/{applicationId}");
+        var response = await client.GetAsync($"/api/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();
         Assert.NotNull(application);
         return application;
     }
 
-    private static async Task<ConcertBoundaryResponse> GetConcertAsync(
+    private async Task<ConcertBoundaryResponse> GetConcertAsync(
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/concert/application/{applicationId}");
+        var response = await fixture.GetCreatedConcertOperationsAsync(client);
         await response.ShouldBe(HttpStatusCode.OK);
         var concert = await response.Content.ReadAsync<ConcertBoundaryResponse>();
         Assert.NotNull(concert);
@@ -176,7 +169,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         int applicationId)
     {
         var response = await client.GetAsync(
-            $"/api/booking/application/{applicationId}");
+            $"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var financial = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(financial);
@@ -192,6 +185,8 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         Rejected,
         Withdrawn,
         Accepted,
+        AwaitingPayment,
+        Confirmed,
         Cancelled
     }
 

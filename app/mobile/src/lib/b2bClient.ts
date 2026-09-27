@@ -1,5 +1,6 @@
 import {
   b2bIdentityKeys,
+  installTenantSessionInterceptors,
   TENANT_HEADER,
   tenantSession,
 } from "@concertable/b2b/features/tenant";
@@ -25,14 +26,10 @@ export function initializeTenantSession() {
   return tenantSession.configure(tenantSessionConfiguration);
 }
 
-configureClient(apiClient, `${Config.apiUrl}/api`).withTenant(
-  tenantSession.tenantIdForRequest,
-  TENANT_HEADER,
-);
-configureClient(paymentClient, `${Config.paymentApiUrl}/api`).withTenant(
-  tenantSession.tenantIdForRequest,
-  TENANT_HEADER,
-);
+configureClient(apiClient, `${Config.apiUrl}/api`);
+configureClient(paymentClient, `${Config.paymentApiUrl}/api`);
+installTenantSessionInterceptors(apiClient, TENANT_HEADER);
+installTenantSessionInterceptors(paymentClient, TENANT_HEADER);
 
 mobileAuthSession.subscribe((user, previousUser) => {
   if (previousUser !== undefined && user === undefined) void tenantSession.clear();

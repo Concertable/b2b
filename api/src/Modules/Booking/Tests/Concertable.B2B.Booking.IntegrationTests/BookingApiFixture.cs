@@ -1,6 +1,5 @@
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Kernel;
 using Concertable.Kernel.DependencyInjection;
@@ -56,16 +55,13 @@ public sealed class BookingApiFixture : ApiFixture
     /// <summary>
     /// Runs the event's pre-commit handlers the way <c>DomainEventDispatcher</c> does: handlers register
     /// against <see cref="IDomainEventHandler{TEvent}"/> and the phase is chosen by the marker, so resolving
-    /// the marker interface directly would resolve nothing. The phase runs inside the save that raised the
-    /// event, which always has a tenant — a request's, or the one a request-less caller stated — so
-    /// <paramref name="actingTenantId"/> stands in for it here.
+    /// the marker interface directly would resolve nothing.
     /// </summary>
-    internal Task DispatchPreCommitDomainEventAsync<TEvent>(TEvent @event, Guid actingTenantId)
+    internal Task DispatchPreCommitDomainEventAsync<TEvent>(TEvent @event)
         where TEvent : IDomainEvent =>
         Services.GetRequiredService<IScoped<IEnumerable<IDomainEventHandler<TEvent>>>>()
             .RunAsync(async handlers =>
             {
-                using var acting = Services.GetRequiredService<ITenantScope>().As(actingTenantId);
                 foreach (var handler in handlers.OfType<IPreCommitDomainEventHandler<TEvent>>())
                     await handler.HandleAsync(@event);
             });

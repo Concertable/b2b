@@ -1,7 +1,6 @@
-using Concertable.B2B.DataAccess.Application;
-using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.Seed.Infrastructure;
+﻿using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Data.Seeders;
@@ -10,19 +9,23 @@ internal sealed class OpportunityTestSeeder : ITestSeeder
 {
     public int Order => 4;
 
-    private readonly OpportunityDbContext context;
+    private readonly OpportunityPrivilegedDbContext context;
+    private readonly OpportunityDbContext migrations;
     private readonly SeedState seed;
-    private readonly ITenantScope tenantScope;
 
-    public OpportunityTestSeeder(OpportunityDbContext context, SeedState seed, ITenantScope tenantScope)
+    public OpportunityTestSeeder(OpportunityPrivilegedDbContext context, OpportunityDbContext migrations, SeedState seed)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seed = seed;
-        this.tenantScope = tenantScope;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
-    public Task SeedAsync(CancellationToken ct = default) =>
-        context.SeedByTenantAsync(tenantScope, seed.Opportunities, ct);
+    public async Task SeedAsync(CancellationToken ct = default) =>
+        await context.Opportunities.SeedIfEmptyAsync(async () =>
+        {
+            context.Opportunities.AddRange(seed.Opportunities);
+            await context.SaveChangesAsync(ct);
+        });
 }

@@ -1,4 +1,19 @@
-namespace Concertable.B2B.Concert.Application.Requests;
+﻿namespace Concertable.B2B.Concert.Application.Requests;
+
+internal sealed record ShareConcertSummaryRequest
+{
+    public Guid RequestId { get; init; }
+    public Guid RecipientTenantId { get; init; }
+    public Guid? RecipientMembershipId { get; init; }
+    public long ExpectedAccessVersion { get; init; }
+    public DateTime? ValidUntil { get; init; }
+}
+
+internal sealed record AssignConcertMemberRequest
+{
+    public Guid MembershipId { get; init; }
+    public long ExpectedAccessVersion { get; init; }
+}
 
 internal sealed record UpdateConcertRequest
 {

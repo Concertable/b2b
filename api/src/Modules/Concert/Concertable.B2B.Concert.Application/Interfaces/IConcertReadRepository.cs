@@ -1,20 +1,15 @@
-using Concertable.B2B.Concert.Application.DTOs;
+﻿using Concertable.B2B.Concert.Application.DTOs;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
 
-/// <summary>
-/// The public marketplace surface over concerts — the details page and venue/artist page listings.
-/// Reads run with the "Tenant" filter lifted: the concert row is public, but these queries identify
-/// concerts THROUGH their (party-filtered) booking chain, so unlifted they vanish for non-parties.
-/// Party/host reads live on <see cref="IConcertRepository"/>; availability booleans on
-/// <see cref="IConcertAvailability"/>.
-/// </summary>
 internal interface IConcertReadRepository
 {
-    Task<ConcertDetails?> GetDetailsByIdAsync(int id);
-    Task<ConcertSummary?> GetSummaryAsync(int id);
-    Task<IEnumerable<ConcertSummary>> GetUpcomingByVenueIdAsync(int venueId);
-    Task<IEnumerable<ConcertSummary>> GetUpcomingByArtistIdAsync(int artistId);
-    Task<IEnumerable<ConcertSummary>> GetHistoryByVenueIdAsync(int venueId);
-    Task<IEnumerable<ConcertSummary>> GetHistoryByArtistIdAsync(int artistId);
+    Task<PublishedConcert?> GetPublishedByIdAsync(int id, CancellationToken ct = default);
+
+    Task<IReadOnlyList<int>> GetEndedPendingCompletionIdsAsync(
+        DateTime endedBeforeUtc, int take, CancellationToken ct = default);
+    Task<IReadOnlyList<PublishedConcert>> GetUpcomingByVenueIdAsync(int venueId, CancellationToken ct = default);
+    Task<IReadOnlyList<PublishedConcert>> GetUpcomingByArtistIdAsync(int artistId, CancellationToken ct = default);
+    Task<IReadOnlyList<PublishedConcert>> GetHistoryByVenueIdAsync(int venueId, CancellationToken ct = default);
+    Task<IReadOnlyList<PublishedConcert>> GetHistoryByArtistIdAsync(int artistId, CancellationToken ct = default);
 }
