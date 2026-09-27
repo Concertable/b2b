@@ -5,8 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `a340eeb4b8362a3ed5a04de179594319cc6603eb`  `(2026-09-27)`
-**Security-reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
+**Reviewed up to commit:** `5c4265df1214ca9aaded7274cb185288155a5eec`  `(2026-09-27)`
+**Security-reviewed up to commit:** `5c4265df1214ca9aaded7274cb185288155a5eec`  `(2026-09-27)`
 **Judgment:** `approved`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
@@ -261,6 +261,45 @@ The following evidence also counts toward the pass:
   equated each party's legal name with its manager's email.
 - `build:web` passed. It includes `@concertable/b2b` 39/39, `web-b2b` 30/30 (with the four new
   conversations suites), and all four SPA builds. `web-admin` passed 1/1 and venue `test:tenant` 4/4.
+
+## Review pass — 2026-09-27 — incremental (dashboard proposal lists and E2E evidence)
+
+**Candidate base:** `a340eeb4b8362a3ed5a04de179594319cc6603eb`
+**Candidate head:** `5c4265df1214ca9aaded7274cb185288155a5eec`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:53b13b81f3bbd3eb5c454ee947874f3f51011a390aa4ce036660108e71b3b549` `(7 paths)`
+**Candidate patch:** `sha256:806193e229c3d38e48977a701c2879fb4e61132248ad550d8154cdb1d0572b92`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+- [x] **N22 — HIGH — E2E — the venue and artist dashboards crash for any tenant with a current application.**
+  UI E2E run 36328614460's failure screenshot shows the venue home replaced by the router's error boundary:
+  "Cannot read properties of undefined (reading '$type')". `GET /api/application/venue/current` and
+  `/artist/current` returned `ApplicationSummaryResponse`, which slice 4.2 stripped of the deal and the
+  actions. `VenueApplicationsWidget` and `ArtistApplicationsPipelineWidget` still call
+  `dealSummary(opportunity.deal)`. Both inbox scenarios start on the venue home, so the page crashed under
+  them. On `31597095` the crash showed up as the inbox trigger rendering and then detaching. The two
+  endpoint tests only asserted that an array came back, so nothing caught it.
+  **Fix:** serve both lists as proposal responses under `terms.read`, the scope section 4.2 assigns to deal
+  details, matching the other proposal lists.
+  **Disposition:** both lists now return `ApplicationProposalResponse` and require `terms.read`. Their tests
+  assert that every item carries `opportunity.deal.$type` and `actions`. The Application integration suite
+  passed 76/76 against real PostgreSQL.
+
+Checked with no finding:
+
+- Members without `terms.read` (Staff, Door, Sound) now receive 403 from both lists. That is the section 4.1
+  policy. `VenueDashboardPage` renders every widget unconditionally, so these members see the widget's error
+  state, just as they already do for the finance widgets that F20 put behind `settlement.view`.
+- `aa15ea3c` changes a workflow, a security-sensitive path. The E2E artifact now also retains failure
+  screenshots and Playwright traces, which record request headers and local storage. The artifact can
+  therefore hold the ephemeral E2E users' short-lived bearer tokens for a throwaway stack. Only repository
+  readers can see it, the same audience that already receives the diagnostics log. This is accepted, and it
+  moves the security marker to this head.
 
 ## Review pass — 2026-09-15 — full (void: candidate discarded by branch restart)
 
