@@ -6,8 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 
-/// <summary>The org-form write validator now owns the VAT-number format check and its user-facing message (moved off
-/// the domain <c>ITaxComplianceRules</c>), composed from region reference data.</summary>
 public sealed class TenantValidatorsTests
 {
     private static UpdateTenantRequestValidator Validator()
@@ -19,6 +17,8 @@ public sealed class TenantValidatorsTests
     private static UpdateTenantRequest Request(string? vatNumber) => new()
     {
         LegalName = "Acme Ltd",
+        ContactEmail = "contact@acme.test",
+        ExpectedVersion = 1,
         TaxCompliance = new TaxComplianceDto
         {
             VatNumber = vatNumber,

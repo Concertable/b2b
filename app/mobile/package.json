@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "expo start",
+    "test": "vitest run src",
     "clear": "node scripts/clear.js",
     "start:ci": "node scripts/start.js",
     "android": "expo start --android",
@@ -63,6 +64,7 @@
     "@concertable/build-config": "alpha",
     "@types/react": "~19.1.0",
     "qrcode-terminal": "^0.12.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.10"
   }
 }

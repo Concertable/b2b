@@ -1,5 +1,7 @@
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Application.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
@@ -13,6 +15,7 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 internal sealed class ApplicationNotifier : IApplicationNotifier
 {
     private readonly IApplicationRepository repository;
+    private readonly IApplicationReadDbContext readDbContext;
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
     private readonly INotificationClient notificationClient;
@@ -21,6 +24,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
 
     public ApplicationNotifier(
         IApplicationRepository repository,
+        IApplicationReadDbContext readDbContext,
         ICurrentUser currentUser,
         IConversationsModule conversationsModule,
         INotificationClient notificationClient,
@@ -28,6 +32,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         IVenueModule venueModule)
     {
         this.repository = repository;
+        this.readDbContext = readDbContext;
         this.currentUser = currentUser;
         this.conversationsModule = conversationsModule;
         this.notificationClient = notificationClient;
@@ -37,8 +42,13 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
 
     public async Task VerifyPaymentFailedAsync(int applicationId, string failureMessage)
     {
-        var application = await repository.GetByIdAsync(applicationId).OrNotFound(DisplayNames.Application);
-        var opportunity = await opportunityModule.GetAsync(application.OpportunityId);
+        var opportunityId = await readDbContext.Applications
+            .Where(application => application.Id == applicationId)
+            .Select(application => (int?)application.OpportunityId)
+            .SingleOrDefaultAsync();
+        if (opportunityId is null)
+            throw new NotFoundException(DisplayNames.Application);
+        var opportunity = await opportunityModule.GetAsync(opportunityId.Value);
         if (!opportunity.TryGetValue(out var value))
             return;
 

@@ -1,6 +1,6 @@
-using Concertable.B2B.Concert.Application.DTOs;
-using Concertable.B2B.Concert.Domain.Entities;
+﻿using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
+using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
@@ -13,29 +13,31 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRepository
 {
     private readonly ConcertDbContext context;
-    private readonly IConcertReadDbContext readContext;
     private readonly IEndedSpecification endedSpecification;
     private readonly IDoorRevenueOutstandingSpecification doorRevenueOutstanding;
     private readonly TimeProvider timeProvider;
 
     public ConcertRepository(
         ConcertDbContext context,
-        IConcertReadDbContext readContext,
         IEndedSpecification endedSpecification,
         IDoorRevenueOutstandingSpecification doorRevenueOutstanding,
         TimeProvider timeProvider) : base(context)
     {
         this.context = context;
-        this.readContext = readContext;
         this.endedSpecification = endedSpecification;
         this.doorRevenueOutstanding = doorRevenueOutstanding;
         this.timeProvider = timeProvider;
     }
 
+    public Task<ConcertEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default) =>
+        context.Concerts
+            .Include(concert => concert.AccessGrants)
+            .FirstOrDefaultAsync(concert => concert.Id == id, ct);
+
     public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueTenantIdAsync(Guid venueTenantId)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        return await context.Concerts
+        return await WithScope(ConcertAccessScope.Operations)
             .AsNoTracking()
             .Where(c => c.VenueTenantId == venueTenantId
                         && c.Period.End > now
@@ -58,7 +60,7 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
     public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistTenantIdAsync(Guid artistTenantId)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
-        return await context.Concerts
+        return await WithScope(ConcertAccessScope.Operations)
             .AsNoTracking()
             .Where(c => c.ArtistTenantId == artistTenantId
                         && c.Period.End > now
@@ -91,65 +93,75 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .Select(concert => (ConcertState?)concert.State)
             .FirstOrDefaultAsync(ct);
 
-    public async Task<ConcertDetails?> GetDetailsByIdAsync(
+    public Task<ConcertSummary?> GetSummaryByIdAsync(
         int id,
-        CancellationToken ct = default)
-    {
-        return await context.Concerts
-            .Where(e => e.Id == id)
-            .ToDetails(
-                context.ConcertRatingProjections,
-                context.ArtistRatingProjections,
-                context.VenueRatingProjections)
-            .FirstOrDefaultAsync(ct);
-    }
-
-    public async Task<ConcertDetails?> GetDetailsByApplicationIdAsync(int applicationId)
-    {
-        return await context.Concerts
-            .Where(e => e.ApplicationId == applicationId)
-            .ToDetails(
-                context.ConcertRatingProjections,
-                context.ArtistRatingProjections,
-                context.VenueRatingProjections)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<IEnumerable<ConcertSummary>> GetUnpostedByArtistIdAsync(int id)
-    {
-        return await context.Concerts
-            .Where(e => e.ArtistId == id && e.DatePosted == null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<ConcertSummary>> GetUnpostedByVenueIdAsync(int id)
-    {
-        return await context.Concerts
-            .Where(e => e.VenueId == id && e.DatePosted == null)
-            .ToSummary(context.ArtistRatingProjections, context.VenueRatingProjections)
-            .ToListAsync();
-    }
-
-    // The sweep runs before any tenant is established, so the scan reads the unfiltered stance.
-    // SettlementPayeeTenantId is declared per concert subtype, so it resolves client-side.
-    public async Task<IReadOnlyList<ConcertCompletionCandidate>> GetEndedPendingCompletionAsync(
         CancellationToken ct = default) =>
-        (await readContext.Concerts
-            .Where(concert =>
-                concert.State == ConcertState.Draft ||
-                concert.State == ConcertState.Posted ||
-                concert.State == ConcertState.SettlementFailed ||
-                concert.State == ConcertState.AwaitingSettlement)
-            .Where(endedSpecification.And(doorRevenueOutstanding.Not()).ToExpression())
-            .ToListAsync(ct))
-        .Select(concert => new ConcertCompletionCandidate(concert.Id, concert.SettlementPayeeTenantId))
-        .ToList();
+        WithScope(ConcertAccessScope.Summary)
+            .Where(concert => concert.Id == id)
+            .ToSummary()
+            .SingleOrDefaultAsync(ct);
+
+    public Task<ConcertOperations?> GetOperationsByIdAsync(
+        int id,
+        CancellationToken ct = default) =>
+        WithScope(ConcertAccessScope.Operations)
+            .Where(concert => concert.Id == id)
+            .ToOperations(
+                context.ConcertRatingProjections,
+                context.ArtistRatingProjections,
+                context.VenueRatingProjections)
+            .SingleOrDefaultAsync(ct);
+
+    public Task<ConcertFinance?> GetFinanceByIdAsync(
+        int id,
+        CancellationToken ct = default) =>
+        WithScope(ConcertAccessScope.Finance)
+            .Where(concert => concert.Id == id)
+            .Select(concert => new ConcertFinance(
+                concert.Id,
+                concert.TicketsSold,
+                concert is DoorRevenueConcert ? ((DoorRevenueConcert)concert).DoorRevenue : null,
+                concert is DoorRevenueConcert,
+                context.Invoices
+                    .Where(invoice => invoice.BookingId == concert.BookingId)
+                    .Select(invoice => (int?)invoice.Id)
+                    .SingleOrDefault(),
+                false))
+            .SingleOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyList<ConcertDraftReference>> GetDraftReferencesForVenueTenantIdAsync(
+        Guid venueTenantId,
+        CancellationToken ct = default) =>
+        await WithScope(ConcertAccessScope.Operations)
+            .Where(concert => concert.VenueTenantId == venueTenantId && concert.DatePosted == null)
+            .Select(concert => new ConcertDraftReference(concert.Id, concert.ApplicationId))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(
+        int id,
+        CancellationToken ct = default) =>
+        await WithScope(ConcertAccessScope.Summary)
+            .Where(e => e.ArtistId == id && e.DatePosted == null)
+            .ToSummary()
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(
+        int id,
+        CancellationToken ct = default) =>
+        await WithScope(ConcertAccessScope.Summary)
+            .Where(e => e.VenueId == id && e.DatePosted == null)
+            .ToSummary()
+            .ToListAsync(ct);
 
     public Task<decimal?> GetTotalRevenueByConcertIdAsync(int concertId) =>
-        context.Concerts.OfType<DoorRevenueConcert>()
+        WithScope(ConcertAccessScope.Finance).OfType<DoorRevenueConcert>()
             .Where(c => c.Id == concertId)
             .Select(c => c.TicketsSold * c.Price + c.DoorRevenue)
             .FirstOrDefaultAsync();
+
+    private IQueryable<ConcertEntity> WithScope(ConcertAccessScope scope) =>
+        context.Concerts.Where(concert =>
+            context.ConcertAccessGrants.Any(grant =>
+                grant.ResourceId == concert.Id && grant.Scope == scope));
 
 }

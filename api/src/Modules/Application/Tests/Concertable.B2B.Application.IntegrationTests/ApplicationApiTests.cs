@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
@@ -401,6 +402,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         Assert.Equal(
             ApplicationState.Accepted,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+        Assert.True(await fixture.PaymentVerifications.AnyAsync(value => value.ApplicationId == applicationId));
         var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
         await bookingResponse.ShouldBe(HttpStatusCode.OK);
         var booking = await bookingResponse.Content.ReadAsync<JsonElement>();

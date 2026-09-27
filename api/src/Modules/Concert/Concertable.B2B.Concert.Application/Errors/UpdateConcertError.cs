@@ -15,7 +15,9 @@ internal abstract partial record UpdateConcertError : IError
                 "The concert update is invalid.",
                 errors),
         Superseded(var concertId) => ErrorDefinition.Conflict<Superseded>(
-            $"Concert {concertId} changed while this update was in flight.")
+            $"Concert {concertId} changed while this update was in flight."),
+        NotPermitted => ErrorDefinition.Forbidden<NotPermitted>(
+            "You are not permitted to update this concert.")
     };
 
     [ErrorCode("concert.update.not_found")]
@@ -26,4 +28,7 @@ internal abstract partial record UpdateConcertError : IError
 
     [ErrorCode("concert.update.superseded")]
     public partial record Superseded(int ConcertId);
+
+    [ErrorCode("concert.update.not_permitted")]
+    public partial record NotPermitted;
 }

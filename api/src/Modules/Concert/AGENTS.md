@@ -10,23 +10,28 @@ Application aggregate, never inspects `Application.State`.
 The `keyed-strategies` and `state-machines` skills own the two patterns this module leans on. Read them first;
 this doc is only the Concertable-specific roster.
 
-## Vocabulary — the two tenants of a booking sit on TWO axes, not one
+## Vocabulary — the two economic tenants sit on TWO axes, and neither is access
 
-A booking has two tenants, and the codebase names them on **two independent axes**. They look like
-redundant synonyms; they aren't, and you **cannot** collapse them — a *fixed* field can't hold a
-*flipping* value, so unifying the words would make the code wrong (the tenancy filter would point at
-the wrong tenant half the time). Which axis a word belongs to:
+A concert has two economic tenants, and the codebase names them on **two independent axes**. They look
+like redundant synonyms; they aren't, and you **cannot** collapse them — a *fixed* field can't hold a
+*flipping* value. Which axis a word belongs to:
 
 - **IDENTITY (fixed — *who* the tenant is)** → **`venue`** / **`artist`**. A venue is always the venue.
-  This is the tenancy/visibility axis: `IVenueArtistTenantScoped`, `VenueTenantId` / `ArtistTenantId`,
-  the `venue == me || artist == me` query filter.
-- **ROLE (flips per `DealType` — *what* the tenant does)** — resolved from identity, never stored fixed:
-  - **money flow** → **`payee`** (receives the settlement) vs the counterparty. See
-    `DealPayeeResolver`, whose cohesive per-deal strategy resolves the ticket collector and inverse
-    settlement recipient directly.
+  `VenueTenantId` / `ArtistTenantId` are the current economic model's inputs, nothing more; P2 of the
+  party foundation plan replaces them with the accepted settlement binding.
+- **ROLE (flips per `DealType` — *what* the tenant does)** — stated by the concert type, never resolved
+  through a strategy:
+  - **money flow** → `SettlementPayerTenantId` / `SettlementPayeeTenantId` on the concert. The payer is
+    also the ticket seller, because whoever kept the ticket revenue is whoever pays the performer.
   - **VAT invoice** → **`supplier`** (made the supply) / **`customer`** (billed). HMRC's legally-required
     words — you can't put "payee" on an invoice. Mapping: `supplier` = settlement payee, `customer` =
-    ticket payee.
+    settlement payer.
+
+**Neither axis is visibility.** Who may read a concert, its invoice or its booking is a
+`ConcertAccessGrant` / `InvoiceAccessGrant` / `BookingAccessGrant` at a named scope — the roster is in
+[`CODE_PATTERNS.md`](../../../CODE_PATTERNS.md). A promoter or a production member reaches an engagement
+through a grant while being neither the venue nor the act, which is exactly what the old
+`venue == me || artist == me` filter could not express.
 
 **`Party`** is the abstract "one side," and is **reserved for the invoice snapshot VO** (`InvoiceParty`:
 a side's legal identity frozen at settlement). It is **not** a synonym for `tenant` — don't use the bare

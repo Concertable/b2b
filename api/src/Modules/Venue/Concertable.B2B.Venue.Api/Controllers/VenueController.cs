@@ -37,15 +37,15 @@ internal sealed class VenueController : ControllerBase
         return Ok(await venueService.OwnsVenueAsync(venueId, ct));
     }
 
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(SharedPermissions.OperationsView)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
+    [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> GetDetails(CancellationToken ct) =>
         (await venueService.GetDetailsAsync(ct))
             .ToOkOrNoContent(venue => venue.ToDetailsResponse());
 
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(SharedPermissions.ProfileEdit)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
+    [HasPermission(TenantPermission.ProfileEditName)]
     [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPost($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> Create(
@@ -56,8 +56,8 @@ internal sealed class VenueController : ControllerBase
                 venue => venue.ToDetailsResponse(),
                 venue => $"/api/venue/{venue.Id}");
 
-    [RequiredTenantType(TenantType.Venue)]
-    [HasPermission(SharedPermissions.ProfileEdit)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
+    [HasPermission(TenantPermission.ProfileEditName)]
     [EnableRateLimiting(RateLimitPolicies.ProfileImage)]
     [HttpPut($"/api/organization/{RouteSegment}")]
     public async Task<ActionResult<DetailsResponse>> Update(

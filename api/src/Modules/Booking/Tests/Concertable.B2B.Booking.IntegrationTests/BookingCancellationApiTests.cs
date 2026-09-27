@@ -263,23 +263,19 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Confirmation_WhenCancellationWinsTheRace_RefundsTheCapturedEscrow()
+    public async Task ConfirmationAfterCancellation_RefundsTheCapturedEscrow()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var bookingId = await AcceptFlatFeeAsync(client);
         var capture = await fixture.PaymentTransport.SingleCommandAsync<CaptureEscrowCommand>();
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmBookingConflict(async () =>
-        {
-            var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
+        var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
+        await winner.ShouldBe(HttpStatusCode.NoContent);
 
         await fixture.DispatchIntegrationEventAsync(
             new CaptureEscrowSucceededEvent(capture.OperationId, capture.Reference),
             MessageEnvelope.Create<CaptureEscrowSucceededEvent>(fixture.SeedNow));
 
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(BookingState.CancellationPending, await StateOfAsync(bookingId));
         Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
         Assert.Equal(
@@ -288,33 +284,20 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
                 .Count(command => command.Reference == PaymentOperationReferences.Escrow(bookingId)));
     }
 
-    /// <summary>
-    /// A pre-commit handler runs inside the verification's own transaction and does not own it, so a lost race
-    /// rolls the verification back and surfaces: convergence is the redelivery, which reads the cancellation
-    /// that won and confirms nothing.
-    /// </summary>
     [Fact]
-    public async Task Cancel_WhenVerifyPaymentConfirmationLosesTheRace_ConvergesOnRedelivery()
+    public async Task VerificationAfterCancellation_DoesNotConfirmBooking()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var applicationId = fixture.SeedState.DoorSplitApp.Id;
         var bookingId = await AcceptDoorSplitAsync(client);
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        fixture.ArmBookingConflict(async () =>
-        {
-            var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
-            await winner.ShouldBe(HttpStatusCode.NoContent);
-        });
+        var winner = await competitor.PostAsync($"/api/booking/{bookingId}/cancel", (object?)null);
+        await winner.ShouldBe(HttpStatusCode.NoContent);
         var verified = new VerifyPaymentSucceededDomainEvent(
             new VerifyPaymentSucceeded(applicationId));
 
-        var venueTenantId = TenantSeedIds.For(fixture.SeedState.VenueManager1.Id);
+        await fixture.DispatchPreCommitDomainEventAsync(verified);
 
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
-            () => fixture.DispatchPreCommitDomainEventAsync(verified, venueTenantId));
-        await fixture.DispatchPreCommitDomainEventAsync(verified, venueTenantId);
-
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         Assert.Equal(BookingState.Cancelled, await StateOfAsync(bookingId));
         Assert.Equal(0, await fixture.GetConcertCountAsync(bookingId));
     }

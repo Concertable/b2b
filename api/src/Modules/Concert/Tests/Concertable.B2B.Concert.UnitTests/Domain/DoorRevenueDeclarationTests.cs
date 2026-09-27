@@ -37,6 +37,7 @@ public sealed class DoorRevenueDeclarationTests
     {
         var booking = ConfirmedBookings.DoorSplit(50m);
         return (DoorRevenueConcert)ConcertEntity.CreateDraft(
-            booking, new ConcertDraft("Concert", "About", [Genre.Rock]));
+            booking, new ConcertDraft("Concert", "About", [Genre.Rock]),
+            DateTime.UnixEpoch);
     }
 }

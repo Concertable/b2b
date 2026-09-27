@@ -1,10 +1,8 @@
-using Concertable.B2B.Tenant.Contracts.Enums;
-
 namespace Concertable.B2B.Infrastructure.Uris;
 
 internal sealed class FrontendUrlSettings
 {
     public const string SectionName = "Urls";
 
-    public Dictionary<TenantType, string> Frontends { get; set; } = new();
+    public Dictionary<FrontendSurface, string> Frontends { get; set; } = new();
 }

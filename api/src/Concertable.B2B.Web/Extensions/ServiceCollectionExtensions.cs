@@ -4,14 +4,17 @@ using Concertable.DataAccess.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Data;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.DataAccess.Infrastructure.Extensions;
+using Concertable.B2B.Authorization.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Web.Extensions;
@@ -79,6 +82,7 @@ public static class ServiceCollectionExtensions
             });
 
         services.AddAuthorization();
+        services.AddAuthorizationModule();
 
         return services;
     }
@@ -90,9 +94,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
         services.AddScoped<VenueArtistTenantInterceptor>();
+        services.AddScoped<IResourceAccessContext, ResourceAccessContext>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();
+
 
         return services;
     }

@@ -18,7 +18,7 @@ public sealed class TenantMembershipEntityTests
         Assert.Equal(tenantId, membership.TenantId);
         Assert.Equal(userId, membership.UserId);
         Assert.Equal(TenantRole.Owner, membership.Role);
-        Assert.Null(membership.InvitedByUserId);
+        Assert.Null(membership.InvitedByMembershipId);
         Assert.Equal(now, membership.CreatedAt);
     }
 
@@ -30,7 +30,7 @@ public sealed class TenantMembershipEntityTests
         var membership = TenantMembershipEntity.Create(
             Guid.NewGuid(), Guid.NewGuid(), TenantRole.Manager, invitedBy, DateTime.UtcNow);
 
-        Assert.Equal(invitedBy, membership.InvitedByUserId);
+        Assert.Equal(invitedBy, membership.InvitedByMembershipId);
     }
 
     [Fact]
@@ -42,5 +42,6 @@ public sealed class TenantMembershipEntityTests
         membership.ChangeRole(TenantRole.Finance);
 
         Assert.Equal(TenantRole.Finance, membership.Role);
+        Assert.Equal(2, membership.PermissionVersion);
     }
 }

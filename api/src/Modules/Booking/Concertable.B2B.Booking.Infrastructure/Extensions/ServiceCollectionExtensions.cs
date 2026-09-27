@@ -33,6 +33,14 @@ public static class ServiceCollectionExtensions
     {
         public IServiceCollection AddBookingModule(IConfiguration configuration)
         {
+            services.AddDbContext<BookingPrivilegedDbContext>((provider, options) =>
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                    .AddInterceptors(
+                        provider.GetRequiredService<AuditInterceptor>(),
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
             services.AddDbContext<BookingDbContext>((provider, options) =>
                 options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
@@ -52,6 +60,8 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
             services.AddScoped<IBookingRepository, BookingRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();

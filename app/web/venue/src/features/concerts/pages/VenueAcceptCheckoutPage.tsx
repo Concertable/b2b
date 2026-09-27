@@ -11,7 +11,7 @@ import {
   useApplicationQuery,
   useESignature,
 } from "@concertable/web-b2b/features/concerts";
-import type { Application } from "@concertable/web-b2b/features/concerts/types";
+import type { ApplicationProposal } from "@concertable/web-b2b/features/concerts/types";
 import type { Checkout } from "@concertable/web/features/concerts/types";
 import { CheckoutLayout } from "@concertable/web/features/concerts/components/checkout/CheckoutLayout";
 import { CheckoutSection } from "@concertable/web/features/concerts/components/checkout/CheckoutSection";
@@ -51,7 +51,7 @@ function VenueAcceptCheckout({
   application,
 }: Readonly<{
   applicationId: number;
-  application: Application;
+  application: ApplicationProposal;
 }>) {
   const {
     data: checkout,
@@ -126,7 +126,7 @@ export function VenueAcceptCheckoutFlow({ applicationId }: Readonly<Props>) {
 
 interface VenueAcceptCheckoutFormProps {
   applicationId: number;
-  application: Application;
+  application: ApplicationProposal;
   checkout: Checkout;
 }
 

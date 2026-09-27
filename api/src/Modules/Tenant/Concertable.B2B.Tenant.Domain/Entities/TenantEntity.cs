@@ -1,4 +1,3 @@
-using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Events;
 using Concertable.Kernel;
 
@@ -10,11 +9,17 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
 
     public Guid Id { get; private set; }
     public string LegalName { get; private set; } = null!;
+    public string DisplayName { get; private set; } = null!;
+    public long DisplayVersion { get; private set; }
+    public long Version { get; private set; }
+    public string EffectiveDisplayName => TaxCompliance is null ? DisplayName : LegalName;
 
-    /// <summary>The tenant's immutable venue-or-artist classification.</summary>
-    public TenantType Type { get; private set; }
+    public string ContactEmail { get; private set; } = null!;
+
     public Guid CreatedByUserId { get; private set; }
     public DateTime CreatedAt { get; private set; }
+
+    public long EligibilityVersion { get; private set; }
 
     /// <summary>
     /// The legal/tax identity backing settlement and tax reporting (<c>LEGAL_REQUIREMENTS.md</c> item 3).
@@ -22,40 +27,43 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     /// </summary>
     public TaxCompliance? TaxCompliance { get; private set; }
 
+    private readonly List<TenantBusinessActivityEntity> businessActivities = [];
+    public IReadOnlyList<TenantBusinessActivityEntity> BusinessActivities => businessActivities;
+
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
     public void ClearDomainEvents() => events.Clear();
 
-    /// <summary>
-    /// Creates a tenant from the operator's registration <paramref name="email"/> — the bare provisioning
-    /// state before organization setup. The email seeds the placeholder <see cref="LegalName"/> and is carried
-    /// on <see cref="TenantCreatedDomainEvent"/> as the Stripe account email, so Payment provisions off the
-    /// resulting <c>PayoutOwnerRegisteredEvent</c>. <paramref name="type"/> is the tenant type derived
-    /// from the registration client-id. <paramref name="id"/> lets seeders supply a deterministic id (so the
-    /// event carries it, not a throwaway one); production omits it for a random id.
-    /// </summary>
-    public static TenantEntity Create(string email, Guid createdByUserId, TenantType type, DateTime createdAt, Guid? id = null)
+    public static TenantEntity Create(
+        string displayName,
+        string contactEmail,
+        Guid createdByUserId,
+        DateTime createdAt,
+        Guid? id = null)
     {
         var tenant = new TenantEntity
         {
             Id = id ?? Guid.NewGuid(),
-            LegalName = email,
-            Type = type,
+            LegalName = displayName,
+            DisplayName = displayName,
+            DisplayVersion = 1,
+            Version = 1,
+            ContactEmail = contactEmail,
             CreatedByUserId = createdByUserId,
             CreatedAt = createdAt,
+            EligibilityVersion = 1,
         };
-        tenant.events.Raise(new TenantCreatedDomainEvent(tenant.Id, createdByUserId, email));
+        tenant.events.Raise(new TenantCreatedDomainEvent(tenant.Id, createdByUserId, contactEmail));
+        tenant.events.Raise(new TenantDisplayChangedDomainEvent(tenant));
         return tenant;
     }
 
-    /// <summary>
-    /// Re-raises <see cref="TenantCreatedDomainEvent"/> for an already-persisted tenant. The dev/E2E seeder
-    /// inserts tenants directly (deterministic ids) with their create event cleared, so registration is the
-    /// single provisioning trigger: <c>Announce</c> fires once the ASB subscriptions exist, where the seeder's
-    /// own startup-time publish would race subscription creation and be dropped. <see cref="LegalName"/> still
-    /// holds the registration email here (tenant setup hasn't run yet), so the event carries the email.
-    /// </summary>
-    public void Announce() => events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, LegalName));
+    public void Announce()
+    {
+        // Registration must announce after ASB subscriptions exist; seeder startup can race their creation.
+        events.Raise(new TenantCreatedDomainEvent(Id, CreatedByUserId, ContactEmail));
+        events.Raise(new TenantDisplayChangedDomainEvent(this));
+    }
 
     /// <summary>
     /// Tenant setup: replaces the provisioning placeholder legal name (the registration email)
@@ -76,8 +84,62 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
         if (errors.Count > 0)
             return new ValidationErrors(errors);
 
+        var previousDisplayName = EffectiveDisplayName;
         LegalName = legalName;
         TaxCompliance = taxCompliance;
+        Version++;
+        if (EffectiveDisplayName != previousDisplayName)
+        {
+            DisplayVersion++;
+            events.Raise(new TenantDisplayChangedDomainEvent(this));
+        }
         return new Success();
+    }
+
+    public UnitResult<ValidationErrors> UpdateContactEmail(string contactEmail)
+    {
+        if (string.IsNullOrWhiteSpace(contactEmail))
+            return new ValidationErrors([new(nameof(ContactEmail), "ContactEmail is required.")]);
+
+        if (contactEmail.Length > 320)
+            return new ValidationErrors([new(nameof(ContactEmail), "ContactEmail must be 320 characters or fewer.")]);
+
+        if (ContactEmail != contactEmail)
+        {
+            ContactEmail = contactEmail;
+            Version++;
+        }
+        return new Success();
+    }
+
+    public bool HasActiveActivity(TenantBusinessActivityKind kind) =>
+        businessActivities.Exists(activity => activity.Kind == kind && activity.IsActive);
+
+    public void ActivateBusinessActivity(TenantBusinessActivityKind kind, DateTime at)
+    {
+        if (businessActivities.Find(activity => activity.Kind == kind) is { } existing)
+        {
+            if (existing.IsActive)
+                return;
+
+            existing.Reactivate(at);
+        }
+        else
+        {
+            businessActivities.Add(TenantBusinessActivityEntity.Create(Id, kind, at));
+        }
+
+        EligibilityVersion++;
+        Version++;
+    }
+
+    public void RetireBusinessActivity(TenantBusinessActivityKind kind, DateTime at)
+    {
+        if (businessActivities.Find(activity => activity.Kind == kind && activity.IsActive) is not { } active)
+            return;
+
+        active.Retire(at);
+        EligibilityVersion++;
+        Version++;
     }
 }

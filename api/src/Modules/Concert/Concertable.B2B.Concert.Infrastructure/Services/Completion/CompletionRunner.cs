@@ -1,6 +1,5 @@
-using Concertable.B2B.Concert.Application.Models;
+﻿using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Interfaces;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.DataAccess.Application;
 using Microsoft.Extensions.Logging;
@@ -9,34 +8,34 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Completion;
 
 internal sealed class CompletionRunner : ICompletionRunner
 {
-    private readonly IConcertRepository concertRepository;
+    private const int BatchSize = 200;
+
+    private readonly IConcertReadRepository readRepository;
     private readonly IScoped<IConcertWorkflow> workflow;
-    private readonly ITenantScope tenantScope;
+    private readonly TimeProvider timeProvider;
     private readonly ILogger<CompletionRunner> logger;
 
     public CompletionRunner(
-        IConcertRepository concertRepository,
+        IConcertReadRepository readRepository,
         IScoped<IConcertWorkflow> workflow,
-        ITenantScope tenantScope,
+        TimeProvider timeProvider,
         ILogger<CompletionRunner> logger)
     {
-        this.concertRepository = concertRepository;
+        this.readRepository = readRepository;
         this.workflow = workflow;
-        this.tenantScope = tenantScope;
+        this.timeProvider = timeProvider;
         this.logger = logger;
     }
 
     public async Task RunAsync(CancellationToken ct = default)
     {
-        var candidates = await concertRepository.GetEndedPendingCompletionAsync(ct);
+        var concertIds = await readRepository.GetEndedPendingCompletionIdsAsync(
+            timeProvider.GetUtcNow().UtcDateTime, BatchSize, ct);
 
-        logger.FoundConcertsToSettle(candidates.Count);
+        logger.FoundConcertsToSettle(concertIds.Count);
 
-        foreach (var (concertId, settlementPayeeTenantId) in candidates)
+        foreach (var concertId in concertIds)
         {
-            // Settlement reads the supplier's self-billing agreement, which is single-tenant, so the
-            // sweep acts as the payee rather than either party of the concert.
-            using var acting = tenantScope.As(settlementPayeeTenantId);
             var result = await workflow.RunAsync(workflow => workflow.CompleteAsync(concertId, ct));
 
             if (result.TryGetError(out var error))

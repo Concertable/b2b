@@ -18,6 +18,10 @@ public static class CommandTransactionExtensions
         });
         services.AddScoped<CommandTransactionAccessor>();
         services.AddSingleton<ICommandTransactionCommitter, CommandTransactionCommitter>();
+        services.AddSingleton<ICommandExecutor>(provider => new CommandExecutor(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            provider.GetRequiredService<NpgsqlDataSource>(),
+            provider.GetRequiredService<ICommandTransactionCommitter>()));
         services.AddScoped(provider => new CommandTransactionFactory(
             provider.GetRequiredService<NpgsqlDataSource>(),
             provider.GetRequiredService<CommandTransactionAccessor>(),

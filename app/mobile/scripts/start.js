@@ -7,8 +7,7 @@ const authUrl = process.env["services__auth__https__0"];
 const apiUrl = process.env["services__b2b_web__https__0"];
 if (authUrl) process.env["EXPO_PUBLIC_AUTH_AUTHORITY"] = authUrl;
 if (apiUrl) process.env["EXPO_PUBLIC_API_URL"] = apiUrl;
-process.env["EXPO_PUBLIC_OIDC_CLIENT_ID"] = "venue-mobile";
-process.env["EXPO_PUBLIC_OIDC_CLIENT_ID_ARTIST"] = "artist-mobile";
+process.env["EXPO_PUBLIC_OIDC_CLIENT_ID"] = "business-mobile";
 process.env["EXPO_PUBLIC_URL_SCHEME"] = "concertable-business";
 
 const host = process.env.REACT_NATIVE_PACKAGER_HOSTNAME || "localhost";

@@ -9,7 +9,12 @@ internal sealed class ConcertDbContextFactory : B2BDesignTimeDbContextFactory<Co
     protected override string MigrationsSchema => Schema.Name;
 
     protected override ConcertDbContext Create(DbContextOptions<ConcertDbContext> options) =>
-        new(options, DefaultOutboxOptions, new ConcertConfigurationProvider(), DesignTimeTenantContext.Instance);
+        new(
+            options,
+            DefaultOutboxOptions,
+            new ConcertConfigurationProvider(),
+            DesignTimeTenantContext.Instance,
+            DesignTimeResourceAccessContext.Instance);
 
     protected override void ConfigureNpgsql(NpgsqlDbContextOptionsBuilder npgsql) =>
         npgsql.UseNetTopologySuite();

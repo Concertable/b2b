@@ -38,6 +38,14 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddApplicationModule(IConfiguration configuration)
         {
             services.Configure<LegalSettings>(configuration.GetSection(LegalSettings.SectionName));
+            services.AddDbContext<ApplicationPrivilegedDbContext>((provider, options) =>
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                    .AddInterceptors(
+                        provider.GetRequiredService<AuditInterceptor>(),
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
             services.AddDbContext<ApplicationDbContext>((provider, options) =>
                 options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
@@ -57,6 +65,7 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
             services.AddScoped<IApplicationEligibility, ApplicationEligibility>();
             services.AddScoped<ApplicationWorkflow>();

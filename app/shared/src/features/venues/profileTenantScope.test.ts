@@ -16,11 +16,15 @@ const venue = {
 describe("venue tenant scope", () => {
   beforeEach(() => useVenueStore.getState().endEdit());
 
-  it("uses a distinct active-profile cache key for each tenant", () => {
+  it("uses a private session-prefixed cache key for each tenant", () => {
     expect(venueKeys.myForTenant("tenant-a")).not.toEqual(
       venueKeys.myForTenant("tenant-b"),
     );
     expect(venueKeys.myForTenant("tenant-a")).toEqual([
+      "tenant",
+      "unselected",
+      "unselected",
+      0,
       "venue",
       "my",
       "tenant-a",

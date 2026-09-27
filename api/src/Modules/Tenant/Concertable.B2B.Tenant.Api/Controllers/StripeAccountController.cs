@@ -14,7 +14,7 @@ namespace Concertable.B2B.Tenant.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Route("api/stripeaccount")]
-[HasPermission(SharedPermissions.PayoutsManage)]
+[HasPermission(TenantPermission.PayoutsManageName)]
 internal sealed class StripeAccountController : ControllerBase
 {
     private readonly IPayoutAccountOperationsClient payoutAccountClient;
