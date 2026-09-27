@@ -30,8 +30,19 @@ public abstract class CommandOutboxUnitOfWorkBehavior<TContext> : IOutboxUnitOfW
     {
         if (this.commandAccessor.Current is { } command)
         {
-            await command.EnlistAsync(this.context, cancellationToken);
-            return await this.RunAsync(action, saveChanges: false, cancellationToken);
+            try
+            {
+                await command.EnlistAsync(this.context, cancellationToken);
+                var result = await this.RunAsync(action, saveChanges: false, cancellationToken);
+                if (CommandOutcome.IsFailure(result))
+                    command.MarkFailed();
+                return result;
+            }
+            catch
+            {
+                command.MarkFailed();
+                throw;
+            }
         }
 
         return await this.transactions.ExecuteAsync(

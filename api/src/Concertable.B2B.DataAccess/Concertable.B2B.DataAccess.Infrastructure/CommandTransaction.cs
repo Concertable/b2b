@@ -39,11 +39,18 @@ public sealed class CommandTransaction : IAsyncDisposable
         CancellationToken ct = default)
     {
         var connection = await dataSource.OpenConnectionAsync(ct);
-        var transaction = await connection.BeginTransactionAsync(
-            IsolationLevel.ReadCommitted,
-            ct);
-
-        return new CommandTransaction(dataSource, connection, transaction, committer, outboxAccessor);
+        try
+        {
+            var transaction = await connection.BeginTransactionAsync(
+                IsolationLevel.ReadCommitted,
+                ct);
+            return new CommandTransaction(dataSource, connection, transaction, committer, outboxAccessor);
+        }
+        catch
+        {
+            await connection.DisposeAsync();
+            throw;
+        }
     }
 
     public async Task EnlistAsync(DbContext context, CancellationToken ct = default)
@@ -57,8 +64,16 @@ public sealed class CommandTransaction : IAsyncDisposable
                 $"{context.GetType().Name} opened its connection before command enlistment.");
 
         context.Database.SetDbConnection(this.connection, contextOwnsConnection: false);
-        await context.Database.UseTransactionAsync(this.transaction, ct);
         this.participants.Add(context);
+        try
+        {
+            await context.Database.UseTransactionAsync(this.transaction, ct);
+        }
+        catch
+        {
+            this.failed = true;
+            throw;
+        }
     }
 
     public void ValidateAuthority(Func<CancellationToken, Task> validator) =>

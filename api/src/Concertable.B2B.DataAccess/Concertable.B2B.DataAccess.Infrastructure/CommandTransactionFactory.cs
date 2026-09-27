@@ -31,11 +31,19 @@ public sealed class CommandTransactionFactory
     {
         if (this.accessor.Current is { } current)
         {
-            await current.EnlistAsync(context, ct);
-            var nestedResult = await action();
-            if (CommandOutcome.IsFailure(nestedResult))
+            try
+            {
+                await current.EnlistAsync(context, ct);
+                var nestedResult = await action();
+                if (CommandOutcome.IsFailure(nestedResult))
+                    current.MarkFailed();
+                return nestedResult;
+            }
+            catch
+            {
                 current.MarkFailed();
-            return nestedResult;
+                throw;
+            }
         }
 
         await using var command = await CommandTransaction.BeginAsync(
@@ -48,12 +56,16 @@ public sealed class CommandTransactionFactory
         {
             await command.EnlistAsync(context, ct);
             var result = await action();
-            if (CommandOutcome.IsFailure(result))
+            var resultFailed = CommandOutcome.IsFailure(result);
+            if (resultFailed)
                 command.MarkFailed();
 
             if (command.HasFailed)
             {
-                await command.RollbackAsync(ct);
+                await command.RollbackAsync(CancellationToken.None);
+                if (!resultFailed)
+                    throw new InvalidOperationException(
+                        "A nested command failed after the outer action returned success.");
                 return result;
             }
 
@@ -64,7 +76,7 @@ public sealed class CommandTransactionFactory
         }
         catch
         {
-            await command.RollbackAsync(ct);
+            await command.RollbackAsync(CancellationToken.None);
             throw;
         }
         finally

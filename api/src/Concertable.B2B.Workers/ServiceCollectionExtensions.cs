@@ -27,6 +27,7 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Concertable.Seed.Shared.Extensions;
 
 namespace Concertable.B2B.Workers;
@@ -39,6 +40,7 @@ internal static class ServiceCollectionExtensions
         {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
+        services.AddCommandTransactions();
         services.AddUris(configuration);
         services.AddSharedBlob(configuration);
         services.AddSharedEmail(configuration);
