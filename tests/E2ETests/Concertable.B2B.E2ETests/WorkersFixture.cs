@@ -41,7 +41,7 @@ public sealed class WorkersFixture : IDisposable
                 using var response = await client.PostAsync("/admin/host/drain", content: null);
                 return response.StatusCode == HttpStatusCode.Accepted;
             },
-            timeout: TimeSpan.FromSeconds(60));
+            timeout: TimeSpan.FromMinutes(5));
 
         await polling.UntilAsync(
             async () =>

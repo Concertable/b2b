@@ -18,7 +18,7 @@
 P1 slices 1-4, 4.3, 4.1, 4.7 and 4.8 are implemented. The branch has absorbed the current default
 branch's PostgreSQL composition. Canonical review covered all 757 manifest paths; accepted code findings
 N1-N15 are repaired, locally validated, committed and approved by both native/general and
-security/durability lenses. The later findings N16-N19 are repaired.
+security/durability lenses. The later findings N16-N20 are repaired.
 
 The default branch's PR #32, #27 and #35 are merged into this branch at \`1d27cb87\`. The E2E reset now
 quiesces both writers of the B2B database: b2b-web pauses every source of its own work, and the harness
@@ -66,9 +66,10 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
 4. **Done: incremental review `0822900d..2e2d5610`**, judgment `changes-requested`. N19 found that
    `/admin/host/resume` keeps the isolated worker and every later invocation fails on a duplicate function
    load. Resume was deleted.
-5. **Next:** incremental review of the N19 repair. Then push, require ordinary CI plus a separately dispatched
-   `.github/workflows/e2e.yml` at that exact SHA, merge PR #18, and restore the preserved unrelated files
-   without committing them.
+5. **Done: incremental review `2e2d5610..4633c3dd`**, judgment `approved`. N20 widened the first drain's
+   budget to five minutes, since it now gates fixture startup.
+6. **Next:** push, require ordinary CI plus a separately dispatched `.github/workflows/e2e.yml` at that exact
+   SHA, merge PR #18, and restore the preserved unrelated files without committing them.
 
 Local builds, unit, architecture, startup and single-project integration tiers run on this workstation even
 with under 1 GB free; the full integration suite and the Aspire E2E stack are validated remotely.

@@ -5,9 +5,9 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `0822900d1cd6266c997125daebb9fa255c4b1367`  `(2026-09-25)`
+**Reviewed up to commit:** `4633c3dd797dc1838fdf5158adc9fe5102800fe8`  `(2026-09-27)`
 **Security-reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
-**Judgment:** `changes-requested`
+**Judgment:** `approved`
 
 **Branch restart — 2026-09-15:** the branch was reset to origin/main and the rejected runtime commits
 dropped, so the first pass below reviews code that no longer exists on any branch. Its F1–F10 are
@@ -147,6 +147,31 @@ between them. Checked in the parent, no lens dispatched: the delta is seven path
 
 Verified with no finding: N17 exempts `/hub` beside the other prefixes, and N18's `/after-reset` request
 reaches the fallback's 418 inside five seconds after a real reset, which a gate left paused could not do.
+
+## Review pass — 2026-09-27 — incremental (N19 repair)
+
+**Candidate base:** `2e2d56101558d0846120e2f0999678b6f4f1b999`
+**Candidate head:** `4633c3dd797dc1838fdf5158adc9fe5102800fe8`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:7139148769ff4736565b356f0bc87b4164434726ca2969babb06247e0bddb089` `(4 paths)`
+**Candidate patch:** `sha256:6079fc9f370d7a86c40ae3b6fdea90a37381271d14c4e535bc48a75b30dff26d`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+- [x] **N20 — LOW — native — the first drain gates fixture startup on a 60-second Workers budget.**
+  `AppFixture.InitializeAsync` now drains Workers in its first reset. Before this, nothing waited for the
+  Functions host at initialisation. The 60 s that `DrainAsync` copied from `TriggerAsync` had been proven
+  only for later calls, when the host is long since up, and a timeout fails every test in the run.
+  **Fix:** give the drain request the headroom of the fixture's other startup waits.
+  **Disposition:** the drain request now polls for up to five minutes. A running host answers on the first
+  attempt, so the budget costs nothing once Workers is up.
+
+The N19 repair itself is correct: nothing else calls `ResumeAsync`, and without the `try`/`finally` a failed
+reset propagates exactly as it did before the drain existed.
 
 ## Review pass — 2026-09-15 — full (void: candidate discarded by branch restart)
 
