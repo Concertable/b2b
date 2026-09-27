@@ -7,8 +7,8 @@
 - Branch: \`Refactor/PartyFoundationLegacyBindings\`
 - PR: [#18](https://github.com/Concertable/b2b/pull/18)
 - Reviewed base: \`309e40d4b4b704fe94246332130566b89f464de4\`
-- Current checkpoint: b2b-web's reset pauses the whole web host, but review N16 proved the deadlocking
-  settlement runs in B2B Workers; quiescing Workers across the reset is routed to Astra for design
+- Current checkpoint: `4bd2f1d6` pushed, ordinary CI green; review N16 (B2B Workers is not paused by the
+  E2E reset) is the one open finding and the next action
 - Delivery gate: authorized through canonical review, commit, push, exact-head remote validation and merge
 - Last reconciled: 25 September 2026 against \`origin/main\` \`a1baf9a7\`
 - Ownership: transferred 25 September 2026 to a fresh Claude session in this worktree; no other writer is active
@@ -37,11 +37,6 @@ Preserve the unrelated \`.claude/settings.json\`, \`.codex/\` and generated
 
 ## Next Steps
 
-Blocked: N16's cross-process mechanism (quiescing B2B Workers across the E2E reset) needs a design decision, which Tommy routes to Astra rather than the implementer.
-Blocked by: Tommy — launching the Astra (gpt-6-astra) design session was refused by the permission classifier on 25 September 2026.
-Unblock action: Tommy runs the Astra design session on step 3 below (or decides the mechanism himself), which commits the design into step 3.
-Resume when: step 3 carries an implementation-ready design with code snippets committed on this branch.
-
 Scope: current slice only; full plan remains incomplete.
 Current slice: close the E2E reset defect and deliver the reconciled head of PR #18.
 Remaining scope: P2-P5 remain future roadmap phases after this P1 delivery.
@@ -59,13 +54,17 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
    implementation names and "Composite".
 2. **Done: incremental review `e0cfe596..0822900d`** — judgment `changes-requested`. N17 (exempt `/hub`)
    and N18 (assert the reset releases the gate) are repaired. **N16 is open and blocks delivery.**
-3. **Next: quiesce B2B Workers across the reset (N16) — design routed to Astra.** The 5efaa089 diagnostics
-   show `ConcertFinishedFunction`, fired by a test through the Functions admin API and returned on 202,
-   settling 22 seeded concerts from 11:31:11.027 to past 11:31:14 while b2b-web reset at 11:31:11.874 and
-   11:31:13.021; `InvoiceIssuer`'s `InvoiceSequences` read is that process, not b2b-web. `HostPauser` is
-   per-process. The design decides how the reset stops and drains that Azure Functions host (a Workers-side
-   `IPausable` over invocations, the harness awaiting the invocation it fired, scoping the triggered run) and
-   returns as code snippets here; Claude then implements it and appends the incremental review.
+3. **Next: fix N16 — stop B2B Workers across every E2E reset.** Evidence (run 35721355090's
+   `e2e-diagnostics.log`): `ConcertFinishedFunction`, fired by a test through the Functions admin API and
+   returned on 202, settled 22 seeded concerts from 11:31:11.027 to past 11:31:14 while b2b-web reset at
+   11:31:11.874 and 11:31:13.021. `HostPauser` is per-process. Verified lead, from the Functions host's
+   `HostController`: `POST /admin/host/drain` stops listeners; `GET /admin/host/drain/status` returns
+   `{"state":"Completed"}` once outstanding invocations and retries are zero; `POST /admin/host/resume`
+   restarts the host (409 unless `Running`). The harness already calls that admin API
+   (`WorkersFixture.TriggerAsync`), and every reset runs through `AppFixture` (`InitializeAsync`, and
+   `ResetAsync` behind `resetGate`) into `DbFixture.ResetAsync`. Unverified: that Core Tools under Aspire
+   registers the drain service (the endpoint returns 503 otherwise). Decide the mechanism, implement it, run
+   the E2EAdmin tier, and append the incremental review from `0822900d`.
 4. Push, require ordinary CI plus separately dispatched `.github/workflows/e2e.yml` at that exact SHA, then
    merge PR #18 and restore the preserved unrelated files without committing them.
 
