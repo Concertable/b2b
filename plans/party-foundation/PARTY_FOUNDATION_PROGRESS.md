@@ -100,10 +100,22 @@ Done when: one reviewed head passes exact-head remote CI and E2E gates and PR #1
 
    One deviation from the design: the report dialog keeps the platform's generic `Select`, which the page
    object's combobox and option selectors already drove on `main`. It does not use the `ui/select` primitives.
-9. **Next:** pass the Conversations integration tests, `web-b2b` tests and `build:web`, then commit and run
-   an incremental review. After that, push and require CI plus API and UI E2E at that exact SHA, merge PR #18,
-   and restore the preserved unrelated files without committing them. The pass bar is `main`'s: only
-   scenarios that also fail on `main` may fail, and only with an owning debt entry.
+9. **Done: the inbox landed as `a340eeb4`**, reviewed with no findings. CI and API E2E (8/10) passed. UI E2E
+   scored 24/32: login and both sign-ups now pass, but both inbox scenarios still failed. The retained
+   screenshot showed the real cause. The venue home page crashed with "Cannot read properties of undefined
+   (reading '$type')". Slice 4.2 had turned `GET /api/application/venue/current` and `/artist/current` into
+   summary responses, which carry no deal and no actions. The venue and artist dashboard widgets still call
+   `dealSummary(opportunity.deal)`, so a tenant with a current application crashed its home page. That also
+   explains the original "detached from the DOM" symptom: the page rendered, dashboard data arrived, and the
+   error boundary replaced the tree.
+
+   Both lists now return proposal responses gated by `terms.read`, as section 4.2 prescribes for deal
+   details. Their integration tests now assert each item carries a deal and actions; before, they only
+   checked for an array. `aa15ea3c` makes the E2E upload keep failure screenshots and Playwright traces.
+10. **Next:** pass the Application integration tests, then commit, review the delta and push. After that,
+    require CI plus UI and API E2E at that exact SHA, merge PR #18, and restore the preserved unrelated files
+    without committing them. The pass bar is `main`'s: only scenarios that also fail on `main` may fail,
+    and only with an owning debt entry.
 
 Local builds, unit, architecture, startup and single-project integration tiers run on this workstation even
 with under 1 GB free; the full integration suite and the Aspire E2E stack are validated remotely.

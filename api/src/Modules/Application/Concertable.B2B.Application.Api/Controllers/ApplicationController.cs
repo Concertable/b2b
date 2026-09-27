@@ -69,21 +69,23 @@ internal sealed class ApplicationController : ControllerBase
     [HttpGet("venue/current")]
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.OperationsViewName)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationSummaryResponse>>> GetPendingForCurrentVenue(
+    [HasPermission(TenantPermission.TermsReadName)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetPendingForCurrentVenue(
         CancellationToken ct)
     {
         var result = await applicationService.GetPendingForCurrentVenueAsync(ct);
-        return (await result.MapAsync(dtos => mapper.ToSummaryResponsesAsync(dtos, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dtos => mapper.ToProposalResponsesAsync(dtos, ct))).ToOkOrProblem();
     }
 
     [HttpGet("artist/current")]
     [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.OperationsViewName)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationSummaryResponse>>> GetCurrentForCurrentArtist(
+    [HasPermission(TenantPermission.TermsReadName)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetCurrentForCurrentArtist(
         CancellationToken ct)
     {
         var result = await applicationService.GetCurrentForCurrentArtistAsync(ct);
-        return (await result.MapAsync(dtos => mapper.ToSummaryResponsesAsync(dtos, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dtos => mapper.ToProposalResponsesAsync(dtos, ct))).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.OperationsViewName)]

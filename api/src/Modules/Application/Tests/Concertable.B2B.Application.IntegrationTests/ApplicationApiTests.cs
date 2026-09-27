@@ -28,7 +28,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
     [Fact]
-    public async Task GetCurrentForVenue_ShouldReturnApplicationList()
+    public async Task GetCurrentForVenue_ReturnsProposalsWithTermsAndActions()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
@@ -36,11 +36,11 @@ public sealed class ApplicationApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.OK);
         var applications = await response.Content.ReadAsync<JsonElement>();
-        Assert.Equal(JsonValueKind.Array, applications.ValueKind);
+        AssertProposalsWithTermsAndActions(applications);
     }
 
     [Fact]
-    public async Task GetCurrentForArtist_ShouldReturnApplicationList()
+    public async Task GetCurrentForArtist_ReturnsProposalsWithTermsAndActions()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
@@ -48,7 +48,17 @@ public sealed class ApplicationApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.OK);
         var applications = await response.Content.ReadAsync<JsonElement>();
-        Assert.Equal(JsonValueKind.Array, applications.ValueKind);
+        AssertProposalsWithTermsAndActions(applications);
+    }
+
+    private static void AssertProposalsWithTermsAndActions(JsonElement applications)
+    {
+        Assert.NotEmpty(applications.EnumerateArray());
+        Assert.All(applications.EnumerateArray(), application =>
+        {
+            Assert.True(application.GetProperty("opportunity").GetProperty("deal").TryGetProperty("$type", out _));
+            Assert.Equal(JsonValueKind.Object, application.GetProperty("actions").ValueKind);
+        });
     }
 
     [Fact]

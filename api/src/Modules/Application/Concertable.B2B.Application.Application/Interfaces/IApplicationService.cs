@@ -20,9 +20,9 @@ internal interface IApplicationService
         CancellationToken ct = default);
     Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetRecentDeniedForArtistAsync(
         CancellationToken ct = default);
-    Task<Result<IReadOnlyList<ApplicationSummaryDto>, ApplicationError>> GetPendingForCurrentVenueAsync(
+    Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetPendingForCurrentVenueAsync(
         CancellationToken ct = default);
-    Task<Result<IReadOnlyList<ApplicationSummaryDto>, ApplicationError>> GetCurrentForCurrentArtistAsync(
+    Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetCurrentForCurrentArtistAsync(
         CancellationToken ct = default);
     Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
         int opportunityId,

@@ -136,7 +136,7 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationSummaryDto>, ApplicationError>> GetPendingForCurrentVenueAsync(
+    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetPendingForCurrentVenueAsync(
         CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
@@ -147,8 +147,8 @@ internal sealed class ApplicationService : IApplicationService
             ApplicationState.Applied,
             ct);
         var now = timeProvider.GetUtcNow();
-        var dtos = await mapper.ToSummariesAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationSummaryDto>>(
+        var dtos = await mapper.ToProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposalDto>>(
             dtos.Where(application => application.Opportunity.EndDate > now)
                 .OrderBy(application => application.Opportunity.StartDate)
                 .ThenBy(application => application.Id)
@@ -156,7 +156,7 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationSummaryDto>, ApplicationError>> GetCurrentForCurrentArtistAsync(
+    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetCurrentForCurrentArtistAsync(
         CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
@@ -164,8 +164,8 @@ internal sealed class ApplicationService : IApplicationService
 
         var applications = await applicationRepository.GetCurrentByArtistTenantIdAsync(tenantId, ct);
         var now = timeProvider.GetUtcNow();
-        var dtos = await mapper.ToSummariesAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationSummaryDto>>(
+        var dtos = await mapper.ToProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposalDto>>(
             dtos.Where(application => application.Opportunity.EndDate > now)
                 .OrderBy(application => application.Opportunity.StartDate)
                 .ThenBy(application => application.Id)
