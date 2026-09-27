@@ -5,7 +5,7 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `4633c3dd797dc1838fdf5158adc9fe5102800fe8`  `(2026-09-27)`
+**Reviewed up to commit:** `ff7dd3cb6ffbd1f89b494373d6537d52128e0c93`  `(2026-09-27)`
 **Security-reviewed up to commit:** `e0cfe5964e9e114dc8bd911d6106b504de788d3b`  `(2026-09-24)`
 **Judgment:** `approved`
 
@@ -172,6 +172,24 @@ reaches the fallback's 418 inside five seconds after a real reset, which a gate 
 
 The N19 repair itself is correct: nothing else calls `ResumeAsync`, and without the `try`/`finally` a failed
 reset propagates exactly as it did before the drain existed.
+
+## Review pass — 2026-09-27 — incremental (N20 repair)
+
+**Candidate base:** `4633c3dd797dc1838fdf5158adc9fe5102800fe8`
+**Candidate head:** `ff7dd3cb6ffbd1f89b494373d6537d52128e0c93`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:3a7d44b46aba659e7f17ad5f6cbef33de5002420c7e687ad02d4c5bcf0b44b49` `(3 paths)`
+**Candidate patch:** `sha256:f04dfdb4580159758186e1c79f3b5e6d9cd71f49c1abf96f813d3b1a9c21ba01`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `approved`
+
+### Findings
+
+No new findings. The code change is the single N20 timeout constant, and the drain-status wait keeps its own
+two-minute budget. The ledger and work-order edits match the repaired mechanism. No path in the range, or
+anywhere since the security watermark `e0cfe596`, is security-sensitive.
 
 ## Review pass — 2026-09-15 — full (void: candidate discarded by branch restart)
 
