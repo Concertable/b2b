@@ -89,12 +89,9 @@ routed to the platform messaging package.
   b2b-web logged no settlement at all. `HostPauser` is per-process, so it cannot reach that writer, and a write
   landing after the truncate also leaves dirty state.
   **Fix:** quiesce the Workers host across the reset as well.
-  **Disposition:** `DbFixture.ResetAsync` drains the Functions host before resetting either database and
-  resumes it in `finally`. `WorkersFixture.DrainAsync` posts `/admin/host/drain` and waits for
-  `/admin/host/drain/status` to report `Completed`, meaning zero outstanding invocations and retries.
-  `ResumeAsync` posts `/admin/host/resume`, which restarts the host with its listeners. A local Core Tools
-  probe showed the drain holding at `InProgress` with one outstanding invocation until that invocation
-  returned. After resume, the admin invoke was accepted again.
+  **Disposition:** `DbFixture.ResetAsync` drains the Functions host before resetting either database.
+  `WorkersFixture.DrainAsync` posts `/admin/host/drain` and waits for `/admin/host/drain/status` to report
+  `Completed`, meaning zero outstanding invocations and retries. The host is never resumed (N19).
 
 - [x] **N17 — MEDIUM — native — SignalR's non-WebSocket transports are tracked by the gate.**
   `E2EAdminExtensions.cs:46-51` exempted only `/_e2e`, `/health` and `/alive`, while `/hub/notifications` sits
@@ -112,6 +109,44 @@ routed to the platform messaging package.
 Considered and dropped: `UseGate()` running ahead of `UseExceptionHandler()`/`UseCors()` changes only the
 response to a request whose client already cancelled it, which nobody reads; `QueueHostedService` is not an
 `IPausable`, but nothing in B2B enqueues onto it.
+
+## Review pass — 2026-09-27 — incremental (Workers drain)
+
+**Candidate base:** `0822900d1cd6266c997125daebb9fa255c4b1367`
+**Candidate head:** `2e2d56101558d0846120e2f0999678b6f4f1b999`
+**Candidate branch:** `Refactor/PartyFoundationLegacyBindings`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:5e5cae28cda661d8ffc77bbc38b6b14aa0481ecadadf35626a486cd234a6cf2e` `(7 paths)`
+**Candidate patch:** `sha256:aa22373e466cec8395b4b82073a882c2a9c60f0f1d46feec1452a6a89d7d6fb6`
+**Work-order path:** `reviews/Refactor-PartyFoundationLegacyBindings.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+### Scope
+
+The N17/N18 repairs in `4bd2f1d6`, the N16 Workers drain in `2e2d5610`, and the plan and ledger updates
+between them. Checked in the parent, no lens dispatched: the delta is seven paths of test harness and docs.
+
+### Findings
+
+- [x] **N19 — HIGH — native — resuming the drained Functions host breaks every later invocation.**
+  `DbFixture.ResetAsync` resumed Workers in `finally` through `WorkersFixture.ResumeAsync`
+  (`POST /admin/host/resume`). That call restarts the script host but keeps the same isolated worker
+  process. The worker then rejects the new host's function loads with `InvalidOperationException: Unable to
+  load Function 'SlowTimer'. A function with the id '2036304129' name already exists.`, and every invocation
+  afterwards fails in about 40 ms while the admin API still answers 202. A local Core Tools 4.8.0 probe on
+  Worker 2.51.0, the Workers package version, reproduced it with a timer function invoked through
+  `/admin/functions/{name}`, exactly as `TriggerAsync` does. The next `ConcertFinishedTests` settlement would
+  silently not run.
+  **Fix:** never resume. The same probe showed a drained host still executing admin-invoked functions
+  successfully, and a repeated drain holding at `InProgress` until the in-flight admin invocation returned.
+  The E2E tests invoke Workers only through the admin API, and the hourly timer is itself an uncontrolled
+  writer under test.
+  **Disposition:** `ResumeAsync` and the `try`/`finally` are deleted. Every reset drains, and the host stays
+  drained for the rest of the run.
+
+Verified with no finding: N17 exempts `/hub` beside the other prefixes, and N18's `/after-reset` request
+reaches the fallback's 418 inside five seconds after a real reset, which a gate left paused could not do.
 
 ## Review pass — 2026-09-15 — full (void: candidate discarded by branch restart)
 

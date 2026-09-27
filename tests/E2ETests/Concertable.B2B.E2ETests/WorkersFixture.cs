@@ -55,17 +55,6 @@ public sealed class WorkersFixture : IDisposable
             timeout: TimeSpan.FromMinutes(2));
     }
 
-    public async Task ResumeAsync()
-    {
-        await polling.UntilAsync(
-            async () =>
-            {
-                using var response = await client.PostAsync("/admin/host/resume", content: null);
-                return response.StatusCode == HttpStatusCode.OK;
-            },
-            timeout: TimeSpan.FromSeconds(60));
-    }
-
     public void Dispose() => client.Dispose();
 
     private sealed record DrainStatus(string State);

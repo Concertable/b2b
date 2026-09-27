@@ -30,15 +30,8 @@ public sealed class DbFixture
 
     public async Task ResetAsync()
     {
-        try
-        {
-            await workers.DrainAsync();
-            await payment.ResetAsync();
-            await b2b.ResetAsync();
-        }
-        finally
-        {
-            await workers.ResumeAsync();
-        }
+        await workers.DrainAsync();
+        await payment.ResetAsync();
+        await b2b.ResetAsync();
     }
 }
