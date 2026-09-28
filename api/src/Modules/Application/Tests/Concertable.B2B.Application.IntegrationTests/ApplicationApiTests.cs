@@ -630,8 +630,14 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 await using var waiters = control.CreateCommand();
                 waiters.Transaction = transaction;
                 waiters.CommandText = """
-                    SELECT COUNT(*) FROM pg_locks
-                    WHERE NOT granted AND pid <> pg_backend_pid()
+                    SELECT COUNT(*)
+                    FROM pg_locks AS waiting
+                    JOIN pg_locks AS held ON held.transactionid = waiting.transactionid
+                    WHERE waiting.locktype = 'transactionid'
+                      AND NOT waiting.granted
+                      AND held.locktype = 'transactionid'
+                      AND held.granted
+                      AND held.pid = pg_backend_pid()
                     """;
                 if (Convert.ToInt32(await waiters.ExecuteScalarAsync(timeout.Token)) > 0)
                     break;
