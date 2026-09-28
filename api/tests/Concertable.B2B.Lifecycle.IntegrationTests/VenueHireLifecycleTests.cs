@@ -89,7 +89,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         await fixture.PaymentSimulator.SendWebhookAsync();
 
         var application = await GetApplicationAsync(client, applicationId);
-        Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
+        Assert.Equal(ApplicationBoundaryStatus.AwaitingPayment, application.Status);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
         Assert.Empty(fixture.NotificationService.DraftCreated);
@@ -119,7 +119,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/application/{applicationId}");
+        var response = await client.GetAsync($"/api/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();
         Assert.NotNull(application);
@@ -142,7 +142,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         int applicationId)
     {
         var response = await client.GetAsync(
-            $"/api/booking/application/{applicationId}");
+            $"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var financial = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(financial);

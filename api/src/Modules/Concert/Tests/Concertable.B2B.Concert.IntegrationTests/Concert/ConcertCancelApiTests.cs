@@ -269,7 +269,7 @@ public sealed class ConcertCancelApiTests : IAsyncLifetime
 
     private static async Task<BookingSummary> GetBookingAsync(HttpClient client, int applicationId)
     {
-        var response = await client.GetAsync($"/api/booking/application/{applicationId}");
+        var response = await client.GetAsync($"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         return Assert.IsType<BookingSummary>(await response.Content.ReadAsync<BookingSummary>());
     }
