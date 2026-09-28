@@ -4,12 +4,12 @@ using Concertable.Messaging.Contracts;
 
 namespace Concertable.B2B.Application.Infrastructure.Handlers;
 
-internal sealed class NotifyApplicationPaymentVerificationFailedCommandHandler(
+internal sealed class NotifyPaymentVerificationFailedCommandHandler(
     IApplicationNotifier notifier)
-    : IIntegrationCommandHandler<NotifyApplicationPaymentVerificationFailedCommand>
+    : IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>
 {
     public Task HandleAsync(
-        NotifyApplicationPaymentVerificationFailedCommand command,
+        NotifyPaymentVerificationFailedCommand command,
         MessageEnvelope envelope,
         CancellationToken ct = default) =>
         notifier.VerifyPaymentFailedAsync(command.ApplicationId, command.FailureMessage);

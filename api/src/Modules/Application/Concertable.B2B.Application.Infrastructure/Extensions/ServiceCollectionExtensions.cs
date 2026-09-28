@@ -87,8 +87,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IPaymentVerificationRecorder, PaymentVerificationRecorder>();
             services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, VerifyPaymentProcessor>();
             services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, VerifyPaymentFailedProcessor>();
-            services.AddScoped<IIntegrationCommandHandler<NotifyApplicationPaymentVerificationFailedCommand>,
-                NotifyApplicationPaymentVerificationFailedCommandHandler>();
+            services.AddScoped<IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>,
+                NotifyPaymentVerificationFailedCommandHandler>();
             services.AddScoped<IDomainEventHandler<ApplicationCounterpartyNotifiedDomainEvent>,
                 ApplicationCounterpartyNotifiedDomainEventHandler>();
             services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,

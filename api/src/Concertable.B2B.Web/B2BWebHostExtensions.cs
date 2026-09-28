@@ -186,7 +186,7 @@ public static class B2BWebHostExtensions
                     reg.SubscribeTo<RefundEscrowRejectedEvent>();
                     reg.HandleCommand<SendEmailCommand>();
                     reg.HandleCommand<NotifyConcertDraftCreatedCommand>();
-                    reg.HandleCommand<NotifyApplicationPaymentVerificationFailedCommand>();
+                    reg.HandleCommand<NotifyPaymentVerificationFailedCommand>();
                 });
             services.AddDirectBusKeyed("webhook");
             services.AddOutbox(opt => opt.UseNpgsql(

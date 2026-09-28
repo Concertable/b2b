@@ -93,7 +93,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
                 await paymentVerificationRecorder.RecordAsync(
                     new VerifyPaymentFailed(applicationId, new VerifyPaymentError(code, message)),
                     ct);
-                await bus.SendAsync(new NotifyApplicationPaymentVerificationFailedCommand(applicationId, message), ct);
+                await bus.SendAsync(new NotifyPaymentVerificationFailedCommand(applicationId, message), ct);
             }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
