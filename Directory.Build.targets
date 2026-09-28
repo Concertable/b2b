@@ -19,6 +19,7 @@
     <ChurnyCorePackage Include="Concertable.Messaging.Application"     Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Application\Concertable.Messaging.Application.csproj" />
     <ChurnyCorePackage Include="Concertable.Messaging.Infrastructure"  Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.Infrastructure\Concertable.Messaging.Infrastructure.csproj" />
     <ChurnyCorePackage Include="Concertable.Messaging.AzureServiceBus" Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.AzureServiceBus\Concertable.Messaging.AzureServiceBus.csproj" />
+    <ChurnyCorePackage Include="Concertable.Messaging.AspNetCore"      Project="$(ConcertableCoreRoot)Concertable.Messaging\Concertable.Messaging.AspNetCore\Concertable.Messaging.AspNetCore.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UseLocalCore)' == 'true'">
