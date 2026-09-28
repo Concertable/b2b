@@ -3,6 +3,7 @@ using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Conversations.Contracts.Events;
 using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.Messaging.Contracts;
@@ -23,6 +24,7 @@ internal sealed class ConversationService : IConversationService
     private readonly IMembershipAuthorityFence authorityFence;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
+    private readonly CommandTransactionAccessor transactions;
     private readonly ITenantContext tenantContext;
     private readonly IBus bus;
     private readonly TimeProvider timeProvider;
@@ -38,6 +40,7 @@ internal sealed class ConversationService : IConversationService
         IMembershipAuthorityFence authorityFence,
         IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor,
+        CommandTransactionAccessor transactions,
         ITenantContext tenantContext,
         IBus bus,
         TimeProvider timeProvider)
@@ -52,6 +55,7 @@ internal sealed class ConversationService : IConversationService
         this.authorityFence = authorityFence;
         this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
+        this.transactions = transactions;
         this.tenantContext = tenantContext;
         this.bus = bus;
         this.timeProvider = timeProvider;
@@ -64,6 +68,9 @@ internal sealed class ConversationService : IConversationService
         if (membership.Membership is not { } actor)
             return Task.FromResult<Result<ConversationDto, CreateConversationError>>(
                 new CreateConversationError.NotPermitted());
+
+        if (transactions.Current is not null)
+            return unitOfWork.ExecuteAsync(() => CreateCoreAsync(request, actor, ct), ct);
 
         return commandExecutor.ExecuteAsync<ConversationService, Result<ConversationDto, CreateConversationError>>(
             (service, token) => service.CreateCommandAsync(request, actor, token),
@@ -159,6 +166,9 @@ internal sealed class ConversationService : IConversationService
     {
         if (membership.Membership is not { } actor)
             return Task.FromResult<Result<MessageDto, SendMessageError>>(new SendMessageError.NotPermitted());
+        if (transactions.Current is not null)
+            return unitOfWork.ExecuteAsync(
+                () => SendCoreAsync(conversationId, request, action, actor, ct), ct);
         return commandExecutor.ExecuteAsync<ConversationService, Result<MessageDto, SendMessageError>>(
             (service, token) => service.SendCommandAsync(conversationId, request, action, actor, token),
             (service, _, token) => service.ValidateAccessAsync(
