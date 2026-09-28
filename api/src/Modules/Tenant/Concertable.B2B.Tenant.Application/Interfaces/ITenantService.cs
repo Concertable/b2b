@@ -15,6 +15,9 @@ internal interface ITenantService
     Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default);
+    Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
+        Guid tenantId,
+        CancellationToken ct = default);
     Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
         MembershipSnapshot expected,
         CancellationToken ct = default);

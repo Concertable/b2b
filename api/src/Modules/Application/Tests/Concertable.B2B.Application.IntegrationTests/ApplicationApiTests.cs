@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Infrastructure.Data;
 using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Authorization.Contracts.Enums;
@@ -12,6 +13,7 @@ using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -570,6 +572,81 @@ public sealed class ApplicationApiTests : IAsyncLifetime
             releaseSend.TrySetResult(true);
             fixture.NotificationService.BeforeSendAsync = null;
         }
+    }
+
+    [Fact]
+    public async Task PaymentFailureCommand_WhenOwnerChangesBeforeAudienceRead_NotifiesNewOwner()
+    {
+        var application = fixture.SeedState.DoorSplitApp;
+        var creator = fixture.SeedState.VenueManager1;
+        var replacement = fixture.SeedState.VenueManager3;
+        using var scope = fixture.Services.CreateScope();
+        var readContext = scope.ServiceProvider.GetRequiredService<ApplicationReadDbContext>();
+        await using var control = new NpgsqlConnection(readContext.Database.GetConnectionString());
+        await control.OpenAsync();
+        await using var transaction = await control.BeginTransactionAsync();
+
+        await using (var lockTenant = control.CreateCommand())
+        {
+            lockTenant.Transaction = transaction;
+            lockTenant.CommandText = """
+                SELECT 1 FROM tenant."Tenants" WHERE "Id" = @tenantId FOR UPDATE
+                """;
+            lockTenant.Parameters.AddWithValue("tenantId", application.VenueTenantId);
+            Assert.NotNull(await lockTenant.ExecuteScalarAsync());
+        }
+
+        await using (var changeMembers = control.CreateCommand())
+        {
+            changeMembers.Transaction = transaction;
+            changeMembers.CommandText = """
+                UPDATE tenant."Memberships"
+                SET "Role" = @role, "PermissionVersion" = "PermissionVersion" + 1
+                WHERE "TenantId" = @tenantId AND "UserId" = @replacementId;
+                DELETE FROM tenant."Memberships"
+                WHERE "TenantId" = @tenantId AND "UserId" = @creatorId
+                """;
+            changeMembers.Parameters.AddWithValue("role", (int)TenantRole.Owner);
+            changeMembers.Parameters.AddWithValue("tenantId", application.VenueTenantId);
+            changeMembers.Parameters.AddWithValue("replacementId", replacement.Id);
+            changeMembers.Parameters.AddWithValue("creatorId", creator.Id);
+            Assert.Equal(2, await changeMembers.ExecuteNonQueryAsync());
+        }
+
+        var handler = scope.ServiceProvider.GetRequiredService<
+            IIntegrationCommandHandler<NotifyApplicationPaymentVerificationFailedCommand>>();
+        var command = new NotifyApplicationPaymentVerificationFailedCommand(
+            application.Id,
+            "Card was declined");
+        var dispatch = handler.HandleAsync(
+            command,
+            MessageEnvelope.Create<NotifyApplicationPaymentVerificationFailedCommand>(fixture.SeedNow));
+
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            while (true)
+            {
+                await using var waiters = control.CreateCommand();
+                waiters.Transaction = transaction;
+                waiters.CommandText = """
+                    SELECT COUNT(*) FROM pg_locks
+                    WHERE NOT granted AND pid <> pg_backend_pid()
+                    """;
+                if (Convert.ToInt32(await waiters.ExecuteScalarAsync(timeout.Token)) > 0)
+                    break;
+                await Task.Delay(25, timeout.Token);
+            }
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
+
+        await dispatch.WaitAsync(TimeSpan.FromSeconds(10));
+        var alert = Assert.Single(fixture.NotificationService.Other.Where(value =>
+            value.EventName == "VerifyPaymentFailed"));
+        Assert.Equal(replacement.Id.ToString(), alert.UserId);
     }
 
     [Fact]

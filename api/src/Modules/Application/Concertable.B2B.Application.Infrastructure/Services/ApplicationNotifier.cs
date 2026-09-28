@@ -70,7 +70,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
 
         await unitOfWork.ExecuteAsync(async () =>
         {
-            var eligible = (await tenantModule.GetCurrentMembershipsAsync([application.VenueTenantId]))
+            var eligible = (await tenantModule.GetCurrentMembershipsForNotificationAsync(application.VenueTenantId))
                 .Where(membership => permissionCatalog.Grants(membership.Role, TenantPermission.ApplicationsDecide))
                 .OrderBy(membership => membership.UserId == profile.UserId
                     ? 0

@@ -92,6 +92,13 @@ internal sealed class TenantService : ITenantService
         CancellationToken ct = default) =>
         membershipRepository.GetSnapshotsByTenantIdsAsync(tenantIds, ct);
 
+    public async Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        await repository.GetByIdForAdministrationAsync(tenantId, ct) is null
+            ? []
+            : await membershipRepository.GetSnapshotsByTenantIdsAsync([tenantId], ct);
+
     public Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
         MembershipSnapshot expected,
         CancellationToken ct = default) =>
