@@ -504,15 +504,15 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var remove = await client.DeleteAsync($"/api/organization/members/{creator.Id}");
         await remove.ShouldBe(HttpStatusCode.NoContent);
 
-        var command = new NotifyApplicationPaymentVerificationFailedCommand(
+        var command = new NotifyPaymentVerificationFailedCommand(
             fixture.SeedState.DoorSplitApp.Id,
             "Card was declined");
         using var scope = fixture.Services.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<
-            IIntegrationCommandHandler<NotifyApplicationPaymentVerificationFailedCommand>>();
+            IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>>();
         await handler.HandleAsync(
             command,
-            MessageEnvelope.Create<NotifyApplicationPaymentVerificationFailedCommand>(fixture.SeedNow));
+            MessageEnvelope.Create<NotifyPaymentVerificationFailedCommand>(fixture.SeedNow));
 
         var notification = Assert.Single(fixture.NotificationService.Other.Where(value =>
             value.EventName == "VerifyPaymentFailed"));
@@ -546,13 +546,13 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         {
             using var scope = fixture.Services.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<
-                IIntegrationCommandHandler<NotifyApplicationPaymentVerificationFailedCommand>>();
-            var command = new NotifyApplicationPaymentVerificationFailedCommand(
+                IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>>();
+            var command = new NotifyPaymentVerificationFailedCommand(
                 fixture.SeedState.DoorSplitApp.Id,
                 "Card was declined");
             var dispatch = handler.HandleAsync(
                 command,
-                MessageEnvelope.Create<NotifyApplicationPaymentVerificationFailedCommand>(fixture.SeedNow));
+                MessageEnvelope.Create<NotifyPaymentVerificationFailedCommand>(fixture.SeedNow));
             await enteredSend.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             var removal = client.DeleteAsync($"/api/organization/members/{creator.Id}");
@@ -614,13 +614,13 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         }
 
         var handler = scope.ServiceProvider.GetRequiredService<
-            IIntegrationCommandHandler<NotifyApplicationPaymentVerificationFailedCommand>>();
-        var command = new NotifyApplicationPaymentVerificationFailedCommand(
+            IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>>();
+        var command = new NotifyPaymentVerificationFailedCommand(
             application.Id,
             "Card was declined");
         var dispatch = handler.HandleAsync(
             command,
-            MessageEnvelope.Create<NotifyApplicationPaymentVerificationFailedCommand>(fixture.SeedNow));
+            MessageEnvelope.Create<NotifyPaymentVerificationFailedCommand>(fixture.SeedNow));
 
         try
         {

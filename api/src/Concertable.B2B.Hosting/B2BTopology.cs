@@ -53,7 +53,7 @@ public static class B2BTopology
                     .Subscribe<BookingConfirmedEvent>()
                     .Queue<SendEmailCommand>()
                     .Queue<NotifyConcertDraftCreatedCommand>()
-                    .Queue<NotifyApplicationPaymentVerificationFailedCommand>();
+                    .Queue<NotifyPaymentVerificationFailedCommand>();
 
             return topology;
         }

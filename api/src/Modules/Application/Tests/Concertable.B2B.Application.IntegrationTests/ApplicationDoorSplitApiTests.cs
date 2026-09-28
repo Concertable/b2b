@@ -193,14 +193,14 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => fixture.DispatchIntegrationEventAsync(failed, envelope));
-        Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<NotifyApplicationPaymentVerificationFailedCommand>());
+        Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<NotifyPaymentVerificationFailedCommand>());
 
         fixture.PaymentSessionClient.StatusError = null;
         await fixture.DispatchIntegrationEventAsync(failed, envelope);
         await fixture.DispatchIntegrationEventAsync(failed, envelope);
 
         Assert.True(await fixture.PaymentVerifications.AnyAsync(verification => verification.ApplicationId == applicationId));
-        Assert.Equal(1, await fixture.GetOutboxMessageCountAsync<NotifyApplicationPaymentVerificationFailedCommand>());
+        Assert.Equal(1, await fixture.GetOutboxMessageCountAsync<NotifyPaymentVerificationFailedCommand>());
     }
 
     private OpportunityBoundaryRequest BuildOpportunityRequest(DealDto deal) =>
