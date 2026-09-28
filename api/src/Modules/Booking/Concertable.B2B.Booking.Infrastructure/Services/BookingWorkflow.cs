@@ -16,6 +16,7 @@ using Concertable.B2B.Booking.Infrastructure.Specifications;
 using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,7 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 internal sealed class BookingWorkflow : IBookingWorkflow
 {
     private readonly IBookingRepository bookingRepository;
+    private readonly ITenantBookingFence tenantBookingFence;
     private readonly BookingPrivilegedDbContext privilegedContext;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWorkBehavior;
     private readonly IUnitOfWork unitOfWork;
@@ -40,6 +42,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
     public BookingWorkflow(
         IBookingRepository bookingRepository,
+        ITenantBookingFence tenantBookingFence,
         BookingPrivilegedDbContext privilegedContext,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWorkBehavior,
         IUnitOfWork unitOfWork,
@@ -53,6 +56,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         ILogger<BookingWorkflow> logger)
     {
         this.bookingRepository = bookingRepository;
+        this.tenantBookingFence = tenantBookingFence;
         this.privilegedContext = privilegedContext;
         this.privilegedUnitOfWorkBehavior = privilegedUnitOfWorkBehavior;
         this.unitOfWork = unitOfWork;
@@ -157,6 +161,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
     {
         var booking = BookingEntity.Create(snapshot);
+        await tenantBookingFence.RequireAsync(booking.VenueTenantId, booking.ArtistTenantId, ct);
         await bookingRepository.AddAsync(booking, ct);
         await bookingRepository.SaveChangesAsync(ct);
 

@@ -3,6 +3,7 @@ using Concertable.B2B.Admin.Api.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Application.Api.Extensions;
 using Concertable.B2B.Application.Contracts.Events;
+using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Artist.Api.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Booking.Api.Extensions;
@@ -185,6 +186,7 @@ public static class B2BWebHostExtensions
                     reg.SubscribeTo<RefundEscrowRejectedEvent>();
                     reg.HandleCommand<SendEmailCommand>();
                     reg.HandleCommand<NotifyConcertDraftCreatedCommand>();
+                    reg.HandleCommand<NotifyApplicationPaymentVerificationFailedCommand>();
                 });
             services.AddDirectBusKeyed("webhook");
             services.AddOutbox(opt => opt.UseNpgsql(

@@ -7,7 +7,7 @@
 
 
 **Review status:** `complete`
-**Reviewed up to commit:** `498119854487c485d5f4e476ce2fa729051ace1c`  `(2026-09-28)`
+**Reviewed up to commit:** `399954c8721696a711799699f944400ac7f02419`  `(2026-09-28)`
 
 **Judgment:** `changes-requested`
 
@@ -111,3 +111,30 @@ The foundation lens also flagged `TryExecuteAsync`'s nested error handler. The c
 **Parent summary status:** `complete`
 
 All 543 frozen candidate paths are covered by the five areas. Ten confirmed findings require repair. Post-anchor edits will be reviewed as a separate incremental pass.
+
+## Review pass — 2026-09-28 — incremental
+
+**Candidate base:** `498119854487c485d5f4e476ce2fa729051ace1c`
+**Candidate head:** `399954c8721696a711799699f944400ac7f02419`
+**Candidate branch:** `Refactor/PartyFoundationAccess`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:b177ffc2a8f6287df10eb3736a925aac262f3415d36048bdfe6c91de27588afb` `(30 paths)`
+**Candidate patch:** `sha256:9d7b32d62b7c90e2b53c10ec53d3df1c37243563b312c54d5874435f915f100d`
+**Candidate bundle:** `C:/Users/TommySeery/source/repos/Concertable/b2b/.git/agent-workflow/runs/party-access-repair-20260928/review/d48601fafc2b8ca66429e2cad480c5396ff45b3dd16ac9d5385aa80716a5d313`
+**Candidate bundle identity:** `sha256:d34ab069b84383b3215abdd2207b921825cf00838ddbb6d6e9879c57b90c73bf`
+**Work-order path:** `reviews/Refactor-PartyFoundationAccess.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+**Synchronization:** no new fetch; the staged pass synchronized once with origin, and the local repair commit descends from its frozen head.
+
+### Findings
+
+- [x] **A11 — HIGH — payment alert durability** — `api/src/Modules/Application/Concertable.B2B.Application.Infrastructure/Services/Payment/VerifyPaymentFailedProcessor.cs:103`
+  The alert is sent after inbox commit, but a send failure leaves the inbox processed and the alert unretryable. Stage a notification command in the same transaction through the outbox.
+  Resolved: the processor stages a command with the inbox and verification record; the Application integration and lifecycle tests pass.
+- [x] **A12 — HIGH — tenant deletion race** — `api/src/Modules/Booking/Concertable.B2B.Booking.Infrastructure/Services/BookingWorkflow.cs:159`
+  Booking creation does not lock either tenant row, so a concurrent tenant deletion can pass its Booking guard before the booking insert and orphan the new booking. Lock both tenant rows before insertion.
+  Resolved: Booking acquires both Tenant-owned row locks before insertion; the provider-real lock test and deletion guard test pass.
+- [x] **A13 — MEDIUM — dashboard inbox refresh** — `app/web/artist/src/features/notifications/hooks/useArtistNotifications.ts:17`, `app/web/venue/src/features/notifications/hooks/useVenueNotifications.ts:18`
+  MessageReceived invalidates the mailbox query but leaves the dashboard inbox preview and unread indicator stale until polling. Invalidate each dashboard inbox query too.
+  Resolved: both notification hooks invalidate their dashboard inbox query; artist and venue production builds pass.

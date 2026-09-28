@@ -55,6 +55,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<ITenantService, TenantService>();
+        services.AddScoped<ITenantBookingFence, TenantBookingFence>();
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<IInvitationService, InvitationService>();
         services.AddScoped<ITenantActivityRepository, TenantActivityRepository>();

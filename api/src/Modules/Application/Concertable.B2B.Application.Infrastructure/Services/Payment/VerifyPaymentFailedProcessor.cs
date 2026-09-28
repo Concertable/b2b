@@ -1,4 +1,5 @@
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Concertable.B2B.Infrastructure.Payments;
@@ -19,24 +20,24 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
     private const string DefaultFailureMessage = "Payment verification failed.";
 
     private readonly IPaymentVerificationRecorder paymentVerificationRecorder;
-    private readonly IApplicationNotifier applicationNotifier;
+    private readonly IBus bus;
     private readonly IApplicationReadDbContext readDbContext;
     private readonly IPaymentSessionOperationsClient paymentSessions;
     private readonly ApplicationPrivilegedDbContext context;
-    private readonly IPrivilegedUnitOfWorkBehavior unitOfWork;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
     private readonly ILogger<VerifyPaymentFailedProcessor> logger;
 
     public VerifyPaymentFailedProcessor(
         IPaymentVerificationRecorder paymentVerificationRecorder,
-        IApplicationNotifier applicationNotifier,
+        IBus bus,
         IApplicationReadDbContext readDbContext,
         IPaymentSessionOperationsClient paymentSessions,
         ApplicationPrivilegedDbContext context,
-        IPrivilegedUnitOfWorkBehavior unitOfWork,
+        IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
         this.paymentVerificationRecorder = paymentVerificationRecorder;
-        this.applicationNotifier = applicationNotifier;
+        this.bus = bus;
         this.readDbContext = readDbContext;
         this.paymentSessions = paymentSessions;
         this.context = context;
@@ -74,16 +75,15 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
             owned = status.IsSuccess;
         }
 
-        string? notificationMessage;
         try
         {
-            notificationMessage = await unitOfWork.ExecuteAsync(async () =>
+            await unitOfWork.ExecuteAsync(async () =>
             {
                 context.AddInboxMessage(envelope, nameof(VerifyPaymentFailedProcessor));
                 if (!owned)
                 {
                     logger.VerifyOutcomeNotOwnedByVenue(@event.Reference.ClientReference, applicationId);
-                    return (string?)null;
+                    return;
                 }
 
                 var code = string.IsNullOrWhiteSpace(@event.FailureCode)
@@ -96,7 +96,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
                 await paymentVerificationRecorder.RecordAsync(
                     new VerifyPaymentFailed(applicationId, new VerifyPaymentError(code, message)),
                     ct);
-                return message;
+                await bus.SendAsync(new NotifyApplicationPaymentVerificationFailedCommand(applicationId, message), ct);
             }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
@@ -104,8 +104,5 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
             logger.DuplicateInboxMessage(envelope.MessageId);
             return;
         }
-
-        if (notificationMessage is not null)
-            await applicationNotifier.VerifyPaymentFailedAsync(applicationId, notificationMessage);
     }
 }

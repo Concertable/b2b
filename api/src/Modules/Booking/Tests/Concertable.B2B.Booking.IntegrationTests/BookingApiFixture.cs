@@ -18,6 +18,7 @@ public sealed class BookingApiFixture : ApiFixture
 
     internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
 
+    internal string ConnectionString => dbContext.Database.GetConnectionString()!;
     internal IQueryable<BookingEntity> Bookings => readDbContext.Bookings;
     internal IQueryable<ContractEntity> Contracts => readDbContext.Contracts;
     internal IQueryable<InboxMessageEntity> InboxMessages => dbContext.Set<InboxMessageEntity>().AsNoTracking();

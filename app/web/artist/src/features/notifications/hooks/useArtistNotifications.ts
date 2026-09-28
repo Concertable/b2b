@@ -15,6 +15,7 @@ export function useArtistNotifications(session: TenantSession | undefined) {
     notificationConnection.on("MessageReceived", () => {
       if (!tenantSession.isCurrent(session)) return;
       void queryClient.invalidateQueries({ queryKey: ["messages"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "artist", "inbox"] });
     });
     notificationConnection.on(
       "ApplicationAccepted",

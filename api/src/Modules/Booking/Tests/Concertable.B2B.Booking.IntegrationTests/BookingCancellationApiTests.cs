@@ -9,6 +9,7 @@ using Concertable.Messaging.Contracts;
 using Concertable.Seed.Identity;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Booking.IntegrationTests;
@@ -39,6 +40,63 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Conflict);
         Assert.True(await fixture.Bookings.AnyAsync(booking => booking.Id == bookingId));
         Assert.True(await fixture.Contracts.AnyAsync(contract => contract.BookingId == bookingId));
+    }
+
+    [Fact]
+    public async Task Accept_WhenTenantAdministrationHoldsRowLock_WaitsForTheDecision()
+    {
+        var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
+        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        await client.PostAsync($"/api/application/{applicationId}/checkout");
+
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        await using (var lockCommand = new NpgsqlCommand(
+            """SELECT 1 FROM tenant."Tenants" WHERE "Id" = @tenantId FOR UPDATE""",
+            connection,
+            transaction))
+        {
+            lockCommand.Parameters.AddWithValue("tenantId", fixture.SeedState.Venue.TenantId);
+            await lockCommand.ExecuteNonQueryAsync();
+        }
+
+        var acceptance = client.PostAsync(
+            $"/api/application/{applicationId}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+
+        try
+        {
+            var waited = false;
+            using var observer = new NpgsqlConnection(fixture.ConnectionString);
+            await observer.OpenAsync();
+            for (var attempt = 0; attempt < 50 && !waited; attempt++)
+            {
+                await using var query = new NpgsqlCommand(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1 FROM pg_stat_activity
+                        WHERE wait_event_type = 'Lock'
+                          AND query LIKE '%FROM tenant."Tenants"%FOR UPDATE%'
+                    )
+                    """,
+                    observer);
+                waited = (bool)(await query.ExecuteScalarAsync())!;
+                if (!waited)
+                    await Task.Delay(100);
+            }
+
+            Assert.True(waited);
+            Assert.False(acceptance.IsCompleted);
+        }
+        finally
+        {
+            await transaction.RollbackAsync();
+        }
+
+        var response = await acceptance;
+        await response.ShouldBe(HttpStatusCode.NoContent);
+        Assert.True(await fixture.Bookings.AnyAsync(booking => booking.ApplicationId == applicationId));
     }
 
     [Fact]

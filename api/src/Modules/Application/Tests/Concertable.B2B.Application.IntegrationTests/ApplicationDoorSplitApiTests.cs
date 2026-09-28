@@ -4,6 +4,7 @@ using Concertable.B2B.Application.Api.Responses;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Responses;
 using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Infrastructure.Payments;
@@ -192,11 +193,14 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => fixture.DispatchIntegrationEventAsync(failed, envelope));
+        Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<NotifyApplicationPaymentVerificationFailedCommand>());
 
         fixture.PaymentSessionClient.StatusError = null;
         await fixture.DispatchIntegrationEventAsync(failed, envelope);
+        await fixture.DispatchIntegrationEventAsync(failed, envelope);
 
         Assert.True(await fixture.PaymentVerifications.AnyAsync(verification => verification.ApplicationId == applicationId));
+        Assert.Equal(1, await fixture.GetOutboxMessageCountAsync<NotifyApplicationPaymentVerificationFailedCommand>());
     }
 
     private OpportunityBoundaryRequest BuildOpportunityRequest(DealDto deal) =>
