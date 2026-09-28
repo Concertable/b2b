@@ -344,10 +344,12 @@ public sealed class SeedState
         // The "no venue"/"no artist" operators registered but never set up their organization, so their tenants stay
         // tax-incomplete (no tax details captured) — the pre-org-setup state the organization read + gate tests rely on.
         var bareTenantUserIds = new HashSet<Guid> { VenueManagerNoVenue.Id, ArtistManagerNoArtist.Id };
+        var mailboxSenderName = catalog.Artists.Single(artist => artist.UserId == ArtistManager1.Id).Name;
         Tenants = SeedUsers.Managers
             .Select(m => TenantFactory.Create(
                 m.Id, m.Email, m.Kind == ManagerKind.Venue ? TenantBusinessActivityKind.VenueOperator : TenantBusinessActivityKind.Artist, now,
-                taxComplianceComplete: !bareTenantUserIds.Contains(m.Id)))
+                taxComplianceComplete: !bareTenantUserIds.Contains(m.Id),
+                displayName: m.Id == ArtistManager1.Id ? mailboxSenderName : null))
             .ToList();
         Verifications = SeedUsers.Managers
             .Zip(Tenants)

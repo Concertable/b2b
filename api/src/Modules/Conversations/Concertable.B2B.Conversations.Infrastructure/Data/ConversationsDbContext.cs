@@ -1,5 +1,7 @@
-using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.Conversations.Domain.ReadModels;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Kernel.Identity;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
@@ -11,18 +13,50 @@ internal sealed class ConversationsDbContext(
     DbContextOptions<ConversationsDbContext> options,
     IOptions<OutboxOptions> outboxOptions,
     ConversationsConfigurationProvider provider,
-    ITenantContext tenantContext)
-    : TenantScopedDbContext(options, outboxOptions, provider, tenantContext, Schema.Name)
+    ITenantContext tenantContext,
+    IResourceAccessContext resourceAccess)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
-    public DbSet<ThreadReadStateEntity> ThreadReadStates => Set<ThreadReadStateEntity>();
-    public DbSet<ParticipantProfile> ParticipantProfiles => Set<ParticipantProfile>();
+    public DbSet<ConversationEntity> Conversations => Set<ConversationEntity>();
+    public DbSet<ConversationAccessGrant> ConversationAccessGrants => Set<ConversationAccessGrant>();
+    public DbSet<ConversationReadPosition> ConversationReadPositions => Set<ConversationReadPosition>();
+    public DbSet<TenantDisplay> TenantDisplays => Set<TenantDisplay>();
+
+    public ResourceAudience ReadAudience => AudienceFor(TenantPermission.MessagesRead);
+    public ResourceAudience SendAudience => AudienceFor(TenantPermission.MessagesSend);
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyVenueArtist<ContentReportEntity>(this);
-        modelBuilder.ApplyVenueArtist<MessageEntity>(this);
-        modelBuilder.ApplyVenueArtist<ThreadReadStateEntity>(this);
+        modelBuilder.Entity<ConversationAccessGrant>().HasQueryFilter(TenantFilters.Key,
+            ResourceAccessExpressions.LiveForAudience<ConversationAccessGrant, ConversationAccessScope>(
+                    this,
+                    _ => ReadAudience,
+                    ConversationAccessScope.Read)
+                .Or(ResourceAccessExpressions.LiveForAudience<ConversationAccessGrant, ConversationAccessScope>(
+                    this,
+                    _ => SendAudience,
+                    ConversationAccessScope.SendMessages)));
+
+        modelBuilder.Entity<ConversationEntity>().HasQueryFilter(TenantFilters.Key, conversation =>
+            ConversationAccessGrants.Any(grant =>
+                grant.ResourceId == conversation.Id && grant.Scope == ConversationAccessScope.Read));
+
+        modelBuilder.Entity<MessageEntity>().HasQueryFilter(TenantFilters.Key, message =>
+            ConversationAccessGrants.Any(grant =>
+                grant.ResourceId == message.ConversationId && grant.Scope == ConversationAccessScope.Read));
+
+        modelBuilder.Entity<ConversationReadPosition>().HasQueryFilter(TenantFilters.Key, state =>
+            state.TenantId == ActiveTenantId
+            && state.MembershipId == ActiveMembershipId
+            && ConversationAccessGrants.Any(grant =>
+                grant.ResourceId == state.ConversationId && grant.Scope == ConversationAccessScope.Read));
+
+        modelBuilder.Entity<ContentReportEntity>().HasQueryFilter(TenantFilters.Key, report =>
+            report.ReporterTenantId == ActiveTenantId
+            && report.ReporterUserId == ActiveUserId
+            && ConversationAccessGrants.Any(grant =>
+                grant.ResourceId == report.ConversationId && grant.Scope == ConversationAccessScope.Read));
     }
 }
