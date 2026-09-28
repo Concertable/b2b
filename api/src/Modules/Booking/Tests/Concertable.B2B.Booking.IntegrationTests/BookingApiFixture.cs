@@ -53,11 +53,6 @@ public sealed class BookingApiFixture : ApiFixture
                 """)
             .SingleAsync();
 
-    /// <summary>
-    /// Runs the event's pre-commit handlers the way <c>DomainEventDispatcher</c> does: handlers register
-    /// against <see cref="IDomainEventHandler{TEvent}"/> and the phase is chosen by the marker, so resolving
-    /// the marker interface directly would resolve nothing.
-    /// </summary>
     internal Task DispatchPreCommitDomainEventAsync<TEvent>(TEvent @event)
         where TEvent : IDomainEvent =>
         Services.GetRequiredService<IScoped<IEnumerable<IDomainEventHandler<TEvent>>>>()

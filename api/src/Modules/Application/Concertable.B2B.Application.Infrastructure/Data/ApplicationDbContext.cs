@@ -23,8 +23,6 @@ internal sealed class ApplicationDbContext(
     public ResourceAudience OperationsAudience => AudienceFor(TenantPermission.OperationsView);
     public ResourceAudience TermsAudience => AudienceFor(TenantPermission.TermsRead);
 
-    /* The availability projection is deliberately unfiltered: it answers whether a date is taken and
-       nothing else, so there is nothing tenant-private in it to protect. */
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ApplicationAccessGrant>().HasQueryFilter(TenantFilters.Key,

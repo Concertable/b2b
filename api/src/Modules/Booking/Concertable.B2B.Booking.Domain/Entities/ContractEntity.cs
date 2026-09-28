@@ -72,7 +72,6 @@ public abstract class ContractEntity : IIdEntity
         IssuePrincipalGrants(createdAtUtc);
     }
 
-    // Attached through the navigation so EF supplies the generated ResourceId; there is no key yet here.
     private void IssuePrincipalGrants(DateTime at)
     {
         foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
