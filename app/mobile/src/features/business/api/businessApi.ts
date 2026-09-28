@@ -15,6 +15,18 @@ export interface OrganizationMember {
   readonly role: string;
 }
 
+export interface ConversationPreview {
+  readonly id: number;
+  readonly conversationId: number;
+  readonly preview: string;
+  readonly at: string;
+  readonly unread: boolean;
+  readonly participants: ReadonlyArray<{
+    readonly tenantId: string;
+    readonly displayName: string;
+  }>;
+}
+
 export interface ConcertSummary {
   readonly id: number;
   readonly name: string;
@@ -30,6 +42,9 @@ export const businessApi = {
     (await apiClient.get<OrganizationDetails>("/organization")).data,
   getMembers: async () =>
     (await apiClient.get<OrganizationMember[]>("/organization/members")).data,
+  getConversations: async () =>
+    (await apiClient.get<ConversationPreview[]>("/conversations/previews"))
+      .data,
   getConcertSummary: async (id: number) =>
     (await apiClient.get<ConcertSummary>(`/concert/${id}/summary`)).data,
 };
