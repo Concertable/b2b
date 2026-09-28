@@ -92,6 +92,11 @@ internal sealed class TenantService : ITenantService
         CancellationToken ct = default) =>
         membershipRepository.GetSnapshotsByTenantIdsAsync(tenantIds, ct);
 
+    public Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
+        MembershipSnapshot expected,
+        CancellationToken ct = default) =>
+        authorityFence.RequireCurrentAsync(expected, ct);
+
     public async Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default) =>
         (await repository.GetTenantBusinessDetailsByTenantIdAsync(tenantId, ct)).ToOption();
 

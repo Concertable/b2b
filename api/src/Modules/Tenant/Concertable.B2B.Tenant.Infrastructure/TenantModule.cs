@@ -33,6 +33,11 @@ internal sealed class TenantModule : ITenantModule
         CancellationToken ct = default) =>
         service.GetCurrentMembershipsAsync(tenantIds, ct);
 
+    public Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
+        MembershipSnapshot expected,
+        CancellationToken ct = default) =>
+        service.RequireCurrentMembershipAsync(expected, ct);
+
     public Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default) =>
         service.GetTenantBusinessDetailsAsync(tenantId, ct);
 

@@ -520,6 +520,59 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task PaymentFailureCommand_WhenMembershipRemovalRacesSend_SerializesNotification()
+    {
+        var creator = fixture.SeedState.VenueManager1;
+        var replacement = fixture.SeedState.VenueManager3;
+        var client = fixture.CreateClient(creator);
+        var promote = await client.PutAsJsonAsync(
+            $"/api/organization/members/{replacement.Id}/role",
+            new { role = TenantRole.Owner.ToString() });
+        await promote.ShouldBe(HttpStatusCode.NoContent);
+
+        var enteredSend = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSend = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        fixture.NotificationService.BeforeSendAsync = async (_, eventName, _) =>
+        {
+            if (eventName != "VerifyPaymentFailed")
+                return;
+            enteredSend.TrySetResult(true);
+            await releaseSend.Task;
+        };
+
+        try
+        {
+            using var scope = fixture.Services.CreateScope();
+            var handler = scope.ServiceProvider.GetRequiredService<
+                IIntegrationCommandHandler<NotifyApplicationPaymentVerificationFailedCommand>>();
+            var command = new NotifyApplicationPaymentVerificationFailedCommand(
+                fixture.SeedState.DoorSplitApp.Id,
+                "Card was declined");
+            var dispatch = handler.HandleAsync(
+                command,
+                MessageEnvelope.Create<NotifyApplicationPaymentVerificationFailedCommand>(fixture.SeedNow));
+            await enteredSend.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            var removal = client.DeleteAsync($"/api/organization/members/{creator.Id}");
+            var first = await Task.WhenAny(removal, Task.Delay(TimeSpan.FromMilliseconds(300)));
+            Assert.NotSame(removal, first);
+
+            releaseSend.TrySetResult(true);
+            await dispatch;
+            await (await removal).ShouldBe(HttpStatusCode.NoContent);
+
+            var alert = Assert.Single(fixture.NotificationService.Other.Where(value =>
+                value.EventName == "VerifyPaymentFailed"));
+            Assert.Equal(creator.Id.ToString(), alert.UserId);
+        }
+        finally
+        {
+            releaseSend.TrySetResult(true);
+            fixture.NotificationService.BeforeSendAsync = null;
+        }
+    }
+
+    [Fact]
     public async Task Accept_WhenArtistTenantWasDeleted_ReturnsPartyUnavailable()
     {
         var application = fixture.SeedState.Applications.Single(value =>

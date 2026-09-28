@@ -26,6 +26,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly IPermissionCatalog permissionCatalog;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
 
     public ApplicationNotifier(
         IApplicationRepository repository,
@@ -36,7 +37,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         ITenantModule tenantModule,
         IPermissionCatalog permissionCatalog,
         IOpportunityModule opportunityModule,
-        IVenueModule venueModule)
+        IVenueModule venueModule,
+        IPrivilegedOutboxUnitOfWorkBehavior unitOfWork)
     {
         this.repository = repository;
         this.readDbContext = readDbContext;
@@ -47,6 +49,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         this.permissionCatalog = permissionCatalog;
         this.opportunityModule = opportunityModule;
         this.venueModule = venueModule;
+        this.unitOfWork = unitOfWork;
     }
 
     public async Task VerifyPaymentFailedAsync(int applicationId, string failureMessage)
@@ -65,20 +68,28 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         if (!venue.TryGetValue(out var profile))
             return;
 
-        var eligible = (await tenantModule.GetCurrentMembershipsAsync([application.VenueTenantId]))
-            .Where(membership => permissionCatalog.Grants(membership.Role, TenantPermission.ApplicationsDecide))
-            .ToArray();
-        var recipient = eligible.FirstOrDefault(membership => membership.UserId == profile.UserId)
-            ?? eligible.OrderBy(membership => membership.Role == TenantRole.Owner ? 0 : 1)
-                .ThenBy(membership => membership.UserId)
-                .FirstOrDefault();
-        if (recipient is null)
-            return;
+        await unitOfWork.ExecuteAsync(async () =>
+        {
+            var eligible = (await tenantModule.GetCurrentMembershipsAsync([application.VenueTenantId]))
+                .Where(membership => permissionCatalog.Grants(membership.Role, TenantPermission.ApplicationsDecide))
+                .OrderBy(membership => membership.UserId == profile.UserId
+                    ? 0
+                    : membership.Role == TenantRole.Owner ? 1 : 2)
+                .ThenBy(membership => membership.UserId);
+            foreach (var candidate in eligible)
+            {
+                var recipient = await tenantModule.RequireCurrentMembershipAsync(candidate);
+                if (recipient is null
+                    || !permissionCatalog.Grants(recipient.Role, TenantPermission.ApplicationsDecide))
+                    continue;
 
-        await notificationClient.SendAsync(
-            recipient.UserId.ToString(),
-            "VerifyPaymentFailed",
-            new { applicationId, failureMessage });
+                await notificationClient.SendAsync(
+                    recipient.UserId.ToString(),
+                    "VerifyPaymentFailed",
+                    new { applicationId, failureMessage });
+                return;
+            }
+        });
     }
 
     public Task AppliedAsync(int applicationId) =>
