@@ -18,6 +18,7 @@ internal sealed class ApplicationAcceptedDomainEventHandler
     public Task HandleAsync(ApplicationAcceptedDomainEvent e, CancellationToken ct = default) =>
         bus.PublishAsync(
             new ApplicationAcceptedEvent(
+                e.Application.Snapshot.Application.Id,
                 e.Application.Snapshot.Application.Opportunity.Id,
                 e.Application.Snapshot.Application.Opportunity.Venue.TenantId),
             ct);

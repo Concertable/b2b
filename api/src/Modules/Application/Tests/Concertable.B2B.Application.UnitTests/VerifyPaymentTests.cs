@@ -83,7 +83,8 @@ public sealed class VerifyPaymentTests
             12,
             DealType.DoorSplit,
             Guid.NewGuid(),
-            Guid.NewGuid());
+            Guid.NewGuid(),
+            DateTime.UnixEpoch);
         typeof(ApplicationEntity).GetProperty(nameof(ApplicationEntity.Id))!.SetValue(application, 42);
         return application;
     }

@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260918004852_InitialCreate")]
+    [Migration("20260919234014_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -26,6 +26,67 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.ApplicationAccessGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("IssuedByTenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "MembershipId")
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.HasIndex("TenantId", "Scope", "ResourceId", "MembershipId")
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ApplicationAccessGrants_Tenant")
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ApplicationAccessGrants_Membership")
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
+
+                    b.ToTable("ApplicationAccessGrants", "application");
+                });
 
             modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.ApplicationEntity", b =>
                 {
@@ -118,9 +179,6 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     b.Property<int>("ArtistId")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("OpportunityId")
                         .HasColumnType("integer");
 
@@ -129,9 +187,6 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 
                     b.Property<int>("VenueId")
                         .HasColumnType("integer");
-
-                    b.Property<Guid>("VenueTenantId")
-                        .HasColumnType("uuid");
 
                     b.HasKey("ConcertId");
 
@@ -171,6 +226,25 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     b.HasDiscriminator<string>("Discriminator").HasValue("VerifyPaymentEntity");
 
                     b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.DataAccess.Application.MembershipAuthority", b =>
+                {
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("PermissionVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("MembershipAuthority", "tenant");
                 });
 
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
@@ -271,6 +345,15 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
                     b.HasDiscriminator().HasValue("SucceededVerifyPaymentEntity");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.ApplicationAccessGrant", b =>
+                {
+                    b.HasOne("Concertable.B2B.Application.Domain.Entities.ApplicationEntity", null)
+                        .WithMany("AccessGrants")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.VerifyPaymentEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Application.Domain.Entities.ApplicationEntity", null)
@@ -282,6 +365,8 @@ namespace Concertable.B2B.Application.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Application.Domain.Entities.ApplicationEntity", b =>
                 {
+                    b.Navigation("AccessGrants");
+
                     b.Navigation("VerifyPayment");
                 });
 #pragma warning restore 612, 618

@@ -46,6 +46,36 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "BookingAccessGrants",
+                schema: "booking",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResourceId = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MembershipId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Scope = table.Column<int>(type: "integer", nullable: false),
+                    ValidFrom = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ValidUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RevokedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IssuedByTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IssuedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Kind = table.Column<int>(type: "integer", nullable: false),
+                    Version = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BookingAccessGrants", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_BookingAccessGrants_Bookings_ResourceId",
+                        column: x => x.ResourceId,
+                        principalSchema: "booking",
+                        principalTable: "Bookings",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Contracts",
                 schema: "booking",
                 columns: table => new
@@ -55,6 +85,7 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     VenueTenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     ArtistTenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     BookingId = table.Column<int>(type: "integer", nullable: false),
+                    ApplicationId = table.Column<int>(type: "integer", nullable: false),
                     VenueName = table.Column<string>(type: "text", nullable: false),
                     ArtistName = table.Column<string>(type: "text", nullable: false),
                     DealType = table.Column<int>(type: "integer", nullable: false),
@@ -96,6 +127,66 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         principalColumn: "Id");
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ContractAccessGrants",
+                schema: "booking",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResourceId = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MembershipId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Scope = table.Column<int>(type: "integer", nullable: false),
+                    ValidFrom = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ValidUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RevokedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IssuedByTenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IssuedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Kind = table.Column<int>(type: "integer", nullable: false),
+                    Version = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ContractAccessGrants", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ContractAccessGrants_Contracts_ResourceId",
+                        column: x => x.ResourceId,
+                        principalSchema: "booking",
+                        principalTable: "Contracts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookingAccessGrants_ResourceId_TenantId_Scope_MembershipId",
+                schema: "booking",
+                table: "BookingAccessGrants",
+                columns: new[] { "ResourceId", "TenantId", "Scope", "MembershipId" },
+                filter: "\"RevokedAt\" IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_BookingAccessGrants_TenantId_Scope_ResourceId_MembershipId",
+                schema: "booking",
+                table: "BookingAccessGrants",
+                columns: new[] { "TenantId", "Scope", "ResourceId", "MembershipId" },
+                filter: "\"RevokedAt\" IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_BookingAccessGrants_Membership",
+                schema: "booking",
+                table: "BookingAccessGrants",
+                columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId" },
+                unique: true,
+                filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_BookingAccessGrants_Tenant",
+                schema: "booking",
+                table: "BookingAccessGrants",
+                columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId" },
+                unique: true,
+                filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
+
             migrationBuilder.CreateIndex(
                 name: "IX_Bookings_ApplicationId",
                 schema: "booking",
@@ -119,6 +210,43 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_ContractAccessGrants_ResourceId_TenantId_Scope_MembershipId",
+                schema: "booking",
+                table: "ContractAccessGrants",
+                columns: new[] { "ResourceId", "TenantId", "Scope", "MembershipId" },
+                filter: "\"RevokedAt\" IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ContractAccessGrants_TenantId_Scope_ResourceId_MembershipId",
+                schema: "booking",
+                table: "ContractAccessGrants",
+                columns: new[] { "TenantId", "Scope", "ResourceId", "MembershipId" },
+                filter: "\"RevokedAt\" IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_ContractAccessGrants_Membership",
+                schema: "booking",
+                table: "ContractAccessGrants",
+                columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId" },
+                unique: true,
+                filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "UX_ContractAccessGrants_Tenant",
+                schema: "booking",
+                table: "ContractAccessGrants",
+                columns: new[] { "ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId" },
+                unique: true,
+                filter: "\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Contracts_ApplicationId",
+                schema: "booking",
+                table: "Contracts",
+                column: "ApplicationId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Contracts_BookingId",
                 schema: "booking",
                 table: "Contracts",
@@ -129,6 +257,14 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "BookingAccessGrants",
+                schema: "booking");
+
+            migrationBuilder.DropTable(
+                name: "ContractAccessGrants",
+                schema: "booking");
+
             migrationBuilder.DropTable(
                 name: "Contracts",
                 schema: "booking");

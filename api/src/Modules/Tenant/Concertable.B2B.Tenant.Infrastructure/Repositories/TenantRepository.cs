@@ -37,6 +37,22 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.Id == tenantId, ct);
     }
 
+    public async Task<bool> ExistsForBookingAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Booking tenant validation requires an active command transaction.");
+        await transaction.EnlistAsync(context, ct);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM tenant."Tenants"
+             WHERE "Id" = {tenantId}
+             FOR SHARE
+             """,
+            ct);
+        return await context.Tenants.AnyAsync(tenant => tenant.Id == tenantId, ct);
+    }
+
     public async Task<TenantEntity?> GetByCreatedByUserIdForCreationAsync(
         Guid userId,
         CancellationToken ct = default)

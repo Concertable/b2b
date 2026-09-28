@@ -61,7 +61,7 @@ internal sealed class TenantService : ITenantService
     {
         foreach (var tenantId in new[] { venueTenantId, artistTenantId }.Distinct().Order())
         {
-            if (await repository.GetByIdForAdministrationAsync(tenantId, ct) is null)
+            if (!await repository.ExistsForBookingAsync(tenantId, ct))
                 throw new TenantUnavailableException(tenantId);
         }
     }

@@ -5,9 +5,16 @@ namespace Concertable.B2B.Application.Api.Mappers;
 
 internal interface IApplicationMapper
 {
-    Task<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>> ToVenueResponsesAsync(IReadOnlyList<ApplicationDto> dtos);
-    Task<ApplicationResponse<ArtistApplicationActions>> ToArtistResponseAsync(ApplicationDto dto);
-    Task<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>> ToArtistResponsesAsync(IReadOnlyList<ApplicationDto> dtos);
-
-    Task<ApplicationResponse> ToResponseAsync(ApplicationDto dto, Guid tenantId);
+    Task<ApplicationSummaryResponse> ToSummaryResponseAsync(
+        ApplicationSummaryDto dto,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationSummaryResponse>> ToSummaryResponsesAsync(
+        IReadOnlyList<ApplicationSummaryDto> dtos,
+        CancellationToken ct = default);
+    Task<ApplicationProposalResponse> ToProposalResponseAsync(
+        ApplicationProposalDto dto,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<ApplicationProposalResponse>> ToProposalResponsesAsync(
+        IReadOnlyList<ApplicationProposalDto> dtos,
+        CancellationToken ct = default);
 }

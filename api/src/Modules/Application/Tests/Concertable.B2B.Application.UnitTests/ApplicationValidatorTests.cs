@@ -39,7 +39,8 @@ public sealed class ApplicationValidatorTests
             opportunity.Id,
             DealType.FlatFee,
             venueTenantId,
-            Guid.NewGuid());
+            Guid.NewGuid(),
+            DateTime.UnixEpoch);
 
         var result = await validator.CanAcceptAsync(opportunity, application);
 

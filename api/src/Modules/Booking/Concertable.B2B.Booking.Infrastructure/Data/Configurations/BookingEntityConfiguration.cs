@@ -23,6 +23,11 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
                 .HasMaxLength(1000);
         });
         builder.PrimitiveCollection(booking => booking.Genres);
+        builder.HasMany(booking => booking.AccessGrants)
+            .WithOne()
+            .HasForeignKey(grant => grant.ResourceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(booking => booking.ApplicationId).IsUnique();
         builder.HasIndex(booking => booking.OperationId).IsUnique();
         builder.HasIndex(booking => booking.CancellationOperationId)
