@@ -4,15 +4,14 @@ using Concertable.DataAccess.Infrastructure.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Npgsql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Data;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Extensions;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Extensions;
 
 namespace Concertable.B2B.Web.Extensions;
@@ -87,15 +86,13 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSharedInfrastructure(configuration);
+        services.AddCommandTransactions();
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
         services.AddScoped<VenueArtistTenantInterceptor>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();
-
-        services.AddScoped<IDbConnection>(_ =>
-            new NpgsqlConnection(configuration.GetConnectionString(B2BDb.Name)));
 
         return services;
     }
