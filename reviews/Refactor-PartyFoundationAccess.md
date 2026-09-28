@@ -7,9 +7,10 @@
 
 
 **Review status:** `complete`
-**Reviewed up to commit:** `399954c8721696a711799699f944400ac7f02419`  `(2026-09-28)`
+**Reviewed up to commit:** `b6109c043c3a65b91225c5a077993f4999b887c6`  `(2026-09-28)`
 
 **Judgment:** `changes-requested`
+**Security-reviewed up to commit:** `b6109c043c3a65b91225c5a077993f4999b887c6`  `(2026-09-28)`
 
 
 
@@ -138,3 +139,30 @@ All 543 frozen candidate paths are covered by the five areas. Ten confirmed find
 - [x] **A13 — MEDIUM — dashboard inbox refresh** — `app/web/artist/src/features/notifications/hooks/useArtistNotifications.ts:17`, `app/web/venue/src/features/notifications/hooks/useVenueNotifications.ts:18`
   MessageReceived invalidates the mailbox query but leaves the dashboard inbox preview and unread indicator stale until polling. Invalidate each dashboard inbox query too.
   Resolved: both notification hooks invalidate their dashboard inbox query; artist and venue production builds pass.
+
+## Review pass — 2026-09-28 — incremental
+
+**Candidate base:** `399954c8721696a711799699f944400ac7f02419`
+**Candidate head:** `b6109c043c3a65b91225c5a077993f4999b887c6`
+**Candidate branch:** `Refactor/PartyFoundationAccess`
+**Candidate scope:** `all`
+**Candidate path-set:** `sha256:20fa14a94857ecb70efe3d98e95eb9e1f4a8d54ea9fab23b834ea0accb65196a` `(17 paths)`
+**Candidate patch:** `sha256:2b98e6625d7c9d17dd98c93e2876daaaf83d1118ce98403d1f8d3d4bcdbd4034`
+**Candidate bundle:** `C:/Users/TommySeery/source/repos/Concertable/b2b/.git/agent-workflow/runs/party-access-followup-20260928/review/3aad074090cd5a4c47a30cc5ff3db34afc2c9f03d779f691521eefd5be7e0e03`
+**Candidate bundle identity:** `sha256:a408076cc3236cf8c5312377349885afcf8eb5726d80732bae323ae2d4d4251e`
+**Work-order path:** `reviews/Refactor-PartyFoundationAccess.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+**Synchronization:** no new fetch; this local repair commit descends from the completed watermark.
+
+### Findings
+
+- [x] **A14 — MEDIUM — acceptance conflict** — `api/src/Modules/Tenant/Concertable.B2B.Tenant.Infrastructure/Services/TenantBookingFence.cs:14`
+  If tenant deletion wins the row lock, the fence throws InvalidOperationException. Acceptance does not classify it and returns HTTP 500 for a valid concurrent lifecycle change. Return a distinct missing-tenant outcome and map it to a typed 409 after rollback.
+  Resolved: TenantUnavailableException rolls back acceptance and maps to application.accept.party_unavailable; the deleted-artist integration case passes.
+- [x] **A15 — LOW — module boundary** — `api/src/Modules/Booking/Concertable.B2B.Booking.Infrastructure/Services/BookingWorkflow.cs:164`
+  Booking calls a separate Tenant booking-fence contract directly, bypassing the required ITenantModule facade. Expose the lock operation through ITenantModule while retaining the shared transaction.
+  Resolved: Booking calls ITenantModule, which forwards to TenantService; the provider-real lock and deletion guard cases pass.
+- [x] **A16 — HIGH — notification authorization** — `api/src/Modules/Application/Concertable.B2B.Application.Infrastructure/Handlers/NotifyApplicationPaymentVerificationFailedCommandHandler.cs:15`
+  Queued delivery resolves the venue profile creator after commit and sends payment failure details without current tenant membership. A removed creator can receive a later notification. Resolve current members with application decision permission when handling the command and send only to them.
+  Resolved: delivery rechecks venue membership, prefers the authorized profile creator, and falls back to a current authorized owner; the removal and lifecycle cases pass.

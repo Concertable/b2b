@@ -3,6 +3,9 @@ using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Concertable.B2B.Conversations.Contracts;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Authorization.Contracts.Enums;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Exceptions;
@@ -19,6 +22,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
     private readonly INotificationClient notificationClient;
+    private readonly ITenantModule tenantModule;
+    private readonly IPermissionCatalog permissionCatalog;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
 
@@ -28,6 +33,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         ICurrentUser currentUser,
         IConversationsModule conversationsModule,
         INotificationClient notificationClient,
+        ITenantModule tenantModule,
+        IPermissionCatalog permissionCatalog,
         IOpportunityModule opportunityModule,
         IVenueModule venueModule)
     {
@@ -36,19 +43,21 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         this.currentUser = currentUser;
         this.conversationsModule = conversationsModule;
         this.notificationClient = notificationClient;
+        this.tenantModule = tenantModule;
+        this.permissionCatalog = permissionCatalog;
         this.opportunityModule = opportunityModule;
         this.venueModule = venueModule;
     }
 
     public async Task VerifyPaymentFailedAsync(int applicationId, string failureMessage)
     {
-        var opportunityId = await readDbContext.Applications
-            .Where(application => application.Id == applicationId)
-            .Select(application => (int?)application.OpportunityId)
+        var application = await readDbContext.Applications
+            .Where(value => value.Id == applicationId)
+            .Select(value => new { value.OpportunityId, value.VenueTenantId })
             .SingleOrDefaultAsync();
-        if (opportunityId is null)
+        if (application is null)
             throw new NotFoundException(DisplayNames.Application);
-        var opportunity = await opportunityModule.GetAsync(opportunityId.Value);
+        var opportunity = await opportunityModule.GetAsync(application.OpportunityId);
         if (!opportunity.TryGetValue(out var value))
             return;
 
@@ -56,8 +65,18 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         if (!venue.TryGetValue(out var profile))
             return;
 
+        var eligible = (await tenantModule.GetCurrentMembershipsAsync([application.VenueTenantId]))
+            .Where(membership => permissionCatalog.Grants(membership.Role, TenantPermission.ApplicationsDecide))
+            .ToArray();
+        var recipient = eligible.FirstOrDefault(membership => membership.UserId == profile.UserId)
+            ?? eligible.OrderBy(membership => membership.Role == TenantRole.Owner ? 0 : 1)
+                .ThenBy(membership => membership.UserId)
+                .FirstOrDefault();
+        if (recipient is null)
+            return;
+
         await notificationClient.SendAsync(
-            profile.UserId.ToString(),
+            recipient.UserId.ToString(),
             "VerifyPaymentFailed",
             new { applicationId, failureMessage });
     }

@@ -19,6 +19,9 @@ internal sealed class TenantModule : ITenantModule
     public Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         service.GetByIdAsync(id, ct);
 
+    public Task RequireBookingTenantsAsync(Guid venueTenantId, Guid artistTenantId, CancellationToken ct = default) =>
+        service.RequireBookingTenantsAsync(venueTenantId, artistTenantId, ct);
+
     public Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default) =>
         service.GetMembershipsAsync(userId, ct);
 

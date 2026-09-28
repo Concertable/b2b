@@ -1,13 +1,17 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -483,6 +487,68 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var response = await client.PostAsync($"/api/application/{opportunityId}", new { eSignature = new { signatoryName = "Aretha Artist" } });
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PaymentFailureCommand_AfterProfileCreatorLeaves_NotifiesCurrentOwner()
+    {
+        var creator = fixture.SeedState.VenueManager1;
+        var replacement = fixture.SeedState.VenueManager3;
+        var client = fixture.CreateClient(creator);
+        var promote = await client.PutAsJsonAsync(
+            $"/api/organization/members/{replacement.Id}/role",
+            new { role = TenantRole.Owner.ToString() });
+        await promote.ShouldBe(HttpStatusCode.NoContent);
+        var remove = await client.DeleteAsync($"/api/organization/members/{creator.Id}");
+        await remove.ShouldBe(HttpStatusCode.NoContent);
+
+        var command = new NotifyApplicationPaymentVerificationFailedCommand(
+            fixture.SeedState.DoorSplitApp.Id,
+            "Card was declined");
+        using var scope = fixture.Services.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<
+            IIntegrationCommandHandler<NotifyApplicationPaymentVerificationFailedCommand>>();
+        await handler.HandleAsync(
+            command,
+            MessageEnvelope.Create<NotifyApplicationPaymentVerificationFailedCommand>(fixture.SeedNow));
+
+        var notification = Assert.Single(fixture.NotificationService.Other.Where(value =>
+            value.EventName == "VerifyPaymentFailed"));
+        Assert.Equal(replacement.Id.ToString(), notification.UserId);
+        Assert.DoesNotContain(fixture.NotificationService.Other, value =>
+            value.EventName == "VerifyPaymentFailed" && value.UserId == creator.Id.ToString());
+    }
+
+    [Fact]
+    public async Task Accept_WhenArtistTenantWasDeleted_ReturnsPartyUnavailable()
+    {
+        var application = fixture.SeedState.Applications.Single(value =>
+            value.ArtistId == 17 && value.OpportunityId == 40);
+        var artist = fixture.SeedState.Artists.Single(value => value.Id == application.ArtistId);
+        var artistUser = fixture.SeedState.Users.Single(value => value.Id == artist.UserId);
+        var opportunity = fixture.SeedState.Opportunities.Single(value => value.Id == application.OpportunityId);
+        var venue = fixture.SeedState.Venues.Single(value => value.Id == opportunity.VenueId);
+        var venueUser = fixture.SeedState.Users.Single(value => value.Id == venue.UserId);
+
+        var venueClient = fixture.CreateClient(venueUser);
+        venueClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, application.VenueTenantId.ToString());
+        var checkout = await venueClient.PostAsync($"/api/application/{application.Id}/checkout");
+        await checkout.ShouldBe(HttpStatusCode.OK);
+
+        var artistClient = fixture.CreateClient(artistUser);
+        artistClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, application.ArtistTenantId.ToString());
+        var delete = await artistClient.DeleteAsync("/api/organization");
+        await delete.ShouldBe(HttpStatusCode.NoContent);
+
+        var accept = await venueClient.PostAsync(
+            $"/api/application/{application.Id}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.party_unavailable");
+        Assert.Equal(ApplicationState.Applied,
+            (await fixture.Applications.SingleAsync(value => value.Id == application.Id)).State);
+        var booking = await venueClient.GetAsync($"/api/booking/application/{application.Id}");
+        await booking.ShouldBe(HttpStatusCode.NotFound);
     }
 
     #endregion

@@ -18,6 +18,8 @@ internal abstract partial record AcceptApplicationError : IError
             "Another application for this opportunity has already been accepted."),
         Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
             $"Application {applicationId} changed while this acceptance was in flight."),
+        PartyUnavailable => ErrorDefinition.Conflict<PartyUnavailable>(
+            "A booking party is no longer available."),
         PaymentMethodRequired => ErrorDefinition.Invalid<PaymentMethodRequired>(
             "This deal requires a payment method at acceptance.")
     };
@@ -35,6 +37,9 @@ internal abstract partial record AcceptApplicationError : IError
 
     [ErrorCode("application.accept.superseded")]
     public partial record Superseded(int ApplicationId);
+
+    [ErrorCode("application.accept.party_unavailable")]
+    public partial record PartyUnavailable;
 
     [ErrorCode("application.accept.payment_method_required")]
     public partial record PaymentMethodRequired;

@@ -13,6 +13,7 @@ using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.DependencyInjection;
@@ -152,15 +153,24 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         return await mapper.ToDtoAsync(application, ct);
     }
 
-    public Task<UnitResult<AcceptApplicationError>> AcceptAsync(
+    public async Task<UnitResult<AcceptApplicationError>> AcceptAsync(
         int applicationId,
         ESignatureRequest eSignature,
-        CancellationToken ct = default) =>
-        unitOfWorkBehavior.TryExecuteAsync(
-            () => AcceptCoreAsync(applicationId, eSignature, ct),
-            exception => exception.IsApplicationAcceptanceConflict(applicationId),
-            _ => ClassifyAcceptConflictAsync(applicationId, eSignature, ct),
-            ct);
+        CancellationToken ct = default)
+    {
+        try
+        {
+            return await unitOfWorkBehavior.TryExecuteAsync(
+                () => AcceptCoreAsync(applicationId, eSignature, ct),
+                exception => exception.IsApplicationAcceptanceConflict(applicationId),
+                _ => ClassifyAcceptConflictAsync(applicationId, eSignature, ct),
+                ct);
+        }
+        catch (TenantUnavailableException)
+        {
+            return new AcceptApplicationError.PartyUnavailable();
+        }
+    }
 
     internal Task<UnitResult<AcceptApplicationError>> AcceptOnceAsync(
         int applicationId,
