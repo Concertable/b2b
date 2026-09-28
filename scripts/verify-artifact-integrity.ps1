@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory)]
     [string] $PackageDirectory,
@@ -14,26 +14,13 @@ $ErrorActionPreference = 'Stop'
 
 $syftImage = 'anchore/syft:v1.51.1@sha256:95fe0835e5bebc6f8b1f8acef68d47d63d594ef4c0f25c097ff853b23cbac74c'
 $trivyImage = 'aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969'
-$expectedPackageIds = @(
-    'Concertable.B2B.Admin.Contracts'
-    'Concertable.B2B.Application.Contracts'
-    'Concertable.B2B.Artist.Contracts'
-    'Concertable.B2B.Booking.Contracts'
-    'Concertable.B2B.Concert.Contracts'
-    'Concertable.B2B.Deal.Contracts'
-    'Concertable.B2B.Hosting'
-    'Concertable.B2B.Seed.Contracts'
-    'Concertable.B2B.Tenant.Contracts'
-    'Concertable.B2B.TestKit'
-    'Concertable.B2B.User.Contracts'
-    'Concertable.B2B.Venue.Contracts'
-)
-$expectedImageNames = @(
-    'b2b-migrations.tar.gz'
-    'b2b-seeding-simulator.tar.gz'
-    'b2b-web.tar.gz'
-    'b2b-workers.tar.gz'
-)
+$manifestPath = Join-Path $PSScriptRoot '..' '.github' 'b2b-promotion-candidates.json'
+$promotion = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json -Depth 10
+$expectedPackageIds = @($promotion.nuget | ForEach-Object { $_.id })
+if ($expectedPackageIds.Count -eq 0) {
+    throw 'The B2B promotion manifest selects no NuGet candidates.'
+}
+$expectedImageNames = @($promotion.oci | ForEach-Object { $_.archive })
 
 . (Join-Path $PSScriptRoot 'VulnerabilityGate.ps1')
 
