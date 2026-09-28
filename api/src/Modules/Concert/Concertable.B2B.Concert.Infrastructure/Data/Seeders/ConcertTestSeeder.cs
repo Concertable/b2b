@@ -1,8 +1,7 @@
-using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Application;
-using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.Seed.Infrastructure;
+﻿using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
+using Concertable.B2B.Seed.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
@@ -11,19 +10,28 @@ internal sealed class ConcertTestSeeder : ITestSeeder
 {
     public int Order => 7;
 
-    private readonly ConcertDbContext context;
+    private readonly ConcertPrivilegedDbContext context;
+    private readonly ConcertDbContext migrations;
     private readonly SeedState seed;
-    private readonly ITenantScope tenantScope;
 
-    public ConcertTestSeeder(ConcertDbContext context, SeedState seed, ITenantScope tenantScope)
+    public ConcertTestSeeder(
+        ConcertPrivilegedDbContext context,
+        ConcertDbContext migrations,
+        SeedState seed)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seed = seed;
-        this.tenantScope = tenantScope;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
-    public Task SeedAsync(CancellationToken ct = default) =>
-        context.SeedByVenueTenantAsync(tenantScope, seed.Concerts, ct);
+    public async Task SeedAsync(CancellationToken ct = default)
+    {
+        await context.Concerts.SeedIfEmptyAsync(async () =>
+        {
+            context.Concerts.AddRange(seed.Concerts);
+            await context.SaveChangesAsync(ct);
+        });
+    }
 }

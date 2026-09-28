@@ -7,9 +7,15 @@ describe("Organization", () => {
       Organization.toFormValues({
         id: "organization-1",
         legalName: "Concertable Ltd",
+        contactEmail: "hello@concertable.test",
+        version: 4,
+        eligibilityVersion: 2,
+        businessActivities: [],
       }),
     ).toEqual({
       legalName: "Concertable Ltd",
+      contactEmail: "hello@concertable.test",
+      expectedVersion: 4,
       vatRegistered: false,
       vatNumber: "",
       sellerIdentifier: "",
@@ -27,6 +33,10 @@ describe("Organization", () => {
     const organization: OrganizationRead = {
       id: "organization-1",
       legalName: "Concertable Ltd",
+      contactEmail: "hello@concertable.test",
+      version: 7,
+      eligibilityVersion: 3,
+      businessActivities: ["promoter"],
       taxCompliance: {
         vatNumber: "GB123",
         sellerIdentifier: "GB-123",
@@ -44,6 +54,8 @@ describe("Organization", () => {
 
     expect(Organization.toFormValues(organization)).toEqual({
       legalName: "Concertable Ltd",
+      contactEmail: "hello@concertable.test",
+      expectedVersion: 7,
       vatRegistered: true,
       vatNumber: "GB123",
       sellerIdentifier: "GB-123",

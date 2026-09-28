@@ -13,6 +13,7 @@ using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.Booking.Domain.Factories;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.DataAccess.Infrastructure.Data;
@@ -33,6 +34,14 @@ public static class ServiceCollectionExtensions
     {
         public IServiceCollection AddBookingModule(IConfiguration configuration)
         {
+            services.AddDbContext<BookingPrivilegedDbContext>((provider, options) =>
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                    .AddInterceptors(
+                        provider.GetRequiredService<AuditInterceptor>(),
+                        provider.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
             services.AddDbContext<BookingDbContext>((provider, options) =>
                 options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
@@ -52,6 +61,8 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
             services.AddScoped<IBookingRepository, BookingRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();
@@ -60,6 +71,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
             services.AddScoped<IBookingModule, BookingModule>();
+            services.AddScoped<ITenantDeletionGuard, BookingTenantDeletionGuard>();
             services.AddBookingDealStrategies();
             services.AddScoped<IDomainEventHandler<ApplicationAcceptedDomainEvent>,
                 ApplicationAcceptedDomainEventHandler>();

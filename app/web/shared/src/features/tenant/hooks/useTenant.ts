@@ -4,21 +4,28 @@ import { useRouter } from "@tanstack/react-router";
 import {
   b2bIdentityKeys,
   identityApi,
+  isTenantSwitchQuery,
+  settlePendingMutations,
   tenantSession,
   useB2bIdentityQuery,
   useTenant as useCoreTenant,
 } from "@concertable/b2b/features/tenant";
-import type { TenantType } from "@concertable/b2b/features/tenant/types";
+import type { TenantBusinessActivity } from "@concertable/b2b/features/tenant/types";
+import { notificationConnection } from "@concertable/web/lib/signalr";
 
 export function useTenantIdentity() {
   return useB2bIdentityQuery();
 }
 
-export function useTenant(tenantType: TenantType) {
+export function useTenant(businessActivity?: TenantBusinessActivity) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: identity } = useTenantIdentity();
-  const tenant = useCoreTenant(identity?.memberships ?? [], tenantType);
+  const tenant = useCoreTenant(
+    identity?.memberships ?? [],
+    businessActivity,
+    identity !== undefined,
+  );
 
   const selectTenant = useCallback(
     async (tenantId: string) => {
@@ -33,11 +40,34 @@ export function useTenant(tenantType: TenantType) {
           staleTime: 0,
         });
       }
-      await tenantSession.select(tenantId);
-      await Promise.all([router.invalidate(), queryClient.invalidateQueries()]);
+      let notificationsStopped = false;
+      try {
+        await tenantSession.switchTo(tenantId, {
+          prepare: async () => {
+            await queryClient.cancelQueries({ predicate: isTenantSwitchQuery });
+            await notificationConnection.stop();
+            notificationsStopped = true;
+            await settlePendingMutations(queryClient);
+            queryClient.removeQueries({ predicate: isTenantSwitchQuery });
+          },
+          activate: async () => {
+            await notificationConnection.start();
+            notificationsStopped = false;
+          },
+        });
+      } catch (error) {
+        if (notificationsStopped && tenantSession.current() !== undefined)
+          await notificationConnection.start();
+        throw error;
+      }
+      await router.invalidate();
     },
     [identity, queryClient, router],
   );
 
-  return { ...tenant, selectTenant };
+  return {
+    ...tenant,
+    selectionRequired: tenant.isSelectionPending || tenant.selectionRequired,
+    selectTenant,
+  };
 }

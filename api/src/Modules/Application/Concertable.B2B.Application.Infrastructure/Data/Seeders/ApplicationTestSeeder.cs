@@ -1,7 +1,6 @@
-using Concertable.B2B.DataAccess.Application;
-using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.Seed.Infrastructure;
+﻿using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Shared;
+using Concertable.Seed.Shared.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Data.Seeders;
@@ -10,22 +9,37 @@ internal sealed class ApplicationTestSeeder : ITestSeeder
 {
     public int Order => 5;
 
-    private readonly ApplicationDbContext context;
+    private readonly ApplicationPrivilegedDbContext context;
+    private readonly ApplicationDbContext migrations;
     private readonly SeedState seed;
-    private readonly ITenantScope tenantScope;
 
-    public ApplicationTestSeeder(ApplicationDbContext context, SeedState seed, ITenantScope tenantScope)
+    public ApplicationTestSeeder(
+        ApplicationPrivilegedDbContext context,
+        ApplicationDbContext migrations,
+        SeedState seed)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seed = seed;
-        this.tenantScope = tenantScope;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
-    public async Task SeedAsync(CancellationToken ct = default)
+    public async Task SeedAsync(CancellationToken ct = default) =>
+        await SeedStateAsync(ct);
+
+    private async Task SeedStateAsync(CancellationToken ct)
     {
-        await context.SeedByVenueTenantAsync(tenantScope, seed.Applications, ct);
-        await context.SeedByVenueTenantAsync(tenantScope, seed.ConcertAvailabilities, ct);
+        await context.Applications.SeedIfEmptyAsync(async () =>
+        {
+            context.Applications.AddRange(seed.Applications);
+            await context.SaveChangesAsync(ct);
+        });
+
+        await context.ConcertAvailabilities.SeedIfEmptyAsync(async () =>
+        {
+            context.ConcertAvailabilities.AddRange(seed.ConcertAvailabilities);
+            await context.SaveChangesAsync(ct);
+        });
     }
 }

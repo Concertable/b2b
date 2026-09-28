@@ -24,6 +24,14 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddDealModule(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddDbContext<DealPrivilegedDbContext>((sp, opt) =>
+            opt.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
         services.AddDbContext<DealDbContext>((sp, opt) =>
             opt.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),

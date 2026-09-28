@@ -1,33 +1,40 @@
 using Concertable.B2B.Application.Application.Mappers;
-using Concertable.Kernel.Exceptions;
+using Concertable.B2B.Application.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Services.Payment;
 
 internal sealed class PaymentVerificationRecorder : IPaymentVerificationRecorder
 {
-    private readonly IApplicationRepository applicationRepository;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly ApplicationPrivilegedDbContext context;
+    private readonly IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior;
 
     public PaymentVerificationRecorder(
-        IApplicationRepository applicationRepository,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        ApplicationPrivilegedDbContext context,
+        IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior)
     {
-        this.applicationRepository = applicationRepository;
+        this.context = context;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
     }
 
     public Task RecordAsync(VerifyPayment payment, CancellationToken ct = default) =>
         unitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            var application = await applicationRepository
-                .GetByIdAsync(payment.ApplicationId, ct)
-                .OrNotFound();
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                 SELECT 1
+                 FROM application."Applications"
+                 WHERE "Id" = {payment.ApplicationId}
+                 FOR UPDATE
+                 """,
+                ct);
+            var application = await context.Applications
+                .Include(value => value.VerifyPayment)
+                .SingleOrDefaultAsync(value => value.Id == payment.ApplicationId, ct)
+                ?? throw new InvalidOperationException($"Application {payment.ApplicationId} was not found.");
             if (!application.RecordPaymentVerification(payment.ToPaymentVerification()))
                 return;
 
-            // The verification is stored in its own table but belongs to the application, and an acceptance
-            // in flight decides on it. Without this the acceptance commits a booking that contradicts a
-            // verification recorded after it read the row, and nothing ever confirms that booking.
-            applicationRepository.MarkChanged(application);
+            context.Entry(application).Property(value => value.State).IsModified = true;
         }, ct);
 }

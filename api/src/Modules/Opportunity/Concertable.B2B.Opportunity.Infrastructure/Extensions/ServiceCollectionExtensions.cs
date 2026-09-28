@@ -29,6 +29,12 @@ public static class ServiceCollectionExtensions
     {
         public IServiceCollection AddOpportunityModule(IConfiguration configuration)
         {
+            services.AddDbContext<OpportunityPrivilegedDbContext>((sp, options) =>
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
+
             services.AddDbContext<OpportunityDbContext>((sp, options) =>
                 options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
@@ -46,6 +52,7 @@ public static class ServiceCollectionExtensions
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IOpportunityRepository, OpportunityRepository>();
             services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
             services.AddScoped<IOpportunityService, OpportunityService>();

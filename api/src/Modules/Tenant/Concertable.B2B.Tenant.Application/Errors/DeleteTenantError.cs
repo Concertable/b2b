@@ -9,9 +9,20 @@ internal abstract partial record DeleteTenantError : IError
     {
         TenantNotFound(var tenantId) =>
             ErrorDefinition.NotFound<TenantNotFound>(
-                $"Organization {tenantId} was not found.")
+                $"Organization {tenantId} was not found."),
+        CannotDeleteWithLiveObligations =>
+            ErrorDefinition.Conflict<CannotDeleteWithLiveObligations>(
+                "An organization with live resources or financial obligations cannot be deleted."),
+        NotPermitted =>
+            ErrorDefinition.Forbidden<NotPermitted>(
+                "The current membership cannot manage this organization.")
     };
 
     [ErrorCode("tenant.delete_not_found")]
     public partial record TenantNotFound(Guid TenantId);
+
+    [ErrorCode("tenant.delete_live_obligations")]
+    public partial record CannotDeleteWithLiveObligations;
+    [ErrorCode("tenant.delete_not_permitted")]
+    public partial record NotPermitted;
 }

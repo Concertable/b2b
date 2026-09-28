@@ -19,7 +19,7 @@ internal sealed class TenantInvitationCreatedDomainEventHandler : IPreCommitDoma
 
     public Task HandleAsync(TenantInvitationCreatedDomainEvent e, CancellationToken ct = default)
     {
-        var acceptLink = uris.Create(e.TenantType, $"/settings/members/accept/{e.InvitationId}");
+        var acceptLink = uris.Create(FrontendSurface.Business, $"/settings/members/accept/{e.InvitationId}");
 
         const string subject = "You've been invited to join an organization on Concertable";
         var body =

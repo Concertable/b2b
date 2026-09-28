@@ -11,7 +11,7 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void Post_WhenAwaitingSettlement_LeavesStateSettlementAndEventsUnchanged()
     {
-        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         Assert.True(concert.BeginSettlement().TryGetValue(out var operationId));
         var events = concert.DomainEvents.ToArray();
 
@@ -32,7 +32,7 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void BeginSettlement_WhenPreviousAttemptFailed_ReusesTheOperation()
     {
-        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         Assert.True(concert.BeginSettlement().TryGetValue(out var firstOperationId));
         Assert.False(concert.RecordSettlementFailure("declined", "Declined").IsFailure);
 
@@ -47,7 +47,7 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void RecordSettlementFailure_WhenTransitionRejected_LeavesTheFailureUnrecorded()
     {
-        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
 
         var result = concert.RecordSettlementFailure("declined", "Declined");
 
@@ -59,7 +59,7 @@ public sealed class ConcertEntityLifecycleTests
     [Fact]
     public void CompleteSettlement_WhenTransitionRejected_LeavesTheStateUnchanged()
     {
-        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []));
+        var concert = ConcertEntity.CreateDraft(CreateBooking(), new ConcertDraft("Concert", "About", []), DateTime.UnixEpoch);
         Assert.True(concert.BeginCancellation().TryGetValue(out _));
         Assert.False(concert.Cancel().TryGetError(out _));
 
@@ -74,7 +74,8 @@ public sealed class ConcertEntityLifecycleTests
     public void BeginSettlement_WhenRetryingAfterLaterTicketSales_ReusesReservedGross()
     {
         var concert = (DoorRevenueConcert)ConcertEntity.CreateDraft(
-            CreateDoorSplitBooking(), new ConcertDraft("Concert", "About", []));
+            CreateDoorSplitBooking(), new ConcertDraft("Concert", "About", []),
+            DateTime.UnixEpoch);
         concert.IncrementTicketsSold(10);
         Assert.False(concert.DeclareDoorRevenue(100m).IsFailure);
         Assert.True(concert.BeginSettlement().TryGetValue(out _));

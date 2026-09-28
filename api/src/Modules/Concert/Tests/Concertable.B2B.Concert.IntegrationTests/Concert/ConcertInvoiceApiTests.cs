@@ -1,10 +1,14 @@
 using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Concertable.B2B.Concert.Api.Responses;
+using Concertable.B2B.Concert.Application.Errors;
+using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Deal.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Reunion;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -39,9 +43,14 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 
     private async Task SetVatNumberAsync(Guid tenantId, string vatNumber)
     {
-        var response = await ClientOfTenant(tenantId).PutAsync("/api/organization", new
+        var client = ClientOfTenant(tenantId);
+        var current = await (await client.GetAsync("/api/organization"))
+            .Content.ReadAsync<JsonElement>();
+        var response = await client.PutAsync("/api/organization", new
         {
             legalName = "Registered Supplier Ltd",
+            contactEmail = current.GetProperty("contactEmail").GetString(),
+            expectedVersion = current.GetProperty("version").GetInt64(),
             taxCompliance = new
             {
                 vatNumber,
@@ -202,6 +211,76 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         Assert.Equal("INV-SEED000001-000002", second.InvoiceNumber);
     }
 
+    [Fact]
+    public async Task Finish_ConcurrentFirstInvoicesSameSupplier_AllocatesUniqueMonotonicNumbers()
+    {
+        var flatFee = fixture.SeedState.PastFlatFeeBooking;
+        var doorSplit = fixture.SeedState.PastDoorSplitBooking;
+        var flatFeeConcert = fixture.SeedState.ConcertFor(flatFee);
+        var doorSplitConcert = fixture.SeedState.ConcertFor(doorSplit);
+        Assert.Equal(flatFeeConcert.ArtistTenantId, doorSplitConcert.ArtistTenantId);
+        await fixture.DeclareDoorRevenueAsync(doorSplitConcert.Id, DoorRevenue);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(flatFeeConcert.Id);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(doorSplitConcert.Id);
+
+        var results = await fixture.RunWithInvoiceSequenceAllocationBarrierAsync(
+            flatFeeConcert.ArtistTenantId,
+            ct => new[]
+            {
+                fixture.CompleteConcertAsync(flatFeeConcert.Id, ct),
+                fixture.CompleteConcertAsync(doorSplitConcert.Id, ct)
+            });
+
+        Assert.All(results, result => Assert.True(result.TryGetValue(out _)));
+        var bookingIds = new[] { flatFee.Id, doorSplit.Id };
+        var invoices = await fixture.Invoices
+            .Where(invoice => bookingIds.Contains(invoice.BookingId))
+            .OrderBy(invoice => invoice.SequenceNumber)
+            .ToListAsync();
+        Assert.Equal(2, invoices.Count);
+        Assert.Equal([1, 2], invoices.Select(invoice => invoice.SequenceNumber));
+        Assert.Equal(2, invoices.Select(invoice => invoice.InvoiceNumber).Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Finish_ConcurrentFirstInvoices_PreservesActionFailureAfterBarrierCleanup()
+    {
+        var flatFee = fixture.SeedState.PastFlatFeeBooking;
+        var doorSplit = fixture.SeedState.PastDoorSplitBooking;
+        var flatFeeConcert = fixture.SeedState.ConcertFor(flatFee);
+        var doorSplitConcert = fixture.SeedState.ConcertFor(doorSplit);
+        await fixture.DeclareDoorRevenueAsync(doorSplitConcert.Id, DoorRevenue);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(flatFeeConcert.Id);
+        await fixture.EnsureSupplierSelfBillingAgreementAsync(doorSplitConcert.Id);
+        var expected = new InvalidOperationException("forced invoice race failure");
+
+        async Task<Result<SettlementOutcome, FinishConcertError>> FailBeforeRequestAsync()
+        {
+            await Task.Yield();
+            throw expected;
+        }
+
+        Task<Result<SettlementOutcome, FinishConcertError>>? remaining = null;
+        var caught = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                fixture.RunWithInvoiceSequenceAllocationBarrierAsync(
+                    flatFeeConcert.ArtistTenantId,
+                    ct => new[]
+                    {
+                        FailBeforeRequestAsync(),
+                        remaining = fixture.CompleteConcertAsync(doorSplitConcert.Id, ct)
+                    }))
+            .WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Same(expected, caught);
+        Assert.Contains(
+            nameof(Finish_ConcurrentFirstInvoices_PreservesActionFailureAfterBarrierCleanup),
+            caught.StackTrace);
+        Assert.NotNull(remaining);
+        Assert.True(remaining.IsCompleted);
+        Assert.True(remaining.IsCanceled);
+        Assert.True(await fixture.CanAcquireInvoiceSequenceLockAsync(flatFeeConcert.ArtistTenantId));
+    }
+
     // --- Read surface: two-party scoped ---
 
     [Fact]
@@ -316,15 +395,16 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
         var party = ClientOfTenant(concert.VenueTenantId);
 
         // Before settlement: the party reads its concert, but no invoice exists yet -> no link.
-        var before = await (await party.GetAsync($"/api/organization/concert/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
-        Assert.NotNull(before!.Actions);
-        Assert.Null(before.Actions!.Invoice);
+        var before = await (await party.GetAsync($"/api/concert/{concert.Id}/finance"))
+            .Content.ReadAsync<FinanceResponse>();
+        Assert.Null(before!.Actions.Invoice);
 
         await fixture.FinishConcertAsync(concert.Id);
 
         // After settlement: the minted invoice surfaces its download link.
-        var after = await (await party.GetAsync($"/api/organization/concert/{concert.Id}")).Content.ReadAsync<MyDetailsResponse>();
-        Assert.Equal($"/api/concert/{concert.Id}/invoice/pdf", after!.Actions!.Invoice!.Href);
+        var after = await (await party.GetAsync($"/api/concert/{concert.Id}/finance"))
+            .Content.ReadAsync<FinanceResponse>();
+        Assert.Equal($"/api/concert/{concert.Id}/invoice/pdf", after!.Actions.Invoice!.Href);
     }
 
     private HttpClient ClientOfTenant(Guid tenantId) =>

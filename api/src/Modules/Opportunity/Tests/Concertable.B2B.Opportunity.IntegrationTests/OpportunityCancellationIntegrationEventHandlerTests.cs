@@ -70,13 +70,8 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
 
     private async Task MarkFilledAsync(int opportunityId)
     {
-        var tenantId = await fixture.Opportunities
-            .Where(value => value.Id == opportunityId)
-            .Select(value => value.TenantId)
-            .SingleAsync();
         await using var scope = fixture.Services.CreateAsyncScope();
-        using var acting = scope.ServiceProvider.GetRequiredService<ITenantScope>().As(tenantId);
-        var context = scope.ServiceProvider.GetRequiredService<OpportunityDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<OpportunityPrivilegedDbContext>();
         var opportunity = await context.Opportunities.SingleAsync(value => value.Id == opportunityId);
         opportunity.MarkFilled();
         await context.SaveChangesAsync();

@@ -3,10 +3,10 @@ import { Badge } from "@concertable/web/components/ui/badge";
 import { useImageUrlQuery } from "@concertable/shared/hooks";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import type { Application } from "@concertable/web-b2b/features/concerts/types";
+import type { ApplicationProposal } from "@concertable/web-b2b/features/concerts/types";
 
 interface Props {
-  application: Application;
+  application: ApplicationProposal;
   onDeny?: (applicationId: number) => void;
   onCancel?: (applicationId: number) => void;
 }
@@ -57,7 +57,7 @@ export function ApplicationCard({
               Accept
             </Button>
           )}
-          {onDeny && actions.reject && (
+          {onDeny && actions.decline && (
             <Button
               size="sm"
               variant="destructive"

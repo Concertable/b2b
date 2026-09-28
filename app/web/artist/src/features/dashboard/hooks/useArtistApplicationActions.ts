@@ -1,7 +1,9 @@
+import { artistDashboardKey } from "../queryKeys";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { actionLinkApi } from "@concertable/web-b2b/features/concerts";
+import { currentPrivateQueryKey } from "@concertable/b2b/features/tenant";
 import type { ApplicationActionName } from "../applicationActions";
 import type { Application } from "../types";
 
@@ -28,9 +30,11 @@ export function useArtistApplicationActions() {
       if (name === "withdraw") {
         toast.success("Application withdrawn.");
         void queryClient.invalidateQueries({
-          queryKey: ["dashboard", "artist"],
+          queryKey: artistDashboardKey(),
         });
-        void queryClient.invalidateQueries({ queryKey: ["applications"] });
+        void queryClient.invalidateQueries({
+          queryKey: currentPrivateQueryKey("applications"),
+        });
       }
       setWithdrawal(undefined);
     },

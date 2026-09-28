@@ -1,12 +1,19 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Concertable.B2B.Application.Domain.Lifecycle;
+using Concertable.B2B.Application.Infrastructure.Data;
+using Concertable.B2B.Application.Contracts.Commands;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -401,6 +408,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         Assert.Equal(
             ApplicationState.Accepted,
             (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State);
+        Assert.True(await fixture.PaymentVerifications.AnyAsync(value => value.ApplicationId == applicationId));
         var bookingResponse = await client.GetAsync($"/api/booking/application/{applicationId}");
         await bookingResponse.ShouldBe(HttpStatusCode.OK);
         var booking = await bookingResponse.Content.ReadAsync<JsonElement>();
@@ -481,6 +489,202 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var response = await client.PostAsync($"/api/application/{opportunityId}", new { eSignature = new { signatoryName = "Aretha Artist" } });
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PaymentFailureCommand_AfterProfileCreatorLeaves_NotifiesCurrentOwner()
+    {
+        var creator = fixture.SeedState.VenueManager1;
+        var replacement = fixture.SeedState.VenueManager3;
+        var client = fixture.CreateClient(creator);
+        var promote = await client.PutAsJsonAsync(
+            $"/api/organization/members/{replacement.Id}/role",
+            new { role = TenantRole.Owner.ToString() });
+        await promote.ShouldBe(HttpStatusCode.NoContent);
+        var remove = await client.DeleteAsync($"/api/organization/members/{creator.Id}");
+        await remove.ShouldBe(HttpStatusCode.NoContent);
+
+        var command = new NotifyPaymentVerificationFailedCommand(
+            fixture.SeedState.DoorSplitApp.Id,
+            "Card was declined");
+        using var scope = fixture.Services.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<
+            IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>>();
+        await handler.HandleAsync(
+            command,
+            MessageEnvelope.Create<NotifyPaymentVerificationFailedCommand>(fixture.SeedNow));
+
+        var notification = Assert.Single(fixture.NotificationService.Other.Where(value =>
+            value.EventName == "VerifyPaymentFailed"));
+        Assert.Equal(replacement.Id.ToString(), notification.UserId);
+        Assert.DoesNotContain(fixture.NotificationService.Other, value =>
+            value.EventName == "VerifyPaymentFailed" && value.UserId == creator.Id.ToString());
+    }
+
+    [Fact]
+    public async Task PaymentFailureCommand_WhenMembershipRemovalRacesSend_SerializesNotification()
+    {
+        var creator = fixture.SeedState.VenueManager1;
+        var replacement = fixture.SeedState.VenueManager3;
+        var client = fixture.CreateClient(creator);
+        var promote = await client.PutAsJsonAsync(
+            $"/api/organization/members/{replacement.Id}/role",
+            new { role = TenantRole.Owner.ToString() });
+        await promote.ShouldBe(HttpStatusCode.NoContent);
+
+        var enteredSend = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSend = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        fixture.NotificationService.BeforeSendAsync = async (_, eventName, _) =>
+        {
+            if (eventName != "VerifyPaymentFailed")
+                return;
+            enteredSend.TrySetResult(true);
+            await releaseSend.Task;
+        };
+
+        try
+        {
+            using var scope = fixture.Services.CreateScope();
+            var handler = scope.ServiceProvider.GetRequiredService<
+                IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>>();
+            var command = new NotifyPaymentVerificationFailedCommand(
+                fixture.SeedState.DoorSplitApp.Id,
+                "Card was declined");
+            var dispatch = handler.HandleAsync(
+                command,
+                MessageEnvelope.Create<NotifyPaymentVerificationFailedCommand>(fixture.SeedNow));
+            await enteredSend.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            var removal = client.DeleteAsync($"/api/organization/members/{creator.Id}");
+            var first = await Task.WhenAny(removal, Task.Delay(TimeSpan.FromMilliseconds(300)));
+            Assert.NotSame(removal, first);
+
+            releaseSend.TrySetResult(true);
+            await dispatch;
+            await (await removal).ShouldBe(HttpStatusCode.NoContent);
+
+            var alert = Assert.Single(fixture.NotificationService.Other.Where(value =>
+                value.EventName == "VerifyPaymentFailed"));
+            Assert.Equal(creator.Id.ToString(), alert.UserId);
+        }
+        finally
+        {
+            releaseSend.TrySetResult(true);
+            fixture.NotificationService.BeforeSendAsync = null;
+        }
+    }
+
+    [Fact]
+    public async Task PaymentFailureCommand_WhenOwnerChangesBeforeAudienceRead_NotifiesNewOwner()
+    {
+        var application = fixture.SeedState.DoorSplitApp;
+        var creator = fixture.SeedState.VenueManager1;
+        var replacement = fixture.SeedState.VenueManager3;
+        using var scope = fixture.Services.CreateScope();
+        var readContext = scope.ServiceProvider.GetRequiredService<ApplicationReadDbContext>();
+        await using var control = new NpgsqlConnection(readContext.Database.GetConnectionString());
+        await control.OpenAsync();
+        await using var transaction = await control.BeginTransactionAsync();
+
+        await using (var lockTenant = control.CreateCommand())
+        {
+            lockTenant.Transaction = transaction;
+            lockTenant.CommandText = """
+                SELECT 1 FROM tenant."Tenants" WHERE "Id" = @tenantId FOR UPDATE
+                """;
+            lockTenant.Parameters.AddWithValue("tenantId", application.VenueTenantId);
+            Assert.NotNull(await lockTenant.ExecuteScalarAsync());
+        }
+
+        await using (var changeMembers = control.CreateCommand())
+        {
+            changeMembers.Transaction = transaction;
+            changeMembers.CommandText = """
+                UPDATE tenant."Memberships"
+                SET "Role" = @role, "PermissionVersion" = "PermissionVersion" + 1
+                WHERE "TenantId" = @tenantId AND "UserId" = @replacementId;
+                DELETE FROM tenant."Memberships"
+                WHERE "TenantId" = @tenantId AND "UserId" = @creatorId
+                """;
+            changeMembers.Parameters.AddWithValue("role", (int)TenantRole.Owner);
+            changeMembers.Parameters.AddWithValue("tenantId", application.VenueTenantId);
+            changeMembers.Parameters.AddWithValue("replacementId", replacement.Id);
+            changeMembers.Parameters.AddWithValue("creatorId", creator.Id);
+            Assert.Equal(2, await changeMembers.ExecuteNonQueryAsync());
+        }
+
+        var handler = scope.ServiceProvider.GetRequiredService<
+            IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>>();
+        var command = new NotifyPaymentVerificationFailedCommand(
+            application.Id,
+            "Card was declined");
+        var dispatch = handler.HandleAsync(
+            command,
+            MessageEnvelope.Create<NotifyPaymentVerificationFailedCommand>(fixture.SeedNow));
+
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            while (true)
+            {
+                await using var waiters = control.CreateCommand();
+                waiters.Transaction = transaction;
+                waiters.CommandText = """
+                    SELECT COUNT(*)
+                    FROM pg_locks AS waiting
+                    JOIN pg_locks AS held ON held.transactionid = waiting.transactionid
+                    WHERE waiting.locktype = 'transactionid'
+                      AND NOT waiting.granted
+                      AND held.locktype = 'transactionid'
+                      AND held.granted
+                      AND held.pid = pg_backend_pid()
+                    """;
+                if (Convert.ToInt32(await waiters.ExecuteScalarAsync(timeout.Token)) > 0)
+                    break;
+                await Task.Delay(25, timeout.Token);
+            }
+        }
+        finally
+        {
+            await transaction.CommitAsync();
+        }
+
+        await dispatch.WaitAsync(TimeSpan.FromSeconds(10));
+        var alert = Assert.Single(fixture.NotificationService.Other.Where(value =>
+            value.EventName == "VerifyPaymentFailed"));
+        Assert.Equal(replacement.Id.ToString(), alert.UserId);
+    }
+
+    [Fact]
+    public async Task Accept_WhenArtistTenantWasDeleted_ReturnsPartyUnavailable()
+    {
+        var application = fixture.SeedState.Applications.Single(value =>
+            value.ArtistId == 17 && value.OpportunityId == 40);
+        var artist = fixture.SeedState.Artists.Single(value => value.Id == application.ArtistId);
+        var artistUser = fixture.SeedState.Users.Single(value => value.Id == artist.UserId);
+        var opportunity = fixture.SeedState.Opportunities.Single(value => value.Id == application.OpportunityId);
+        var venue = fixture.SeedState.Venues.Single(value => value.Id == opportunity.VenueId);
+        var venueUser = fixture.SeedState.Users.Single(value => value.Id == venue.UserId);
+
+        var venueClient = fixture.CreateClient(venueUser);
+        venueClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, application.VenueTenantId.ToString());
+        var checkout = await venueClient.PostAsync($"/api/application/{application.Id}/checkout");
+        await checkout.ShouldBe(HttpStatusCode.OK);
+
+        var artistClient = fixture.CreateClient(artistUser);
+        artistClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, application.ArtistTenantId.ToString());
+        var delete = await artistClient.DeleteAsync("/api/organization");
+        await delete.ShouldBe(HttpStatusCode.NoContent);
+
+        var accept = await venueClient.PostAsync(
+            $"/api/application/{application.Id}/accept",
+            new { eSignature = new { signatoryName = "Test Signatory" } });
+
+        await AssertProblemCodeAsync(accept, HttpStatusCode.Conflict, "application.accept.party_unavailable");
+        Assert.Equal(ApplicationState.Applied,
+            (await fixture.Applications.SingleAsync(value => value.Id == application.Id)).State);
+        var booking = await venueClient.GetAsync($"/api/booking/application/{application.Id}");
+        await booking.ShouldBe(HttpStatusCode.NotFound);
     }
 
     #endregion

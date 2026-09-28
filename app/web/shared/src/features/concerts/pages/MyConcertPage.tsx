@@ -3,16 +3,14 @@ import { ConfigBar } from "@concertable/web/components/ConfigBar";
 import { Button } from "@concertable/web/components/ui/button";
 import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
-import type { MyConcert } from "../types";
+import type { ConcertOperations } from "../types";
 import { useMyConcert } from "../hooks/useMyConcert";
 import { useDownloadContractMutation } from "../hooks/useDownloadContractMutation";
 import { ConcertDetails } from "@concertable/web/features/concerts";
 
 interface Props {
   id: number;
-  // Slot for app-specific manager actions (e.g. the venue's cancel-booking button).
-  // The artist app renders none — cancelling a booking is a venue-only decision.
-  renderActions?: (concert: MyConcert) => ReactNode;
+  renderActions?: (concert: ConcertOperations) => ReactNode;
 }
 
 export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
@@ -51,16 +49,14 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
         onCancel={resetDraft}
         actions={
           <>
-            {concert.actions?.contract && (
-              <Button
-                variant="outline"
-                onClick={() => downloadContract.mutate(concert.id)}
-                disabled={downloadContract.isPending}
-                data-testid="download-contract"
-              >
-                Contract
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={() => downloadContract.mutate(concert.applicationId)}
+              disabled={downloadContract.isPending}
+              data-testid="download-contract"
+            >
+              Contract
+            </Button>
             {actions}
           </>
         }

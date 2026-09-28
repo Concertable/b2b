@@ -9,56 +9,35 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SuccessRouteImport } from './routes/success'
-import { Route as StripeReturnRouteImport } from './routes/stripe-return'
-import { Route as StripeRefreshRouteImport } from './routes/stripe-refresh'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as FailRouteImport } from './routes/fail'
 import { Route as ArtistRouteRouteImport } from './routes/_artist/route'
+import { Route as FailRouteImport } from './routes/fail'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as StripeRefreshRouteImport } from './routes/stripe-refresh'
+import { Route as StripeReturnRouteImport } from './routes/stripe-return'
+import { Route as SuccessRouteImport } from './routes/success'
 import { Route as ArtistIndexRouteImport } from './routes/_artist/index'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ArtistCreateRouteImport } from './routes/_artist/create'
 import { Route as ArtistSettingsRouteRouteImport } from './routes/_artist/settings/route'
-import { Route as ArtistSettingsIndexRouteImport } from './routes/_artist/settings/index'
-import { Route as ArtistMyIndexRouteImport } from './routes/_artist/my/index'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ArtistFindIndexRouteImport } from './routes/_artist/find/index'
-import { Route as ArtistSettingsVerificationRouteImport } from './routes/_artist/settings/verification'
-import { Route as ArtistSettingsSelfBillingAgreementRouteImport } from './routes/_artist/settings/self-billing-agreement'
-import { Route as ArtistSettingsPaymentRouteImport } from './routes/_artist/settings/payment'
-import { Route as ArtistSettingsOrganizationRouteImport } from './routes/_artist/settings/organization'
-import { Route as ArtistSettingsMembersRouteImport } from './routes/_artist/settings/members'
+import { Route as ArtistMyIndexRouteImport } from './routes/_artist/my/index'
 import { Route as ArtistMyApplicationsRouteImport } from './routes/_artist/my/applications'
-import { Route as SettingsMembersAcceptInvitationIdRouteImport } from './routes/settings/members/accept.$invitationId'
-import { Route as ArtistOpportunityCheckoutOpportunityIdRouteImport } from './routes/_artist/opportunity/checkout.$opportunityId'
-import { Route as ArtistFindVenueIdRouteImport } from './routes/_artist/find/venue.$id'
-import { Route as ArtistFindConcertIdRouteImport } from './routes/_artist/find/concert.$id'
+import { Route as ArtistSettingsIndexRouteImport } from './routes/_artist/settings/index'
+import { Route as ArtistSettingsMembersRouteImport } from './routes/_artist/settings/members'
+import { Route as ArtistSettingsOrganizationRouteImport } from './routes/_artist/settings/organization'
+import { Route as ArtistSettingsPaymentRouteImport } from './routes/_artist/settings/payment'
+import { Route as ArtistSettingsSelfBillingAgreementRouteImport } from './routes/_artist/settings/self-billing-agreement'
+import { Route as ArtistSettingsVerificationRouteImport } from './routes/_artist/settings/verification'
 import { Route as ArtistFindArtistIdRouteImport } from './routes/_artist/find/artist.$id'
+import { Route as ArtistFindConcertIdRouteImport } from './routes/_artist/find/concert.$id'
+import { Route as ArtistFindVenueIdRouteImport } from './routes/_artist/find/venue.$id'
+import { Route as ArtistOpportunityCheckoutOpportunityIdRouteImport } from './routes/_artist/opportunity/checkout.$opportunityId'
+import { Route as SettingsMembersAcceptInvitationIdRouteImport } from './routes/settings/members/accept.$invitationId'
 import { Route as ArtistMyConcertsConcertIdRouteImport } from './routes/_artist/my/concerts/concert.$id'
 
-const SuccessRoute = SuccessRouteImport.update({
-  id: '/success',
-  path: '/success',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StripeReturnRoute = StripeReturnRouteImport.update({
-  id: '/stripe-return',
-  path: '/stripe-return',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StripeRefreshRoute = StripeRefreshRouteImport.update({
-  id: '/stripe-refresh',
-  path: '/stripe-refresh',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const ArtistRouteRoute = ArtistRouteRouteImport.update({
+  id: '/_artist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FailRoute = FailRouteImport.update({
@@ -66,19 +45,35 @@ const FailRoute = FailRouteImport.update({
   path: '/fail',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ArtistRouteRoute = ArtistRouteRouteImport.update({
-  id: '/_artist',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StripeRefreshRoute = StripeRefreshRouteImport.update({
+  id: '/stripe-refresh',
+  path: '/stripe-refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StripeReturnRoute = StripeReturnRouteImport.update({
+  id: '/stripe-return',
+  path: '/stripe-return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuccessRoute = SuccessRouteImport.update({
+  id: '/success',
+  path: '/success',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArtistIndexRoute = ArtistIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ArtistRouteRoute,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const ArtistCreateRoute = ArtistCreateRouteImport.update({
   id: '/create',
@@ -90,36 +85,34 @@ const ArtistSettingsRouteRoute = ArtistSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => ArtistRouteRoute,
 } as any)
-const ArtistSettingsIndexRoute = ArtistSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ArtistSettingsRouteRoute,
-} as any)
-const ArtistMyIndexRoute = ArtistMyIndexRouteImport.update({
-  id: '/my/',
-  path: '/my/',
-  getParentRoute: () => ArtistRouteRoute,
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ArtistFindIndexRoute = ArtistFindIndexRouteImport.update({
   id: '/find/',
   path: '/find/',
   getParentRoute: () => ArtistRouteRoute,
 } as any)
-const ArtistSettingsVerificationRoute =
-  ArtistSettingsVerificationRouteImport.update({
-    id: '/verification',
-    path: '/verification',
-    getParentRoute: () => ArtistSettingsRouteRoute,
-  } as any)
-const ArtistSettingsSelfBillingAgreementRoute =
-  ArtistSettingsSelfBillingAgreementRouteImport.update({
-    id: '/self-billing-agreement',
-    path: '/self-billing-agreement',
-    getParentRoute: () => ArtistSettingsRouteRoute,
-  } as any)
-const ArtistSettingsPaymentRoute = ArtistSettingsPaymentRouteImport.update({
-  id: '/payment',
-  path: '/payment',
+const ArtistMyIndexRoute = ArtistMyIndexRouteImport.update({
+  id: '/my/',
+  path: '/my/',
+  getParentRoute: () => ArtistRouteRoute,
+} as any)
+const ArtistMyApplicationsRoute = ArtistMyApplicationsRouteImport.update({
+  id: '/my/applications',
+  path: '/my/applications',
+  getParentRoute: () => ArtistRouteRoute,
+} as any)
+const ArtistSettingsIndexRoute = ArtistSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ArtistSettingsRouteRoute,
+} as any)
+const ArtistSettingsMembersRoute = ArtistSettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => ArtistSettingsRouteRoute,
 } as any)
 const ArtistSettingsOrganizationRoute =
@@ -128,31 +121,26 @@ const ArtistSettingsOrganizationRoute =
     path: '/organization',
     getParentRoute: () => ArtistSettingsRouteRoute,
   } as any)
-const ArtistSettingsMembersRoute = ArtistSettingsMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
+const ArtistSettingsPaymentRoute = ArtistSettingsPaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
   getParentRoute: () => ArtistSettingsRouteRoute,
 } as any)
-const ArtistMyApplicationsRoute = ArtistMyApplicationsRouteImport.update({
-  id: '/my/applications',
-  path: '/my/applications',
-  getParentRoute: () => ArtistRouteRoute,
-} as any)
-const SettingsMembersAcceptInvitationIdRoute =
-  SettingsMembersAcceptInvitationIdRouteImport.update({
-    id: '/settings/members/accept/$invitationId',
-    path: '/settings/members/accept/$invitationId',
-    getParentRoute: () => rootRouteImport,
+const ArtistSettingsSelfBillingAgreementRoute =
+  ArtistSettingsSelfBillingAgreementRouteImport.update({
+    id: '/self-billing-agreement',
+    path: '/self-billing-agreement',
+    getParentRoute: () => ArtistSettingsRouteRoute,
   } as any)
-const ArtistOpportunityCheckoutOpportunityIdRoute =
-  ArtistOpportunityCheckoutOpportunityIdRouteImport.update({
-    id: '/opportunity/checkout/$opportunityId',
-    path: '/opportunity/checkout/$opportunityId',
-    getParentRoute: () => ArtistRouteRoute,
+const ArtistSettingsVerificationRoute =
+  ArtistSettingsVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => ArtistSettingsRouteRoute,
   } as any)
-const ArtistFindVenueIdRoute = ArtistFindVenueIdRouteImport.update({
-  id: '/find/venue/$id',
-  path: '/find/venue/$id',
+const ArtistFindArtistIdRoute = ArtistFindArtistIdRouteImport.update({
+  id: '/find/artist/$id',
+  path: '/find/artist/$id',
   getParentRoute: () => ArtistRouteRoute,
 } as any)
 const ArtistFindConcertIdRoute = ArtistFindConcertIdRouteImport.update({
@@ -160,11 +148,23 @@ const ArtistFindConcertIdRoute = ArtistFindConcertIdRouteImport.update({
   path: '/find/concert/$id',
   getParentRoute: () => ArtistRouteRoute,
 } as any)
-const ArtistFindArtistIdRoute = ArtistFindArtistIdRouteImport.update({
-  id: '/find/artist/$id',
-  path: '/find/artist/$id',
+const ArtistFindVenueIdRoute = ArtistFindVenueIdRouteImport.update({
+  id: '/find/venue/$id',
+  path: '/find/venue/$id',
   getParentRoute: () => ArtistRouteRoute,
 } as any)
+const ArtistOpportunityCheckoutOpportunityIdRoute =
+  ArtistOpportunityCheckoutOpportunityIdRouteImport.update({
+    id: '/opportunity/checkout/$opportunityId',
+    path: '/opportunity/checkout/$opportunityId',
+    getParentRoute: () => ArtistRouteRoute,
+  } as any)
+const SettingsMembersAcceptInvitationIdRoute =
+  SettingsMembersAcceptInvitationIdRouteImport.update({
+    id: '/settings/members/accept/$invitationId',
+    path: '/settings/members/accept/$invitationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ArtistMyConcertsConcertIdRoute =
   ArtistMyConcertsConcertIdRouteImport.update({
     id: '/my/concerts/concert/$id',
@@ -352,39 +352,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/success': {
-      id: '/success'
-      path: '/success'
-      fullPath: '/success'
-      preLoaderRoute: typeof SuccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stripe-return': {
-      id: '/stripe-return'
-      path: '/stripe-return'
-      fullPath: '/stripe-return'
-      preLoaderRoute: typeof StripeReturnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stripe-refresh': {
-      id: '/stripe-refresh'
-      path: '/stripe-refresh'
-      fullPath: '/stripe-refresh'
-      preLoaderRoute: typeof StripeRefreshRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/_artist': {
+      id: '/_artist'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ArtistRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fail': {
@@ -394,11 +366,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FailRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_artist': {
-      id: '/_artist'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof ArtistRouteRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stripe-refresh': {
+      id: '/stripe-refresh'
+      path: '/stripe-refresh'
+      fullPath: '/stripe-refresh'
+      preLoaderRoute: typeof StripeRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stripe-return': {
+      id: '/stripe-return'
+      path: '/stripe-return'
+      fullPath: '/stripe-return'
+      preLoaderRoute: typeof StripeReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/success': {
+      id: '/success'
+      path: '/success'
+      fullPath: '/success'
+      preLoaderRoute: typeof SuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_artist/': {
@@ -407,13 +407,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof ArtistIndexRouteImport
       parentRoute: typeof ArtistRouteRoute
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_artist/create': {
       id: '/_artist/create'
@@ -429,19 +422,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistSettingsRouteRouteImport
       parentRoute: typeof ArtistRouteRoute
     }
-    '/_artist/settings/': {
-      id: '/_artist/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof ArtistSettingsIndexRouteImport
-      parentRoute: typeof ArtistSettingsRouteRoute
-    }
-    '/_artist/my/': {
-      id: '/_artist/my/'
-      path: '/my'
-      fullPath: '/my/'
-      preLoaderRoute: typeof ArtistMyIndexRouteImport
-      parentRoute: typeof ArtistRouteRoute
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_artist/find/': {
       id: '/_artist/find/'
@@ -450,32 +436,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistFindIndexRouteImport
       parentRoute: typeof ArtistRouteRoute
     }
-    '/_artist/settings/verification': {
-      id: '/_artist/settings/verification'
-      path: '/verification'
-      fullPath: '/settings/verification'
-      preLoaderRoute: typeof ArtistSettingsVerificationRouteImport
-      parentRoute: typeof ArtistSettingsRouteRoute
+    '/_artist/my/': {
+      id: '/_artist/my/'
+      path: '/my'
+      fullPath: '/my/'
+      preLoaderRoute: typeof ArtistMyIndexRouteImport
+      parentRoute: typeof ArtistRouteRoute
     }
-    '/_artist/settings/self-billing-agreement': {
-      id: '/_artist/settings/self-billing-agreement'
-      path: '/self-billing-agreement'
-      fullPath: '/settings/self-billing-agreement'
-      preLoaderRoute: typeof ArtistSettingsSelfBillingAgreementRouteImport
-      parentRoute: typeof ArtistSettingsRouteRoute
+    '/_artist/my/applications': {
+      id: '/_artist/my/applications'
+      path: '/my/applications'
+      fullPath: '/my/applications'
+      preLoaderRoute: typeof ArtistMyApplicationsRouteImport
+      parentRoute: typeof ArtistRouteRoute
     }
-    '/_artist/settings/payment': {
-      id: '/_artist/settings/payment'
-      path: '/payment'
-      fullPath: '/settings/payment'
-      preLoaderRoute: typeof ArtistSettingsPaymentRouteImport
-      parentRoute: typeof ArtistSettingsRouteRoute
-    }
-    '/_artist/settings/organization': {
-      id: '/_artist/settings/organization'
-      path: '/organization'
-      fullPath: '/settings/organization'
-      preLoaderRoute: typeof ArtistSettingsOrganizationRouteImport
+    '/_artist/settings/': {
+      id: '/_artist/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof ArtistSettingsIndexRouteImport
       parentRoute: typeof ArtistSettingsRouteRoute
     }
     '/_artist/settings/members': {
@@ -485,32 +464,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistSettingsMembersRouteImport
       parentRoute: typeof ArtistSettingsRouteRoute
     }
-    '/_artist/my/applications': {
-      id: '/_artist/my/applications'
-      path: '/my/applications'
-      fullPath: '/my/applications'
-      preLoaderRoute: typeof ArtistMyApplicationsRouteImport
-      parentRoute: typeof ArtistRouteRoute
+    '/_artist/settings/organization': {
+      id: '/_artist/settings/organization'
+      path: '/organization'
+      fullPath: '/settings/organization'
+      preLoaderRoute: typeof ArtistSettingsOrganizationRouteImport
+      parentRoute: typeof ArtistSettingsRouteRoute
     }
-    '/settings/members/accept/$invitationId': {
-      id: '/settings/members/accept/$invitationId'
-      path: '/settings/members/accept/$invitationId'
-      fullPath: '/settings/members/accept/$invitationId'
-      preLoaderRoute: typeof SettingsMembersAcceptInvitationIdRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_artist/settings/payment': {
+      id: '/_artist/settings/payment'
+      path: '/payment'
+      fullPath: '/settings/payment'
+      preLoaderRoute: typeof ArtistSettingsPaymentRouteImport
+      parentRoute: typeof ArtistSettingsRouteRoute
     }
-    '/_artist/opportunity/checkout/$opportunityId': {
-      id: '/_artist/opportunity/checkout/$opportunityId'
-      path: '/opportunity/checkout/$opportunityId'
-      fullPath: '/opportunity/checkout/$opportunityId'
-      preLoaderRoute: typeof ArtistOpportunityCheckoutOpportunityIdRouteImport
-      parentRoute: typeof ArtistRouteRoute
+    '/_artist/settings/self-billing-agreement': {
+      id: '/_artist/settings/self-billing-agreement'
+      path: '/self-billing-agreement'
+      fullPath: '/settings/self-billing-agreement'
+      preLoaderRoute: typeof ArtistSettingsSelfBillingAgreementRouteImport
+      parentRoute: typeof ArtistSettingsRouteRoute
     }
-    '/_artist/find/venue/$id': {
-      id: '/_artist/find/venue/$id'
-      path: '/find/venue/$id'
-      fullPath: '/find/venue/$id'
-      preLoaderRoute: typeof ArtistFindVenueIdRouteImport
+    '/_artist/settings/verification': {
+      id: '/_artist/settings/verification'
+      path: '/verification'
+      fullPath: '/settings/verification'
+      preLoaderRoute: typeof ArtistSettingsVerificationRouteImport
+      parentRoute: typeof ArtistSettingsRouteRoute
+    }
+    '/_artist/find/artist/$id': {
+      id: '/_artist/find/artist/$id'
+      path: '/find/artist/$id'
+      fullPath: '/find/artist/$id'
+      preLoaderRoute: typeof ArtistFindArtistIdRouteImport
       parentRoute: typeof ArtistRouteRoute
     }
     '/_artist/find/concert/$id': {
@@ -520,12 +506,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArtistFindConcertIdRouteImport
       parentRoute: typeof ArtistRouteRoute
     }
-    '/_artist/find/artist/$id': {
-      id: '/_artist/find/artist/$id'
-      path: '/find/artist/$id'
-      fullPath: '/find/artist/$id'
-      preLoaderRoute: typeof ArtistFindArtistIdRouteImport
+    '/_artist/find/venue/$id': {
+      id: '/_artist/find/venue/$id'
+      path: '/find/venue/$id'
+      fullPath: '/find/venue/$id'
+      preLoaderRoute: typeof ArtistFindVenueIdRouteImport
       parentRoute: typeof ArtistRouteRoute
+    }
+    '/_artist/opportunity/checkout/$opportunityId': {
+      id: '/_artist/opportunity/checkout/$opportunityId'
+      path: '/opportunity/checkout/$opportunityId'
+      fullPath: '/opportunity/checkout/$opportunityId'
+      preLoaderRoute: typeof ArtistOpportunityCheckoutOpportunityIdRouteImport
+      parentRoute: typeof ArtistRouteRoute
+    }
+    '/settings/members/accept/$invitationId': {
+      id: '/settings/members/accept/$invitationId'
+      path: '/settings/members/accept/$invitationId'
+      fullPath: '/settings/members/accept/$invitationId'
+      preLoaderRoute: typeof SettingsMembersAcceptInvitationIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_artist/my/concerts/concert/$id': {
       id: '/_artist/my/concerts/concert/$id'

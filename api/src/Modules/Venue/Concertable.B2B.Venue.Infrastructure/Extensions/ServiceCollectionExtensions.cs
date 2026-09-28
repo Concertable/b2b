@@ -1,3 +1,4 @@
+﻿using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
@@ -5,7 +6,6 @@ using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
-using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Venue.Application.Validators;
 using Concertable.B2B.Venue.Domain.Events;
 using Concertable.B2B.Venue.Infrastructure.Data;
@@ -25,6 +25,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddVenueModule(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddDbContext<VenuePrivilegedDbContext>((sp, opt) =>
+            opt.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name)
+                        .UseNetTopologySuite())
+                .AddInterceptors(
+                    sp.GetRequiredService<AuditInterceptor>(),
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
+
         services.AddDbContext<VenueDbContext>((sp, opt) =>
             opt.UseNpgsql(
                     configuration.GetConnectionString(B2BDb.Name),
@@ -33,8 +42,7 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>())
-                .UseSeedingSupport(sp));
+                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddDbContext<VenueReadDbContext>((sp, opt) =>
             opt.UseNpgsql(
@@ -49,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueReviewRepository, VenueReviewRepository>();
         services.AddScoped<IVenueReadRepository, VenueReadRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
+        services.AddScoped<IVenueCommandFacts, VenueCommandFacts>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, VenueReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<VenueChangedDomainEvent>, VenueChangedDomainEventHandler>();

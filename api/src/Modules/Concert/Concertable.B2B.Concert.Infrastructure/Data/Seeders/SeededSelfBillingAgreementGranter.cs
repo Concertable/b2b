@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Services;
@@ -16,15 +16,14 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Seeders;
 /// </summary>
 internal static class SeededSelfBillingAgreementGranter
 {
-    public static async Task<IReadOnlyList<SelfBillingAgreementEntity>> GrantAsync(
+    public static async Task GrantAsync(
+        ConcertPrivilegedDbContext context,
         SeedState seed,
         ITenantModule tenants,
         string platformTermsVersion,
         DateTime grantedAtUtc,
         CancellationToken ct)
     {
-        var granted = new List<SelfBillingAgreementEntity>();
-
         foreach (var tenant in seed.Tenants)
         {
             var identityOption = await tenants.GetByIdAsync(tenant.Id, ct);
@@ -46,7 +45,7 @@ internal static class SeededSelfBillingAgreementGranter
             var signature = new ESignature(
                 tenant.CreatedByUserId, grantedAtUtc, IPAddress.Loopback, null, identity.LegalName, null);
 
-            granted.Add(SelfBillingAgreementEntity.Create(
+            context.SelfBillingAgreements.Add(SelfBillingAgreementEntity.Create(
                 tenant.Id,
                 supplier,
                 signature,
@@ -55,7 +54,5 @@ internal static class SeededSelfBillingAgreementGranter
                 grantedAtUtc,
                 grantedAtUtc));
         }
-
-        return granted;
     }
 }

@@ -9,12 +9,14 @@ using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Factories;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.Lifecycle;
+using Concertable.B2B.Booking.Infrastructure.Data;
 using Concertable.B2B.Booking.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Booking.Infrastructure.Specifications;
 using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +27,9 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 internal sealed class BookingWorkflow : IBookingWorkflow
 {
     private readonly IBookingRepository bookingRepository;
+    private readonly ITenantModule tenantModule;
+    private readonly BookingPrivilegedDbContext privilegedContext;
+    private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWorkBehavior;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
@@ -37,6 +42,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
     public BookingWorkflow(
         IBookingRepository bookingRepository,
+        ITenantModule tenantModule,
+        BookingPrivilegedDbContext privilegedContext,
+        IPrivilegedUnitOfWorkBehavior privilegedUnitOfWorkBehavior,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
@@ -48,6 +56,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         ILogger<BookingWorkflow> logger)
     {
         this.bookingRepository = bookingRepository;
+        this.tenantModule = tenantModule;
+        this.privilegedContext = privilegedContext;
+        this.privilegedUnitOfWorkBehavior = privilegedUnitOfWorkBehavior;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
@@ -77,13 +88,13 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         int bookingId,
         FinancialOperationSucceeded operation,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(() => RecordSucceededCoreAsync(bookingId, operation, ct), ct);
+        privilegedUnitOfWorkBehavior.ExecuteAsync(() => RecordSucceededCoreAsync(bookingId, operation, ct), ct);
 
     public Task RecordFailedAsync(
         int bookingId,
         FinancialOperationFailed operation,
         CancellationToken ct = default) =>
-        unitOfWorkBehavior.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
+        privilegedUnitOfWorkBehavior.ExecuteAsync(() => RecordFailedCoreAsync(bookingId, operation, ct), ct);
 
     private async Task<UnitResult<CancelBookingError>> ClassifyCancelConflictAsync(
         int bookingId,
@@ -150,6 +161,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
     {
         var booking = BookingEntity.Create(snapshot);
+        await tenantModule.RequireBookingTenantsAsync(booking.VenueTenantId, booking.ArtistTenantId, ct);
         await bookingRepository.AddAsync(booking, ct);
         await bookingRepository.SaveChangesAsync(ct);
 
@@ -163,7 +175,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationSucceeded operation,
         CancellationToken ct)
     {
-        var booking = await bookingRepository.GetByIdAsync(bookingId, BookingSpecification.CreateWithContract(), ct);
+        var booking = await GetBookingForUpdateAsync(bookingId, includeContract: true, ct);
         if (booking is null || !Matches(bookingId, booking, operation))
         {
             logger.FinancialOutcomeSkipped(operation.Operation, bookingId);
@@ -185,7 +197,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
         if (booking.RecordFinancialConfirmation().TryGetError(out var transitionError))
             throw new InvalidOperationException($"Booking cannot confirm from {transitionError.Current}.");
-        await bookingRepository.SaveChangesAsync(ct);
+        await privilegedContext.SaveChangesAsync(ct);
     }
 
     private async Task RecordFailedCoreAsync(
@@ -193,7 +205,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationFailed operation,
         CancellationToken ct)
     {
-        var booking = await bookingRepository.GetByIdAsync(bookingId, ct);
+        var booking = await GetBookingForUpdateAsync(bookingId, includeContract: false, ct);
         if (booking is null || !Matches(bookingId, booking, operation))
         {
             logger.FinancialOutcomeSkipped(operation.Operation, bookingId);
@@ -208,7 +220,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         {
             if (booking.Cancel().TryGetError(out var transitionError))
                 throw new InvalidOperationException($"Booking cannot cancel from {transitionError.Current}.");
-            await bookingRepository.SaveChangesAsync(ct);
+            await privilegedContext.SaveChangesAsync(ct);
             return;
         }
         if (IsDuplicateFailure(booking, operation))
@@ -217,7 +229,26 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         if (booking.RecordFinancialFailure(operation.Error.Code, operation.Error.Message)
             .TryGetError(out var failureError))
             throw new InvalidOperationException($"Booking cannot record confirmation failure from {failureError.Current}.");
-        await bookingRepository.SaveChangesAsync(ct);
+        await privilegedContext.SaveChangesAsync(ct);
+    }
+
+    private async Task<BookingEntity?> GetBookingForUpdateAsync(
+        int bookingId,
+        bool includeContract,
+        CancellationToken ct)
+    {
+        await privilegedContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM booking."Bookings"
+             WHERE "Id" = {bookingId}
+             FOR UPDATE
+             """,
+            ct);
+        var query = privilegedContext.Bookings.AsQueryable();
+        if (includeContract)
+            query = query.Include(booking => booking.Contract);
+        return await query.SingleOrDefaultAsync(booking => booking.Id == bookingId, ct);
     }
 
     private static bool Matches(

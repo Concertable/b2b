@@ -11,13 +11,12 @@ internal static class ApplicationMappers
 {
     extension(ApplicationDto dto)
     {
-        public ApplicationResponse ToResponse(TenantType membershipType, BookingSummary? booking) =>
-            membershipType switch
-            {
-                TenantType.Venue => dto.ToVenueResponse(booking),
-                TenantType.Artist => dto.ToArtistResponse(booking),
-                _ => throw new ArgumentOutOfRangeException(nameof(membershipType), membershipType, null)
-            };
+        public ApplicationResponse ToResponse(Guid tenantId, BookingSummary? booking) =>
+            tenantId == dto.VenueTenantId
+                ? dto.ToVenueResponse(booking)
+                : tenantId == dto.ArtistTenantId
+                    ? dto.ToArtistResponse(booking)
+                    : throw new InvalidOperationException("Active tenant is not an application participant.");
 
         public ApplicationResponse<VenueApplicationActions> ToVenueResponse(BookingSummary? booking)
         {

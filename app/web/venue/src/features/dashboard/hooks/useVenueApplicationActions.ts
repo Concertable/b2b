@@ -1,8 +1,10 @@
+import { venueDashboardKey } from "../queryKeys";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { actionLinkApi } from "@concertable/web-b2b/features/concerts";
+import { currentPrivateQueryKey } from "@concertable/b2b/features/tenant";
 import type { ApplicationActionName } from "../applicationActions";
 import type { Application } from "../types";
 
@@ -41,9 +43,11 @@ export function useVenueApplicationActions() {
             : "Application cancelled.",
         );
         void queryClient.invalidateQueries({
-          queryKey: ["dashboard", "venue"],
+          queryKey: venueDashboardKey(),
         });
-        void queryClient.invalidateQueries({ queryKey: ["applications"] });
+        void queryClient.invalidateQueries({
+          queryKey: currentPrivateQueryKey("applications"),
+        });
       }
       setPendingAction(undefined);
     },

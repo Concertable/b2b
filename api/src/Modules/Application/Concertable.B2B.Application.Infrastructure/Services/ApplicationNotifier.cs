@@ -1,6 +1,11 @@
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Application.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Concertable.B2B.Conversations.Contracts;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Authorization.Contracts.Enums;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Exceptions;
@@ -13,31 +18,48 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 internal sealed class ApplicationNotifier : IApplicationNotifier
 {
     private readonly IApplicationRepository repository;
+    private readonly IApplicationReadDbContext readDbContext;
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
     private readonly INotificationClient notificationClient;
+    private readonly ITenantModule tenantModule;
+    private readonly IPermissionCatalog permissionCatalog;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
 
     public ApplicationNotifier(
         IApplicationRepository repository,
+        IApplicationReadDbContext readDbContext,
         ICurrentUser currentUser,
         IConversationsModule conversationsModule,
         INotificationClient notificationClient,
+        ITenantModule tenantModule,
+        IPermissionCatalog permissionCatalog,
         IOpportunityModule opportunityModule,
-        IVenueModule venueModule)
+        IVenueModule venueModule,
+        IPrivilegedOutboxUnitOfWorkBehavior unitOfWork)
     {
         this.repository = repository;
+        this.readDbContext = readDbContext;
         this.currentUser = currentUser;
         this.conversationsModule = conversationsModule;
         this.notificationClient = notificationClient;
+        this.tenantModule = tenantModule;
+        this.permissionCatalog = permissionCatalog;
         this.opportunityModule = opportunityModule;
         this.venueModule = venueModule;
+        this.unitOfWork = unitOfWork;
     }
 
     public async Task VerifyPaymentFailedAsync(int applicationId, string failureMessage)
     {
-        var application = await repository.GetByIdAsync(applicationId).OrNotFound(DisplayNames.Application);
+        var application = await readDbContext.Applications
+            .Where(value => value.Id == applicationId)
+            .Select(value => new { value.OpportunityId, value.VenueTenantId })
+            .SingleOrDefaultAsync();
+        if (application is null)
+            throw new NotFoundException(DisplayNames.Application);
         var opportunity = await opportunityModule.GetAsync(application.OpportunityId);
         if (!opportunity.TryGetValue(out var value))
             return;
@@ -46,10 +68,28 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         if (!venue.TryGetValue(out var profile))
             return;
 
-        await notificationClient.SendAsync(
-            profile.UserId.ToString(),
-            "VerifyPaymentFailed",
-            new { applicationId, failureMessage });
+        await unitOfWork.ExecuteAsync(async () =>
+        {
+            var eligible = (await tenantModule.GetCurrentMembershipsForNotificationAsync(application.VenueTenantId))
+                .Where(membership => permissionCatalog.Grants(membership.Role, TenantPermission.ApplicationsDecide))
+                .OrderBy(membership => membership.UserId == profile.UserId
+                    ? 0
+                    : membership.Role == TenantRole.Owner ? 1 : 2)
+                .ThenBy(membership => membership.UserId);
+            foreach (var candidate in eligible)
+            {
+                var recipient = await tenantModule.RequireCurrentMembershipAsync(candidate);
+                if (recipient is null
+                    || !permissionCatalog.Grants(recipient.Role, TenantPermission.ApplicationsDecide))
+                    continue;
+
+                await notificationClient.SendAsync(
+                    recipient.UserId.ToString(),
+                    "VerifyPaymentFailed",
+                    new { applicationId, failureMessage });
+                return;
+            }
+        });
     }
 
     public Task AppliedAsync(int applicationId) =>

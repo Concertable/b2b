@@ -1,14 +1,14 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
-import type { MyConcert } from "@concertable/web-b2b/features/concerts/types";
+import type { ConcertDraftReference } from "@concertable/web-b2b/features/concerts/types";
 
 const venueConcertApi = {
-  getByApplication: async (
+  getDraftByApplication: async (
     applicationId: number,
-  ): Promise<MyConcert | null> => {
-    const { data } = await apiClient.getOptional<MyConcert>(
-      `/concert/application/${applicationId}`,
+  ): Promise<ConcertDraftReference | null> => {
+    const { data } = await apiClient.get<ConcertDraftReference[]>(
+      "/concert/drafts/current",
     );
-    return data;
+    return data.find((concert) => concert.applicationId === applicationId) ?? null;
   },
 };
 

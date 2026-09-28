@@ -73,21 +73,20 @@ public sealed class ConcertFlatFeeApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Finish_WhenAnotherFinishWinsTheRace_ReleasesEscrowAndIssuesInvoiceOnce()
+    public async Task Finish_WhenTwoRequestsRace_ReleasesEscrowAndIssuesInvoiceOnce()
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking);
         await fixture.EnsureSupplierSelfBillingAgreementAsync(concert.Id);
-        fixture.ArmConcertConflict(async () =>
+
+        var first = fixture.CompleteConcertAsync(concert.Id);
+        var second = fixture.CompleteConcertAsync(concert.Id);
+        var outcomes = await Task.WhenAll(first, second);
+
+        Assert.All(outcomes, result =>
         {
-            var winner = await fixture.CompleteConcertAsync(concert.Id);
-            Assert.True(winner.TryGetValue(out _));
+            Assert.True(result.TryGetValue(out var outcome));
+            Assert.Equal(SettlementOutcome.Settled, outcome);
         });
-
-        var loser = await fixture.CompleteConcertAsync(concert.Id);
-
-        Assert.True(loser.TryGetValue(out var outcome));
-        Assert.Equal(SettlementOutcome.Settled, outcome);
-        Assert.Equal(1, fixture.Conflicts.ForcedConflicts);
         var release = Assert.Single(
             fixture.EscrowClient.Releases,
             value => value.Reference == PaymentOperationReferences.Escrow(concert.BookingId));

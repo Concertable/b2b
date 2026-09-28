@@ -97,6 +97,7 @@ public class ApiFixture : IAsyncLifetime
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",
+                    ["Urls:Frontends:Business"] = "https://localhost:5177",
                     ["Urls:Frontends:Venue"] = "https://localhost:5175",
                     ["Urls:Frontends:Artist"] = "https://localhost:5176",
                     ["BlobStorage:ContainerName"] = "images",

@@ -2,7 +2,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import concertApi from "@concertable/shared/features/concerts/api/concertApi";
-import { concertKeys } from "@concertable/shared/features/concerts/hooks/useConcertQuery";
 import { updateConcertRequestSchema } from "@concertable/shared/features/concerts/schemas/updateConcertRequestSchema";
 import type {
   Concert,
@@ -10,11 +9,11 @@ import type {
 } from "@concertable/shared/features/concerts/types";
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import { useConcertStore } from "../store/useConcertStore";
-import type { MyConcert } from "../types";
-import { useMyConcertQuery } from "./useMyConcertQuery";
+import type { ConcertOperations } from "../types";
+import { myConcertKeys, useMyConcertQuery } from "./useMyConcertQuery";
 
 interface UseMyConcertResult {
-  concert: MyConcert | undefined;
+  concert: ConcertOperations | undefined;
   draft:
     | Pick<Concert, "name" | "about" | "price" | "totalTickets">
     | undefined;
@@ -65,7 +64,7 @@ export function useMyConcert(id: number): UseMyConcertResult {
     mutationFn: (request: UpdateConcertRequest) =>
       concertApi.updateConcert(id, request),
     onSuccess: (saved) => {
-      queryClient.setQueryData<MyConcert>(concertKeys.my(id), (previous) =>
+      queryClient.setQueryData<ConcertOperations>(myConcertKeys.operations(id), (previous) =>
         previous ? { ...previous, ...saved } : undefined,
       );
       reset();

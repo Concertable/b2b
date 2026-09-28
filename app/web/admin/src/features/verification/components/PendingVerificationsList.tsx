@@ -12,7 +12,6 @@ import {
   TableRow,
 } from "@concertable/web/components/ui/table";
 import { usePendingVerifications } from "../hooks/usePendingVerifications";
-import { VERIFICATION_TENANT_TYPE_LABELS } from "../types";
 import { RejectVerificationDialog } from "./RejectVerificationDialog";
 
 export function PendingVerificationsList() {
@@ -48,7 +47,6 @@ export function PendingVerificationsList() {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Type</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Submitted</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -60,11 +58,8 @@ export function PendingVerificationsList() {
               key={verification.tenantId}
               data-testid={`pending-verification-row-${verification.tenantId}`}
             >
-              <TableCell>{verification.name ?? "—"}</TableCell>
-              <TableCell>
-                {VERIFICATION_TENANT_TYPE_LABELS[verification.tenantType]}
-              </TableCell>
-              <TableCell>{verification.email ?? "—"}</TableCell>
+              <TableCell>{verification.legalName}</TableCell>
+              <TableCell>{verification.contactEmail}</TableCell>
               <TableCell>
                 {dayjs(verification.submittedAt).format("D MMM YYYY")}
               </TableCell>

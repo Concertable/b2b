@@ -1,3 +1,4 @@
+﻿using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Application.DTOs;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Errors;
@@ -19,6 +20,59 @@ internal static class ConcertMappers
             County = concert.Venue.Address.County,
             Town = concert.Venue.Address.Town,
             DatePosted = concert.DatePosted
+        };
+    }
+
+    extension(ConcertSummaryShareError error)
+    {
+        public ShareConcertSummaryError ToShareConcertSummaryError() => error switch
+        {
+            ConcertSummaryShareError.NotPermitted =>
+                new ShareConcertSummaryError.NotPermitted(),
+            ConcertSummaryShareError.InvalidValidity =>
+                new ShareConcertSummaryError.InvalidValidity(),
+            ConcertSummaryShareError.AlreadyShared =>
+                new ShareConcertSummaryError.AlreadyShared()
+        };
+    }
+
+    extension(ConcertSummaryShareRevocationError error)
+    {
+        public RevokeConcertSummaryShareError ToRevokeConcertSummaryShareError() => error switch
+        {
+            ConcertSummaryShareRevocationError.GrantNotFound =>
+                new RevokeConcertSummaryShareError.GrantNotFound(),
+            ConcertSummaryShareRevocationError.NotAShare =>
+                new RevokeConcertSummaryShareError.NotAShare(),
+            ConcertSummaryShareRevocationError.NotTheIssuer =>
+                new RevokeConcertSummaryShareError.NotTheIssuer()
+        };
+    }
+
+    extension(ConcertMemberAssignmentError error)
+    {
+        public AssignConcertMemberError ToAssignConcertMemberError() => error switch
+        {
+            ConcertMemberAssignmentError.NotPermitted =>
+                new AssignConcertMemberError.NotPermitted(),
+            ConcertMemberAssignmentError.AlreadyAssigned =>
+                new AssignConcertMemberError.AlreadyAssigned(),
+            ConcertMemberAssignmentError.NotAssigned =>
+                new AssignConcertMemberError.NotAssigned()
+        };
+    }
+
+    extension(ConcertAccessGrant grant)
+    {
+        public ConcertSummaryShare ToSummaryShare(long accessVersion) => new()
+        {
+            GrantId = grant.Id,
+            GrantVersion = grant.Version,
+            AccessVersion = accessVersion,
+            RecipientTenantId = grant.TenantId,
+            RecipientMembershipId = grant.MembershipId,
+            ValidFrom = grant.ValidFrom,
+            ValidUntil = grant.ValidUntil
         };
     }
 

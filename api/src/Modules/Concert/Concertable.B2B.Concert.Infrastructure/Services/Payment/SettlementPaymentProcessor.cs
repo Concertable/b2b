@@ -1,8 +1,7 @@
-using Concertable.B2B.Concert.Application.Interfaces;
+﻿using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Messaging.Contracts;
@@ -15,26 +14,23 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
-    private readonly ConcertDbContext context;
-    private readonly IConcertReadDbContext readDbContext;
-    private readonly ITenantScope tenantScope;
+    private readonly ConcertPrivilegedDbContext context;
+    private readonly IConcertPrivilegedRepository concertRepository;
     private readonly ISettlementService settlementService;
-    private readonly IOutboxUnitOfWorkBehavior outboxBehavior;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxBehavior;
     private readonly ILogger<SettlementPaymentProcessor> logger;
     private readonly IBus bus;
 
     public SettlementPaymentProcessor(
-        ConcertDbContext context,
-        IConcertReadDbContext readDbContext,
-        ITenantScope tenantScope,
+        ConcertPrivilegedDbContext context,
+        IConcertPrivilegedRepository concertRepository,
         ISettlementService settlementService,
-        IOutboxUnitOfWorkBehavior outboxBehavior,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxBehavior,
         ILogger<SettlementPaymentProcessor> logger,
         IBus bus)
     {
         this.context = context;
-        this.readDbContext = readDbContext;
-        this.tenantScope = tenantScope;
+        this.concertRepository = concertRepository;
         this.settlementService = settlementService;
         this.outboxBehavior = outboxBehavior;
         this.logger = logger;
@@ -48,43 +44,39 @@ internal sealed class SettlementPaymentProcessor : IIntegrationEventHandler<Paym
             || !@event.Metadata.TryGetOperationId(out var operationId))
             return;
         logger.SettlementWebhookReceived(@event.Reference.ClientReference, concertId);
-        // A settlement outcome names only the concert, so the row comes off the unfiltered read stance;
-        // everything after runs as its venue tenant, where the filter can see it.
-        var concert = await readDbContext.Concerts
-            .SingleOrDefaultAsync(value => value.Id == concertId, ct);
-        if (concert is null)
-        {
-            logger.SettlementOutcomeForUnknownConcert(concertId);
-            await RecordInboxAsync(envelope, ct);
-            return;
-        }
-
-        using var acting = tenantScope.As(concert.VenueTenantId);
-
-        var completion = await settlementService.CompleteAsync(concert.Id, operationId, ct);
-        if (completion.TryGetError(out var error))
-            throw new InvalidOperationException(
-                $"Concert {concert.Id} could not converge settlement: {error.Definition.Message}");
-
-        await RecordInboxAsync(envelope, ct, async () =>
-        {
-            await PublishActivityAsync(concert.VenueTenantId, "venue", concert, envelope, ct);
-            await PublishActivityAsync(concert.ArtistTenantId, "artist", concert, envelope, ct);
-        });
-    }
-
-    private async Task RecordInboxAsync(MessageEnvelope envelope, CancellationToken ct, Func<Task>? onRecorded = null)
-    {
         try
         {
             await outboxBehavior.ExecuteAsync(async () =>
             {
-                if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentProcessor), ct))
+                if (await context.IsInboxMessageProcessedAsync(
+                        envelope.MessageId,
+                        nameof(SettlementPaymentProcessor),
+                        ct))
                     return;
 
+                var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
+                if (concert is null)
+                {
+                    logger.SettlementOutcomeForUnknownConcert(concertId);
+                    throw new InvalidOperationException(
+                        $"Settlement outcome names concert {concertId}, which does not exist.");
+                }
+
+                if (concert.SettlementOperationId != operationId)
+                {
+                    logger.SettlementOutcomeForUnknownConcert(concertId);
+                    throw new InvalidOperationException(
+                        $"Settlement outcome names operation {operationId}, which concert {concertId} is not running.");
+                }
+
+                var completion = await settlementService.CompleteAsync(concert.Id, operationId, ct);
+                if (completion.TryGetError(out var error))
+                    throw new InvalidOperationException(
+                        $"Concert {concert.Id} could not converge settlement: {error.Definition.Message}");
+
                 context.AddInboxMessage(envelope, nameof(SettlementPaymentProcessor));
-                if (onRecorded is not null)
-                    await onRecorded();
+                await PublishActivityAsync(concert.VenueTenantId, "venue", concert, envelope, ct);
+                await PublishActivityAsync(concert.ArtistTenantId, "artist", concert, envelope, ct);
             }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
