@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(OpportunityDbContext))]
-    [Migration("20260918003726_InitialCreate")]
+    [Migration("20260920182636_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -35,7 +35,14 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.PrimitiveCollection<List<int>>("CancelledApplicationIds")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
                     b.Property<int>("DealId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("FilledByApplicationId")
                         .HasColumnType("integer");
 
                     b.PrimitiveCollection<int[]>("Genres")

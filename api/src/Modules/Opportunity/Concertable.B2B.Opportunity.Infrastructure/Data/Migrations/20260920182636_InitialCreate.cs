@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -27,6 +28,8 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
                     DealId = table.Column<int>(type: "integer", nullable: false),
                     Genres = table.Column<int[]>(type: "integer[]", nullable: false),
                     State = table.Column<int>(type: "integer", nullable: false),
+                    FilledByApplicationId = table.Column<int>(type: "integer", nullable: true),
+                    CancelledApplicationIds = table.Column<List<int>>(type: "integer[]", nullable: false),
                     EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
