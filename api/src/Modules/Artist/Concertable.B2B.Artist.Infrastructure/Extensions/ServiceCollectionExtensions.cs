@@ -57,7 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IArtistRepository, ArtistRepository>();
         services.AddScoped<IArtistReviewRepository, ArtistReviewRepository>();
         services.AddScoped<IArtistReadRepository, ArtistReadRepository>();
-        services.AddScoped<IArtistPrivilegedRepository, ArtistPrivilegedRepository>();
+        services.AddScoped<IArtistPrivilegedReadRepository, ArtistPrivilegedReadRepository>();
         services.AddScoped<IArtistModule, ArtistModule>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ArtistReviewProjectionHandler>();
