@@ -2,21 +2,19 @@ using Concertable.B2B.Conversations.Application.DTOs;
 
 namespace Concertable.B2B.Conversations.Application.Mappers;
 
-internal static class ContentReportMappers
+internal static class MessageMappers
 {
-    public static ContentReportDto ToDto(this ContentReportEntity report) => new()
+    extension(MessageEntity message)
     {
-        Id = report.Id,
-        Reference = report.Reference,
-        MessageId = report.MessageId,
-        ReporterTenantId = report.ReporterTenantId,
-        ReportedTenantId = report.ReportedTenantId,
-        Category = report.Category,
-        Details = report.Details,
-        MessageExcerpt = report.MessageExcerpt,
-        SubmittedAt = report.SubmittedAt,
-        Outcome = report.Outcome,
-        ResolvedAt = report.ResolvedAt,
-        ResolutionNotes = report.ResolutionNotes
-    };
+        public MessageDto ToMessageDto(bool canReport = false) => new(
+            message.Id,
+            message.ConversationId,
+            message.Sequence,
+            message.SenderTenantId,
+            message.SentByUserId,
+            message.Content,
+            message.SentAt,
+            message.Action,
+            canReport);
+    }
 }

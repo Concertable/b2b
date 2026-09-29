@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+using Concertable.B2B.Application.Application.Resolvers;
+using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Application.Application.Interfaces;
@@ -78,7 +79,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IApplicationService>(provider =>
                 provider.GetRequiredService<ApplicationService>());
             services.AddScoped<IApplicationDashboardService, ApplicationDashboardService>();
-            services.AddScoped<IApplicationMapper, ApplicationMapper>();
+            services.AddScoped<IApplicationResolver, ApplicationResolver>();
             services.AddScoped<ApplicationNotifier>();
             services.AddScoped<IApplicationNotifier>(provider =>
                 provider.GetRequiredService<ApplicationNotifier>());

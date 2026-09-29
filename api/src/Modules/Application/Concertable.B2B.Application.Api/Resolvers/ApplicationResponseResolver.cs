@@ -1,17 +1,18 @@
+using Concertable.B2B.Application.Api.Mappers;
 using Concertable.B2B.Application.Api.Responses;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Booking.Contracts;
 
-namespace Concertable.B2B.Application.Api.Mappers;
+namespace Concertable.B2B.Application.Api.Resolvers;
 
-internal sealed class ApplicationMapper : IApplicationMapper
+internal sealed class ApplicationResponseResolver : IApplicationResponseResolver
 {
     private readonly IBookingModule bookingModule;
     private readonly IMembershipContext membership;
     private readonly IPermissionCatalog permissionCatalog;
 
-    public ApplicationMapper(
+    public ApplicationResponseResolver(
         IBookingModule bookingModule,
         IMembershipContext membership,
         IPermissionCatalog permissionCatalog)
@@ -21,8 +22,8 @@ internal sealed class ApplicationMapper : IApplicationMapper
         this.permissionCatalog = permissionCatalog;
     }
 
-    public async Task<ApplicationSummaryResponse> ToSummaryResponseAsync(
-        ApplicationSummaryDto dto,
+    public async Task<ApplicationSummaryResponse> ResolveSummaryAsync(
+        ApplicationSummary dto,
         CancellationToken ct = default)
     {
         var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id, ct);
@@ -30,8 +31,8 @@ internal sealed class ApplicationMapper : IApplicationMapper
         return dto.ToResponse(booking);
     }
 
-    public async Task<IReadOnlyList<ApplicationSummaryResponse>> ToSummaryResponsesAsync(
-        IReadOnlyList<ApplicationSummaryDto> dtos,
+    public async Task<IReadOnlyList<ApplicationSummaryResponse>> ResolveSummariesAsync(
+        IReadOnlyList<ApplicationSummary> dtos,
         CancellationToken ct = default)
     {
         var bookings = await GetBookingsByApplicationIdAsync(dtos.Select(dto => dto.Id), ct);
@@ -40,8 +41,8 @@ internal sealed class ApplicationMapper : IApplicationMapper
             .ToList();
     }
 
-    public async Task<ApplicationProposalResponse> ToProposalResponseAsync(
-        ApplicationProposalDto dto,
+    public async Task<ApplicationProposalResponse> ResolveProposalAsync(
+        ApplicationProposal dto,
         CancellationToken ct = default)
     {
         var bookingOption = await bookingModule.GetByApplicationIdAsync(dto.Id, ct);
@@ -49,8 +50,8 @@ internal sealed class ApplicationMapper : IApplicationMapper
         return dto.ToResponse(booking, membership.Membership, permissionCatalog);
     }
 
-    public async Task<IReadOnlyList<ApplicationProposalResponse>> ToProposalResponsesAsync(
-        IReadOnlyList<ApplicationProposalDto> dtos,
+    public async Task<IReadOnlyList<ApplicationProposalResponse>> ResolveProposalsAsync(
+        IReadOnlyList<ApplicationProposal> dtos,
         CancellationToken ct = default)
     {
         var bookings = await GetBookingsByApplicationIdAsync(dtos.Select(dto => dto.Id), ct);

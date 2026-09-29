@@ -34,7 +34,7 @@ public sealed class ConcertServiceSummaryShareTests
         var result = ConcertService.RecoverSummaryShareDuplicate(
             recovery.Concert,
             recovery.Receipt,
-            ResourceCommandReceipt.HashPayload("different"));
+            CommandPayloadHash.Compute("different"));
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<ShareConcertSummaryError.RequestConflict>(error);
@@ -109,7 +109,7 @@ public sealed class ConcertServiceSummaryShareTests
             DateTime.UnixEpoch,
             null);
         Assert.True(grantResult.TryGetValue(out var grant));
-        var payloadHash = ResourceCommandReceipt.HashPayload(
+        var payloadHash = CommandPayloadHash.Compute(
             concert.Id,
             RecipientTenantId,
             null,

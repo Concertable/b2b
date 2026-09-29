@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Concertable.DataAccess.Application;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -55,14 +55,14 @@ internal sealed class BookingService : IBookingService
                 booking.State);
     }
 
-    public async Task<BookingOperationsDto?> GetOperationsByApplicationIdAsync(
+    public async Task<BookingOperations?> GetOperationsByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default)
     {
         var booking = await bookingRepository.GetOperationsByApplicationIdAsync(applicationId, ct);
         return booking is null
             ? null
-            : new BookingOperationsDto(
+            : new BookingOperations(
                 booking.Id,
                 booking.ApplicationId,
                 booking.State,

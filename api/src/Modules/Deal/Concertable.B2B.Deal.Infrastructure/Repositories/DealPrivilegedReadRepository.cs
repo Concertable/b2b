@@ -6,15 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Deal.Infrastructure.Repositories;
 
-internal sealed class DealCommandFacts(
+internal sealed class DealPrivilegedReadRepository(
     DealPrivilegedDbContext context,
     IDealMapper mapper,
-    CommandTransactionAccessor transactions) : IDealCommandFacts
+    CommandTransactionAccessor transactions) : IDealPrivilegedReadRepository
 {
     public async Task<DealDto?> GetByIdAsync(int dealId, CancellationToken ct = default)
     {
         await (transactions.Current
-            ?? throw new InvalidOperationException("Deal command facts require an active command transaction."))
+            ?? throw new InvalidOperationException("Deal privileged queries require an active transaction."))
             .EnlistAsync(context, ct);
 
         var deal = await context.Deals.SingleOrDefaultAsync(candidate => candidate.Id == dealId, ct);
