@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
 internal sealed class MembershipRepository : Repository<TenantMembershipEntity>, IMembershipRepository,
-    IMembershipReadRepository, IMembershipAuthorityFence, ITenantCommandFacts
+    IMembershipReadRepository, IMembershipAuthorityFence, ITenantReadRepository
 {
     private readonly TenantDbContext context;
     private readonly CommandTransactionAccessor transactions;
@@ -66,14 +66,14 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
                 : null;
     }
 
-    public async Task<TenantCommandFacts?> ResolveAsync(
+    public async Task<TenantResolution?> ResolveAsync(
         MembershipSnapshot expectedActor,
         Guid targetTenantId,
         Guid? targetMembershipId = null,
         CancellationToken ct = default)
     {
         var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant command facts require an active command transaction.");
+            ?? throw new InvalidOperationException("Tenant resolution requires an active transaction.");
         await transaction.EnlistAsync(context, ct);
 
         foreach (var tenantId in new[] { expectedActor.TenantId, targetTenantId }.Distinct().Order())
@@ -137,16 +137,16 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
                 .SingleOrDefaultAsync(ct);
         }
 
-        return new TenantCommandFacts(actor, targetTenantExists, targetMembership);
+        return new TenantResolution(actor, targetTenantExists, targetMembership);
     }
 
-    public async Task<TenantAudienceFacts?> ResolveAudienceAsync(
+    public async Task<TenantAudienceResolution?> ResolveAudienceAsync(
         MembershipSnapshot expectedActor,
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default)
     {
         var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant audience facts require an active command transaction.");
+            ?? throw new InvalidOperationException("Tenant audience resolution requires an active transaction.");
         await transaction.EnlistAsync(context, ct);
 
         var distinctTenantIds = tenantIds.Distinct().Order().ToList();
@@ -192,7 +192,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             .Where(tenant => distinctTenantIds.Contains(tenant.Id))
             .Select(tenant => tenant.Id)
             .ToHashSetAsync(ct);
-        return new TenantAudienceFacts(actor, existingTenantIds);
+        return new TenantAudienceResolution(actor, existingTenantIds);
     }
 
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(

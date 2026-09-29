@@ -1,4 +1,4 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Artist.Application.Validators;
 using Concertable.B2B.Artist.Contracts;
@@ -57,7 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IArtistRepository, ArtistRepository>();
         services.AddScoped<IArtistReviewRepository, ArtistReviewRepository>();
         services.AddScoped<IArtistReadRepository, ArtistReadRepository>();
-        services.AddScoped<IArtistCommandFacts, ArtistCommandFacts>();
+        services.AddScoped<IArtistPrivilegedRepository, ArtistPrivilegedRepository>();
         services.AddScoped<IArtistModule, ArtistModule>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, ArtistReviewProjectionHandler>();

@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
-internal sealed class ArtistCommandFacts(
+internal sealed class ArtistPrivilegedRepository(
     ArtistPrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : IArtistCommandFacts
+    CommandTransactionAccessor transactions) : IArtistPrivilegedRepository
 {
     public async Task<ArtistProfile?> GetByIdAsync(int artistId, CancellationToken ct = default)
     {
@@ -41,6 +41,6 @@ internal sealed class ArtistCommandFacts(
 
     private Task EnlistAsync(CancellationToken ct) =>
         (transactions.Current
-            ?? throw new InvalidOperationException("Artist command facts require an active command transaction."))
+            ?? throw new InvalidOperationException("Artist privileged queries require an active transaction."))
         .EnlistAsync(context, ct);
 }
