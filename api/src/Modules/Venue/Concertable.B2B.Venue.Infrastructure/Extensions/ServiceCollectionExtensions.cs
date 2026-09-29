@@ -1,4 +1,4 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.Customer.Review.Contracts.Events;
@@ -57,7 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueReviewRepository, VenueReviewRepository>();
         services.AddScoped<IVenueReadRepository, VenueReadRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
-        services.AddScoped<IVenueCommandFacts, VenueCommandFacts>();
+        services.AddScoped<IVenuePrivilegedRepository, VenuePrivilegedRepository>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, VenueReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<VenueChangedDomainEvent>, VenueChangedDomainEventHandler>();
