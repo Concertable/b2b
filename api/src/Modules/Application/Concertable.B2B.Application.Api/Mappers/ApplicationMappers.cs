@@ -10,7 +10,7 @@ namespace Concertable.B2B.Application.Api.Mappers;
 
 internal static class ApplicationMappers
 {
-    extension(ApplicationSummaryDto dto)
+    extension(ApplicationSummary dto)
     {
         public ApplicationSummaryResponse ToResponse(BookingSummary? booking) =>
             new(
@@ -26,7 +26,7 @@ internal static class ApplicationMappers
                 ToStatus(dto.Status, dto.State, booking, false));
     }
 
-    extension(ApplicationProposalDto dto)
+    extension(ApplicationProposal dto)
     {
         public ApplicationProposalResponse ToResponse(
             BookingSummary? booking,

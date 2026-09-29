@@ -1,4 +1,5 @@
-﻿using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Application.Application.Interfaces;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Mappers;
@@ -26,7 +27,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IOpportunityModule opportunityModule;
     private readonly ITenantContext tenantContext;
     private readonly IApplicationCheckoutService checkoutService;
-    private readonly IApplicationMapper mapper;
+    private readonly IApplicationResolver resolver;
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
@@ -45,7 +46,7 @@ internal sealed class ApplicationService : IApplicationService
         IOpportunityModule opportunityModule,
         ITenantContext tenantContext,
         IApplicationCheckoutService checkoutService,
-        IApplicationMapper mapper,
+        IApplicationResolver resolver,
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
@@ -63,7 +64,7 @@ internal sealed class ApplicationService : IApplicationService
         this.opportunityModule = opportunityModule;
         this.tenantContext = tenantContext;
         this.checkoutService = checkoutService;
-        this.mapper = mapper;
+        this.resolver = resolver;
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
@@ -72,23 +73,23 @@ internal sealed class ApplicationService : IApplicationService
         this.commandExecutor = commandExecutor;
     }
 
-    public Task<Result<ApplicationSummaryDto, ApplicationError>> GetSummaryAsync(
+    public Task<Result<ApplicationSummary, ApplicationError>> GetSummaryAsync(
         int id,
         CancellationToken ct = default) =>
         applicationRepository.GetSummaryByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(application => mapper.ToSummaryAsync(application, ct));
+            .MapAsync(application => resolver.ResolveSummaryAsync(application, ct));
 
-    public Task<Result<ApplicationProposalDto, ApplicationError>> GetProposalAsync(
+    public Task<Result<ApplicationProposal, ApplicationError>> GetProposalAsync(
         int id,
         CancellationToken ct = default) =>
         applicationRepository.GetProposalByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(application => mapper.ToProposalAsync(application, ct));
+            .MapAsync(application => resolver.ResolveProposalAsync(application, ct));
 
-    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetByOpportunityIdAsync(
+    public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetByOpportunityIdAsync(
         int id,
         CancellationToken ct = default)
     {
@@ -98,10 +99,10 @@ internal sealed class ApplicationService : IApplicationService
             return new ApplicationError.OpportunityForbidden(id);
 
         var applications = await applicationRepository.GetByOpportunityIdAsync(id, ct);
-        return new Success<IReadOnlyList<ApplicationProposalDto>>(await mapper.ToProposalsAsync(applications, ct));
+        return new Success<IReadOnlyList<ApplicationProposal>>(await resolver.ResolveProposalsAsync(applications, ct));
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetPendingForArtistAsync(
+    public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetPendingForArtistAsync(
         CancellationToken ct = default)
     {
         var artistOption = await artistModule.GetCurrentProfileAsync(ct);
@@ -112,13 +113,13 @@ internal sealed class ApplicationService : IApplicationService
             artist.TenantId,
             ApplicationState.Applied,
             ct);
-        var dtos = await mapper.ToProposalsAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationProposalDto>>(
+        var dtos = await resolver.ResolveProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposal>>(
             dtos.Where(application => application.Opportunity.StartDate > timeProvider.GetUtcNow())
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetRecentDeniedForArtistAsync(
+    public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetRecentDeniedForArtistAsync(
         CancellationToken ct = default)
     {
         var artistOption = await artistModule.GetCurrentProfileAsync(ct);
@@ -129,14 +130,14 @@ internal sealed class ApplicationService : IApplicationService
             artist.TenantId,
             ApplicationState.Rejected,
             ct);
-        var dtos = await mapper.ToProposalsAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationProposalDto>>(
+        var dtos = await resolver.ResolveProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposal>>(
             dtos.OrderByDescending(application => application.Opportunity.EndDate)
                 .Take(5)
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetPendingForCurrentVenueAsync(
+    public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetPendingForCurrentVenueAsync(
         CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
@@ -147,8 +148,8 @@ internal sealed class ApplicationService : IApplicationService
             ApplicationState.Applied,
             ct);
         var now = timeProvider.GetUtcNow();
-        var dtos = await mapper.ToProposalsAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationProposalDto>>(
+        var dtos = await resolver.ResolveProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposal>>(
             dtos.Where(application => application.Opportunity.EndDate > now)
                 .OrderBy(application => application.Opportunity.StartDate)
                 .ThenBy(application => application.Id)
@@ -156,7 +157,7 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
-    public async Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetCurrentForCurrentArtistAsync(
+    public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetCurrentForCurrentArtistAsync(
         CancellationToken ct = default)
     {
         if (tenantContext.TenantId is not { } tenantId)
@@ -164,8 +165,8 @@ internal sealed class ApplicationService : IApplicationService
 
         var applications = await applicationRepository.GetCurrentByArtistTenantIdAsync(tenantId, ct);
         var now = timeProvider.GetUtcNow();
-        var dtos = await mapper.ToProposalsAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationProposalDto>>(
+        var dtos = await resolver.ResolveProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposal>>(
             dtos.Where(application => application.Opportunity.EndDate > now)
                 .OrderBy(application => application.Opportunity.StartDate)
                 .ThenBy(application => application.Id)
@@ -173,7 +174,7 @@ internal sealed class ApplicationService : IApplicationService
                 .ToList());
     }
 
-    public Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
+    public Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>

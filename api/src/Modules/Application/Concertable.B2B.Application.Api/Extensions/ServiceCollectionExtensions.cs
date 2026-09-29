@@ -1,3 +1,4 @@
+using Concertable.B2B.Application.Api.Resolvers;
 using Concertable.B2B.Application.Api.Controllers;
 using Concertable.B2B.Application.Api.Mappers;
 using Concertable.B2B.Application.Api.Validators;
@@ -17,7 +18,7 @@ public static class ServiceCollectionExtensions
         {
             services.AddApplicationModule(configuration);
             services.AddApplicationDevSeeder();
-            services.AddScoped<IApplicationMapper, ApplicationMapper>();
+            services.AddScoped<IApplicationResponseResolver, ApplicationResponseResolver>();
             services.AddValidatorsFromAssemblyContaining<ApplyRequestValidator>(includeInternalTypes: true);
             services.AddControllers().AddInternalControllers(typeof(ApplicationController).Assembly);
             return services;

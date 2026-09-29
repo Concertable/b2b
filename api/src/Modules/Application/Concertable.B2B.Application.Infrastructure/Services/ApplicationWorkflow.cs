@@ -30,10 +30,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
 {
     private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IApplicationNotifier notifier;
-    private readonly IArtistCommandFacts artistFacts;
-    private readonly IOpportunityCommandFacts opportunityFacts;
-    private readonly IVenueCommandFacts venueFacts;
-    private readonly IDealCommandFacts dealFacts;
+    private readonly IArtistPrivilegedReadRepository artistRepository;
+    private readonly IOpportunityPrivilegedReadRepository opportunityRepository;
+    private readonly IVenuePrivilegedReadRepository venueRepository;
+    private readonly IDealPrivilegedReadRepository dealRepository;
     private readonly IClientContext clientContext;
     private readonly IDealStrategyFactory<IApplyStep> applyFactory;
     private readonly IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory;
@@ -49,10 +49,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     public ApplicationWorkflow(
         IApplicationPrivilegedRepository privilegedRepository,
         IApplicationNotifier notifier,
-        IArtistCommandFacts artistFacts,
-        IOpportunityCommandFacts opportunityFacts,
-        IVenueCommandFacts venueFacts,
-        IDealCommandFacts dealFacts,
+        IArtistPrivilegedReadRepository artistRepository,
+        IOpportunityPrivilegedReadRepository opportunityRepository,
+        IVenuePrivilegedReadRepository venueRepository,
+        IDealPrivilegedReadRepository dealRepository,
         IClientContext clientContext,
         IDealStrategyFactory<IApplyStep> applyFactory,
         IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory,
@@ -67,10 +67,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     {
         this.privilegedRepository = privilegedRepository;
         this.notifier = notifier;
-        this.artistFacts = artistFacts;
-        this.opportunityFacts = opportunityFacts;
-        this.venueFacts = venueFacts;
-        this.dealFacts = dealFacts;
+        this.artistRepository = artistRepository;
+        this.opportunityRepository = opportunityRepository;
+        this.venueRepository = venueRepository;
+        this.dealRepository = dealRepository;
         this.clientContext = clientContext;
         this.applyFactory = applyFactory;
         this.commitmentFactory = commitmentFactory;
@@ -84,7 +84,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.transactions = transactions;
     }
 
-    public async Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
+    public async Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default)
@@ -106,20 +106,20 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         }
         catch (DbUpdateException exception) when (exception.IsDuplicateKey())
         {
-            return await commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposalDto, ApplyApplicationError>>(
+            return await commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
                 (workflow, token) => workflow.ClassifyApplyConflictAsync(opportunityId, actor, token),
                 ct);
         }
     }
 
-    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ExecuteApplyAsync(
+    private Task<Result<ApplicationProposal, ApplyApplicationError>> ExecuteApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         MembershipSnapshot actor,
         IPAddress ipAddress,
         string? userAgent,
         CancellationToken ct) =>
-        commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposalDto, ApplyApplicationError>>(
+        commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
             (workflow, token) => workflow.ApplyCommandAsync(
                 opportunityId,
                 eSignature,
@@ -128,10 +128,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 userAgent,
                 token),
             (workflow, result, token) => workflow.ValidateApplyAuthorityAsync(result, actor, token),
-            () => (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.NotPermitted(),
+            () => (Result<ApplicationProposal, ApplyApplicationError>)new ApplyApplicationError.NotPermitted(),
             ct);
 
-    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyCommandAsync(
+    private Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyCommandAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         MembershipSnapshot actor,
@@ -148,7 +148,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 ct),
             ct);
 
-    private async Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyCoreAsync(
+    private async Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyCoreAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         MembershipSnapshot expectedActor,
@@ -161,11 +161,11 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
             return new ApplyApplicationError.NotPermitted();
 
-        var artist = await artistFacts.GetByTenantIdAsync(actor.TenantId, ct);
+        var artist = await artistRepository.GetByTenantIdAsync(actor.TenantId, ct);
         if (artist is null)
             return new ApplyApplicationError.MissingArtist();
 
-        var opportunity = await opportunityFacts.GetByIdAsync(opportunityId, ct);
+        var opportunity = await opportunityRepository.GetByIdAsync(opportunityId, ct);
         if (opportunity is null || !opportunity.IsOpen)
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
@@ -190,7 +190,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (opportunity.Genres.Count > 0 && !artist.Genres.Overlaps(opportunity.Genres))
             return new ApplyApplicationError.GenreMismatch();
 
-        var deal = await dealFacts.GetByIdAsync(opportunity.DealId, ct);
+        var deal = await dealRepository.GetByIdAsync(opportunity.DealId, ct);
         if (deal is null)
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
 
@@ -217,11 +217,11 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             .FlushAsync(ct);
         await notifier.AppliedAsync(application);
 
-        var artistSummary = await artistFacts.GetSummaryByIdAsync(artist.Id, ct)
+        var artistSummary = await artistRepository.GetSummaryByIdAsync(artist.Id, ct)
             ?? throw new InvalidOperationException($"Artist {artist.Id} disappeared during apply.");
-        var venue = await venueFacts.GetByIdAsync(opportunity.VenueId, ct)
+        var venue = await venueRepository.GetByIdAsync(opportunity.VenueId, ct)
             ?? throw new InvalidOperationException($"Venue {opportunity.VenueId} disappeared during apply.");
-        return new ApplicationProposalDto(
+        return new ApplicationProposal(
             application.Id,
             application.VenueTenantId,
             application.ArtistTenantId,
@@ -238,7 +238,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             application.State);
     }
 
-    private Task<Result<ApplicationProposalDto, ApplyApplicationError>> ClassifyApplyConflictAsync(
+    private Task<Result<ApplicationProposal, ApplyApplicationError>> ClassifyApplyConflictAsync(
         int opportunityId,
         MembershipSnapshot expectedActor,
         CancellationToken ct) =>
@@ -247,13 +247,13 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
             if (actor is null
                 || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
-                return (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
+                return (Result<ApplicationProposal, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
 
             if (await privilegedRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
                     opportunityId,
                     actor.TenantId,
                     ct))
-                return (Result<ApplicationProposalDto, ApplyApplicationError>)new ApplyApplicationError.AlreadyApplied();
+                return (Result<ApplicationProposal, ApplyApplicationError>)new ApplyApplicationError.AlreadyApplied();
 
             throw new InvalidOperationException("Application save failed without creating an application.");
         }, ct);
@@ -346,7 +346,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (application.ValidateAccept().TryGetError(out var acceptError))
             return new AcceptApplicationError.InvalidTransition(acceptError);
 
-        var opportunity = await opportunityFacts.GetByIdAsync(application.OpportunityId, ct);
+        var opportunity = await opportunityRepository.GetByIdAsync(application.OpportunityId, ct);
         if (opportunity is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
@@ -381,15 +381,15 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                     new Dictionary<string, string[]> { ["application"] = validationErrors.ToArray() })));
         }
 
-        var deal = await dealFacts.GetByIdAsync(opportunity.DealId, ct);
+        var deal = await dealRepository.GetByIdAsync(opportunity.DealId, ct);
         if (deal is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
-        var artist = await artistFacts.GetByIdAsync(application.ArtistId, ct);
+        var artist = await artistRepository.GetByIdAsync(application.ArtistId, ct);
         if (artist is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
-        var venue = await venueFacts.GetByIdAsync(opportunity.VenueId, ct);
+        var venue = await venueRepository.GetByIdAsync(opportunity.VenueId, ct);
         if (venue is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.OpportunityNotFound());
@@ -447,7 +447,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ApplicationTermsFingerprint.Calculate(deal, new DateRange(opportunity.StartDate, opportunity.EndDate));
 
     private async Task<bool> ValidateApplyAuthorityAsync(
-        Result<ApplicationProposalDto, ApplyApplicationError> result,
+        Result<ApplicationProposal, ApplyApplicationError> result,
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {

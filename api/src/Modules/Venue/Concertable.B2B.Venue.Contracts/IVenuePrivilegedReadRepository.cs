@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Venue.Contracts;
 
-public interface IVenueCommandFacts
+public interface IVenuePrivilegedReadRepository
 {
     Task<VenueProfile?> GetByIdAsync(int venueId, CancellationToken ct = default);
 }

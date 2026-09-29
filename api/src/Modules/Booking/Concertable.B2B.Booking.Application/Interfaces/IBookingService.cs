@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Booking.Application.DTOs;
+using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Application.Errors;
 using Concertable.B2B.Booking.Application.Models;
 
@@ -15,7 +15,7 @@ internal interface IBookingService
     Task<BookingSummaryDto?> GetSummaryByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);
-    Task<BookingOperationsDto?> GetOperationsByApplicationIdAsync(
+    Task<BookingOperations?> GetOperationsByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);
     Task<IReadOnlyList<BookingSummaryDto>> GetSummariesByApplicationIdsAsync(
