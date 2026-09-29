@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Deal.Infrastructure.Repositories;
 
-internal sealed class DealPrivilegedRepository(
+internal sealed class DealPrivilegedReadRepository(
     DealPrivilegedDbContext context,
     IDealMapper mapper,
-    CommandTransactionAccessor transactions) : IDealPrivilegedRepository
+    CommandTransactionAccessor transactions) : IDealPrivilegedReadRepository
 {
     public async Task<DealDto?> GetByIdAsync(int dealId, CancellationToken ct = default)
     {

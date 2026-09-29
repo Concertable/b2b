@@ -1,6 +1,6 @@
 namespace Concertable.B2B.Deal.Contracts;
 
-public interface IDealPrivilegedRepository
+public interface IDealPrivilegedReadRepository
 {
     Task<DealDto?> GetByIdAsync(int dealId, CancellationToken ct = default);
 }

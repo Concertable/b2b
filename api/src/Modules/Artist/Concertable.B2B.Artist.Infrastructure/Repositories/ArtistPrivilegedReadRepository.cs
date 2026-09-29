@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
-internal sealed class ArtistPrivilegedRepository(
+internal sealed class ArtistPrivilegedReadRepository(
     ArtistPrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : IArtistPrivilegedRepository
+    CommandTransactionAccessor transactions) : IArtistPrivilegedReadRepository
 {
     public async Task<ArtistProfile?> GetByIdAsync(int artistId, CancellationToken ct = default)
     {

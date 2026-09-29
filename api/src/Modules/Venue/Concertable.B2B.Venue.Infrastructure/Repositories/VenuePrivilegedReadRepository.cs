@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
-internal sealed class VenuePrivilegedRepository(
+internal sealed class VenuePrivilegedReadRepository(
     VenuePrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : IVenuePrivilegedRepository
+    CommandTransactionAccessor transactions) : IVenuePrivilegedReadRepository
 {
     public async Task<VenueProfile?> GetByIdAsync(int venueId, CancellationToken ct = default)
     {
