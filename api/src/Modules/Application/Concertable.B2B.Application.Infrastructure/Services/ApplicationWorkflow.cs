@@ -30,10 +30,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
 {
     private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IApplicationNotifier notifier;
-    private readonly IArtistPrivilegedRepository artistRepository;
-    private readonly IOpportunityPrivilegedRepository opportunityRepository;
-    private readonly IVenuePrivilegedRepository venueRepository;
-    private readonly IDealPrivilegedRepository dealRepository;
+    private readonly IArtistPrivilegedReadRepository artistRepository;
+    private readonly IOpportunityPrivilegedReadRepository opportunityRepository;
+    private readonly IVenuePrivilegedReadRepository venueRepository;
+    private readonly IDealPrivilegedReadRepository dealRepository;
     private readonly IClientContext clientContext;
     private readonly IDealStrategyFactory<IApplyStep> applyFactory;
     private readonly IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory;
@@ -49,10 +49,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     public ApplicationWorkflow(
         IApplicationPrivilegedRepository privilegedRepository,
         IApplicationNotifier notifier,
-        IArtistPrivilegedRepository artistRepository,
-        IOpportunityPrivilegedRepository opportunityRepository,
-        IVenuePrivilegedRepository venueRepository,
-        IDealPrivilegedRepository dealRepository,
+        IArtistPrivilegedReadRepository artistRepository,
+        IOpportunityPrivilegedReadRepository opportunityRepository,
+        IVenuePrivilegedReadRepository venueRepository,
+        IDealPrivilegedReadRepository dealRepository,
         IClientContext clientContext,
         IDealStrategyFactory<IApplyStep> applyFactory,
         IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory,

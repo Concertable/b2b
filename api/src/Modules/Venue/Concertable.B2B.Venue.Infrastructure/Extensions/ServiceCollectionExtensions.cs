@@ -57,7 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IVenueReviewRepository, VenueReviewRepository>();
         services.AddScoped<IVenueReadRepository, VenueReadRepository>();
         services.AddScoped<IVenueModule, VenueModule>();
-        services.AddScoped<IVenuePrivilegedRepository, VenuePrivilegedRepository>();
+        services.AddScoped<IVenuePrivilegedReadRepository, VenuePrivilegedReadRepository>();
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<IIntegrationEventHandler<CustomerReviewSubmittedEvent>, VenueReviewProjectionHandler>();
         services.AddScoped<IDomainEventHandler<VenueChangedDomainEvent>, VenueChangedDomainEventHandler>();
