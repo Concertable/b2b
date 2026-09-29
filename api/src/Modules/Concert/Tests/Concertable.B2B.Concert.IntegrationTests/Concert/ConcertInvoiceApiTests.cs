@@ -396,14 +396,14 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 
         // Before settlement: the party reads its concert, but no invoice exists yet -> no link.
         var before = await (await party.GetAsync($"/api/concert/{concert.Id}/finance"))
-            .Content.ReadAsync<FinanceResponse>();
+            .Content.ReadAsync<ConcertFinanceResponse>();
         Assert.Null(before!.Actions.Invoice);
 
         await fixture.FinishConcertAsync(concert.Id);
 
         // After settlement: the minted invoice surfaces its download link.
         var after = await (await party.GetAsync($"/api/concert/{concert.Id}/finance"))
-            .Content.ReadAsync<FinanceResponse>();
+            .Content.ReadAsync<ConcertFinanceResponse>();
         Assert.Equal($"/api/concert/{concert.Id}/invoice/pdf", after!.Actions.Invoice!.Href);
     }
 
