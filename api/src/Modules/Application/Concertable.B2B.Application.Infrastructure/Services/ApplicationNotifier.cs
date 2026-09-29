@@ -21,8 +21,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
     private readonly INotificationClient notificationClient;
-    private readonly IOpportunityPrivilegedRepository opportunityRepository;
-    private readonly IVenuePrivilegedRepository venueRepository;
+    private readonly IOpportunityPrivilegedReadRepository opportunityRepository;
+    private readonly IVenuePrivilegedReadRepository venueRepository;
     private readonly ITenantModule tenantModule;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
@@ -33,8 +33,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         ICurrentUser currentUser,
         IConversationsModule conversationsModule,
         INotificationClient notificationClient,
-        IOpportunityPrivilegedRepository opportunityRepository,
-        IVenuePrivilegedRepository venueRepository,
+        IOpportunityPrivilegedReadRepository opportunityRepository,
+        IVenuePrivilegedReadRepository venueRepository,
         ITenantModule tenantModule,
         IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor,

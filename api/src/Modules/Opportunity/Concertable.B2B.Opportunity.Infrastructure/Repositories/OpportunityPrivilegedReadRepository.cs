@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Repositories;
 
-internal sealed class OpportunityPrivilegedRepository(
+internal sealed class OpportunityPrivilegedReadRepository(
     OpportunityPrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : IOpportunityPrivilegedRepository
+    CommandTransactionAccessor transactions) : IOpportunityPrivilegedReadRepository
 {
     public async Task<OpportunityDto?> GetByIdAsync(int opportunityId, CancellationToken ct = default)
     {
