@@ -11,41 +11,44 @@ The bases live in `B2B.DataAccess.Infrastructure`; each concrete context lives i
 
 | Stance | Base | Concrete examples |
 |---|---|---|
-| Tenant-filtered (both venue↔artist pair and single owner) | `TenantScopedDbContext` | `ConcertDbContext`, `BookingDbContext` (pair); `VenueDbContext` (filters `Venue`/`VenueImage`), `ArtistDbContext` (single owner) |
+| Tenant-filtered single owner | `TenantScopedDbContext` | `VenueDbContext`, `ArtistDbContext`, `OpportunityDbContext` |
+| Resource audience and grants | `ResourceScopedDbContext` | `ApplicationDbContext`, `BookingDbContext`, `ConcertDbContext`, `ConversationsDbContext` |
 | Tenant-independent read, `SaveChanges` throws | `ReadDbContext` (shared DataAccess) | `Application`, `Artist`, `Booking`, `Concert`, `Opportunity`, `Venue` |
-| Unscoped but writable | `PrivilegedDbContext` | `ConversationsPrivilegedDbContext` (moderation) |
-| Untenanted module | `DbContextBase` + own `OnModelCreating` | `Admin`, `Deal`, `Tenant`, `User` — no base owns their `OnModelCreating`; `api/TECH_DEBT.md` holds the repo-wide entry |
+| Unscoped but writable | `PrivilegedDbContext` | `ArtistPrivilegedDbContext`, `OpportunityPrivilegedDbContext`, `ConversationsPrivilegedDbContext` |
+| Module-owned configuration | `DbContextBase` + own `OnModelCreating` | `Admin`, `Deal`, `Tenant`, `User` |
 
-One base covers both tenant-filtered stances: the pair/single-owner distinction is carried entirely by which
-helper the context's `ApplyTenantFilters` calls, so a separate `VenueArtistTenantScopedDbContext` base bought
-nothing and no longer exists. The **repository** pair is a real distinction and does survive —
-`VenueArtistTenantScopedRepository` adds `GetTenantPairAsync` / `GetVenueTenantIdAsync` /
-`GetArtistTenantIdAsync`, which need both columns.
+Each scoped context declares its filters in `ApplyTenantFilters`. Artist, Venue and Opportunity use
+`ApplySingleOwner` for their tenant-owned entities. Application, Booking, Concert and Conversations use
+resource grants and audiences for shared visibility; their ordinary contexts inherit `ResourceScopedDbContext`.
 
-Filters are declared per entity through the abstract `ApplyTenantFilters` hook —
-`modelBuilder.ApplyVenueArtist<TEntity>(this)` or `modelBuilder.ApplySingleOwner<TEntity>(this)` — never
-auto-derived from the `IVenueArtistTenantScoped` / `ITenantScoped` marker.
+Repository examples distinguish visibility from exposed operations: `ArtistRepository` is tenant-bound,
+`ArtistReadRepository` uses `ArtistReadDbContext`, and `ArtistPrivilegedReadRepository` exposes
+transaction-enlisted queries through `ArtistPrivilegedDbContext`. The latter's read-only contract keeps
+`Read` even though its implementation context is writable. `ConcertPrivilegedRepository` exposes both
+reads and writes through its privileged context. The generic capability/visibility naming rules belong
+to `persistence` and `multitenancy` respectively.
 
-Query classes split by stance: `XRepository` (tenant-bound), `XReadRepository` (`XReadDbContext`),
-`XPrivilegedRepository` (writable `PrivilegedDbContext`, only where a cross-tenant write flow exists, e.g.
-`MessagePrivilegedRepository`, `ContentReportPrivilegedRepository`). A service holding both `repository` and `readRepository` is the convention when it
-injects both stances of its own aggregate. A domain fact that is not naturally an entity repository may get
-its own purpose-named abstraction over the read context — `IConcertAvailability`.
+A service holding both `repository` and `readRepository` uses those fields for the two stances of its own
+aggregate. The domain capability `IConcertAvailability` has its own purpose-named abstraction over the
+read context.
 
 ## Owned child collections without their own repository
 
 The `persistence` skill's "one repository per entity" rule has one sanctioned exception: an entity that is
 always read or written jointly with one owning aggregate, and never queried independently, stays a `DbSet` on
-the owning repository rather than gaining a repository of its own. `ThreadReadStateEntity`
-(`MessageRepository`, joined against `Messages` for unread counts and previews, and advanced alongside a
-tenant's inbox) and `ConcertImageEntity` are the two current cases. The moment a consumer needs one of these
-independently of its owner, that need earns it a real repository — do not pre-build one on spec.
+the owning repository rather than gaining a repository of its own. `ConcertImageEntity` is the current
+example. `ConversationReadPosition` has its own `ConversationReadPositionRepository`, which owns read-position
+advancement. The moment a consumer needs an owned child independently of its owner, that need earns it a
+real repository.
 
 ## Which entities are filtered
 
-- **Unfiltered by design:** `Opportunity` (the applying artist reads the venue's opportunity to stamp the
-  deal), `Deal` (the applying artist reads the venue's terms), `Concert` (public listing).
-- **Filtered:** `Venue`, `Artist` — owner-private reads, with public browse split off to the read stance.
+- **Owner-filtered:** `Venue`, `Artist`, `Opportunity` in their ordinary tenant contexts; marketplace
+  browsing uses the separate read stance.
+- **Resource-filtered:** Application, Booking/Contract, Concert/Invoice and Conversations use live grants
+  and the audience required by the operation. Public Concert listing uses its read stance.
+- **Module-owned, unfiltered context:** Deal; transaction-enlisted cross-module reads use
+  `DealPrivilegedReadRepository`.
 
 ## The `DealType` strategy families
 
