@@ -1,3 +1,4 @@
+using Concertable.B2B.Application.Api.Resolvers;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Api.Mappers;
@@ -13,14 +14,14 @@ namespace Concertable.B2B.Application.Api.Controllers;
 internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
-    private readonly IApplicationMapper mapper;
+    private readonly IApplicationResponseResolver resolver;
 
     public ApplicationController(
         IApplicationService applicationService,
-        IApplicationMapper mapper)
+        IApplicationResponseResolver resolver)
     {
         this.applicationService = applicationService;
-        this.mapper = mapper;
+        this.resolver = resolver;
     }
 
     [HasPermission(TenantPermission.ApplicationsDecideName)]
@@ -31,7 +32,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetByOpportunityIdAsync(id, ct);
-        return (await result.MapAsync(dtos => mapper.ToProposalResponsesAsync(dtos, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
@@ -43,7 +44,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.ApplyAsync(opportunityId, request.ESignature, ct);
-        var response = await result.MapAsync(dto => mapper.ToProposalResponseAsync(dto, ct));
+        var response = await result.MapAsync(dto => resolver.ResolveProposalAsync(dto, ct));
         return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}/proposal");
     }
 
@@ -53,7 +54,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetPendingForArtist(CancellationToken ct)
     {
         var result = await applicationService.GetPendingForArtistAsync(ct);
-        return (await result.MapAsync(dtos => mapper.ToProposalResponsesAsync(dtos, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
     }
 
     [HttpGet("artist/recently-denied")]
@@ -63,7 +64,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetRecentDeniedForArtistAsync(ct);
-        return (await result.MapAsync(dtos => mapper.ToProposalResponsesAsync(dtos, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
     }
 
     [HttpGet("venue/current")]
@@ -74,7 +75,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetPendingForCurrentVenueAsync(ct);
-        return (await result.MapAsync(dtos => mapper.ToProposalResponsesAsync(dtos, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
     }
 
     [HttpGet("artist/current")]
@@ -85,7 +86,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetCurrentForCurrentArtistAsync(ct);
-        return (await result.MapAsync(dtos => mapper.ToProposalResponsesAsync(dtos, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.OperationsViewName)]
@@ -93,7 +94,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<ApplicationSummaryResponse>> GetSummary(int id, CancellationToken ct)
     {
         var result = await applicationService.GetSummaryAsync(id, ct);
-        return (await result.MapAsync(dto => mapper.ToSummaryResponseAsync(dto, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dto => resolver.ResolveSummaryAsync(dto, ct))).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.TermsReadName)]
@@ -101,7 +102,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<ApplicationProposalResponse>> GetProposal(int id, CancellationToken ct)
     {
         var result = await applicationService.GetProposalAsync(id, ct);
-        return (await result.MapAsync(dto => mapper.ToProposalResponseAsync(dto, ct))).ToOkOrProblem();
+        return (await result.MapAsync(dto => resolver.ResolveProposalAsync(dto, ct))).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
