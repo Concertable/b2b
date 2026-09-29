@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Application.Application.DTOs;
+using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Requests;
 using Concertable.B2B.Application.Application.Responses;
 using Concertable.B2B.Application.Application.Errors;
@@ -7,24 +7,24 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationService
 {
-    Task<Result<ApplicationSummaryDto, ApplicationError>> GetSummaryAsync(
+    Task<Result<ApplicationSummary, ApplicationError>> GetSummaryAsync(
         int id,
         CancellationToken ct = default);
-    Task<Result<ApplicationProposalDto, ApplicationError>> GetProposalAsync(
+    Task<Result<ApplicationProposal, ApplicationError>> GetProposalAsync(
         int id,
         CancellationToken ct = default);
-    Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetByOpportunityIdAsync(
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetByOpportunityIdAsync(
         int id,
         CancellationToken ct = default);
-    Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetPendingForArtistAsync(
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetPendingForArtistAsync(
         CancellationToken ct = default);
-    Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetRecentDeniedForArtistAsync(
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetRecentDeniedForArtistAsync(
         CancellationToken ct = default);
-    Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetPendingForCurrentVenueAsync(
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetPendingForCurrentVenueAsync(
         CancellationToken ct = default);
-    Task<Result<IReadOnlyList<ApplicationProposalDto>, ApplicationError>> GetCurrentForCurrentArtistAsync(
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetCurrentForCurrentArtistAsync(
         CancellationToken ct = default);
-    Task<Result<ApplicationProposalDto, ApplyApplicationError>> ApplyAsync(
+    Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default);

@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Concert.Application.Interfaces;
@@ -7,6 +7,6 @@ internal interface IConcertCommandReceiptRepository : IRepository<ConcertCommand
 {
     void Add(ConcertCommandReceipt receipt);
 
-    Task<ConcertCommandReceipt?> GetByTenantIdAndOperationAndRequestIdForUpdateAsync(
+    Task<ConcertCommandReceipt?> GetByRequestForUpdateAsync(
         Guid issuedByTenantId, string operation, Guid requestId, CancellationToken ct = default);
 }

@@ -19,7 +19,7 @@ internal sealed class ConversationService : IConversationService
     private readonly IConversationReadPositionRepository readPositionRepository;
     private readonly IMessageRepository messageRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
-    private readonly ITenantCommandFacts tenantCommandFacts;
+    private readonly ITenantReadRepository tenantReadRepository;
     private readonly IMembershipContext membership;
     private readonly IMembershipAuthorityFence authorityFence;
     private readonly IPermissionCatalog permissionCatalog;
@@ -35,7 +35,7 @@ internal sealed class ConversationService : IConversationService
         IConversationReadPositionRepository readPositionRepository,
         IMessageRepository messageRepository,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
-        ITenantCommandFacts tenantCommandFacts,
+        ITenantReadRepository tenantReadRepository,
         IMembershipContext membership,
         IMembershipAuthorityFence authorityFence,
         IPermissionCatalog permissionCatalog,
@@ -50,7 +50,7 @@ internal sealed class ConversationService : IConversationService
         this.readPositionRepository = readPositionRepository;
         this.messageRepository = messageRepository;
         this.unitOfWork = unitOfWork;
-        this.tenantCommandFacts = tenantCommandFacts;
+        this.tenantReadRepository = tenantReadRepository;
         this.membership = membership;
         this.authorityFence = authorityFence;
         this.permissionCatalog = permissionCatalog;
@@ -97,19 +97,19 @@ internal sealed class ConversationService : IConversationService
             || !participants.Contains(expectedActor.TenantId))
             return new CreateConversationError.InvalidParticipants();
 
-        var facts = await tenantCommandFacts.ResolveAudienceAsync(expectedActor, participants, ct);
-        if (facts is null
-            || !permissionCatalog.Grants(facts.Actor.Role, TenantPermission.MessagesSend)
-            || permissionCatalog.AudienceFor(facts.Actor.Role, TenantPermission.MessagesSend)
+        var resolution = await tenantReadRepository.ResolveAudienceAsync(expectedActor, participants, ct);
+        if (resolution is null
+            || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.MessagesSend)
+            || permissionCatalog.AudienceFor(resolution.Actor.Role, TenantPermission.MessagesSend)
                 != ResourceAudience.TenantResources)
             return new CreateConversationError.NotPermitted();
-        if (!facts.ExistingTenantIds.SetEquals(participants))
+        if (!resolution.ExistingTenantIds.SetEquals(participants))
             return new CreateConversationError.InvalidParticipants();
 
-        var payloadHash = ResourceCommandReceipt.HashPayload(string.Join(",", participants));
+        var payloadHash = CommandPayloadHash.Compute(string.Join(",", participants));
         var receipt = await privilegedRepository.GetCreationReceiptForUpdateAsync(
-            facts.Actor.TenantId,
-            facts.Actor.MembershipId,
+            resolution.Actor.TenantId,
+            resolution.Actor.MembershipId,
             request.RequestId,
             ct);
         if (receipt is not null)
@@ -122,13 +122,13 @@ internal sealed class ConversationService : IConversationService
         }
 
         var at = timeProvider.GetUtcNow().UtcDateTime;
-        var conversation = ConversationEntity.Create(participants, facts.Actor.TenantId, facts.Actor.UserId, at);
+        var conversation = ConversationEntity.Create(participants, resolution.Actor.TenantId, resolution.Actor.UserId, at);
         privilegedRepository.Add(conversation);
         await privilegedRepository.SaveChangesAsync(ct);
         privilegedRepository.Add(ConversationCreationReceipt.Record(
             conversation.Id,
-            facts.Actor.TenantId,
-            facts.Actor.MembershipId,
+            resolution.Actor.TenantId,
+            resolution.Actor.MembershipId,
             request.RequestId,
             payloadHash,
             at));
@@ -155,7 +155,7 @@ internal sealed class ConversationService : IConversationService
             return new ConversationAccessError.NotFound(conversationId);
         var messages = await messageRepository.GetByConversationIdAsync(conversationId, ct);
         var activeTenantId = tenantContext.GetTenantId();
-        return messages.Select(message => ToDto(message, message.SenderTenantId != activeTenantId)).ToList();
+        return messages.Select(message => message.ToMessageDto(message.SenderTenantId != activeTenantId)).ToList();
     }
 
     public Task<Result<MessageDto, SendMessageError>> SendAsync(
@@ -204,11 +204,11 @@ internal sealed class ConversationService : IConversationService
         if (!Allows(conversation, actor, TenantPermission.MessagesSend, ConversationAccessScope.SendMessages))
             return new SendMessageError.NotPermitted();
 
-        var payloadHash = ResourceCommandReceipt.HashPayload(request.Content, action);
+        var payloadHash = CommandPayloadHash.Compute(request.Content, action);
         var replay = await privilegedRepository.GetMessageReceiptForUpdateAsync(
             conversationId, actor.MembershipId, request.RequestId, ct);
         if (replay is not null)
-            return replay.PayloadHash == payloadHash ? ToDto(replay) : new SendMessageError.RequestConflict();
+            return replay.PayloadHash == payloadHash ? replay.ToMessageDto() : new SendMessageError.RequestConflict();
 
         var message = MessageEntity.Create(
             conversationId,
@@ -224,7 +224,7 @@ internal sealed class ConversationService : IConversationService
         privilegedRepository.Add(message);
         await bus.PublishAsync(new ConversationChanged(conversationId), ct);
         await privilegedRepository.SaveChangesAsync(ct);
-        return ToDto(message);
+        return message.ToMessageDto();
     }
 
     public Task<UnitResult<ConversationAccessError>> AdvanceReadPositionAsync(
@@ -322,32 +322,32 @@ internal sealed class ConversationService : IConversationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var facts = await tenantCommandFacts.ResolveAsync(
+        var resolution = await tenantReadRepository.ResolveAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
-        if (facts is null
-            || !permissionCatalog.Grants(facts.Actor.Role, TenantPermission.ResourcesShare))
+        if (resolution is null
+            || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
             return new AssignConversationMemberError.NotPermitted();
-        if (assign && facts.TargetMembership is null)
+        if (assign && resolution.TargetMembership is null)
             return new AssignConversationMemberError.InvalidMembership();
         var conversation = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(conversationId, ct);
         if (conversation is null)
             return new AssignConversationMemberError.NotFound(conversationId);
-        if (!IsPrincipal(conversation, facts.Actor.TenantId))
+        if (!IsPrincipal(conversation, resolution.Actor.TenantId))
             return new AssignConversationMemberError.NotPermitted();
         if (conversation.AccessVersion != expectedAccessVersion)
             return new AssignConversationMemberError.Superseded(conversationId);
 
         var grants = assign
             ? conversation.AssignMember(
-                facts.Actor.TenantId,
+                resolution.Actor.TenantId,
                 membershipId,
-                facts.TargetMembership!.TenantId,
+                resolution.TargetMembership!.TenantId,
                 timeProvider.GetUtcNow().UtcDateTime)
             : [];
         var changed = assign
             ? grants.Count > 0
             : conversation.RemoveMemberAssignment(
-                facts.Actor.TenantId,
+                resolution.Actor.TenantId,
                 membershipId,
                 timeProvider.GetUtcNow().UtcDateTime);
         if (!changed)
@@ -413,17 +413,6 @@ internal sealed class ConversationService : IConversationService
                 displays.TryGetValue(id, out var display) ? display.DisplayName : UnknownTenant))
             .ToList();
     }
-
-    private static MessageDto ToDto(MessageEntity message, bool canReport = false) => new(
-        message.Id,
-        message.ConversationId,
-        message.Sequence,
-        message.SenderTenantId,
-        message.SentByUserId,
-        message.Content,
-        message.SentAt,
-        message.Action,
-        canReport);
 
     private async Task<bool> ValidateCreateAuthorityAsync(
         MembershipSnapshot expectedActor,
