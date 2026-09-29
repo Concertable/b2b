@@ -79,7 +79,7 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IPrivilegedUnitOfWork>(),
             TimeProvider.System,
             Mock.Of<IConcertCommandReceiptRepository>(),
-            Mock.Of<ITenantCommandFacts>(),
+            Mock.Of<ITenantReadRepository>(),
             Mock.Of<ITenantContext>(),
             Mock.Of<IMembershipContext>(),
             Mock.Of<IMembershipAuthorityFence>(),

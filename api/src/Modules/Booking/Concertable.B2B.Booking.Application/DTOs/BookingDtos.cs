@@ -8,11 +8,3 @@ internal sealed record BookingSummaryDto(
     int Id,
     int ApplicationId,
     BookingState State);
-
-internal sealed record BookingOperationsDto(
-    int Id,
-    int ApplicationId,
-    BookingState State,
-    Guid OperationId,
-    string? FailureCode,
-    string? FailureMessage);

@@ -58,7 +58,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOpportunityService, OpportunityService>();
             services.AddScoped<IOpportunitySyncer, OpportunitySyncer>();
             services.AddScoped<IOpportunityModule, OpportunityModule>();
-            services.AddScoped<IOpportunityCommandFacts, OpportunityCommandFacts>();
+            services.AddScoped<IOpportunityPrivilegedRepository, OpportunityPrivilegedRepository>();
             services.AddScoped<OpportunityCancellationIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<BookingCancelledEvent>>(provider =>
                 provider.GetRequiredService<OpportunityCancellationIntegrationEventHandler>());

@@ -34,19 +34,19 @@ public sealed class ApplicationServiceCancellationTests
             new HashSet<Genre>(),
             true);
         IReadOnlyList<ApplicationEntity> applications = [];
-        IReadOnlyList<ApplicationProposalDto> proposals = [];
+        IReadOnlyList<ApplicationProposal> proposals = [];
         var repository = new Mock<IApplicationRepository>();
         var opportunityModule = new Mock<IOpportunityModule>();
         var tenantContext = new Mock<ITenantContext>();
-        var mapper = new Mock<IApplicationMapper>();
+        var resolver = new Mock<IApplicationResolver>();
         opportunityModule
             .Setup(module => module.GetAsync(opportunityId, ct))
             .ReturnsAsync(Option.Some(opportunity));
         repository
             .Setup(value => value.GetByOpportunityIdAsync(opportunityId, ct))
             .ReturnsAsync(applications);
-        mapper
-            .Setup(value => value.ToProposalsAsync(applications, ct))
+        resolver
+            .Setup(value => value.ResolveProposalsAsync(applications, ct))
             .ReturnsAsync(proposals);
         tenantContext.SetupGet(value => value.TenantId).Returns(tenantId);
         var service = new ApplicationService(
@@ -60,7 +60,7 @@ public sealed class ApplicationServiceCancellationTests
             opportunityModule.Object,
             tenantContext.Object,
             Mock.Of<IApplicationCheckoutService>(),
-            mapper.Object,
+            resolver.Object,
             TimeProvider.System,
             Mock.Of<IPrivilegedUnitOfWorkBehavior>(),
             Mock.Of<IMembershipContext>(),
@@ -74,6 +74,6 @@ public sealed class ApplicationServiceCancellationTests
         Assert.Same(proposals, value);
         opportunityModule.Verify(module => module.GetAsync(opportunityId, ct), Times.Once);
         repository.Verify(value => value.GetByOpportunityIdAsync(opportunityId, ct), Times.Once);
-        mapper.Verify(value => value.ToProposalsAsync(applications, ct), Times.Once);
+        resolver.Verify(value => value.ResolveProposalsAsync(applications, ct), Times.Once);
     }
 }

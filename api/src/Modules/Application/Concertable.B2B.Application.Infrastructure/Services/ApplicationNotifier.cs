@@ -21,8 +21,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
     private readonly INotificationClient notificationClient;
-    private readonly IOpportunityCommandFacts opportunityFacts;
-    private readonly IVenueCommandFacts venueFacts;
+    private readonly IOpportunityPrivilegedRepository opportunityRepository;
+    private readonly IVenuePrivilegedRepository venueRepository;
     private readonly ITenantModule tenantModule;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
@@ -33,8 +33,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         ICurrentUser currentUser,
         IConversationsModule conversationsModule,
         INotificationClient notificationClient,
-        IOpportunityCommandFacts opportunityFacts,
-        IVenueCommandFacts venueFacts,
+        IOpportunityPrivilegedRepository opportunityRepository,
+        IVenuePrivilegedRepository venueRepository,
         ITenantModule tenantModule,
         IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor,
@@ -44,8 +44,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         this.currentUser = currentUser;
         this.conversationsModule = conversationsModule;
         this.notificationClient = notificationClient;
-        this.opportunityFacts = opportunityFacts;
-        this.venueFacts = venueFacts;
+        this.opportunityRepository = opportunityRepository;
+        this.venueRepository = venueRepository;
         this.tenantModule = tenantModule;
         this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
@@ -93,11 +93,11 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         if (opportunityId is null)
             return null;
 
-        var opportunity = await opportunityFacts.GetByIdAsync(opportunityId.Value, ct);
+        var opportunity = await opportunityRepository.GetByIdAsync(opportunityId.Value, ct);
         if (opportunity is null)
             return null;
 
-        var venue = await venueFacts.GetByIdAsync(opportunity.VenueId, ct);
+        var venue = await venueRepository.GetByIdAsync(opportunity.VenueId, ct);
         return venue?.UserId;
     }
 

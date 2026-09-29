@@ -67,19 +67,19 @@ internal sealed class ConcertController : ControllerBase
 
     [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet("{id:int}/summary")]
-    public async Task<ActionResult<SummaryResponse>> GetSummary(int id, CancellationToken ct) =>
+    public async Task<ActionResult<ConcertSummaryResponse>> GetSummary(int id, CancellationToken ct) =>
         (await concertService.GetSummaryAsync(id, ct))
             .ToOkOrProblem(concert => concert.ToResponse());
 
     [HasPermission(TenantPermission.OperationsViewName)]
     [HttpGet("{id:int}/operations")]
-    public async Task<ActionResult<OperationsResponse>> GetOperations(int id, CancellationToken ct) =>
+    public async Task<ActionResult<ConcertOperationsResponse>> GetOperations(int id, CancellationToken ct) =>
         (await concertService.GetOperationsAsync(id, ct))
             .ToOkOrProblem(concert => concert.ToResponse());
 
     [HasPermission(TenantPermission.SettlementViewName)]
     [HttpGet("{id:int}/finance")]
-    public async Task<ActionResult<FinanceResponse>> GetFinance(int id, CancellationToken ct) =>
+    public async Task<ActionResult<ConcertFinanceResponse>> GetFinance(int id, CancellationToken ct) =>
         (await concertService.GetFinanceAsync(id, ct))
             .ToOkOrProblem(concert => concert.ToResponse());
 
@@ -154,7 +154,7 @@ internal sealed class ConcertController : ControllerBase
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HttpGet("unposted/venue/{id}")]
     [HasPermission(TenantPermission.OperationsViewName)]
-    public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByVenueId(
+    public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUnpostedByVenueId(
         int id,
         CancellationToken ct)
     {
@@ -164,7 +164,7 @@ internal sealed class ConcertController : ControllerBase
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HttpGet("unposted/artist/{id}")]
     [HasPermission(TenantPermission.OperationsViewName)]
-    public async Task<ActionResult<IEnumerable<SummaryResponse>>> GetUnpostedByArtistId(
+    public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUnpostedByArtistId(
         int id,
         CancellationToken ct)
     {

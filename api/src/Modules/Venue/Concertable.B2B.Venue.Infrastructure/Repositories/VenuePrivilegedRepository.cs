@@ -6,14 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Venue.Infrastructure.Repositories;
 
-internal sealed class VenueCommandFacts(
+internal sealed class VenuePrivilegedRepository(
     VenuePrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : IVenueCommandFacts
+    CommandTransactionAccessor transactions) : IVenuePrivilegedRepository
 {
     public async Task<VenueProfile?> GetByIdAsync(int venueId, CancellationToken ct = default)
     {
         await (transactions.Current
-            ?? throw new InvalidOperationException("Venue command facts require an active command transaction."))
+            ?? throw new InvalidOperationException("Venue privileged queries require an active transaction."))
             .EnlistAsync(context, ct);
 
         return await context.Venues

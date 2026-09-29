@@ -79,7 +79,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var repository = new Mock<IConcertPrivilegedRepository>();
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var membership = new Mock<IMembershipContext>();
-        var facts = new Mock<ITenantCommandFacts>();
+        var resolution = new Mock<ITenantReadRepository>();
         var permissions = new Mock<IPermissionCatalog>();
         var executor = new ImmediateCommandExecutor();
         repository
@@ -99,13 +99,13 @@ public sealed class ConcertServiceAccessOrderingTests
                 It.IsAny<CancellationToken>()))
             .Returns((Func<Task<UnitResult<TError>>> action, CancellationToken _) => action());
         membership.SetupGet(value => value.Membership).Returns(actor);
-        facts
+        resolution
             .Setup(value => value.ResolveAsync(
                 actor,
                 It.IsAny<Guid>(),
                 It.IsAny<Guid?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TenantCommandFacts(actor, true, actor));
+            .ReturnsAsync(new TenantResolution(actor, true, actor));
         permissions
             .Setup(value => value.Grants(actor.Role, TenantPermission.ResourcesShare))
             .Returns(true);
@@ -128,7 +128,7 @@ public sealed class ConcertServiceAccessOrderingTests
             Mock.Of<IPrivilegedUnitOfWork>(),
             TimeProvider.System,
             Mock.Of<IConcertCommandReceiptRepository>(),
-            facts.Object,
+            resolution.Object,
             Mock.Of<ITenantContext>(),
             membership.Object,
             Mock.Of<IMembershipAuthorityFence>(),
