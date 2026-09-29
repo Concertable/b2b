@@ -26,11 +26,16 @@ Filters are declared per entity through the abstract `ApplyTenantFilters` hook �
 `modelBuilder.ApplyVenueArtist<TEntity>(this)` or `modelBuilder.ApplySingleOwner<TEntity>(this)` — never
 auto-derived from the `IVenueArtistTenantScoped` / `ITenantScoped` marker.
 
-Query classes split by stance: `XRepository` (tenant-bound), `XReadRepository` (`XReadDbContext`),
-`XPrivilegedRepository` (writable `PrivilegedDbContext`, only where a cross-tenant write flow exists, e.g.
-`MessagePrivilegedRepository`, `ContentReportPrivilegedRepository`). A service holding both `repository` and `readRepository` is the convention when it
-injects both stances of its own aggregate. A domain fact that is not naturally an entity repository may get
-its own purpose-named abstraction over the read context — `IConcertAvailability`.
+Repository examples distinguish visibility from exposed operations: `ArtistRepository` is tenant-bound,
+`ArtistReadRepository` uses `ArtistReadDbContext`, and `ArtistPrivilegedReadRepository` exposes
+transaction-enlisted queries through `ArtistPrivilegedDbContext`. The latter's read-only contract keeps
+`Read` even though its implementation context is writable. `ConcertPrivilegedRepository` exposes both
+reads and writes through its privileged context. The generic capability/visibility naming rules belong
+to `persistence` and `multitenancy` respectively.
+
+A service holding both `repository` and `readRepository` uses those fields for the two stances of its own
+aggregate. The domain capability `IConcertAvailability` has its own purpose-named abstraction over the
+read context.
 
 ## Owned child collections without their own repository
 
