@@ -22,12 +22,12 @@
     <PackageVersion Include="Concertable.Payment.TestKit" Version="$(ConcertablePaymentVersion)" />
     <PackageVersion Include="Concertable.Auth.Hosting" Version="$(ConcertableAuthVersion)" />
     <PackageVersion Include="Concertable.Payment.Hosting" Version="$(ConcertablePaymentVersion)" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.1.2" />
-    <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="13.3.2" />
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.3.2" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.3.2" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.3.2" />
-    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.5.4" />
     <PackageVersion Include="Dunet" Version="1.16.2" />
     <PackageVersion Include="Dapper" Version="2.1.72" />
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
