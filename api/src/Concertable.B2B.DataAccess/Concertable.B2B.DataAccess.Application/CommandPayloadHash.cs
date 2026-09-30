@@ -5,9 +5,16 @@ using System.Globalization;
 
 namespace Concertable.B2B.DataAccess.Application;
 
-public static class CommandPayloadHash
+public sealed record CommandPayloadHash
 {
-    public static string Compute(params ReadOnlySpan<object?> parts)
+    private CommandPayloadHash(string value)
+    {
+        this.Value = value;
+    }
+
+    public string Value { get; }
+
+    public static CommandPayloadHash Create(params ReadOnlySpan<object?> parts)
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         Span<byte> length = stackalloc byte[sizeof(int)];
@@ -32,6 +39,16 @@ public static class CommandPayloadHash
             hash.AppendData(bytes);
         }
 
-        return Convert.ToHexStringLower(hash.GetHashAndReset());
+        return new CommandPayloadHash(Convert.ToHexStringLower(hash.GetHashAndReset()));
+    }
+
+    public static CommandPayloadHash From(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (value.Length != 64 || value.Any(static character =>
+                character is not (>= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F')))
+            throw new ArgumentException("A payload hash must contain exactly 64 hexadecimal characters.", nameof(value));
+
+        return new CommandPayloadHash(value.ToLowerInvariant());
     }
 }
