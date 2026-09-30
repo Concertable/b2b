@@ -1,3 +1,4 @@
+using ITenantResolver = Concertable.Kernel.Identity.ITenantResolver;
 using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
