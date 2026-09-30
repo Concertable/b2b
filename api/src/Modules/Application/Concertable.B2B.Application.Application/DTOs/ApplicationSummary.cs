@@ -1,4 +1,5 @@
 using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Application.Domain.Lifecycle;
 
 namespace Concertable.B2B.Application.Application.DTOs;
@@ -10,4 +11,7 @@ internal sealed record ApplicationSummary(
     ArtistSummary Artist,
     OpportunitySummary Opportunity,
     ApplicationStatus Status,
-    ApplicationState State);
+    ApplicationState State)
+{
+    public BookingStatus? BookingStatus { get; init; }
+}

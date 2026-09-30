@@ -1,4 +1,3 @@
-using Concertable.B2B.Application.Api.Resolvers;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Api.Mappers;
@@ -14,14 +13,17 @@ namespace Concertable.B2B.Application.Api.Controllers;
 internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
-    private readonly IApplicationResponseResolver resolver;
+    private readonly IMembershipContext membership;
+    private readonly IPermissionCatalog permissionCatalog;
 
     public ApplicationController(
         IApplicationService applicationService,
-        IApplicationResponseResolver resolver)
+        IMembershipContext membership,
+        IPermissionCatalog permissionCatalog)
     {
         this.applicationService = applicationService;
-        this.resolver = resolver;
+        this.membership = membership;
+        this.permissionCatalog = permissionCatalog;
     }
 
     [HasPermission(TenantPermission.ApplicationsDecideName)]
@@ -32,7 +34,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetByOpportunityIdAsync(id, ct);
-        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
@@ -44,7 +46,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.ApplyAsync(opportunityId, request.ESignature, ct);
-        var response = await result.MapAsync(dto => resolver.ResolveProposalAsync(dto, ct));
+        var response = result.Map(proposal => proposal.ToResponse(membership.Membership, permissionCatalog));
         return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}/proposal");
     }
 
@@ -54,7 +56,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetPendingForArtist(CancellationToken ct)
     {
         var result = await applicationService.GetPendingForArtistAsync(ct);
-        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HttpGet("artist/recently-denied")]
@@ -64,7 +66,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetRecentDeniedForArtistAsync(ct);
-        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HttpGet("venue/current")]
@@ -75,7 +77,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetPendingForCurrentVenueAsync(ct);
-        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HttpGet("artist/current")]
@@ -86,7 +88,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetCurrentForCurrentArtistAsync(ct);
-        return (await result.MapAsync(dtos => resolver.ResolveProposalsAsync(dtos, ct))).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.OperationsViewName)]
@@ -94,7 +96,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<ApplicationSummaryResponse>> GetSummary(int id, CancellationToken ct)
     {
         var result = await applicationService.GetSummaryAsync(id, ct);
-        return (await result.MapAsync(dto => resolver.ResolveSummaryAsync(dto, ct))).ToOkOrProblem();
+        return result.Map(summary => summary.ToResponse()).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.TermsReadName)]
@@ -102,7 +104,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<ApplicationProposalResponse>> GetProposal(int id, CancellationToken ct)
     {
         var result = await applicationService.GetProposalAsync(id, ct);
-        return (await result.MapAsync(dto => resolver.ResolveProposalAsync(dto, ct))).ToOkOrProblem();
+        return result.Map(proposal => proposal.ToResponse(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
