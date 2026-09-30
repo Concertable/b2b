@@ -1,3 +1,5 @@
+using Concertable.B2B.DataAccess.Application;
+
 namespace Concertable.B2B.Conversations.UnitTests.Domain;
 
 public sealed class MessageEntityTests
@@ -9,15 +11,16 @@ public sealed class MessageEntityTests
         var senderTenantId = Guid.NewGuid();
         var membershipId = Guid.NewGuid();
         var userId = Guid.NewGuid();
+        var payloadHash = CommandPayloadHash.Create("payload");
 
         var message = MessageEntity.Create(
-            3, 7, requestId, "payload", senderTenantId, membershipId, userId,
+            3, 7, requestId, payloadHash, senderTenantId, membershipId, userId,
             "content", new DateTime(2026, 1, 1), MessageAction.ApplicationAccepted);
 
         Assert.Equal(3, message.ConversationId);
         Assert.Equal(7, message.Sequence);
         Assert.Equal(requestId, message.RequestId);
-        Assert.Equal("payload", message.PayloadHash);
+        Assert.Equal(payloadHash, message.PayloadHash);
         Assert.Equal(senderTenantId, message.SenderTenantId);
         Assert.Equal(membershipId, message.SentByMembershipId);
         Assert.Equal(userId, message.SentByUserId);
@@ -55,6 +58,6 @@ public sealed class MessageEntityTests
 
     private static MessageEntity CreateMessage(string content) =>
         MessageEntity.Create(
-            3, 1, Guid.NewGuid(), "payload", Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+            3, 1, Guid.NewGuid(), CommandPayloadHash.Create("payload"), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             content, new DateTime(2026, 1, 1));
 }
