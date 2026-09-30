@@ -73,8 +73,8 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
                 .ThenBy(membership => membership.UserId);
             foreach (var candidate in eligible)
             {
-                var recipient = await tenantModule.RequireCurrentMembershipAsync(candidate);
-                if (recipient is null
+                var recipientOption = await tenantModule.ResolveMembershipSnapshotAsync(candidate);
+                if (!recipientOption.TryGetValue(out var recipient)
                     || !permissionCatalog.Grants(recipient.Role, TenantPermission.ApplicationsDecide))
                     continue;
 

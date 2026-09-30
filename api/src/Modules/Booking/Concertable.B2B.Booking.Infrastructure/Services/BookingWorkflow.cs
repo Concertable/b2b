@@ -42,7 +42,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
     private readonly IMembershipContext membership;
-    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IMembershipResolver membershipResolver;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
 
@@ -62,7 +62,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
         IMembershipContext membership,
-        IMembershipAuthorityFence authorityFence,
+        IMembershipResolver membershipResolver,
         IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor)
     {
@@ -81,7 +81,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.membership = membership;
-        this.authorityFence = authorityFence;
+        this.membershipResolver = membershipResolver;
         this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
     }
@@ -159,8 +159,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.BookingsCancel))
             return new CancelBookingError.NotPermitted();
 
@@ -184,8 +184,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        return actor is not null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        return actorOption.TryGetValue(out var actor)
             && permissionCatalog.Grants(actor.Role, TenantPermission.BookingsCancel)
             && await CanCancelAsync(bookingId, actor, ct);
     }
