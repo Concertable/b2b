@@ -64,7 +64,7 @@ public sealed class ApplicationServiceCancellationTests
             TimeProvider.System,
             Mock.Of<IPrivilegedUnitOfWorkBehavior>(),
             Mock.Of<IMembershipContext>(),
-            Mock.Of<IMembershipAuthorityFence>(),
+            Mock.Of<IMembershipResolver>(),
             Mock.Of<IPermissionCatalog>(),
             Mock.Of<ICommandExecutor>());
 

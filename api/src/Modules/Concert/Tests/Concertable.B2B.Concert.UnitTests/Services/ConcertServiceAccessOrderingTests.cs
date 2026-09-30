@@ -106,7 +106,7 @@ public sealed class ConcertServiceAccessOrderingTests
                 It.IsAny<Guid>(),
                 It.IsAny<Guid?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TenantResolution(actor, true, actor));
+            .ReturnsAsync((Option<TenantResolution>)new TenantResolution(actor, true, actor));
         permissions
             .Setup(value => value.Grants(actor.Role, TenantPermission.ResourcesShare))
             .Returns(true);
@@ -132,7 +132,7 @@ public sealed class ConcertServiceAccessOrderingTests
             resolution.Object,
             Mock.Of<ITenantContext>(),
             membership.Object,
-            Mock.Of<IMembershipAuthorityFence>(),
+            Mock.Of<IMembershipResolver>(),
             permissions.Object,
             executor,
             Mock.Of<IResourceAccessContext>(value => value.UtcNow == DateTime.UnixEpoch),

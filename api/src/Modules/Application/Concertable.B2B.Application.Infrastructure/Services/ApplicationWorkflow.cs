@@ -41,7 +41,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
-    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IMembershipResolver membershipResolver;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
     private readonly CommandTransactionAccessor transactions;
@@ -60,7 +60,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
-        IMembershipAuthorityFence authorityFence,
+        IMembershipResolver membershipResolver,
         IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor,
         CommandTransactionAccessor transactions)
@@ -78,7 +78,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
-        this.authorityFence = authorityFence;
+        this.membershipResolver = membershipResolver;
         this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
         this.transactions = transactions;
@@ -156,8 +156,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         string? userAgent,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
             return new ApplyApplicationError.NotPermitted();
 
@@ -244,8 +244,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         CancellationToken ct) =>
         privilegedUnitOfWork.ExecuteAsync(async () =>
         {
-            var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-            if (actor is null
+            var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+            if (!actorOption.TryGetValue(out var actor)
                 || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
                 return (Result<ApplicationProposal, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
 
@@ -323,8 +323,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
             return new AcceptApplicationError.NotPermitted();
 
@@ -462,8 +462,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
             return false;
 
@@ -480,8 +480,8 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
             return false;
 
