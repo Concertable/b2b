@@ -15,7 +15,7 @@ internal sealed class TenantResolver : ITenantResolver
         this.membershipRepository = membershipRepository;
     }
 
-    public async Task<TenantResolution?> ResolveAsync(
+    public async Task<Option<TenantResolution>> ResolveAsync(
         MembershipSnapshot expectedActor,
         Guid targetTenantId,
         Guid? targetMembershipId = null,
@@ -36,7 +36,7 @@ internal sealed class TenantResolver : ITenantResolver
         return new TenantResolution(actor, existingTenantIds.Contains(targetTenantId), targetMembership);
     }
 
-    public async Task<TenantAudienceResolution?> ResolveAudienceAsync(
+    public async Task<Option<TenantSetResolution>> ResolveManyAsync(
         MembershipSnapshot expectedActor,
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default)
@@ -45,6 +45,6 @@ internal sealed class TenantResolver : ITenantResolver
         var memberships = await membershipRepository.GetSnapshotsByIdsForShareAsync(
             [expectedActor.MembershipId], ct);
         var actor = memberships.SingleOrDefault(membership => membership == expectedActor);
-        return actor is null ? null : new TenantAudienceResolution(actor, existingTenantIds);
+        return actor is null ? null : new TenantSetResolution(actor, existingTenantIds);
     }
 }

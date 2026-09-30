@@ -4,13 +4,13 @@ namespace Concertable.B2B.Tenant.Contracts;
 
 public interface ITenantResolver
 {
-    Task<TenantResolution?> ResolveAsync(
+    Task<Option<TenantResolution>> ResolveAsync(
         MembershipSnapshot expectedActor,
         Guid targetTenantId,
         Guid? targetMembershipId = null,
         CancellationToken ct = default);
 
-    Task<TenantAudienceResolution?> ResolveAudienceAsync(
+    Task<Option<TenantSetResolution>> ResolveManyAsync(
         MembershipSnapshot expectedActor,
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default);
