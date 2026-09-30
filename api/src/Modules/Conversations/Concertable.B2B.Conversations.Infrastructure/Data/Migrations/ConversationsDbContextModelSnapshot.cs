@@ -31,12 +31,12 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Details")
                         .HasColumnType("text");
@@ -52,13 +52,13 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<string>("Outcome")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("ReportedByUserId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("ReportedTenantId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ReporterTenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ReporterUserId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("ResolutionNotes")
@@ -73,18 +73,163 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<DateTime>("SubmittedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("VenueTenantId")
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("ConversationId", "ReporterTenantId", "ReporterUserId");
+
+                    b.ToTable("ContentReports", "conversations");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ConversationAccessGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("IssuedByTenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "MembershipId")
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.HasIndex("TenantId", "Scope", "ResourceId", "MembershipId")
+                        .HasFilter("\"RevokedAt\" IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ConversationAccessGrants_Tenant")
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
+
+                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ConversationAccessGrants_Membership")
+                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
+
+                    b.ToTable("ConversationAccessGrants", "conversations");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ConversationCreationReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByMembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatorTenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("RequestId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ArtistTenantId");
+                    b.HasIndex("ConversationId");
 
-                    b.HasIndex("MessageId");
+                    b.HasIndex("CreatorTenantId", "CreatedByMembershipId", "RequestId")
+                        .IsUnique();
 
-                    b.HasIndex("VenueTenantId");
+                    b.ToTable("ConversationCreationReceipts", "conversations");
+                });
 
-                    b.ToTable("ContentReports", "conversations");
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ConversationEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("AccessVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("LastMessageSequence")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Conversations", "conversations");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ConversationReadPosition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("LastReadSequence")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "MembershipId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "MembershipId");
+
+                    b.ToTable("ConversationReadPositions", "conversations");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.MessageEntity", b =>
@@ -98,17 +243,25 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<int?>("Action")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("HiddenAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("HiddenByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("RequestId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("RestoredAt")
@@ -120,64 +273,68 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid>("SenderTenantId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SentByMembershipId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("SentByUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("SentDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("VenueTenantId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ArtistTenantId");
+                    b.HasIndex("SenderTenantId");
 
-                    b.HasIndex("VenueTenantId");
+                    b.HasIndex("ConversationId", "SentAt");
+
+                    b.HasIndex("ConversationId", "Sequence")
+                        .IsUnique();
+
+                    b.HasIndex("ConversationId", "SentByMembershipId", "RequestId")
+                        .IsUnique();
 
                     b.ToTable("Messages", "conversations");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ThreadReadStateEntity", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("ArtistTenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("LastReadAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("VenueTenantId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VenueTenantId", "ArtistTenantId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("ThreadReadStates", "conversations");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.ReadModels.ParticipantProfile", b =>
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.ReadModels.TenantDisplay", b =>
                 {
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("DisplayName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<long>("DisplayVersion")
+                        .HasColumnType("bigint");
 
                     b.HasKey("TenantId");
 
-                    b.ToTable("ParticipantProfiles", "conversations");
+                    b.ToTable("TenantDisplays", "conversations");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.DataAccess.Application.MembershipAuthority", b =>
+                {
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("PermissionVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("MembershipAuthority", "tenant");
                 });
 
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
@@ -256,33 +413,45 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.ReadModels.ParticipantProfile", b =>
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ConversationAccessGrant", b =>
                 {
-                    b.OwnsOne("Concertable.Kernel.ValueObjects.Address", "Address", b1 =>
-                        {
-                            b1.Property<Guid>("ParticipantProfileTenantId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("County")
-                                .IsRequired()
-                                .HasColumnType("text")
-                                .HasColumnName("County");
-
-                            b1.Property<string>("Town")
-                                .IsRequired()
-                                .HasColumnType("text")
-                                .HasColumnName("Town");
-
-                            b1.HasKey("ParticipantProfileTenantId");
-
-                            b1.ToTable("ParticipantProfiles", "conversations");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ParticipantProfileTenantId");
-                        });
-
-                    b.Navigation("Address")
+                    b.HasOne("Concertable.B2B.Conversations.Domain.Entities.ConversationEntity", null)
+                        .WithMany("AccessGrants")
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ConversationCreationReceipt", b =>
+                {
+                    b.HasOne("Concertable.B2B.Conversations.Domain.Entities.ConversationEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ConversationReadPosition", b =>
+                {
+                    b.HasOne("Concertable.B2B.Conversations.Domain.Entities.ConversationEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.MessageEntity", b =>
+                {
+                    b.HasOne("Concertable.B2B.Conversations.Domain.Entities.ConversationEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Conversations.Domain.Entities.ConversationEntity", b =>
+                {
+                    b.Navigation("AccessGrants");
                 });
 #pragma warning restore 612, 618
         }
