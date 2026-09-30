@@ -107,7 +107,7 @@ internal sealed class ConversationService : IConversationService
         if (!resolution.ExistingTenantIds.SetEquals(participants))
             return new CreateConversationError.InvalidParticipants();
 
-        var payloadHash = CommandPayloadHash.Compute(string.Join(",", participants));
+        var payloadHash = CommandPayloadHash.Create(string.Join(",", participants));
         var receipt = await privilegedRepository.GetCreationReceiptForUpdateAsync(
             resolution.Actor.TenantId,
             resolution.Actor.MembershipId,
@@ -205,7 +205,7 @@ internal sealed class ConversationService : IConversationService
         if (!Allows(conversation, actor, TenantPermission.MessagesSend, ConversationAccessScope.SendMessages))
             return new SendMessageError.NotPermitted();
 
-        var payloadHash = CommandPayloadHash.Compute(request.Content, action);
+        var payloadHash = CommandPayloadHash.Create(request.Content, action);
         var replay = await privilegedRepository.GetMessageReceiptForUpdateAsync(
             conversationId, actor.MembershipId, request.RequestId, ct);
         if (replay is not null)

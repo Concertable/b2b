@@ -1,3 +1,5 @@
+using Concertable.B2B.DataAccess.Application;
+
 namespace Concertable.B2B.Conversations.Domain.Entities;
 
 public sealed class ConversationCreationReceipt : IGuidEntity
@@ -9,7 +11,7 @@ public sealed class ConversationCreationReceipt : IGuidEntity
     public Guid CreatorTenantId { get; private set; }
     public Guid CreatedByMembershipId { get; private set; }
     public Guid RequestId { get; private set; }
-    public string PayloadHash { get; private set; } = null!;
+    public CommandPayloadHash PayloadHash { get; private set; } = null!;
     public DateTime CreatedAt { get; private set; }
 
     public static ConversationCreationReceipt Record(
@@ -17,7 +19,7 @@ public sealed class ConversationCreationReceipt : IGuidEntity
         Guid creatorTenantId,
         Guid createdByMembershipId,
         Guid requestId,
-        string payloadHash,
+        CommandPayloadHash payloadHash,
         DateTime createdAt) => new()
         {
             Id = Guid.NewGuid(),
@@ -25,9 +27,10 @@ public sealed class ConversationCreationReceipt : IGuidEntity
             CreatorTenantId = creatorTenantId,
             CreatedByMembershipId = createdByMembershipId,
             RequestId = requestId,
-            PayloadHash = payloadHash,
+            PayloadHash = payloadHash ?? throw new ArgumentNullException(nameof(payloadHash)),
             CreatedAt = createdAt
         };
 
-    public bool Matches(string payloadHash) => PayloadHash == payloadHash;
+    public bool Matches(CommandPayloadHash payloadHash) => PayloadHash ==
+        (payloadHash ?? throw new ArgumentNullException(nameof(payloadHash)));
 }

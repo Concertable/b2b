@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
@@ -22,7 +23,7 @@ public sealed class ContentReportServiceTests
             ConversationId,
             1,
             Guid.NewGuid(),
-            "payload-hash",
+            CommandPayloadHash.Create("payload"),
             ArtistTenantId,
             Guid.NewGuid(),
             Guid.NewGuid(),
@@ -82,7 +83,7 @@ public sealed class ContentReportServiceTests
             ConversationId,
             1,
             Guid.NewGuid(),
-            "payload-hash",
+            CommandPayloadHash.Create("payload"),
             VenueTenantId,
             Guid.NewGuid(),
             ReportingUserId,
