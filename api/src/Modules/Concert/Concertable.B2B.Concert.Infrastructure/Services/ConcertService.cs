@@ -42,7 +42,7 @@ internal sealed class ConcertService : IConcertService
     private readonly ITenantResolver tenantResolver;
     private readonly ITenantContext tenantContext;
     private readonly IMembershipContext membership;
-    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IMembershipResolver membershipResolver;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
     private readonly IResourceAccessContext resourceAccess;
@@ -66,7 +66,7 @@ internal sealed class ConcertService : IConcertService
         ITenantResolver tenantResolver,
         ITenantContext tenantContext,
         IMembershipContext membership,
-        IMembershipAuthorityFence authorityFence,
+        IMembershipResolver membershipResolver,
         IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor,
         IResourceAccessContext resourceAccess,
@@ -89,7 +89,7 @@ internal sealed class ConcertService : IConcertService
         this.tenantResolver = tenantResolver;
         this.tenantContext = tenantContext;
         this.membership = membership;
-        this.authorityFence = authorityFence;
+        this.membershipResolver = membershipResolver;
         this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
         this.resourceAccess = resourceAccess;
@@ -322,8 +322,8 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsOpsEdit))
             return new UpdateConcertError.NotPermitted();
 
@@ -366,8 +366,8 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsOpsEdit))
             return new PostConcertError.NotPermitted();
 
@@ -418,8 +418,8 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsDeclareDoorRevenue))
             return new DeclareDoorRevenueError.VenueForbidden();
 
@@ -453,8 +453,8 @@ internal sealed class ConcertService : IConcertService
         TenantPermission permission,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        return actor is not null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        return actorOption.TryGetValue(out var actor)
             && permissionCatalog.Grants(actor.Role, permission)
             && await CanOperateAsync(id, actor, permission, ct);
     }
@@ -464,8 +464,8 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        return actor is not null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        return actorOption.TryGetValue(out var actor)
             && permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsDeclareDoorRevenue)
             && await privilegedRepository.CanDeclareDoorRevenueAsync(
                 id,
@@ -535,8 +535,8 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
@@ -559,12 +559,12 @@ internal sealed class ConcertService : IConcertService
         if (concert.AccessVersion != request.ExpectedAccessVersion)
             return new ShareConcertSummaryError.Superseded(id);
 
-        var resolution = await tenantResolver.ResolveAsync(
+        var resolutionOption = await tenantResolver.ResolveAsync(
             expectedActor,
             request.RecipientTenantId,
             request.RecipientMembershipId,
             ct);
-        if (resolution is null
+        if (!resolutionOption.TryGetValue(out var resolution)
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
         if (!resolution.TargetTenantExists
@@ -639,8 +639,8 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
@@ -713,8 +713,8 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolution = await tenantResolver.ResolveAsync(expectedActor, expectedActor.TenantId, ct: ct);
-        if (resolution is null
+        var resolutionOption = await tenantResolver.ResolveAsync(expectedActor, expectedActor.TenantId, ct: ct);
+        if (!resolutionOption.TryGetValue(out var resolution)
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
             return new RevokeConcertSummaryShareError.NotPermitted();
 
@@ -771,9 +771,9 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolution = await tenantResolver.ResolveAsync(
+        var resolutionOption = await tenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, request.MembershipId, ct);
-        if (resolution is null
+        if (!resolutionOption.TryGetValue(out var resolution)
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
             return new AssignConcertMemberError.NotPermitted();
         if (resolution.TargetMembership is null)
@@ -842,9 +842,9 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolution = await tenantResolver.ResolveAsync(
+        var resolutionOption = await tenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
-        if (resolution is null
+        if (!resolutionOption.TryGetValue(out var resolution)
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
             return new AssignConcertMemberError.NotPermitted();
 
@@ -869,8 +869,8 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        return actor is not null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        return actorOption.TryGetValue(out var actor)
             && permissionCatalog.Grants(actor.Role, TenantPermission.ResourcesShare)
             && await CanShareAsync(id, actor, ct);
     }
