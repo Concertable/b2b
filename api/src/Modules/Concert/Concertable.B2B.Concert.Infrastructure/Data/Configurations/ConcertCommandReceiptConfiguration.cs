@@ -1,4 +1,5 @@
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.DataAccess.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,7 +12,10 @@ internal sealed class ConcertCommandReceiptConfiguration : IEntityTypeConfigurat
         builder.ToTable(Schema.Tables.ConcertCommandReceipts, Schema.Name);
         builder.HasKey(receipt => receipt.Id);
         builder.Property(receipt => receipt.Operation).IsRequired().HasMaxLength(64);
-        builder.Property(receipt => receipt.PayloadHash).IsRequired().HasMaxLength(64);
+        builder.Property(receipt => receipt.PayloadHash)
+            .HasConversion(hash => hash.Value, value => CommandPayloadHash.From(value))
+            .IsRequired()
+            .HasMaxLength(64);
         builder.Property(receipt => receipt.Outcome).IsRequired().HasMaxLength(256);
 
         builder.HasIndex(receipt => new { receipt.IssuedByTenantId, receipt.Operation, receipt.RequestId })
