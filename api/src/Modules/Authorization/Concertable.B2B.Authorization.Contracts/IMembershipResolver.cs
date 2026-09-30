@@ -1,8 +1,10 @@
+using Reunion;
+
 namespace Concertable.B2B.Authorization.Contracts;
 
-public interface IMembershipAuthorityFence
+public interface IMembershipResolver
 {
-    Task<MembershipSnapshot?> RequireCurrentAsync(
+    Task<Option<MembershipSnapshot>> ResolveSnapshotAsync(
         MembershipSnapshot expected,
         CancellationToken ct = default);
 }

@@ -37,12 +37,12 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
             resolver.ResolveAsync(current, current.TenantId, current.MembershipId, ct));
 
-        Assert.Null(stale);
+        Assert.True(stale.IsNone);
         Assert.NotEqual(expected.PermissionVersion, current.PermissionVersion);
-        Assert.NotNull(resolved);
-        Assert.Equal(current, resolved.Actor);
-        Assert.Equal(current, resolved.TargetMembership);
-        Assert.True(resolved.TargetTenantExists);
+        Assert.True(resolved.TryGetValue(out var resolution));
+        Assert.Equal(current, resolution.Actor);
+        Assert.Equal(current, resolution.TargetMembership);
+        Assert.True(resolution.TargetTenantExists);
     }
 
     [Fact]
@@ -54,38 +54,38 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
             resolver.ResolveAsync(actor, actor.TenantId, target.Id, ct));
 
-        Assert.NotNull(resolved);
-        Assert.Equal(actor, resolved.Actor);
-        Assert.True(resolved.TargetTenantExists);
-        Assert.Null(resolved.TargetMembership);
+        Assert.True(resolved.TryGetValue(out var resolution));
+        Assert.Equal(actor, resolution.Actor);
+        Assert.True(resolution.TargetTenantExists);
+        Assert.Null(resolution.TargetMembership);
     }
 
     [Fact]
-    public async Task ResolveAudience_DuplicateAndMissingTenants_ReturnsUniqueExistingTenants()
+    public async Task ResolveMany_DuplicateAndMissingTenants_ReturnsUniqueExistingTenants()
     {
         var actor = Snapshot(fixture.Memberships.First());
         var otherTenantId = fixture.Tenants.First(value => value.Id != actor.TenantId).Id;
         Guid[] requested = [actor.TenantId, otherTenantId, actor.TenantId, Guid.NewGuid()];
 
         var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveAudienceAsync(actor, requested, ct));
+            resolver.ResolveManyAsync(actor, requested, ct));
 
-        Assert.NotNull(resolved);
-        Assert.Equal(actor, resolved.Actor);
-        Assert.True(resolved.ExistingTenantIds.SetEquals([actor.TenantId, otherTenantId]));
+        Assert.True(resolved.TryGetValue(out var resolution));
+        Assert.Equal(actor, resolution.Actor);
+        Assert.True(resolution.ExistingTenantIds.SetEquals([actor.TenantId, otherTenantId]));
     }
 
     [Fact]
-    public async Task ResolveAudience_ActorPermissionVersionChanged_RejectsStaleAuthority()
+    public async Task ResolveMany_ActorPermissionVersionChanged_RejectsStaleAuthority()
     {
         var membership = fixture.Memberships.First(value => value.Role == TenantRole.Owner);
         var expected = Snapshot(membership);
         await fixture.ChangeMembershipRoleAsync(membership.TenantId, membership.UserId, TenantRole.Manager);
 
         var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveAudienceAsync(expected, [expected.TenantId], ct));
+            resolver.ResolveManyAsync(expected, [expected.TenantId], ct));
 
-        Assert.Null(resolved);
+        Assert.True(resolved.IsNone);
     }
 
     private static MembershipSnapshot Snapshot(TenantMembershipEntity membership) =>

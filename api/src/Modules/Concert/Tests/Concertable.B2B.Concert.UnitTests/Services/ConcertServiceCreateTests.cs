@@ -83,7 +83,7 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<ITenantResolver>(),
             Mock.Of<ITenantContext>(),
             Mock.Of<IMembershipContext>(),
-            Mock.Of<IMembershipAuthorityFence>(),
+            Mock.Of<IMembershipResolver>(),
             Mock.Of<IPermissionCatalog>(),
             Mock.Of<ICommandExecutor>(),
             Mock.Of<IResourceAccessContext>(),

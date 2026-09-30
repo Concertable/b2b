@@ -67,7 +67,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantModule, TenantModule>();
 
         services.AddScoped<IMembershipReadRepository>(sp => sp.GetRequiredService<MembershipRepository>());
-        services.AddScoped<IMembershipAuthorityFence, MembershipAuthorityFence>();
+        services.AddScoped<IMembershipResolver, MembershipResolver>();
         services.AddScoped<ITenantResolver, TenantResolver>();
 
         services.Configure<MvcOptions>(options => options.Filters.Add<BusinessActivityAuthorizationFilter>());
