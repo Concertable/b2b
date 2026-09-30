@@ -1,3 +1,4 @@
+using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Requests;
@@ -19,7 +20,7 @@ internal sealed class ConversationService : IConversationService
     private readonly IConversationReadPositionRepository readPositionRepository;
     private readonly IMessageRepository messageRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
-    private readonly ITenantReadRepository tenantReadRepository;
+    private readonly ITenantResolver tenantResolver;
     private readonly IMembershipContext membership;
     private readonly IMembershipAuthorityFence authorityFence;
     private readonly IPermissionCatalog permissionCatalog;
@@ -35,7 +36,7 @@ internal sealed class ConversationService : IConversationService
         IConversationReadPositionRepository readPositionRepository,
         IMessageRepository messageRepository,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
-        ITenantReadRepository tenantReadRepository,
+        ITenantResolver tenantResolver,
         IMembershipContext membership,
         IMembershipAuthorityFence authorityFence,
         IPermissionCatalog permissionCatalog,
@@ -50,7 +51,7 @@ internal sealed class ConversationService : IConversationService
         this.readPositionRepository = readPositionRepository;
         this.messageRepository = messageRepository;
         this.unitOfWork = unitOfWork;
-        this.tenantReadRepository = tenantReadRepository;
+        this.tenantResolver = tenantResolver;
         this.membership = membership;
         this.authorityFence = authorityFence;
         this.permissionCatalog = permissionCatalog;
@@ -97,7 +98,7 @@ internal sealed class ConversationService : IConversationService
             || !participants.Contains(expectedActor.TenantId))
             return new CreateConversationError.InvalidParticipants();
 
-        var resolution = await tenantReadRepository.ResolveAudienceAsync(expectedActor, participants, ct);
+        var resolution = await tenantResolver.ResolveAudienceAsync(expectedActor, participants, ct);
         if (resolution is null
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.MessagesSend)
             || permissionCatalog.AudienceFor(resolution.Actor.Role, TenantPermission.MessagesSend)
@@ -322,7 +323,7 @@ internal sealed class ConversationService : IConversationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolution = await tenantReadRepository.ResolveAsync(
+        var resolution = await tenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
         if (resolution is null
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))

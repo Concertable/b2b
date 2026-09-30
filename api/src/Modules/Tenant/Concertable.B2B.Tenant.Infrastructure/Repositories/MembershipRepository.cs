@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
 internal sealed class MembershipRepository : Repository<TenantMembershipEntity>, IMembershipRepository,
-    IMembershipReadRepository, IMembershipAuthorityFence, ITenantReadRepository
+    IMembershipReadRepository
 {
     private readonly TenantDbContext context;
     private readonly CommandTransactionAccessor transactions;
@@ -20,78 +20,15 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         this.transactions = transactions;
     }
 
-    public async Task<MembershipSnapshot?> RequireCurrentAsync(
-        MembershipSnapshot expected,
+    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForShareAsync(
+        IReadOnlyCollection<Guid> membershipIds,
         CancellationToken ct = default)
     {
         var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Membership authority requires an active command transaction.");
+            ?? throw new InvalidOperationException("Membership locking requires an active transaction.");
         await transaction.EnlistAsync(context, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Tenants"
-             WHERE "Id" = {expected.TenantId}
-             FOR SHARE
-             """,
-            ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Memberships"
-             WHERE "Id" = {expected.MembershipId}
-               AND "TenantId" = {expected.TenantId}
-               AND "UserId" = {expected.UserId}
-             FOR SHARE
-             """,
-            ct);
-
-        var current = await context.Memberships
-            .Where(membership =>
-                membership.Id == expected.MembershipId
-                && membership.TenantId == expected.TenantId
-                && membership.UserId == expected.UserId)
-            .Select(membership => new MembershipSnapshot(
-                membership.Id,
-                membership.TenantId,
-                membership.UserId,
-                membership.Role,
-                membership.PermissionVersion))
-            .SingleOrDefaultAsync(ct);
-
-        return current is { } authority
-            && authority.Role == expected.Role
-            && authority.PermissionVersion == expected.PermissionVersion
-                ? authority
-                : null;
-    }
-
-    public async Task<TenantResolution?> ResolveAsync(
-        MembershipSnapshot expectedActor,
-        Guid targetTenantId,
-        Guid? targetMembershipId = null,
-        CancellationToken ct = default)
-    {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant resolution requires an active transaction.");
-        await transaction.EnlistAsync(context, ct);
-
-        foreach (var tenantId in new[] { expectedActor.TenantId, targetTenantId }.Distinct().Order())
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Tenants"
-                 WHERE "Id" = {tenantId}
-                 FOR SHARE
-                 """,
-                ct);
-        }
-
-        IEnumerable<Guid> membershipIds = targetMembershipId is { } targetId
-            ? new[] { expectedActor.MembershipId, targetId }.Distinct().Order()
-            : [expectedActor.MembershipId];
-        foreach (var membershipId in membershipIds)
+        var distinctIds = membershipIds.Distinct().Order().ToArray();
+        foreach (var membershipId in distinctIds)
         {
             await context.Database.ExecuteSqlInterpolatedAsync(
                 $"""
@@ -103,96 +40,15 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
                 ct);
         }
 
-        var actor = await context.Memberships
-            .Where(membership =>
-                membership.Id == expectedActor.MembershipId
-                && membership.TenantId == expectedActor.TenantId
-                && membership.UserId == expectedActor.UserId)
+        return await context.Memberships
+            .Where(membership => distinctIds.Contains(membership.Id))
             .Select(membership => new MembershipSnapshot(
                 membership.Id,
                 membership.TenantId,
                 membership.UserId,
                 membership.Role,
                 membership.PermissionVersion))
-            .SingleOrDefaultAsync(ct);
-        if (actor is null
-            || actor.Role != expectedActor.Role
-            || actor.PermissionVersion != expectedActor.PermissionVersion)
-            return null;
-
-        var targetTenantExists = await context.Tenants.AnyAsync(tenant => tenant.Id == targetTenantId, ct);
-        MembershipSnapshot? targetMembership = null;
-        if (targetMembershipId is { } membershipIdValue)
-        {
-            targetMembership = await context.Memberships
-                .Where(membership =>
-                    membership.Id == membershipIdValue
-                    && membership.TenantId == targetTenantId)
-                .Select(membership => new MembershipSnapshot(
-                    membership.Id,
-                    membership.TenantId,
-                    membership.UserId,
-                    membership.Role,
-                    membership.PermissionVersion))
-                .SingleOrDefaultAsync(ct);
-        }
-
-        return new TenantResolution(actor, targetTenantExists, targetMembership);
-    }
-
-    public async Task<TenantAudienceResolution?> ResolveAudienceAsync(
-        MembershipSnapshot expectedActor,
-        IReadOnlyCollection<Guid> tenantIds,
-        CancellationToken ct = default)
-    {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant audience resolution requires an active transaction.");
-        await transaction.EnlistAsync(context, ct);
-
-        var distinctTenantIds = tenantIds.Distinct().Order().ToList();
-        foreach (var tenantId in distinctTenantIds)
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Tenants"
-                 WHERE "Id" = {tenantId}
-                 FOR SHARE
-                 """,
-                ct);
-        }
-
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Memberships"
-             WHERE "Id" = {expectedActor.MembershipId}
-             FOR SHARE
-             """,
-            ct);
-
-        var actor = await context.Memberships
-            .Where(membership =>
-                membership.Id == expectedActor.MembershipId
-                && membership.TenantId == expectedActor.TenantId
-                && membership.UserId == expectedActor.UserId)
-            .Select(membership => new MembershipSnapshot(
-                membership.Id,
-                membership.TenantId,
-                membership.UserId,
-                membership.Role,
-                membership.PermissionVersion))
-            .SingleOrDefaultAsync(ct);
-        if (actor is null
-            || actor.Role != expectedActor.Role
-            || actor.PermissionVersion != expectedActor.PermissionVersion)
-            return null;
-
-        var existingTenantIds = await context.Tenants
-            .Where(tenant => distinctTenantIds.Contains(tenant.Id))
-            .Select(tenant => tenant.Id)
-            .ToHashSetAsync(ct);
-        return new TenantAudienceResolution(actor, existingTenantIds);
+            .ToListAsync(ct);
     }
 
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
