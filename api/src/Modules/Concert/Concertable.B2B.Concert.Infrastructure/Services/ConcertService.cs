@@ -1,3 +1,4 @@
+using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -38,7 +39,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IPrivilegedUnitOfWork privilegedUnitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly IConcertCommandReceiptRepository receiptRepository;
-    private readonly ITenantReadRepository tenantReadRepository;
+    private readonly ITenantResolver tenantResolver;
     private readonly ITenantContext tenantContext;
     private readonly IMembershipContext membership;
     private readonly IMembershipAuthorityFence authorityFence;
@@ -62,7 +63,7 @@ internal sealed class ConcertService : IConcertService
         IPrivilegedUnitOfWork privilegedUnitOfWork,
         TimeProvider timeProvider,
         IConcertCommandReceiptRepository receiptRepository,
-        ITenantReadRepository tenantReadRepository,
+        ITenantResolver tenantResolver,
         ITenantContext tenantContext,
         IMembershipContext membership,
         IMembershipAuthorityFence authorityFence,
@@ -85,7 +86,7 @@ internal sealed class ConcertService : IConcertService
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.timeProvider = timeProvider;
         this.receiptRepository = receiptRepository;
-        this.tenantReadRepository = tenantReadRepository;
+        this.tenantResolver = tenantResolver;
         this.tenantContext = tenantContext;
         this.membership = membership;
         this.authorityFence = authorityFence;
@@ -558,7 +559,7 @@ internal sealed class ConcertService : IConcertService
         if (concert.AccessVersion != request.ExpectedAccessVersion)
             return new ShareConcertSummaryError.Superseded(id);
 
-        var resolution = await tenantReadRepository.ResolveAsync(
+        var resolution = await tenantResolver.ResolveAsync(
             expectedActor,
             request.RecipientTenantId,
             request.RecipientMembershipId,
@@ -712,7 +713,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolution = await tenantReadRepository.ResolveAsync(expectedActor, expectedActor.TenantId, ct: ct);
+        var resolution = await tenantResolver.ResolveAsync(expectedActor, expectedActor.TenantId, ct: ct);
         if (resolution is null
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
             return new RevokeConcertSummaryShareError.NotPermitted();
@@ -770,7 +771,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolution = await tenantReadRepository.ResolveAsync(
+        var resolution = await tenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, request.MembershipId, ct);
         if (resolution is null
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
@@ -841,7 +842,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolution = await tenantReadRepository.ResolveAsync(
+        var resolution = await tenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
         if (resolution is null
             || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
