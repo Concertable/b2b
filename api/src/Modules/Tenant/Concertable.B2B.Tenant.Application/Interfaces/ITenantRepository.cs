@@ -4,6 +4,10 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal interface ITenantRepository : IRepository<TenantEntity, Guid>
 {
+    Task<IReadOnlySet<Guid>> GetExistingIdsForShareAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
+
     Task<TenantEntity?> GetByIdForAdministrationAsync(Guid tenantId, CancellationToken ct = default);
 
     Task<bool> ExistsForBookingAsync(Guid tenantId, CancellationToken ct = default);

@@ -19,6 +19,32 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         this.transactions = transactions;
     }
 
+    public async Task<IReadOnlySet<Guid>> GetExistingIdsForShareAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Tenant locking requires an active transaction.");
+        await transaction.EnlistAsync(context, ct);
+        var distinctIds = tenantIds.Distinct().Order().ToArray();
+        foreach (var tenantId in distinctIds)
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                 SELECT 1
+                 FROM tenant."Tenants"
+                 WHERE "Id" = {tenantId}
+                 FOR SHARE
+                 """,
+                ct);
+        }
+
+        return await context.Tenants
+            .Where(tenant => distinctIds.Contains(tenant.Id))
+            .Select(tenant => tenant.Id)
+            .ToHashSetAsync(ct);
+    }
+
     public async Task<TenantEntity?> GetByIdForAdministrationAsync(
         Guid tenantId,
         CancellationToken ct = default)

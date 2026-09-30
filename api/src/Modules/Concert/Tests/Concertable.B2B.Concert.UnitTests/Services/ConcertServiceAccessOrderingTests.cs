@@ -1,3 +1,4 @@
+using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Booking.Contracts;
@@ -79,7 +80,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var repository = new Mock<IConcertPrivilegedRepository>();
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var membership = new Mock<IMembershipContext>();
-        var resolution = new Mock<ITenantReadRepository>();
+        var resolution = new Mock<ITenantResolver>();
         var permissions = new Mock<IPermissionCatalog>();
         var executor = new ImmediateCommandExecutor();
         repository
