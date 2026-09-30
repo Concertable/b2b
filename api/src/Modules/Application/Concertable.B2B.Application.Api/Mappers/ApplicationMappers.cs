@@ -12,7 +12,7 @@ internal static class ApplicationMappers
 {
     extension(ApplicationSummary dto)
     {
-        public ApplicationSummaryResponse ToResponse(BookingSummary? booking) =>
+        public ApplicationSummaryResponse ToResponse() =>
             new(
                 dto.Id,
                 dto.Artist,
@@ -23,13 +23,12 @@ internal static class ApplicationMappers
                     dto.Opportunity.StartDate,
                     dto.Opportunity.EndDate,
                     dto.Opportunity.Genres.ToList()),
-                ToStatus(dto.Status, dto.State, booking, false));
+                ToStatus(dto.Status, dto.BookingStatus, false));
     }
 
     extension(ApplicationProposal dto)
     {
         public ApplicationProposalResponse ToResponse(
-            BookingSummary? booking,
             MembershipSnapshot? actor,
             IPermissionCatalog permissions)
         {
@@ -56,7 +55,7 @@ internal static class ApplicationMappers
                     dto.Opportunity.EndDate,
                     dto.Opportunity.Genres.ToList(),
                     dto.Opportunity.Deal),
-                ToStatus(dto.Status, dto.State, booking, checkoutCapable),
+                ToStatus(dto.Status, dto.BookingStatus, checkoutCapable),
                 new ApplicationActions(
                     Accept: canDecide && isPending
                         ? new ActionLink($"/api/application/{dto.Id}/accept", HttpMethods.Post)
@@ -67,24 +66,31 @@ internal static class ApplicationMappers
                     Decline: canDecide && isPending
                         ? new ActionLink($"/api/application/{dto.Id}/reject", HttpMethods.Post)
                         : null,
-                    Cancel: canDecide && isPending && booking is null
+                    Cancel: canDecide && isPending && dto.BookingStatus is null
                         ? new ActionLink($"/api/application/{dto.Id}/cancel", HttpMethods.Post)
                         : null,
                     Withdraw: canSubmit && isPending
                         ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
                         : null,
-                    Contract: canReadTerms && booking is not null
+                    Contract: canReadTerms && dto.BookingStatus is not null
                         ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
                         : null));
         }
     }
 
+    extension(IReadOnlyList<ApplicationProposal> proposals)
+    {
+        public IReadOnlyList<ApplicationProposalResponse> ToResponses(
+            MembershipSnapshot? actor,
+            IPermissionCatalog permissions) =>
+            proposals.Select(proposal => proposal.ToResponse(actor, permissions)).ToList();
+    }
+
     private static ApplicationStatus ToStatus(
         ApplicationStatus status,
-        ApplicationState state,
-        BookingSummary? booking,
+        BookingStatus? bookingStatus,
         bool checkoutCapable) =>
-        booking?.Status switch
+        bookingStatus switch
         {
             BookingStatus.ConfirmationFailed =>
                 ApplicationStatus.AwaitingPayment,

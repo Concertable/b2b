@@ -10,6 +10,7 @@ using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +26,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationEligibility eligibility;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
+    private readonly IBookingModule bookingModule;
     private readonly ITenantContext tenantContext;
     private readonly IApplicationCheckoutService checkoutService;
     private readonly IApplicationResolver resolver;
@@ -44,6 +46,7 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationEligibility eligibility,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
+        IBookingModule bookingModule,
         ITenantContext tenantContext,
         IApplicationCheckoutService checkoutService,
         IApplicationResolver resolver,
@@ -62,6 +65,7 @@ internal sealed class ApplicationService : IApplicationService
         this.eligibility = eligibility;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
+        this.bookingModule = bookingModule;
         this.tenantContext = tenantContext;
         this.checkoutService = checkoutService;
         this.resolver = resolver;
@@ -79,7 +83,8 @@ internal sealed class ApplicationService : IApplicationService
         applicationRepository.GetSummaryByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(application => resolver.ResolveSummaryAsync(application, ct));
+            .MapAsync(application => resolver.ResolveSummaryAsync(application, ct))
+            .MapAsync(summary => AddBookingStatusAsync(summary, ct));
 
     public Task<Result<ApplicationProposal, ApplicationError>> GetProposalAsync(
         int id,
@@ -87,7 +92,8 @@ internal sealed class ApplicationService : IApplicationService
         applicationRepository.GetProposalByIdAsync(id, ct)
             .ToOption()
             .OrFailure(() => (ApplicationError)new ApplicationError.NotFound(id))
-            .MapAsync(application => resolver.ResolveProposalAsync(application, ct));
+            .MapAsync(application => resolver.ResolveProposalAsync(application, ct))
+            .MapAsync(proposal => AddBookingStatusAsync(proposal, ct));
 
     public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetByOpportunityIdAsync(
         int id,
@@ -99,7 +105,8 @@ internal sealed class ApplicationService : IApplicationService
             return new ApplicationError.OpportunityForbidden(id);
 
         var applications = await applicationRepository.GetByOpportunityIdAsync(id, ct);
-        return new Success<IReadOnlyList<ApplicationProposal>>(await resolver.ResolveProposalsAsync(applications, ct));
+        var proposals = await resolver.ResolveProposalsAsync(applications, ct);
+        return new Success<IReadOnlyList<ApplicationProposal>>(await AddBookingStatusesAsync(proposals, ct));
     }
 
     public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetPendingForArtistAsync(
@@ -114,9 +121,9 @@ internal sealed class ApplicationService : IApplicationService
             ApplicationState.Applied,
             ct);
         var dtos = await resolver.ResolveProposalsAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationProposal>>(
-            dtos.Where(application => application.Opportunity.StartDate > timeProvider.GetUtcNow())
-                .ToList());
+        var proposals = dtos.Where(application => application.Opportunity.StartDate > timeProvider.GetUtcNow())
+            .ToList();
+        return new Success<IReadOnlyList<ApplicationProposal>>(await AddBookingStatusesAsync(proposals, ct));
     }
 
     public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetRecentDeniedForArtistAsync(
@@ -131,10 +138,10 @@ internal sealed class ApplicationService : IApplicationService
             ApplicationState.Rejected,
             ct);
         var dtos = await resolver.ResolveProposalsAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationProposal>>(
-            dtos.OrderByDescending(application => application.Opportunity.EndDate)
-                .Take(5)
-                .ToList());
+        var proposals = dtos.OrderByDescending(application => application.Opportunity.EndDate)
+            .Take(5)
+            .ToList();
+        return new Success<IReadOnlyList<ApplicationProposal>>(await AddBookingStatusesAsync(proposals, ct));
     }
 
     public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetPendingForCurrentVenueAsync(
@@ -149,12 +156,12 @@ internal sealed class ApplicationService : IApplicationService
             ct);
         var now = timeProvider.GetUtcNow();
         var dtos = await resolver.ResolveProposalsAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationProposal>>(
-            dtos.Where(application => application.Opportunity.EndDate > now)
-                .OrderBy(application => application.Opportunity.StartDate)
-                .ThenBy(application => application.Id)
-                .Take(5)
-                .ToList());
+        var proposals = dtos.Where(application => application.Opportunity.EndDate > now)
+            .OrderBy(application => application.Opportunity.StartDate)
+            .ThenBy(application => application.Id)
+            .Take(5)
+            .ToList();
+        return new Success<IReadOnlyList<ApplicationProposal>>(await AddBookingStatusesAsync(proposals, ct));
     }
 
     public async Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetCurrentForCurrentArtistAsync(
@@ -166,19 +173,20 @@ internal sealed class ApplicationService : IApplicationService
         var applications = await applicationRepository.GetCurrentByArtistTenantIdAsync(tenantId, ct);
         var now = timeProvider.GetUtcNow();
         var dtos = await resolver.ResolveProposalsAsync(applications, ct);
-        return new Success<IReadOnlyList<ApplicationProposal>>(
-            dtos.Where(application => application.Opportunity.EndDate > now)
-                .OrderBy(application => application.Opportunity.StartDate)
-                .ThenBy(application => application.Id)
-                .Take(10)
-                .ToList());
+        var proposals = dtos.Where(application => application.Opportunity.EndDate > now)
+            .OrderBy(application => application.Opportunity.StartDate)
+            .ThenBy(application => application.Id)
+            .Take(10)
+            .ToList();
+        return new Success<IReadOnlyList<ApplicationProposal>>(await AddBookingStatusesAsync(proposals, ct));
     }
 
     public Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default) =>
-        workflow.ApplyAsync(opportunityId, eSignature, ct);
+        workflow.ApplyAsync(opportunityId, eSignature, ct)
+            .MapAsync(proposal => AddBookingStatusAsync(proposal, ct));
 
     public async Task<bool> CanApplyAsync(int opportunityId) =>
         (await CheckCanApplyAsync(opportunityId)).IsSuccess;
@@ -445,6 +453,35 @@ internal sealed class ApplicationService : IApplicationService
     {
         var result = await eligibility.CanAcceptAsync(application, ct);
         return result.TryGetError(out var error) ? error : new Success();
+    }
+
+    private async Task<ApplicationSummary> AddBookingStatusAsync(ApplicationSummary summary, CancellationToken ct)
+    {
+        var bookingOption = await bookingModule.GetByApplicationIdAsync(summary.Id, ct);
+        bookingOption.TryGetValue(out var booking);
+        return summary with { BookingStatus = booking?.Status };
+    }
+
+    private async Task<ApplicationProposal> AddBookingStatusAsync(ApplicationProposal proposal, CancellationToken ct)
+    {
+        var bookingOption = await bookingModule.GetByApplicationIdAsync(proposal.Id, ct);
+        bookingOption.TryGetValue(out var booking);
+        return proposal with { BookingStatus = booking?.Status };
+    }
+
+    private async Task<IReadOnlyList<ApplicationProposal>> AddBookingStatusesAsync(
+        IReadOnlyList<ApplicationProposal> proposals,
+        CancellationToken ct)
+    {
+        if (proposals.Count == 0)
+            return proposals;
+
+        var bookings = (await bookingModule.GetByApplicationIdsAsync(
+                proposals.Select(proposal => proposal.Id).ToArray(), ct))
+            .ToDictionary(booking => booking.ApplicationId);
+        return proposals
+            .Select(proposal => proposal with { BookingStatus = bookings.GetValueOrDefault(proposal.Id)?.Status })
+            .ToList();
     }
 
     private async Task<bool> ValidateSubmitAuthorityAsync(
