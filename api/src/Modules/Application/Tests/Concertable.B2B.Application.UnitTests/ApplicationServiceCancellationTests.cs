@@ -5,6 +5,7 @@ using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Infrastructure;
 using Concertable.B2B.Application.Infrastructure.Services;
 using Concertable.B2B.Artist.Contracts;
+using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Opportunity.Contracts;
@@ -58,6 +59,7 @@ public sealed class ApplicationServiceCancellationTests
             Mock.Of<IApplicationEligibility>(),
             Mock.Of<IArtistModule>(),
             opportunityModule.Object,
+            Mock.Of<IBookingModule>(),
             tenantContext.Object,
             Mock.Of<IApplicationCheckoutService>(),
             resolver.Object,
