@@ -27,7 +27,7 @@ internal sealed class TenantResolver : ITenantResolver
             ? [expectedActor.MembershipId, targetId]
             : [expectedActor.MembershipId];
         var memberships = await membershipRepository.GetSnapshotsByIdsForShareAsync(membershipIds, ct);
-        var actor = memberships.SingleOrDefault(membership => membership == expectedActor);
+        var actor = memberships.SingleOrDefault(membership => membership.HasSameAuthorityAs(expectedActor));
         if (actor is null)
             return null;
 
@@ -44,7 +44,7 @@ internal sealed class TenantResolver : ITenantResolver
         var existingTenantIds = await tenantRepository.GetExistingIdsForShareAsync(tenantIds, ct);
         var memberships = await membershipRepository.GetSnapshotsByIdsForShareAsync(
             [expectedActor.MembershipId], ct);
-        var actor = memberships.SingleOrDefault(membership => membership == expectedActor);
+        var actor = memberships.SingleOrDefault(membership => membership.HasSameAuthorityAs(expectedActor));
         return actor is null ? null : new TenantSetResolution(actor, existingTenantIds);
     }
 }

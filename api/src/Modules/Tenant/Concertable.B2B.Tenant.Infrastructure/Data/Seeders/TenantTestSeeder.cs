@@ -25,6 +25,7 @@ internal sealed class TenantTestSeeder : ITestSeeder
         await context.Tenants.SeedIfEmptyAsync(async () =>
         {
             context.Tenants.AddRange(seed.Tenants);
+            context.RoleDefinitions.AddRange(seed.Tenants.SelectMany(tenant => TenantRoleProvisioning.CreatePresets(tenant.Id)));
             context.Memberships.AddRange(seed.Memberships);
             context.Verifications.AddRange(seed.Verifications);
             await context.SaveChangesAsync(ct);

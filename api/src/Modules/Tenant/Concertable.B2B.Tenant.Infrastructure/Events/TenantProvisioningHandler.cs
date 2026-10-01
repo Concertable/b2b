@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Infrastructure.Authorization;
@@ -70,9 +72,32 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
                     membership.Id == invitation.InviterMembershipId
                     && membership.TenantId == invitation.TenantId,
                 ct);
-            if (inviter is null
-                || inviter.PermissionVersion != invitation.InviterPermissionVersion
-                || !TenantRoleAssignmentPolicy.CanAssignRole(inviter.Role, invitation.Role))
+            var tenant = await context.Tenants.SingleAsync(row => row.Id == invitation.TenantId, ct);
+            var inviterRoleIds = inviter?.Assignments.Select(row => row.RoleId).ToArray() ?? [];
+            var invitedRoleIds = invitation.Assignments.Select(row => row.RoleId).ToArray();
+            var allRoleIds = inviterRoleIds.Concat(invitedRoleIds).Distinct().ToArray();
+            var roles = await context.RoleDefinitions.AsNoTracking()
+                .Where(role => role.TenantId == invitation.TenantId && allRoleIds.Contains(role.Id)
+                    && role.RetiredAt == null)
+                .ToListAsync(ct);
+            var inviterRoles = roles.Where(role => inviterRoleIds.Contains(role.Id)).ToArray();
+            var invitedRoles = roles.Where(role => invitedRoleIds.Contains(role.Id)).ToArray();
+            var permissions = inviterRoles.SelectMany(role => role.Permissions)
+                .Where(row => TenantPermission.TryParse(row.PermissionKey, out _)
+                    && row.Audience is ResourceAudience.AssignedResources or ResourceAudience.TenantResources)
+                .GroupBy(row => row.PermissionKey, StringComparer.Ordinal)
+                .ToImmutableDictionary(
+                    group => TenantPermission.TryParse(group.Key, out var key) ? key : default,
+                    group => (ResourceAudience)group.Max(row => (int)row.Audience));
+            var snapshot = inviter is null ? null : new MembershipSnapshot(
+                inviter.Id, inviter.TenantId, inviter.UserId, inviter.PermissionVersion,
+                tenant.RolePolicyVersion, permissions);
+            if (snapshot is null
+                || snapshot.PermissionVersion != invitation.InviterPermissionVersion
+                || tenant.RolePolicyVersion != invitation.InviterRolePolicyVersion
+                || invitedRoles.Length != invitedRoleIds.Length
+                || !TenantRoleAssignmentPolicy.CanAssign(
+                    snapshot, inviterRoles.Any(role => role.IsProtectedOwner), invitedRoles))
             {
                 var revocation = invitation.Revoke();
                 if (revocation.TryGetError(out var revocationError))
@@ -85,11 +110,8 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
             if (!alreadyMember)
             {
                 context.Memberships.Add(TenantMembershipEntity.Create(
-                    invitation.TenantId,
-                    e.UserId,
-                    invitation.Role,
-                    invitation.InviterMembershipId,
-                    now));
+                    invitation.TenantId, e.UserId, invitedRoleIds,
+                    invitation.InviterMembershipId, now));
             }
 
             var acceptance = invitation.Accept(e.UserId, now);
@@ -124,12 +146,16 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
             tenant.Announce();
         }
 
+        var hasPresets = await context.RoleDefinitions
+            .AnyAsync(role => role.TenantId == tenant.Id, ct);
+        if (!hasPresets)
+            context.RoleDefinitions.AddRange(TenantRoleProvisioning.CreatePresets(tenant.Id));
         var hasOwnerMembership = await context.Memberships
             .AnyAsync(membership => membership.TenantId == tenant.Id && membership.UserId == e.UserId, ct);
         if (!hasOwnerMembership)
         {
-            context.Memberships.Add(
-                TenantMembershipEntity.Create(tenant.Id, e.UserId, TenantRole.Owner, null, now));
+            context.Memberships.Add(TenantMembershipEntity.Create(
+                tenant.Id, e.UserId, [SystemPresetIds.For(tenant.Id, "Owner")], null, now));
         }
     }
 }

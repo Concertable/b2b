@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Errors;
@@ -22,7 +23,7 @@ public sealed class TenantServiceTests
     private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<IMembershipContext> membershipContext;
     private readonly Mock<IMembershipResolver> membershipResolver;
-    private readonly Mock<IPermissionCatalog> permissionCatalog;
+    private readonly Mock<IRoleRepository> roles;
     private readonly TenantService service;
 
     public TenantServiceTests()
@@ -35,23 +36,20 @@ public sealed class TenantServiceTests
         this.membershipResolver = new Mock<IMembershipResolver>();
         this.membershipContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(Guid.NewGuid(), tenantContext.Object.TenantId ?? Guid.Empty,
-                Guid.NewGuid(), TenantRole.Owner, 1));
+                Guid.NewGuid(), 1, 1, AuthorizationCatalog.Presets["Owner"].Permissions.ToImmutableDictionary()));
         this.membershipResolver.Setup(resolver => resolver.ResolveSnapshotAsync(
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => (Option<MembershipSnapshot>)expected);
-        this.permissionCatalog = new Mock<IPermissionCatalog>();
-        this.permissionCatalog.Setup(catalog => catalog.Grants(
-                TenantRole.Owner, It.IsAny<TenantPermission>()))
-            .Returns(true);
+        this.roles = new Mock<IRoleRepository>();
         this.service = new TenantService(
             repository.Object,
             membershipRepository.Object,
+            roles.Object,
             invitationRepository.Object,
             tenantContext.Object,
             membershipContext.Object,
             membershipResolver.Object,
             new VatPolicy(new UkVatCalculator()),
-            permissionCatalog.Object,
             new ImmediateUnitOfWorkBehavior(),
             TimeProvider.System,
             [],
@@ -479,15 +477,16 @@ public sealed class TenantServiceTests
         var userId = Guid.NewGuid();
         membershipRepository
             .Setup(repository => repository.GetMembershipsAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new UserMembership(Guid.NewGuid(), tenantId, "Bare Ltd", TenantRole.Door, 1, [])]);
-        permissionCatalog
-            .Setup(catalog => catalog.For(TenantRole.Door))
-            .Returns(new HashSet<TenantPermission> { TenantPermission.OperationsView, TenantPermission.ConcertsCheckIn });
+            .ReturnsAsync([new UserMembership(
+                new MembershipSnapshot(
+                    Guid.NewGuid(), tenantId, userId, 1, 1,
+                    AuthorizationCatalog.Presets["Door"].Permissions.ToImmutableDictionary()),
+                "Bare Ltd", [new RoleSummaryDto(Guid.NewGuid(), "Door", false)], [])]);
 
         var memberships = await service.GetMembershipsAsync(userId);
 
         Assert.Equal(
-            [TenantPermission.ConcertsCheckInName, TenantPermission.OperationsViewName],
+            [TenantPermission.ConcertsCheckIn.Value, TenantPermission.OperationsView.Value],
             memberships.Single().Permissions.Order());
     }
 }

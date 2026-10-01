@@ -20,7 +20,6 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly IPermissionCatalog permissionCatalog;
     private readonly TimeProvider timeProvider;
 
     public ConcertWorkflow(
@@ -31,7 +30,6 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        IPermissionCatalog permissionCatalog,
         TimeProvider timeProvider)
     {
         this.privilegedRepository = privilegedRepository;
@@ -41,7 +39,6 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.permissionCatalog = permissionCatalog;
         this.timeProvider = timeProvider;
     }
 
@@ -126,7 +123,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsManage))
+            || !actor.HasPermission(TenantPermission.ConcertsManage))
             return new CancelConcertError.NotPermitted();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(concertId, ct);
@@ -151,7 +148,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         return actorOption.TryGetValue(out var actor)
-            && permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsManage)
+            && actor.HasPermission(TenantPermission.ConcertsManage)
             && await CanCancelAsync(concertId, actor, ct);
     }
 
@@ -162,7 +159,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         privilegedRepository.CanManageAsync(
             concertId,
             actor,
-            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ConcertsManage),
+            actor.AudienceFor(TenantPermission.ConcertsManage),
             timeProvider.GetUtcNow().UtcDateTime,
             ct);
 }

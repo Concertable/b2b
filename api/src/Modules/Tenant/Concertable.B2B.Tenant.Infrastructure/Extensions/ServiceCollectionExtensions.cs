@@ -40,6 +40,7 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
+        services.AddHealthChecks().AddCheck<TenantAuthorizationCatalogHealthCheck>("authorization-catalog");
         services.AddSingleton<TenantConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<TenantConfigurationProvider>());
 
@@ -58,6 +59,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IMembershipService, MembershipService>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IInvitationService, InvitationService>();
         services.AddScoped<ITenantActivityRepository, TenantActivityRepository>();
         services.AddScoped<ITenantActivityService, TenantActivityService>();

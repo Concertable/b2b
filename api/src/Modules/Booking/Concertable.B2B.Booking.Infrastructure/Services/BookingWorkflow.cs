@@ -43,7 +43,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly ILogger<BookingWorkflow> logger;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
 
     public BookingWorkflow(
@@ -63,7 +62,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         ILogger<BookingWorkflow> logger,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor)
     {
         this.bookingRepository = bookingRepository;
@@ -82,7 +80,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.logger = logger;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
     }
 
@@ -161,7 +158,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.BookingsCancel))
+            || !actor.HasPermission(TenantPermission.BookingsCancel))
             return new CancelBookingError.NotPermitted();
 
         var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);
@@ -186,7 +183,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         return actorOption.TryGetValue(out var actor)
-            && permissionCatalog.Grants(actor.Role, TenantPermission.BookingsCancel)
+            && actor.HasPermission(TenantPermission.BookingsCancel)
             && await CanCancelAsync(bookingId, actor, ct);
     }
 
@@ -197,7 +194,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         privilegedRepository.CanCancelAsync(
             bookingId,
             actor,
-            permissionCatalog.AudienceFor(actor.Role, TenantPermission.BookingsCancel),
+            actor.AudienceFor(TenantPermission.BookingsCancel),
             timeProvider.GetUtcNow().UtcDateTime,
             ct);
 

@@ -1,0 +1,61 @@
+{
+  "permissions": [
+    {
+      "name": "bookings.cancel",
+      "symbol": "BookingsCancel",
+      "label": "Cancel bookings",
+      "category": "Booking",
+      "assignableAudiences": [
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "booking",
+          "facet": "Operations",
+          "policy": "either_principal",
+          "requiresScopes": [
+            "Operations"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "terms.read",
+      "symbol": "TermsRead",
+      "label": "Read agreement terms",
+      "category": "Booking",
+      "assignableAudiences": [
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources",
+        "Finance": "TenantResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "application",
+          "facet": "Proposal",
+          "policy": "application_grant",
+          "requiresScopes": [
+            "Proposal"
+          ]
+        },
+        {
+          "resource": "contract",
+          "facet": "Read",
+          "policy": "contract_grant",
+          "requiresScopes": [
+            "Read"
+          ]
+        }
+      ]
+    }
+  ]
+}

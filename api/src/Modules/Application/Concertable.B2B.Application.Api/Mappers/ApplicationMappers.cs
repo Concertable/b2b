@@ -29,19 +29,18 @@ internal static class ApplicationMappers
     extension(ApplicationProposal dto)
     {
         public ApplicationProposalResponse ToResponse(
-            MembershipSnapshot? actor,
-            IPermissionCatalog permissions)
+            MembershipSnapshot? actor)
         {
             var isPending = dto.State == ApplicationState.Applied;
             var canDecide = actor is { } member
                 && member.TenantId == dto.VenueTenantId
-                && permissions.Grants(member.Role, TenantPermission.ApplicationsDecide);
+                && member.HasPermission(TenantPermission.ApplicationsDecide);
             var canSubmit = actor is { } submitter
                 && submitter.TenantId == dto.ArtistTenantId
-                && permissions.Grants(submitter.Role, TenantPermission.ApplicationsSubmit);
+                && submitter.HasPermission(TenantPermission.ApplicationsSubmit);
             var canReadTerms = actor is { } reader
                 && (reader.TenantId == dto.VenueTenantId || reader.TenantId == dto.ArtistTenantId)
-                && permissions.Grants(reader.Role, TenantPermission.TermsRead);
+                && reader.HasPermission(TenantPermission.TermsRead);
             var checkoutCapable = dto.Opportunity.Deal.DealType.RequiresAcceptCheckout();
 
             return new ApplicationProposalResponse(
@@ -81,9 +80,8 @@ internal static class ApplicationMappers
     extension(IReadOnlyList<ApplicationProposal> proposals)
     {
         public IReadOnlyList<ApplicationProposalResponse> ToResponses(
-            MembershipSnapshot? actor,
-            IPermissionCatalog permissions) =>
-            proposals.Select(proposal => proposal.ToResponse(actor, permissions)).ToList();
+            MembershipSnapshot? actor) =>
+            proposals.Select(proposal => proposal.ToResponse(actor)).ToList();
     }
 
     private static ApplicationStatus ToStatus(

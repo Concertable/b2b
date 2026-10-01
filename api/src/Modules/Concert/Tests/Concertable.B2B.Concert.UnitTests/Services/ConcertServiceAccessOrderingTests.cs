@@ -1,6 +1,7 @@
 using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
+using System.Collections.Immutable;
+
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
@@ -23,8 +24,10 @@ public sealed class ConcertServiceAccessOrderingTests
         Guid.NewGuid(),
         Guid.NewGuid(),
         Guid.NewGuid(),
-        TenantRole.Owner,
-        1);
+        1,
+        1,
+        ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
+            TenantPermission.ResourcesShare, ResourceAudience.TenantResources));
 
     [Fact]
     public async Task RevokeSummaryShare_WithoutConcertAuthority_DoesNotLoadGrants()
@@ -81,7 +84,6 @@ public sealed class ConcertServiceAccessOrderingTests
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var membership = new Mock<IMembershipContext>();
         var resolution = new Mock<ITenantResolver>();
-        var permissions = new Mock<IPermissionCatalog>();
         var executor = new ImmediateCommandExecutor();
         repository
             .Setup(value => value.GetIdentityByIdForUpdateAsync(1, It.IsAny<CancellationToken>()))
@@ -107,12 +109,6 @@ public sealed class ConcertServiceAccessOrderingTests
                 It.IsAny<Guid?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((Option<TenantResolution>)new TenantResolution(actor, true, actor));
-        permissions
-            .Setup(value => value.Grants(actor.Role, TenantPermission.ResourcesShare))
-            .Returns(true);
-        permissions
-            .Setup(value => value.AudienceFor(actor.Role, TenantPermission.ResourcesShare))
-            .Returns(ResourceAudience.TenantResources);
 
         var service = new ConcertService(
             Mock.Of<IConcertRepository>(),
@@ -133,7 +129,6 @@ public sealed class ConcertServiceAccessOrderingTests
             Mock.Of<ITenantContext>(),
             membership.Object,
             Mock.Of<IMembershipResolver>(),
-            permissions.Object,
             executor,
             Mock.Of<IResourceAccessContext>(value => value.UtcNow == DateTime.UnixEpoch),
             Mock.Of<ILogger<ConcertService>>());

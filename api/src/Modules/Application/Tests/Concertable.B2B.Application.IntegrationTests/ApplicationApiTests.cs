@@ -5,7 +5,6 @@ using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
@@ -458,8 +457,8 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var replacement = fixture.SeedState.VenueManager3;
         var client = fixture.CreateClient(creator);
         var promote = await client.PutAsJsonAsync(
-            $"/api/organization/members/{replacement.Id}/role",
-            new { role = TenantRole.Owner.ToString() });
+            $"/api/organization/members/{replacement.Id}/roles",
+            new { roleIds = new[] { SystemPresetIds.For(fixture.SeedState.DoorSplitApp.VenueTenantId, "Owner") } });
         await promote.ShouldBe(HttpStatusCode.NoContent);
         var remove = await client.DeleteAsync($"/api/organization/members/{creator.Id}");
         await remove.ShouldBe(HttpStatusCode.NoContent);
@@ -488,8 +487,8 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var replacement = fixture.SeedState.VenueManager3;
         var client = fixture.CreateClient(creator);
         var promote = await client.PutAsJsonAsync(
-            $"/api/organization/members/{replacement.Id}/role",
-            new { role = TenantRole.Owner.ToString() });
+            $"/api/organization/members/{replacement.Id}/roles",
+            new { roleIds = new[] { SystemPresetIds.For(fixture.SeedState.DoorSplitApp.VenueTenantId, "Owner") } });
         await promote.ShouldBe(HttpStatusCode.NoContent);
 
         var enteredSend = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -561,16 +560,26 @@ public sealed class ApplicationApiTests : IAsyncLifetime
             changeMembers.Transaction = transaction;
             changeMembers.CommandText = """
                 UPDATE tenant."Memberships"
-                SET "Role" = @role, "PermissionVersion" = "PermissionVersion" + 1
+                SET "PermissionVersion" = "PermissionVersion" + 1
+                WHERE "TenantId" = @tenantId AND "UserId" = @replacementId;
+                DELETE FROM tenant."MembershipRoleAssignments" assignments
+                USING tenant."Memberships" memberships
+                WHERE assignments."TenantId" = memberships."TenantId"
+                  AND assignments."MembershipId" = memberships."Id"
+                  AND memberships."TenantId" = @tenantId
+                  AND memberships."UserId" = @replacementId;
+                INSERT INTO tenant."MembershipRoleAssignments" ("TenantId", "MembershipId", "RoleId", "IssuedByMembershipId", "CreatedAt")
+                SELECT "TenantId", "Id", @ownerRoleId, NULL, NOW()
+                FROM tenant."Memberships"
                 WHERE "TenantId" = @tenantId AND "UserId" = @replacementId;
                 DELETE FROM tenant."Memberships"
                 WHERE "TenantId" = @tenantId AND "UserId" = @creatorId
                 """;
-            changeMembers.Parameters.AddWithValue("role", (int)TenantRole.Owner);
+            changeMembers.Parameters.AddWithValue("ownerRoleId", SystemPresetIds.For(application.VenueTenantId, "Owner"));
             changeMembers.Parameters.AddWithValue("tenantId", application.VenueTenantId);
             changeMembers.Parameters.AddWithValue("replacementId", replacement.Id);
             changeMembers.Parameters.AddWithValue("creatorId", creator.Id);
-            Assert.Equal(2, await changeMembers.ExecuteNonQueryAsync());
+            Assert.Equal(4, await changeMembers.ExecuteNonQueryAsync());
         }
 
         var handler = scope.ServiceProvider.GetRequiredService<

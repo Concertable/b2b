@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Interfaces;
@@ -19,27 +20,35 @@ public sealed class InvitationServiceTests
     private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<IMembershipContext> membershipContext;
     private readonly Mock<ICurrentUser> currentUser;
+    private readonly Mock<IRoleRepository> roles;
+    private readonly Mock<IMembershipResolver> membershipResolver;
     private readonly InvitationService service;
 
     public InvitationServiceTests()
     {
-        this.tenantRepository = new Mock<ITenantRepository>();
-        this.membershipRepository = new Mock<IMembershipRepository>();
-        this.repository = new Mock<IInvitationRepository>();
-        this.tenantContext = new Mock<ITenantContext>();
-        this.membershipContext = new Mock<IMembershipContext>();
-        this.currentUser = new Mock<ICurrentUser>();
-        this.service = new InvitationService(
-            this.tenantRepository.Object,
-            this.membershipRepository.Object,
-            this.repository.Object,
-            this.tenantContext.Object,
-            this.membershipContext.Object,
-            this.currentUser.Object,
+        tenantRepository = new Mock<ITenantRepository>();
+        membershipRepository = new Mock<IMembershipRepository>();
+        repository = new Mock<IInvitationRepository>();
+        tenantContext = new Mock<ITenantContext>();
+        membershipContext = new Mock<IMembershipContext>();
+        currentUser = new Mock<ICurrentUser>();
+        roles = new Mock<IRoleRepository>();
+        membershipResolver = new Mock<IMembershipResolver>();
+        membershipResolver.Setup(value => value.ResolveSnapshotAsync(
+                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
+        service = new InvitationService(
+            tenantRepository.Object,
+            membershipRepository.Object,
+            repository.Object,
+            tenantContext.Object,
+            currentUser.Object,
             Mock.Of<IUserModule>(),
             TimeProvider.System,
-            Mock.Of<IPermissionCatalog>(),
-            new ImmediateUnitOfWorkBehavior());
+            new ImmediateUnitOfWorkBehavior(),
+            roles.Object,
+            membershipContext.Object,
+            membershipResolver.Object);
     }
 
     [Fact]
@@ -47,49 +56,30 @@ public sealed class InvitationServiceTests
     {
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
-        var inviter = TenantMembershipEntity.Create(
-            tenantId,
-            Guid.NewGuid(),
-            TenantRole.Owner,
-            invitedBy: null,
-            DateTime.UtcNow.AddDays(-10));
+        var inviterRole = Preset(tenantId, "Owner");
+        var invitedRole = Preset(tenantId, "Staff");
+        var inviter = TenantMembershipEntity.Create(tenantId, Guid.NewGuid(), [inviterRole.Id], null, DateTime.UtcNow.AddDays(-10));
         var invitation = TenantInvitationEntity.Create(
-            tenantId,
-            "member@example.com",
-            TenantRole.Staff,
-            inviter.Id,
-            inviter.PermissionVersion,
-            DateTime.UtcNow.AddDays(-8),
-            TimeSpan.FromDays(7));
-        var tenant = TenantEntity.Create(
-            "Acme Ltd",
-            "contact@acme.test",
-            Guid.NewGuid(),
-            DateTime.UtcNow,
-            tenantId);
-        this.currentUser.SetupGet(user => user.Id).Returns(userId);
-        this.currentUser.SetupGet(user => user.Email).Returns(invitation.Email);
-        this.repository
-            .Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(invitation);
-        this.repository
-            .Setup(value => value.GetByIdForUpdateAsync(invitation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(invitation);
-        this.tenantRepository
-            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tenant);
-        this.membershipRepository
-            .Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-        this.membershipRepository
-            .Setup(value => value.FindMembershipByIdAsync(tenantId, inviter.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(inviter);
+            tenantId, "member@example.com", [invitedRole.Id], inviter.Id, 1, 1,
+            DateTime.UtcNow.AddDays(-8), TimeSpan.FromDays(7));
+        var tenant = TenantEntity.Create("Acme Ltd", "contact@acme.test", Guid.NewGuid(), DateTime.UtcNow, tenantId);
+        currentUser.SetupGet(value => value.Id).Returns(userId);
+        currentUser.SetupGet(value => value.Email).Returns(invitation.Email);
+        repository.Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
+        repository.Setup(value => value.GetByIdForUpdateAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
+        tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        membershipRepository.Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(inviter.Id)), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Snapshot(inviter, "Owner")]);
+        roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([invitedRole]);
+        roles.Setup(value => value.HasProtectedOwnerAsync(tenantId, inviter.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-        var result = await this.service.AcceptInvitationAsync(invitation.Id);
+        var result = await service.AcceptInvitationAsync(invitation.Id);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<AcceptInvitationError.InvitationExpired>(error);
-        this.membershipRepository.Verify(
+        membershipRepository.Verify(
             value => value.InsertAsync(It.IsAny<TenantMembershipEntity>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -98,43 +88,26 @@ public sealed class InvitationServiceTests
     public async Task InviteAsync_ManagerAssigningManager_ReturnsNotPermitted()
     {
         var tenantId = Guid.NewGuid();
-        var actor = TenantMembershipEntity.Create(
-            tenantId,
-            Guid.NewGuid(),
-            TenantRole.Manager,
-            invitedBy: null,
-            DateTime.UtcNow);
-        var tenant = TenantEntity.Create(
-            "Acme Ltd",
-            "contact@acme.test",
-            Guid.NewGuid(),
-            DateTime.UtcNow,
-            tenantId);
-        this.tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
-        this.membershipContext
-            .SetupGet(context => context.Membership)
-            .Returns(new MembershipSnapshot(
-                actor.Id,
-                actor.TenantId,
-                actor.UserId,
-                actor.Role,
-                actor.PermissionVersion));
-        this.tenantRepository
-            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tenant);
-        this.membershipRepository
-            .Setup(value => value.FindMembershipByIdAsync(tenantId, actor.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(actor);
+        var actorRole = Preset(tenantId, "Manager");
+        var targetRole = Preset(tenantId, "Manager");
+        var actor = Snapshot(TenantMembershipEntity.Create(tenantId, Guid.NewGuid(), [actorRole.Id], null, DateTime.UtcNow), "Manager");
+        var tenant = TenantEntity.Create("Acme Ltd", "contact@acme.test", Guid.NewGuid(), DateTime.UtcNow, tenantId);
+        tenantContext.SetupGet(value => value.TenantId).Returns(tenantId);
+        membershipContext.SetupGet(value => value.Membership).Returns(actor);
+        tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([targetRole]);
+        roles.Setup(value => value.HasProtectedOwnerAsync(tenantId, actor.MembershipId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await this.service.InviteAsync(new InviteMemberRequest
+        var result = await service.InviteAsync(new InviteMemberRequest
         {
             Email = "member@example.com",
-            Role = TenantRole.Manager,
+            RoleIds = [targetRole.Id],
         });
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<InviteMemberError.NotPermitted>(error);
-        this.repository.Verify(
+        repository.Verify(
             value => value.InsertAsync(It.IsAny<TenantInvitationEntity>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -144,49 +117,30 @@ public sealed class InvitationServiceTests
     {
         var userId = Guid.NewGuid();
         var tenantId = Guid.NewGuid();
-        var inviter = TenantMembershipEntity.Create(
-            tenantId,
-            Guid.NewGuid(),
-            TenantRole.Staff,
-            invitedBy: null,
-            DateTime.UtcNow);
+        var inviterRole = Preset(tenantId, "Staff");
+        var invitedRole = Preset(tenantId, "Manager");
+        var inviter = TenantMembershipEntity.Create(tenantId, Guid.NewGuid(), [inviterRole.Id], null, DateTime.UtcNow);
         var invitation = TenantInvitationEntity.Create(
-            tenantId,
-            "member@example.com",
-            TenantRole.Manager,
-            inviter.Id,
-            1,
-            DateTime.UtcNow,
-            TimeSpan.FromDays(7));
-        var tenant = TenantEntity.Create(
-            "Acme Ltd",
-            "contact@acme.test",
-            Guid.NewGuid(),
-            DateTime.UtcNow,
-            tenantId);
-        this.currentUser.SetupGet(user => user.Id).Returns(userId);
-        this.currentUser.SetupGet(user => user.Email).Returns(invitation.Email);
-        this.repository
-            .Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(invitation);
-        this.repository
-            .Setup(value => value.GetByIdForUpdateAsync(invitation.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(invitation);
-        this.tenantRepository
-            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(tenant);
-        this.membershipRepository
-            .Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-        this.membershipRepository
-            .Setup(value => value.FindMembershipByIdAsync(tenantId, inviter.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(inviter);
+            tenantId, "member@example.com", [invitedRole.Id], inviter.Id, 1, 1,
+            DateTime.UtcNow, TimeSpan.FromDays(7));
+        var tenant = TenantEntity.Create("Acme Ltd", "contact@acme.test", Guid.NewGuid(), DateTime.UtcNow, tenantId);
+        currentUser.SetupGet(value => value.Id).Returns(userId);
+        currentUser.SetupGet(value => value.Email).Returns(invitation.Email);
+        repository.Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
+        repository.Setup(value => value.GetByIdForUpdateAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
+        tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        membershipRepository.Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(inviter.Id)), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Snapshot(inviter, "Staff")]);
+        roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([invitedRole]);
+        roles.Setup(value => value.HasProtectedOwnerAsync(tenantId, inviter.Id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var result = await this.service.AcceptInvitationAsync(invitation.Id);
+        var result = await service.AcceptInvitationAsync(invitation.Id);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<AcceptInvitationError.InviterNotAuthorized>(error);
-        this.membershipRepository.Verify(
+        membershipRepository.Verify(
             value => value.InsertAsync(It.IsAny<TenantMembershipEntity>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -194,12 +148,27 @@ public sealed class InvitationServiceTests
     [Fact]
     public async Task AcceptInvitationAsync_UnauthenticatedUser_ReturnsForbiddenWithoutLoadingInvitation()
     {
-        var result = await this.service.AcceptInvitationAsync(Guid.NewGuid());
+        var result = await service.AcceptInvitationAsync(Guid.NewGuid());
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<AcceptInvitationError.Unauthenticated>(error);
-        this.repository.Verify(
+        repository.Verify(
             value => value.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
+
+    private static TenantRoleDefinition Preset(Guid tenantId, string key)
+    {
+        var preset = AuthorizationCatalog.Presets[key];
+        return TenantRoleDefinition.CreateSystemPreset(tenantId, key);
+    }
+
+    private static MembershipSnapshot Snapshot(TenantMembershipEntity membership, string key) =>
+        new(
+            membership.Id,
+            membership.TenantId,
+            membership.UserId,
+            membership.PermissionVersion,
+            1,
+            AuthorizationCatalog.Presets[key].Permissions.ToImmutableDictionary());
 }

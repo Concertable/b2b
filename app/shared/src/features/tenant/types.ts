@@ -1,36 +1,23 @@
 import type { User } from "@concertable/shared/features/auth/types";
-import type { TENANT_BUSINESS_ACTIVITIES, TENANT_ROLES } from "./constants";
+import type { TENANT_BUSINESS_ACTIVITIES } from "./constants";
+import type { TenantPermission } from "./permissions.generated";
 
 export type TenantBusinessActivity = (typeof TENANT_BUSINESS_ACTIVITIES)[number];
-export type TenantRole = (typeof TENANT_ROLES)[number];
+export type { TenantPermission } from "./permissions.generated";
 
-export type TenantPermission =
-  | "operations.view"
-  | "profile.edit"
-  | "payouts.manage"
-  | "settlement.view"
-  | "settlement.trigger"
-  | "tenant.settings.edit"
-  | "tenant.delete"
-  | "members.invite"
-  | "members.remove"
-  | "members.manage_roles"
-  | "messages.read"
-  | "messages.send"
-  | "concerts.ops_edit"
-  | "concerts.check_in"
-  | "opportunities.manage"
-  | "applications.decide"
-  | "applications.submit"
-  | "concerts.manage"
-  | "resources.share";
+export interface RoleSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly isProtectedOwner: boolean;
+}
 
 export interface Membership {
   readonly membershipId: string;
   readonly tenantId: string;
   readonly legalName: string;
-  readonly role: TenantRole;
+  readonly roles: ReadonlyArray<RoleSummary>;
   readonly permissionVersion: number;
+  readonly rolePolicyVersion: number;
   readonly businessActivities: ReadonlyArray<TenantBusinessActivity>;
   readonly permissions: ReadonlyArray<TenantPermission>;
 }
@@ -40,6 +27,7 @@ export interface TenantSession {
   readonly tenantId: string;
   readonly membershipId: string;
   readonly permissionVersion: number;
+  readonly rolePolicyVersion: number;
 }
 
 export interface TenantSwitchBoundary {

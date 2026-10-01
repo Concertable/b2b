@@ -35,6 +35,13 @@ internal sealed class InvitationRepository : Repository<TenantInvitationEntity>,
         return await context.Invitations.SingleOrDefaultAsync(invitation => invitation.Id == invitationId, ct);
     }
 
+    public async Task<IReadOnlyList<TenantInvitationEntity>> ListPendingAssignedToRoleAsync(
+        Guid tenantId, Guid roleId, CancellationToken ct = default) =>
+        await context.Invitations.Where(invitation =>
+            invitation.TenantId == tenantId
+            && invitation.Status == InvitationStatus.Pending
+            && invitation.Assignments.Any(row => row.RoleId == roleId)).ToListAsync(ct);
+
     public async Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Invitations.Where(i => i.TenantId == tenantId).ToListAsync(ct);
 

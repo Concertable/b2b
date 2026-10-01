@@ -1,6 +1,7 @@
 using Concertable.B2B.Booking.Contracts;
+using System.Collections.Immutable;
+
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Application.Errors;
@@ -31,8 +32,10 @@ public sealed class ConcertWorkflowTests
         Guid.NewGuid(),
         Guid.NewGuid(),
         Guid.NewGuid(),
-        TenantRole.Owner,
-        1);
+        1,
+        1,
+        ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
+            TenantPermission.ConcertsManage, ResourceAudience.TenantResources));
 
     public ConcertWorkflowTests()
     {
@@ -43,13 +46,6 @@ public sealed class ConcertWorkflowTests
         membershipResolver
             .Setup(resolver => resolver.ResolveSnapshotAsync(actor, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Option<MembershipSnapshot>)actor);
-        var permissionCatalog = new Mock<IPermissionCatalog>();
-        permissionCatalog
-            .Setup(catalog => catalog.Grants(actor.Role, TenantPermission.ConcertsManage))
-            .Returns(true);
-        permissionCatalog
-            .Setup(catalog => catalog.AudienceFor(actor.Role, TenantPermission.ConcertsManage))
-            .Returns(ResourceAudience.TenantResources);
         concertRepository
             .Setup(repository => repository.CanManageAsync(
                 It.IsAny<int>(),
@@ -67,7 +63,6 @@ public sealed class ConcertWorkflowTests
             immediateBehavior,
             membership.Object,
             membershipResolver.Object,
-            permissionCatalog.Object,
             TimeProvider.System);
         commandExecutor.Workflow = workflow;
     }

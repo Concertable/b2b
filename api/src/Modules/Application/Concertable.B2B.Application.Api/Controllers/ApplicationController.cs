@@ -14,16 +14,13 @@ internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
     private readonly IMembershipContext membership;
-    private readonly IPermissionCatalog permissionCatalog;
 
     public ApplicationController(
         IApplicationService applicationService,
-        IMembershipContext membership,
-        IPermissionCatalog permissionCatalog)
+        IMembershipContext membership)
     {
         this.applicationService = applicationService;
         this.membership = membership;
-        this.permissionCatalog = permissionCatalog;
     }
 
     [HasPermission(TenantPermission.ApplicationsDecideName)]
@@ -34,7 +31,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetByOpportunityIdAsync(id, ct);
-        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
@@ -46,7 +43,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.ApplyAsync(opportunityId, request.ESignature, ct);
-        var response = result.Map(proposal => proposal.ToResponse(membership.Membership, permissionCatalog));
+        var response = result.Map(proposal => proposal.ToResponse(membership.Membership));
         return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}/proposal");
     }
 
@@ -56,7 +53,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetPendingForArtist(CancellationToken ct)
     {
         var result = await applicationService.GetPendingForArtistAsync(ct);
-        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership)).ToOkOrProblem();
     }
 
     [HttpGet("artist/recently-denied")]
@@ -66,7 +63,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetRecentDeniedForArtistAsync(ct);
-        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership)).ToOkOrProblem();
     }
 
     [HttpGet("venue/current")]
@@ -77,7 +74,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetPendingForCurrentVenueAsync(ct);
-        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership)).ToOkOrProblem();
     }
 
     [HttpGet("artist/current")]
@@ -88,7 +85,7 @@ internal sealed class ApplicationController : ControllerBase
         CancellationToken ct)
     {
         var result = await applicationService.GetCurrentForCurrentArtistAsync(ct);
-        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
+        return result.Map(proposals => proposals.ToResponses(membership.Membership)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.OperationsViewName)]
@@ -104,7 +101,7 @@ internal sealed class ApplicationController : ControllerBase
     public async Task<ActionResult<ApplicationProposalResponse>> GetProposal(int id, CancellationToken ct)
     {
         var result = await applicationService.GetProposalAsync(id, ct);
-        return result.Map(proposal => proposal.ToResponse(membership.Membership, permissionCatalog)).ToOkOrProblem();
+        return result.Map(proposal => proposal.ToResponse(membership.Membership)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.ApplicationsSubmitName)]

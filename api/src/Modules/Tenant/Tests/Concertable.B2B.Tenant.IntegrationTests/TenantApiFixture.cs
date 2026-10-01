@@ -2,6 +2,7 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using System.Runtime.ExceptionServices;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Domain.Enums;
@@ -23,7 +24,7 @@ public sealed class TenantApiFixture : ApiFixture
     internal VerificationReviewRaceInterceptor VerificationReviewRace { get; } = new();
 
     public IQueryable<TenantEntity> Tenants => dbContext.Tenants.AsNoTracking();
-    public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.AsNoTracking();
+    public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.Include(membership => membership.Assignments).AsNoTracking();
     public IQueryable<TenantBusinessActivityEntity> BusinessActivities => dbContext.BusinessActivities.AsNoTracking();
     public IQueryable<TenantInvitationEntity> Invitations => dbContext.Invitations.AsNoTracking();
     public IQueryable<TenantVerificationEntity> Verifications =>
@@ -40,39 +41,41 @@ public sealed class TenantApiFixture : ApiFixture
             envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
 
     public Task AddOwnerMembershipAsync(Guid tenantId, Guid userId) =>
-        AddMembershipAsync(tenantId, userId, TenantRole.Owner);
+        AddMembershipAsync(tenantId, userId, "Owner");
 
-    public async Task AddMembershipAsync(Guid tenantId, Guid userId, TenantRole role)
+    public async Task AddMembershipAsync(Guid tenantId, Guid userId, string presetKey)
     {
         dbContext.Memberships.Add(
-            TenantMembershipEntity.Create(tenantId, userId, role, invitedBy: null, DateTime.UtcNow));
+            TenantMembershipEntity.Create(tenantId, userId, [RoleId(tenantId, presetKey)], invitedBy: null, DateTime.UtcNow));
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task ChangeMembershipRoleAsync(Guid tenantId, Guid userId, TenantRole role)
+    public async Task ChangeMembershipRoleAsync(Guid tenantId, Guid userId, string presetKey)
     {
         var membership = await dbContext.Memberships.SingleAsync(
             candidate => candidate.TenantId == tenantId && candidate.UserId == userId);
-        membership.ChangeRole(role);
+        membership.ReplaceRoles([RoleId(tenantId, presetKey)], Guid.NewGuid(), DateTime.UtcNow);
         await dbContext.SaveChangesAsync();
     }
 
     public async Task<TenantInvitationEntity> AddInvitationAsync(
         Guid tenantId,
         string email,
-        TenantRole role,
+        string presetKey,
         Guid inviterUserId,
         DateTime expiresAt)
     {
         var now = DateTime.UtcNow;
+        var tenant = await dbContext.Tenants.SingleOrDefaultAsync(value => value.Id == tenantId);
         var inviter = await dbContext.Memberships.SingleOrDefaultAsync(
             membership => membership.TenantId == tenantId && membership.UserId == inviterUserId);
         var invitation = TenantInvitationEntity.Create(
             tenantId,
             email.Trim().ToLowerInvariant(),
-            role,
+            [RoleId(tenantId, presetKey)],
             inviter?.Id ?? Guid.NewGuid(),
             inviter?.PermissionVersion ?? 1,
+            tenant?.RolePolicyVersion ?? 1,
             now,
             expiresAt - now);
         invitation.ClearDomainEvents();
@@ -80,6 +83,7 @@ public sealed class TenantApiFixture : ApiFixture
         await dbContext.SaveChangesAsync();
         return invitation;
     }
+    internal static Guid RoleId(Guid tenantId, string presetKey) => SystemPresetIds.For(tenantId, presetKey);
 
     public async Task<TenantVerificationEntity> AddRejectedVerificationAsync(
         Guid tenantId,

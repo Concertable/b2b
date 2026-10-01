@@ -10,7 +10,7 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 /// </summary>
 internal interface IMembershipService
 {
-    Task<IReadOnlyList<MemberDto>> ListMembersAsync(CancellationToken ct = default);
-    Task<UnitResult<ChangeMemberRoleError>> ChangeRoleAsync(Guid userId, ChangeMemberRoleRequest request, CancellationToken ct = default);
+    Task<Result<IReadOnlyList<MemberDto>, ListMembersError>> ListMembersAsync(CancellationToken ct = default);
+    Task<UnitResult<ChangeMemberRolesError>> ChangeRolesAsync(Guid userId, ChangeMemberRolesRequest request, CancellationToken ct = default);
     Task<UnitResult<RemoveMemberError>> RemoveMemberAsync(Guid userId, CancellationToken ct = default);
 }

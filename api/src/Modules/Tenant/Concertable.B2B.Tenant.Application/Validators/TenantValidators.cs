@@ -59,11 +59,11 @@ internal sealed class ChangeBusinessActivityRequestValidator : AbstractValidator
     }
 }
 
-internal sealed class ChangeMemberRoleRequestValidator : AbstractValidator<ChangeMemberRoleRequest>
+internal sealed class ChangeMemberRolesRequestValidator : AbstractValidator<ChangeMemberRolesRequest>
 {
-    public ChangeMemberRoleRequestValidator()
+    public ChangeMemberRolesRequestValidator()
     {
-        RuleFor(x => x.Role).IsInEnum();
+        RuleFor(x => x.RoleIds).NotEmpty();
     }
 }
 
@@ -76,7 +76,7 @@ internal sealed class InviteMemberRequestValidator : AbstractValidator<InviteMem
             .EmailAddress()
             .MaximumLength(256);
 
-        RuleFor(x => x.Role).IsInEnum();
+        RuleFor(x => x.RoleIds).NotEmpty();
     }
 }
 

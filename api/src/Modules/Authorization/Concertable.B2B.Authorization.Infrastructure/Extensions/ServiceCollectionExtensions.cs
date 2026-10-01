@@ -11,7 +11,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAuthorizationModule(this IServiceCollection services)
     {
         services.AddSingleton<IMembershipContextAccessor, MembershipContextAccessor>();
-        services.AddSingleton<IPermissionCatalog, PermissionCatalog>();
 
         services.AddScoped<MembershipContext>();
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<MembershipContext>());

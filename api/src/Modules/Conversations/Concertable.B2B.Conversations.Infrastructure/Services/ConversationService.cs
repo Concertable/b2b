@@ -23,7 +23,6 @@ internal sealed class ConversationService : IConversationService
     private readonly ITenantResolver tenantResolver;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
     private readonly CommandTransactionAccessor transactions;
     private readonly ITenantContext tenantContext;
@@ -39,7 +38,6 @@ internal sealed class ConversationService : IConversationService
         ITenantResolver tenantResolver,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor,
         CommandTransactionAccessor transactions,
         ITenantContext tenantContext,
@@ -54,7 +52,6 @@ internal sealed class ConversationService : IConversationService
         this.tenantResolver = tenantResolver;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
         this.transactions = transactions;
         this.tenantContext = tenantContext;
@@ -100,8 +97,8 @@ internal sealed class ConversationService : IConversationService
 
         var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, participants, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
-            || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.MessagesSend)
-            || permissionCatalog.AudienceFor(resolution.Actor.Role, TenantPermission.MessagesSend)
+            || !resolution.Actor.HasPermission(TenantPermission.MessagesSend)
+            || resolution.Actor.AudienceFor(TenantPermission.MessagesSend)
                 != ResourceAudience.TenantResources)
             return new CreateConversationError.NotPermitted();
         if (!resolution.ExistingTenantIds.SetEquals(participants))
@@ -197,7 +194,7 @@ internal sealed class ConversationService : IConversationService
             return new SendMessageError.InvalidMessage();
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.MessagesSend))
+            || !actor.HasPermission(TenantPermission.MessagesSend))
             return new SendMessageError.NotPermitted();
         var conversation = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(conversationId, ct);
         if (conversation is null)
@@ -257,7 +254,7 @@ internal sealed class ConversationService : IConversationService
         CancellationToken ct)
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        if (!actorOption.TryGetValue(out var actor) || !permissionCatalog.Grants(actor.Role, TenantPermission.MessagesRead))
+        if (!actorOption.TryGetValue(out var actor) || !actor.HasPermission(TenantPermission.MessagesRead))
             return new ConversationAccessError.NotPermitted();
         var conversation = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(conversationId, ct);
         if (conversation is null)
@@ -326,7 +323,7 @@ internal sealed class ConversationService : IConversationService
         var resolutionOption = await tenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
-            || !permissionCatalog.Grants(resolution.Actor.Role, TenantPermission.ResourcesShare))
+            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConversationMemberError.NotPermitted();
         if (assign && resolution.TargetMembership is null)
             return new AssignConversationMemberError.InvalidMembership();
@@ -421,8 +418,8 @@ internal sealed class ConversationService : IConversationService
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         return actorOption.TryGetValue(out var actor)
-               && permissionCatalog.Grants(actor.Role, TenantPermission.MessagesSend)
-               && permissionCatalog.AudienceFor(actor.Role, TenantPermission.MessagesSend)
+               && actor.HasPermission(TenantPermission.MessagesSend)
+               && actor.AudienceFor(TenantPermission.MessagesSend)
                    == ResourceAudience.TenantResources;
     }
 
@@ -437,7 +434,7 @@ internal sealed class ConversationService : IConversationService
         var conversation = await privilegedRepository.GetWithGrantsByIdAsync(conversationId, ct);
         return actorOption.TryGetValue(out var actor)
                && conversation is not null
-               && permissionCatalog.Grants(actor.Role, permission)
+               && actor.HasPermission(permission)
                && Allows(conversation, actor, permission, scope);
     }
 
@@ -450,7 +447,7 @@ internal sealed class ConversationService : IConversationService
         var conversation = await privilegedRepository.GetWithGrantsByIdAsync(conversationId, ct);
         return actorOption.TryGetValue(out var actor)
                && conversation is not null
-               && permissionCatalog.Grants(actor.Role, TenantPermission.ResourcesShare)
+               && actor.HasPermission(TenantPermission.ResourcesShare)
                && IsPrincipal(conversation, actor.TenantId);
     }
 
@@ -463,7 +460,7 @@ internal sealed class ConversationService : IConversationService
             conversation.AccessGrants,
             scope,
             actor,
-            permissionCatalog.AudienceFor(actor.Role, permission),
+            actor.AudienceFor(permission),
             timeProvider.GetUtcNow().UtcDateTime);
 
     private static bool IsPrincipal(ConversationEntity conversation, Guid tenantId) =>

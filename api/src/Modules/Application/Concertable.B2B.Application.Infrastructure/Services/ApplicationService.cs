@@ -34,7 +34,6 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
 
     public ApplicationService(
@@ -54,7 +53,6 @@ internal sealed class ApplicationService : IApplicationService
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor)
     {
         this.applicationRepository = applicationRepository;
@@ -73,7 +71,6 @@ internal sealed class ApplicationService : IApplicationService
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
     }
 
@@ -325,7 +322,7 @@ internal sealed class ApplicationService : IApplicationService
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            || !actor.HasPermission(TenantPermission.ApplicationsSubmit))
             return new WithdrawApplicationError.NotPermitted();
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
@@ -336,7 +333,7 @@ internal sealed class ApplicationService : IApplicationService
                 application.AccessGrants,
                 ApplicationAccessScope.Proposal,
                 actor,
-                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsSubmit),
+                actor.AudienceFor(TenantPermission.ApplicationsSubmit),
                 timeProvider.GetUtcNow().UtcDateTime))
             return new WithdrawApplicationError.NotPermitted();
         if (application.Withdraw().TryGetError(out var transitionError))
@@ -363,7 +360,7 @@ internal sealed class ApplicationService : IApplicationService
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            || !actor.HasPermission(TenantPermission.ApplicationsDecide))
             return new RejectApplicationError.NotPermitted();
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
@@ -374,7 +371,7 @@ internal sealed class ApplicationService : IApplicationService
                 application.AccessGrants,
                 ApplicationAccessScope.Proposal,
                 actor,
-                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+                actor.AudienceFor(TenantPermission.ApplicationsDecide),
                 timeProvider.GetUtcNow().UtcDateTime))
             return new RejectApplicationError.NotPermitted();
         if (application.Reject().TryGetError(out var transitionError))
@@ -401,7 +398,7 @@ internal sealed class ApplicationService : IApplicationService
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            || !actor.HasPermission(TenantPermission.ApplicationsDecide))
             return new CancelApplicationError.NotPermitted();
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
@@ -412,7 +409,7 @@ internal sealed class ApplicationService : IApplicationService
                 application.AccessGrants,
                 ApplicationAccessScope.Proposal,
                 actor,
-                permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+                actor.AudienceFor(TenantPermission.ApplicationsDecide),
                 timeProvider.GetUtcNow().UtcDateTime))
             return new CancelApplicationError.NotPermitted();
         if (application.Cancel().TryGetError(out var transitionError))
@@ -491,13 +488,13 @@ internal sealed class ApplicationService : IApplicationService
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            || !actor.HasPermission(TenantPermission.ApplicationsSubmit))
             return false;
 
         return await privilegedRepository.CanSubmitAsync(
             applicationId,
             actor,
-            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsSubmit),
+            actor.AudienceFor(TenantPermission.ApplicationsSubmit),
             timeProvider.GetUtcNow().UtcDateTime,
             ct);
     }
@@ -509,13 +506,13 @@ internal sealed class ApplicationService : IApplicationService
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            || !actor.HasPermission(TenantPermission.ApplicationsDecide))
             return false;
 
         return await privilegedRepository.CanDecideAsync(
             applicationId,
             actor,
-            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+            actor.AudienceFor(TenantPermission.ApplicationsDecide),
             timeProvider.GetUtcNow().UtcDateTime,
             ct);
     }

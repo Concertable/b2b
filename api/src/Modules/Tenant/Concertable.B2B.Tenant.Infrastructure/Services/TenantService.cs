@@ -12,12 +12,12 @@ internal sealed class TenantService : ITenantService
 {
     private readonly ITenantRepository repository;
     private readonly IMembershipRepository membershipRepository;
+    private readonly IRoleRepository roles;
     private readonly IInvitationRepository invitationRepository;
     private readonly ITenantContext tenantContext;
     private readonly IMembershipContext membershipContext;
     private readonly IMembershipResolver membershipResolver;
     private readonly IVatPolicy vatPolicy;
-    private readonly IPermissionCatalog permissionCatalog;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly IReadOnlyList<ITenantDeletionGuard> deletionGuards;
@@ -26,12 +26,12 @@ internal sealed class TenantService : ITenantService
     public TenantService(
         ITenantRepository repository,
         IMembershipRepository membershipRepository,
+        IRoleRepository roles,
         IInvitationRepository invitationRepository,
         ITenantContext tenantContext,
         IMembershipContext membershipContext,
         IMembershipResolver membershipResolver,
         IVatPolicy vatPolicy,
-        IPermissionCatalog permissionCatalog,
         IOutboxUnitOfWorkBehavior unitOfWork,
         TimeProvider timeProvider,
         IEnumerable<ITenantDeletionGuard> deletionGuards,
@@ -39,12 +39,12 @@ internal sealed class TenantService : ITenantService
     {
         this.repository = repository;
         this.membershipRepository = membershipRepository;
+        this.roles = roles;
         this.invitationRepository = invitationRepository;
         this.tenantContext = tenantContext;
         this.membershipContext = membershipContext;
         this.membershipResolver = membershipResolver;
         this.vatPolicy = vatPolicy;
-        this.permissionCatalog = permissionCatalog;
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
         this.deletionGuards = deletionGuards.ToList();
@@ -71,13 +71,14 @@ internal sealed class TenantService : ITenantService
         var memberships = await membershipRepository.GetMembershipsAsync(userId, ct);
         return memberships
             .Select(m => new MembershipDto(
-                m.MembershipId,
-                m.TenantId,
+                m.Snapshot.MembershipId,
+                m.Snapshot.TenantId,
                 m.LegalName,
-                m.Role,
-                m.PermissionVersion,
+                m.Roles,
+                m.Snapshot.PermissionVersion,
+                m.Snapshot.RolePolicyVersion,
                 m.BusinessActivities,
-                [.. permissionCatalog.For(m.Role).Select(permission => permission.Value)]))
+                [.. m.Snapshot.Permissions.Keys.Select(permission => permission.Value)]))
             .ToList();
     }
 
@@ -146,8 +147,10 @@ internal sealed class TenantService : ITenantService
             tenant.ActivateBusinessActivity(activity, now);
 
         await repository.InsertAsync(tenant, ct);
+        await roles.InsertPresetsAsync(tenant.Id, ct);
         await membershipRepository.InsertAsync(
-            TenantMembershipEntity.Create(tenant.Id, userId, TenantRole.Owner, null, now),
+            TenantMembershipEntity.Create(
+                tenant.Id, userId, [SystemPresetIds.For(tenant.Id, "Owner")], null, now),
             ct);
         return ToDetails(tenant);
     }
@@ -290,7 +293,7 @@ internal sealed class TenantService : ITenantService
         if (expected is null || expected.TenantId != tenantId)
             return false;
         var currentOption = await membershipResolver.ResolveSnapshotAsync(expected, ct);
-        return currentOption.TryGetValue(out var current) && permissionCatalog.Grants(current.Role, permission);
+        return currentOption.TryGetValue(out var current) && current.HasPermission(permission);
     }
 
     private TenantDetails ToDetails(TenantEntity tenant) => new()

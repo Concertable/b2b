@@ -42,7 +42,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly IPermissionCatalog permissionCatalog;
     private readonly ICommandExecutor commandExecutor;
     private readonly CommandTransactionAccessor transactions;
 
@@ -61,7 +60,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        IPermissionCatalog permissionCatalog,
         ICommandExecutor commandExecutor,
         CommandTransactionAccessor transactions)
     {
@@ -79,7 +77,6 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.permissionCatalog = permissionCatalog;
         this.commandExecutor = commandExecutor;
         this.transactions = transactions;
     }
@@ -158,7 +155,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            || !actor.HasPermission(TenantPermission.ApplicationsSubmit))
             return new ApplyApplicationError.NotPermitted();
 
         var artist = await artistRepository.GetByTenantIdAsync(actor.TenantId, ct);
@@ -246,7 +243,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         {
             var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
             if (!actorOption.TryGetValue(out var actor)
-                || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+                || !actor.HasPermission(TenantPermission.ApplicationsSubmit))
                 return (Result<ApplicationProposal, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
 
             if (await privilegedRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
@@ -325,7 +322,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            || !actor.HasPermission(TenantPermission.ApplicationsDecide))
             return new AcceptApplicationError.NotPermitted();
 
         var application = await privilegedRepository.GetDecisionByIdForUpdateAsync(applicationId, ct);
@@ -333,7 +330,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
 
-        var audience = permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide);
+        var audience = actor.AudienceFor(TenantPermission.ApplicationsDecide);
         if (application.VenueTenantId != actor.TenantId
             || !ResourceGrantPolicy.Allows(
                 application.AccessGrants,
@@ -464,13 +461,13 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsSubmit))
+            || !actor.HasPermission(TenantPermission.ApplicationsSubmit))
             return false;
 
         return await privilegedRepository.CanSubmitAsync(
             applicationId,
             actor,
-            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsSubmit),
+            actor.AudienceFor(TenantPermission.ApplicationsSubmit),
             timeProvider.GetUtcNow().UtcDateTime,
             ct);
     }
@@ -482,13 +479,13 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ApplicationsDecide))
+            || !actor.HasPermission(TenantPermission.ApplicationsDecide))
             return false;
 
         return await privilegedRepository.CanDecideAsync(
             applicationId,
             actor,
-            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ApplicationsDecide),
+            actor.AudienceFor(TenantPermission.ApplicationsDecide),
             timeProvider.GetUtcNow().UtcDateTime,
             ct);
     }
