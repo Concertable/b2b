@@ -544,7 +544,7 @@ internal sealed class ConcertService : IConcertService
 
         var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
-        var payloadHash = CommandPayloadHash.Compute(
+        var payloadHash = CommandPayloadHash.Create(
             id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
         var receipt = await receiptRepository.GetByRequestForUpdateAsync(
             actor.TenantId,
@@ -616,7 +616,7 @@ internal sealed class ConcertService : IConcertService
     private static Result<ConcertSummaryShare, ShareConcertSummaryError> ReplaySummaryShare(
         ConcertEntity concert,
         ConcertCommandReceipt receipt,
-        string payloadHash)
+        CommandPayloadHash payloadHash)
     {
         if (!receipt.Matches(payloadHash))
             return new ShareConcertSummaryError.RequestConflict();
@@ -653,7 +653,7 @@ internal sealed class ConcertService : IConcertService
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);
-        var payloadHash = CommandPayloadHash.Compute(
+        var payloadHash = CommandPayloadHash.Create(
             id,
             request.RecipientTenantId,
             request.RecipientMembershipId,
@@ -664,7 +664,7 @@ internal sealed class ConcertService : IConcertService
     internal static Result<ConcertSummaryShare, ShareConcertSummaryError> RecoverSummaryShareDuplicate(
         ConcertEntity concert,
         ConcertCommandReceipt? receipt,
-        string payloadHash) =>
+        CommandPayloadHash payloadHash) =>
         receipt is null
             ? new ShareConcertSummaryError.AlreadyShared()
             : ReplaySummaryShare(concert, receipt, payloadHash);
