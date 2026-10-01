@@ -26,20 +26,21 @@ export function useRoleManagement() {
   const rolesQuery = useRolesQuery();
   const permissionsQuery = usePermissionsQuery();
   const { create, update, retire: retireMutation } = useRoleMutations();
-  const [selectedId, setSelectedId] = useState<string | undefined>();
+  const [selection, setSelection] = useState<Pick<Role, "id" | "version"> | undefined>();
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [editTarget, setEditTarget] = useState<{ id: string; version: number } | undefined>();
   const [replacementRoleId, setReplacementRoleId] = useState("");
   const [showEditor, setShowEditor] = useState(false);
   const roles = rolesQuery.data ?? [];
   const metadata = permissionsQuery.data ?? [];
+  const selectedId = selection?.id;
   const selected = roles.find((role) => role.id === selectedId);
   const editable = showEditor && (selected === undefined || !selected.isSystemPreset);
   const parsed = roleRequestSchema.safeParse(draft);
   const nameError = parsed.success ? undefined : parsed.error.issues.find((issue) => issue.path[0] === "name")?.message;
-  const retirement = selected && !selected.isSystemPreset
+  const retirement = selection && selected && !selected.isSystemPreset
     ? retireRoleRequestSchema.safeParse({
-        expectedVersion: selected.version,
+        expectedVersion: selection.version,
         replacementRoleId: replacementRoleId || undefined,
       })
     : undefined;
@@ -51,7 +52,7 @@ export function useRoleManagement() {
   };
   const openNew = () => {
     resetMutations();
-    setSelectedId(undefined);
+    setSelection(undefined);
     setDraft(emptyDraft());
     setEditTarget(undefined);
     setReplacementRoleId("");
@@ -59,7 +60,7 @@ export function useRoleManagement() {
   };
   const openRole = (role: Role) => {
     resetMutations();
-    setSelectedId(role.id);
+    setSelection({ id: role.id, version: role.version });
     setDraft(draftFromRole(role, metadata));
     setEditTarget(undefined);
     setReplacementRoleId("");
@@ -67,7 +68,7 @@ export function useRoleManagement() {
   };
   const clone = (role: Role) => {
     resetMutations();
-    setSelectedId(undefined);
+    setSelection(undefined);
     setDraft(draftFromRole(role, metadata));
     setEditTarget(undefined);
     setReplacementRoleId("");

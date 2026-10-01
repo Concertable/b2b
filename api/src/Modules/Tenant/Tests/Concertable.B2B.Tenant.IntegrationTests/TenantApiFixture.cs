@@ -41,7 +41,7 @@ public sealed class TenantApiFixture : ApiFixture
         CancellationToken ct = default) =>
         transactionRunner.ExecuteAsync(resolve, ct);
 
-    public async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
+    internal async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
         Guid ownerUserId,
         Guid otherOwnerUserId,
         Guid tenantId)
