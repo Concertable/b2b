@@ -1,4 +1,5 @@
 using Concertable.B2B.Application.Application.Resolvers;
+using Concertable.B2B.Authorization.Contracts;
 using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
@@ -69,6 +70,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
+            services.AddScoped<IResourceAuthorizationEvaluator, ApplicationResourceAuthorizationEvaluator>();
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
             services.AddScoped<IApplicationPrivilegedRepository, ApplicationPrivilegedRepository>();
             services.AddScoped<IApplicationEligibility, ApplicationEligibility>();

@@ -63,14 +63,23 @@ public sealed class CommandTransactionFactory
             if (command.HasFailed)
             {
                 await command.RollbackAsync(CancellationToken.None);
-                if (!resultFailed)
-                    throw new InvalidOperationException(
-                        "A nested command failed after the outer action returned success.");
-                return result;
+                return command.FailedResult(result);
             }
 
             await command.FlushAsync(ct);
+            if (command.IsAuthorityManaged && command.HasFailed)
+            {
+                await command.RollbackAsync(CancellationToken.None);
+                return command.FailedResult(result);
+            }
+
             await command.ValidateAuthorityAsync(ct);
+            if (command.IsAuthorityManaged && command.HasFailed)
+            {
+                await command.RollbackAsync(CancellationToken.None);
+                return command.FailedResult(result);
+            }
+
             await command.CommitAsync(ct);
             return result;
         }

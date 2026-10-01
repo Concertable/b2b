@@ -34,7 +34,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
 
     public ApplicationService(
         IApplicationRepository applicationRepository,
@@ -53,7 +53,7 @@ internal sealed class ApplicationService : IApplicationService
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        ICommandExecutor commandExecutor)
+        ITransactionRunner transactionRunner)
     {
         this.applicationRepository = applicationRepository;
         this.privilegedRepository = privilegedRepository;
@@ -71,7 +71,7 @@ internal sealed class ApplicationService : IApplicationService
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
     }
 
     public Task<Result<ApplicationSummary, ApplicationError>> GetSummaryAsync(
@@ -224,7 +224,7 @@ internal sealed class ApplicationService : IApplicationService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
+            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
                 (service, token) => service.WithdrawCommandAsync(applicationId, actor, token),
                 (service, _, token) => service.ValidateSubmitAuthorityAsync(applicationId, actor, token),
                 () => new WithdrawApplicationError.NotPermitted(),
@@ -233,7 +233,7 @@ internal sealed class ApplicationService : IApplicationService
         catch (DbUpdateException exception)
             when (exception.IsApplicationConcurrencyConflict(applicationId))
         {
-            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
+            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
                 (service, token) => service.ClassifyWithdrawConflictAsync(applicationId, token),
                 ct);
         }
@@ -248,7 +248,7 @@ internal sealed class ApplicationService : IApplicationService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
+            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
                 (service, token) => service.RejectCommandAsync(applicationId, actor, token),
                 (service, _, token) => service.ValidateDecideAuthorityAsync(applicationId, actor, token),
                 () => new RejectApplicationError.NotPermitted(),
@@ -257,7 +257,7 @@ internal sealed class ApplicationService : IApplicationService
         catch (DbUpdateException exception)
             when (exception.IsApplicationConcurrencyConflict(applicationId))
         {
-            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
+            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
                 (service, token) => service.ClassifyRejectConflictAsync(applicationId, token),
                 ct);
         }
@@ -272,7 +272,7 @@ internal sealed class ApplicationService : IApplicationService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
+            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
                 (service, token) => service.CancelCommandAsync(applicationId, actor, token),
                 (service, _, token) => service.ValidateDecideAuthorityAsync(applicationId, actor, token),
                 () => new CancelApplicationError.NotPermitted(),
@@ -281,7 +281,7 @@ internal sealed class ApplicationService : IApplicationService
         catch (DbUpdateException exception)
             when (exception.IsApplicationConcurrencyConflict(applicationId))
         {
-            return await commandExecutor.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
+            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
                 (service, token) => service.ClassifyCancelConflictAsync(applicationId, token),
                 ct);
         }

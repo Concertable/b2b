@@ -1,4 +1,5 @@
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Tenant.Application.Interfaces;
@@ -14,6 +15,13 @@ internal interface IMembershipRepository : IRepository<TenantMembershipEntity, G
     Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForShareAsync(
         IReadOnlyCollection<Guid> membershipIds,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForUpdateAsync(
+        IReadOnlyCollection<Guid> membershipIds,
+        CancellationToken ct = default);
+
+    Task<AuthoritySnapshot?> GetAuthoritySnapshotByUserIdAndTenantIdAsync(
+        Guid userId, Guid tenantId, CancellationToken ct = default);
 
     Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
         Guid membershipId, CancellationToken ct = default);

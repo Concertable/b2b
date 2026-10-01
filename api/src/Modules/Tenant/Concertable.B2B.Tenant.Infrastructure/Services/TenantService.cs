@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Infrastructure.Authorization;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Tax;
@@ -22,6 +23,8 @@ internal sealed class TenantService : ITenantService
     private readonly TimeProvider timeProvider;
     private readonly IReadOnlyList<ITenantDeletionGuard> deletionGuards;
     private readonly ICurrentUser currentUser;
+    private readonly TenantAuthorityResolver authority;
+    private readonly ICommandAuthorizationContext command;
 
     public TenantService(
         ITenantRepository repository,
@@ -35,7 +38,9 @@ internal sealed class TenantService : ITenantService
         IOutboxUnitOfWorkBehavior unitOfWork,
         TimeProvider timeProvider,
         IEnumerable<ITenantDeletionGuard> deletionGuards,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        TenantAuthorityResolver authority,
+        ICommandAuthorizationContext command)
     {
         this.repository = repository;
         this.membershipRepository = membershipRepository;
@@ -49,6 +54,8 @@ internal sealed class TenantService : ITenantService
         this.timeProvider = timeProvider;
         this.deletionGuards = deletionGuards.ToList();
         this.currentUser = currentUser;
+        this.authority = authority;
+        this.command = command;
     }
 
     public async Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
@@ -164,11 +171,15 @@ internal sealed class TenantService : ITenantService
         UpdateTenantRequest request,
         CancellationToken ct)
     {
+        command.RegisterFailure<Result<TenantDetails, UpdateTenantError>>(
+            () => Result.Failure<TenantDetails, UpdateTenantError>(
+                new UpdateTenantError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new UpdateTenantError.TenantNotFound(tenantId);
-        if (!await HasCurrentPermissionAsync(tenantId, TenantPermission.TenantSettingsEdit, ct))
+        if (await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.TenantSettingsEdit, false, ct) is null)
             return new UpdateTenantError.NotPermitted();
         if (tenant.Version != request.ExpectedVersion)
             return new UpdateTenantError.Superseded();
@@ -208,11 +219,15 @@ internal sealed class TenantService : ITenantService
                     new ValidationErrors([new(nameof(kind), "The organization activity is invalid.")]));
             }
 
+            command.RegisterFailure<Result<TenantDetails, ChangeBusinessActivityError>>(
+                () => Result.Failure<TenantDetails, ChangeBusinessActivityError>(
+                    new ChangeBusinessActivityError.NotPermitted()));
             var tenantId = tenantContext.GetTenantId();
             var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
             if (tenant is null)
                 return new ChangeBusinessActivityError.TenantNotFound(tenantId);
-            if (!await HasCurrentPermissionAsync(tenantId, TenantPermission.TenantSettingsEdit, ct))
+            if (await authority.ProveAdministrationAsync(
+                tenantId, TenantPermission.TenantSettingsEdit, false, ct) is null)
                 return new ChangeBusinessActivityError.NotPermitted();
             if (tenant.EligibilityVersion != request.ExpectedEligibilityVersion)
                 return new ChangeBusinessActivityError.Superseded();
@@ -231,11 +246,14 @@ internal sealed class TenantService : ITenantService
 
     private async Task<UnitResult<DeleteTenantError>> DeleteCoreAsync(CancellationToken ct)
     {
+        command.RegisterFailure<UnitResult<DeleteTenantError>>(
+            () => UnitResult.Failure<DeleteTenantError>(new DeleteTenantError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new DeleteTenantError.TenantNotFound(tenantId);
-        if (!await HasCurrentPermissionAsync(tenantId, TenantPermission.TenantDelete, ct))
+        if (await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.TenantDelete, true, ct) is null)
             return new DeleteTenantError.NotPermitted();
 
         foreach (var guard in deletionGuards)
@@ -244,7 +262,10 @@ internal sealed class TenantService : ITenantService
                 return new DeleteTenantError.CannotDeleteWithLiveObligations();
         }
 
-        foreach (var membership in await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct))
+        var members = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);
+        if (!await authority.TrackTenantDeletionAsync(tenant, members, ct))
+            return new DeleteTenantError.NotPermitted();
+        foreach (var membership in members)
             membershipRepository.Remove(membership);
 
         foreach (var invitation in await invitationRepository.ListInvitationsByTenantAsync(tenantId, ct))

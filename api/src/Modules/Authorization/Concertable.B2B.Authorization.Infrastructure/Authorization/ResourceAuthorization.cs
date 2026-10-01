@@ -3,27 +3,21 @@ using Concertable.B2B.Authorization.Contracts;
 namespace Concertable.B2B.Authorization.Infrastructure.Authorization;
 
 internal sealed class ResourceAuthorization(
-    IMembershipContext membership,
-    IAuthorityResolver authorityResolver,
+    ActorAuthoritySession actor,
     ICommandAuthorizationContext command,
     ResourceBindingRegistry registry,
     TimeProvider clock) : IResourceAuthorization
 {
-    private AuthoritySnapshot? retainedAuthority;
-    private Guid? retainedTransactionId;
-
     public async Task<AuthorizationDecision> CheckAsync(AuthorizationRequest request, CancellationToken ct = default)
     {
-        if (membership.Membership is not { } requestActor
-            || !registry.TryResolve(request, out var binding))
+        if (!registry.TryResolve(request, out var binding))
             return AuthorizationDecision.Denied;
 
-        var option = await authorityResolver.ResolveAsync(requestActor, ct);
-        if (!option.TryGetValue(out var authority)
-            || !authority.Actor.HasSameAuthorityAs(requestActor)
-            || authority.CatalogRevision != AuthorizationCatalog.Revision)
-            return AuthorizationDecision.AuthorityChanged;
+        var resolution = await actor.CheckAsync(ct);
+        if (resolution.Decision != AuthorizationDecision.Allowed)
+            return resolution.Decision;
 
+        var authority = resolution.Authority!;
         if (!authority.Actor.HasPermission(request.Permission))
             return AuthorizationDecision.Denied;
 
@@ -37,55 +31,27 @@ internal sealed class ResourceAuthorization(
 
     public async Task<AuthorizationDecision> RequireAsync(AuthorizationRequest request, CancellationToken ct = default)
     {
-        if (!command.IsActive)
-            throw new InvalidOperationException("Resource authorization requires an active command.");
+        var resolution = await actor.RequireAsync(ct);
+        if (resolution.Decision != AuthorizationDecision.Allowed)
+            return resolution.Decision;
 
-        if (retainedTransactionId != command.TransactionId)
-        {
-            retainedAuthority = null;
-            retainedTransactionId = command.TransactionId;
-        }
+        if (!registry.TryResolve(request, out var binding))
+            return actor.Fail(AuthorizationDecision.Denied).Decision;
 
-        if (membership.Membership is not { } requestActor
-            || !registry.TryResolve(request, out var binding))
-            return Fail(AuthorizationDecision.Denied);
-
-        var authority = retainedAuthority;
-        if (authority is null)
-        {
-            var option = await authorityResolver.ResolveForCommandAsync(requestActor, ct);
-            if (!option.TryGetValue(out authority)
-                || !authority.Actor.HasSameAuthorityAs(requestActor)
-                || authority.CatalogRevision != AuthorizationCatalog.Revision)
-                return Fail(AuthorizationDecision.AuthorityChanged);
-
-            retainedAuthority = authority;
-            command.RegisterValidator(token => authorityResolver.ValidateForCommitAsync(authority, token));
-        }
-        else if (authority.Actor.MembershipId != requestActor.MembershipId
-                 || authority.Actor.TenantId != requestActor.TenantId
-                 || authority.Actor.UserId != requestActor.UserId)
-            return Fail(AuthorizationDecision.AuthorityChanged);
-
+        var authority = resolution.Authority!;
         if (!authority.Actor.HasPermission(request.Permission))
-            return Fail(AuthorizationDecision.Denied);
+            return actor.Fail(AuthorizationDecision.Denied).Decision;
 
         var evaluator = registry.Evaluator(request.Resource.Kind);
         var now = clock.GetUtcNow();
         var evidence = await evaluator.RequireAsync(
             request, binding!, authority.Actor, now, ct);
         if (evidence is null || !HasValidEvidence(binding!, evidence, authority.Actor, now))
-            return Fail(AuthorizationDecision.Denied);
+            return actor.Fail(AuthorizationDecision.Denied).Decision;
 
         var proof = new ResourceAuthorizationProof(request, binding!, authority, evidence);
         command.RegisterValidator(token => evaluator.ValidateForCommitAsync(proof, clock.GetUtcNow(), token));
         return AuthorizationDecision.Allowed;
-    }
-
-    private AuthorizationDecision Fail(AuthorizationDecision decision)
-    {
-        command.MarkAuthorityFailed();
-        return decision;
     }
 
     private static bool HasValidEvidence(

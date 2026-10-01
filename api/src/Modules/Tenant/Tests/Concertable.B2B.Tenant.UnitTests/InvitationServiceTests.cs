@@ -6,6 +6,7 @@ using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Infrastructure.Services;
+using Concertable.B2B.Tenant.Infrastructure.Authorization;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
 using Moq;
@@ -22,6 +23,7 @@ public sealed class InvitationServiceTests
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<IRoleRepository> roles;
     private readonly Mock<IMembershipResolver> membershipResolver;
+    private readonly Mock<ICommandAuthorizationContext> command;
     private readonly InvitationService service;
 
     public InvitationServiceTests()
@@ -37,6 +39,24 @@ public sealed class InvitationServiceTests
         membershipResolver.Setup(value => value.ResolveSnapshotAsync(
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
+        command = new Mock<ICommandAuthorizationContext>();
+        command.SetupGet(value => value.IsActive).Returns(true);
+        command.SetupGet(value => value.TransactionId).Returns(Guid.NewGuid());
+        tenantRepository.Setup(value => value.GetExistingIdsForShareAsync(
+                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
+                (IReadOnlySet<Guid>)ids.ToHashSet());
+        tenantRepository.Setup(value => value.GetAuthorizationCatalogRevisionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AuthorizationCatalog.Revision);
+        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
+                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
+                Task.FromResult<IReadOnlyList<MembershipSnapshot>>(
+                    membershipContext.Object.Membership is { } actor
+                        ? new[] { actor }
+                        : Array.Empty<MembershipSnapshot>()));
+        var authority = new TenantAuthorityResolver(tenantRepository.Object, membershipRepository.Object,
+            roles.Object, repository.Object, membershipContext.Object, command.Object, TimeProvider.System);
         service = new InvitationService(
             tenantRepository.Object,
             membershipRepository.Object,
@@ -48,7 +68,9 @@ public sealed class InvitationServiceTests
             new ImmediateUnitOfWorkBehavior(),
             roles.Object,
             membershipContext.Object,
-            membershipResolver.Object);
+            membershipResolver.Object,
+            authority,
+            command.Object);
     }
 
     [Fact]

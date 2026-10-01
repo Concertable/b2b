@@ -43,7 +43,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly ILogger<BookingWorkflow> logger;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
 
     public BookingWorkflow(
         IBookingRepository bookingRepository,
@@ -62,7 +62,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         ILogger<BookingWorkflow> logger,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        ICommandExecutor commandExecutor)
+        ITransactionRunner transactionRunner)
     {
         this.bookingRepository = bookingRepository;
         this.privilegedRepository = privilegedRepository;
@@ -80,7 +80,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.logger = logger;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
     }
 
     public Task<BookingDto> ConfirmAsync(
@@ -97,7 +97,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
         try
         {
-            return await commandExecutor.ExecuteAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
+            return await transactionRunner.ExecuteAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
                 (workflow, token) => workflow.CancelCommandAsync(bookingId, actor, token),
                 (workflow, _, token) => workflow.ValidateCancelAuthorityAsync(bookingId, actor, token),
                 () => new CancelBookingError.NotPermitted(),
@@ -105,7 +105,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         }
         catch (DbUpdateException exception) when (exception.IsBookingConcurrencyConflict(bookingId))
         {
-            return await commandExecutor.ExecuteAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
+            return await transactionRunner.ExecuteAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
                 (workflow, token) => workflow.ClassifyCancelConflictAsync(bookingId, actor, token),
                 ct);
         }

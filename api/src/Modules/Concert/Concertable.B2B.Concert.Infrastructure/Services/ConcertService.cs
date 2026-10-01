@@ -43,7 +43,7 @@ internal sealed class ConcertService : IConcertService
     private readonly ITenantContext tenantContext;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
     private readonly IResourceAccessContext resourceAccess;
     private readonly ILogger<ConcertService> logger;
 
@@ -66,7 +66,7 @@ internal sealed class ConcertService : IConcertService
         ITenantContext tenantContext,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        ICommandExecutor commandExecutor,
+        ITransactionRunner transactionRunner,
         IResourceAccessContext resourceAccess,
         ILogger<ConcertService> logger)
     {
@@ -88,7 +88,7 @@ internal sealed class ConcertService : IConcertService
         this.tenantContext = tenantContext;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
         this.resourceAccess = resourceAccess;
         this.logger = logger;
     }
@@ -244,7 +244,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, Result<ConcertUpdateResponse, UpdateConcertError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertUpdateResponse, UpdateConcertError>>(
                 (service, token) => service.UpdateCommandAsync(id, request, actor, token),
                 (service, _, token) => service.ValidateOperationsAuthorityAsync(
                     id, actor, TenantPermission.ConcertsOpsEdit, token),
@@ -267,7 +267,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, UnitResult<PostConcertError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<PostConcertError>>(
                 (service, token) => service.PostCommandAsync(id, request, actor, token),
                 (service, _, token) => service.ValidateOperationsAuthorityAsync(
                     id, actor, TenantPermission.ConcertsOpsEdit, token),
@@ -276,7 +276,7 @@ internal sealed class ConcertService : IConcertService
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, UnitResult<PostConcertError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<PostConcertError>>(
                 (service, token) => service.ClassifyPostConflictAsync(id, token),
                 ct);
         }
@@ -292,7 +292,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, UnitResult<DeclareDoorRevenueError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<DeclareDoorRevenueError>>(
                 (service, token) => service.DeclareDoorRevenueCommandAsync(id, doorRevenue, actor, token),
                 (service, _, token) => service.ValidateDoorRevenueAuthorityAsync(id, actor, token),
                 () => new DeclareDoorRevenueError.VenueForbidden(),
@@ -497,7 +497,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
                 (service, token) => service.ShareSummaryCommandAsync(id, request, actor, token),
                 (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
                 () => new ShareConcertSummaryError.NotPermitted(),
@@ -509,7 +509,7 @@ internal sealed class ConcertService : IConcertService
         }
         catch (DbUpdateException exception) when (exception.IsDuplicateKey())
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
                 (service, token) => service.RecoverSummaryShareDuplicateAsync(id, request, actor, token),
                 (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
                 () => new ShareConcertSummaryError.NotPermitted(),
@@ -680,7 +680,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, UnitResult<RevokeConcertSummaryShareError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<RevokeConcertSummaryShareError>>(
                 (service, token) => service.RevokeSummaryShareCommandAsync(
                     id, grantId, expectedAccessVersion, actor, token),
                 (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
@@ -741,7 +741,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
                 (service, token) => service.AssignMemberCommandAsync(id, request, actor, token),
                 (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
                 () => new AssignConcertMemberError.NotPermitted(),
@@ -809,7 +809,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
+            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
                 (service, token) => service.RemoveMemberAssignmentCommandAsync(
                     id, membershipId, expectedAccessVersion, actor, token),
                 (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),

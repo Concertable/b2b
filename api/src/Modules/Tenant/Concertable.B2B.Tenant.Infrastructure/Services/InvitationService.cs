@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Infrastructure.Authorization;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -22,6 +23,8 @@ internal sealed class InvitationService : IInvitationService
     private readonly IRoleRepository roles;
     private readonly IMembershipContext membershipContext;
     private readonly IMembershipResolver membershipResolver;
+    private readonly TenantAuthorityResolver authority;
+    private readonly ICommandAuthorizationContext command;
 
     public InvitationService(
         ITenantRepository tenantRepository,
@@ -34,7 +37,9 @@ internal sealed class InvitationService : IInvitationService
         IOutboxUnitOfWorkBehavior unitOfWork,
         IRoleRepository roles,
         IMembershipContext membershipContext,
-        IMembershipResolver membershipResolver)
+        IMembershipResolver membershipResolver,
+        TenantAuthorityResolver authority,
+        ICommandAuthorizationContext command)
     {
         this.tenantRepository = tenantRepository;
         this.membershipRepository = membershipRepository;
@@ -47,6 +52,8 @@ internal sealed class InvitationService : IInvitationService
         this.roles = roles;
         this.membershipContext = membershipContext;
         this.membershipResolver = membershipResolver;
+        this.authority = authority;
+        this.command = command;
     }
 
     public Task<Result<IReadOnlyList<InvitationDto>, ListInvitationsError>> ListPendingInvitationsAsync(
@@ -80,12 +87,16 @@ internal sealed class InvitationService : IInvitationService
         InviteMemberRequest request,
         CancellationToken ct)
     {
+        command.RegisterFailure<Result<InvitationDto, InviteMemberError>>(
+            () => Result.Failure<InvitationDto, InviteMemberError>(
+                new InviteMemberError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new InviteMemberError.TenantNotFound();
 
-        var actor = await GetCurrentActorAsync(tenantId, ct);
+        var actor = await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.MembersInvite, false, ct);
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
         if (actor is null || selectedRoles is null || !await CanAssignAsync(actor, selectedRoles, ct))
             return new InviteMemberError.NotPermitted();
@@ -109,6 +120,8 @@ internal sealed class InvitationService : IInvitationService
         var invitation = TenantInvitationEntity.Create(
             tenantId, email, request.RoleIds, actor.MembershipId,
             actor.PermissionVersion, actor.RolePolicyVersion, now, InvitationTtl);
+        if (!authority.ProveInvitationCreation(invitation, actor, selectedRoles))
+            return new InviteMemberError.NotPermitted();
         await repository.InsertAsync(invitation, ct);
         return new InvitationDto(invitation.Id, invitation.Email,
             Summaries(selectedRoles), invitation.CreatedAt, invitation.ExpiresAt);
@@ -122,14 +135,17 @@ internal sealed class InvitationService : IInvitationService
     private async Task<UnitResult<RevokeInvitationError>> RevokeInvitationCoreAsync(
         Guid invitationId, CancellationToken ct)
     {
+        command.RegisterFailure<UnitResult<RevokeInvitationError>>(
+            () => UnitResult.Failure<RevokeInvitationError>(
+                new RevokeInvitationError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
         var invitation = await repository.GetByIdForUpdateAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenantId)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
-        var actor = await GetCurrentActorAsync(tenantId, ct);
-        if (actor is null || !actor.HasPermission(TenantPermission.MembersInvite))
+        if (await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.MembersInvite, false, ct) is null)
             return new RevokeInvitationError.NotPermitted();
         return invitation.Revoke().MapError(error => error.ToRevokeInvitationError());
     }
@@ -142,6 +158,9 @@ internal sealed class InvitationService : IInvitationService
     private async Task<Result<MembershipDto, AcceptInvitationError>> AcceptInvitationCoreAsync(
         Guid invitationId, CancellationToken ct)
     {
+        command.RegisterFailure<Result<MembershipDto, AcceptInvitationError>>(
+            () => Result.Failure<MembershipDto, AcceptInvitationError>(
+                new AcceptInvitationError.InviterNotAuthorized()));
         if (currentUser.Id is not { } userId)
             return new AcceptInvitationError.Unauthenticated();
 
@@ -159,6 +178,10 @@ internal sealed class InvitationService : IInvitationService
             return new AcceptInvitationError.EmailMismatch();
         if (await membershipRepository.IsMemberAsync(invitation.TenantId, userId, ct))
             return new AcceptInvitationError.AlreadyMember();
+        if (invitation.Status != InvitationStatus.Pending)
+            return new AcceptInvitationError.InvitationNotPending();
+        if (timeProvider.GetUtcNow().UtcDateTime >= invitation.ExpiresAt)
+            return new AcceptInvitationError.InvitationExpired();
 
         var inviter = (await membershipRepository.GetSnapshotsByIdsForShareAsync(
             [invitation.InviterMembershipId], ct)).SingleOrDefault();
@@ -167,7 +190,9 @@ internal sealed class InvitationService : IInvitationService
         if (inviter is null || selectedRoles is null
             || inviter.PermissionVersion != invitation.InviterPermissionVersion
             || inviter.RolePolicyVersion != invitation.InviterRolePolicyVersion
-            || !await CanAssignAsync(inviter, selectedRoles, ct))
+            || !await CanAssignAsync(inviter, selectedRoles, ct)
+            || !await authority.ProveInvitationAcceptanceAsync(
+                invitation, inviter, selectedRoles, userId, ct))
             return new AcceptInvitationError.InviterNotAuthorized();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;

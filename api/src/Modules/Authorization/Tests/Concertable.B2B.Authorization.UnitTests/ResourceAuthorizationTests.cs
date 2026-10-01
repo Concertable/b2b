@@ -54,7 +54,7 @@ public sealed class ResourceAuthorizationTests
         var context = new CommandContext();
         var resolver = new AuthorityResolver();
         var service = new ResourceAuthorization(
-            new MembershipContext(), resolver, context,
+            new ActorAuthoritySession(new MembershipContext(), resolver, context), context,
             new ResourceBindingRegistry(
                 [Descriptor(new PermissionResourceBinding("application", "Summary", "application_grant", ["Summary"]))],
                 [new Evaluator(ResourceKind.Application)]),
@@ -74,8 +74,9 @@ public sealed class ResourceAuthorizationTests
     [Fact]
     public async Task Check_DeniesEvidenceMissingItsRequiredScope()
     {
+        var context = new CommandContext();
         var service = new ResourceAuthorization(
-            new MembershipContext(), new AuthorityResolver(), new CommandContext(),
+            new ActorAuthoritySession(new MembershipContext(), new AuthorityResolver(), context), context,
             new ResourceBindingRegistry(
                 [Descriptor(new PermissionResourceBinding("application", "Summary", "application_grant", ["Summary"]))],
                 [new Evaluator(ResourceKind.Application, includeScope: false)]),
@@ -88,15 +89,56 @@ public sealed class ResourceAuthorizationTests
         Assert.Equal(AuthorizationDecision.Denied, decision);
     }
 
+    [Fact]
+    public async Task TenantCapability_RequiresTenantAudienceAndSharesFrozenCommandAuthority()
+    {
+        var tenantBinding = new PermissionResourceBinding("tenant", null, "membership", []);
+        var tenantDescriptor = new PermissionDescriptor(
+            TenantPermission.MessagesSend, "Send messages", "Conversations", [tenantBinding],
+            [ResourceAudience.AssignedResources, ResourceAudience.TenantResources], false);
+        var actor = Actor with
+        {
+            Permissions = Actor.Permissions.Add(TenantPermission.MessagesSend, ResourceAudience.TenantResources),
+        };
+        var context = new CommandContext { TransactionId = Guid.NewGuid() };
+        var resolver = new AuthorityResolver();
+        var session = new ActorAuthoritySession(new MembershipContext(actor), resolver, context);
+        var resources = new ResourceAuthorization(session, context,
+            new ResourceBindingRegistry(
+                [Descriptor(new PermissionResourceBinding("application", "Summary", "application_grant", ["Summary"]))],
+                [new Evaluator(ResourceKind.Application)]),
+            TimeProvider.System);
+        var tenant = new TenantCapabilityAuthorization(session, new TenantCapabilityRegistry([tenantDescriptor]));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await resources.RequireAsync(new AuthorizationRequest(
+            TenantPermission.OperationsView, ResourceAddress.Create(ResourceKind.Application, 1),
+            ResourceFacet.Summary)));
+        Assert.Equal(AuthorizationDecision.Allowed, await tenant.RequireAsync(TenantPermission.MessagesSend));
+        Assert.Equal(1, resolver.CommandResolutions);
+        Assert.Equal(2, context.ValidatorCount);
+
+        var assignedActor = actor with
+        {
+            Permissions = actor.Permissions.SetItem(
+                TenantPermission.MessagesSend, ResourceAudience.AssignedResources),
+        };
+        var assignedSession = new ActorAuthoritySession(
+            new MembershipContext(assignedActor), new AuthorityResolver(), new CommandContext());
+        var assignedTenant = new TenantCapabilityAuthorization(
+            assignedSession, new TenantCapabilityRegistry([tenantDescriptor]));
+        Assert.Equal(AuthorizationDecision.Denied,
+            await assignedTenant.CheckAsync(TenantPermission.MessagesSend));
+    }
+
     private static PermissionDescriptor Descriptor(params PermissionResourceBinding[] bindings) =>
         new(TenantPermission.OperationsView, "Operations", "Tenant", bindings,
             [ResourceAudience.TenantResources], false);
 
-    private sealed class MembershipContext : IMembershipContext
+    private sealed class MembershipContext(MembershipSnapshot? snapshot = null) : IMembershipContext
     {
-        public MembershipSnapshot? Membership => Actor;
-        public bool HasPermission(TenantPermission permission) => Actor.HasPermission(permission);
-        public ResourceAudience AudienceFor(TenantPermission permission) => Actor.AudienceFor(permission);
+        public MembershipSnapshot? Membership => snapshot ?? Actor;
+        public bool HasPermission(TenantPermission permission) => Membership!.HasPermission(permission);
+        public ResourceAudience AudienceFor(TenantPermission permission) => Membership!.AudienceFor(permission);
     }
 
     private sealed class AuthorityResolver : IAuthorityResolver

@@ -14,7 +14,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ConcertWorkflow : IConcertWorkflow
 {
     private readonly IConcertPrivilegedRepository privilegedRepository;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
     private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
     private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
@@ -24,7 +24,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
 
     public ConcertWorkflow(
         IConcertPrivilegedRepository privilegedRepository,
-        ICommandExecutor commandExecutor,
+        ITransactionRunner transactionRunner,
         IDealStrategyFactory<ICancelStep> cancelFactory,
         IDealStrategyFactory<ICompleteStep> completeFactory,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
@@ -33,7 +33,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         TimeProvider timeProvider)
     {
         this.privilegedRepository = privilegedRepository;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
         this.cancelFactory = cancelFactory;
         this.completeFactory = completeFactory;
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
@@ -51,7 +51,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
+            return await transactionRunner.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
                 (workflow, token) => workflow.CancelCommandAsync(concertId, actor, token),
                 (workflow, _, token) => workflow.ValidateCancelAuthorityAsync(concertId, actor, token),
                 () => new CancelConcertError.NotPermitted(),
@@ -59,7 +59,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(concertId))
         {
-            return await commandExecutor.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
+            return await transactionRunner.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
                 (workflow, token) => workflow.ClassifyCancelConflictAsync(concertId, actor, token),
                 ct);
         }
@@ -69,7 +69,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         int concertId,
         CancellationToken ct = default)
     {
-        var prepared = await commandExecutor.ExecuteAsync<ISettlementService, Result<SettlementPreparation, FinishConcertError>>(
+        var prepared = await transactionRunner.ExecuteAsync<ISettlementService, Result<SettlementPreparation, FinishConcertError>>(
             (service, token) => service.ReserveAsync(concertId, token),
             ct);
         if (prepared.TryGetError(out var error))
@@ -87,7 +87,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         if (executed.TryGetError(out var executionError))
             return executionError;
 
-        return await commandExecutor.ExecuteAsync<ISettlementService, Result<SettlementOutcome, FinishConcertError>>(
+        return await transactionRunner.ExecuteAsync<ISettlementService, Result<SettlementOutcome, FinishConcertError>>(
             (service, token) => service.CompleteAsync(ready.ConcertId, ready.OperationId, token),
             ct);
     }

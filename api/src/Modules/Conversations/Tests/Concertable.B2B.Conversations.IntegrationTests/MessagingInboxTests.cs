@@ -268,6 +268,13 @@ public sealed class MessagingInboxTests : IAsyncLifetime
                 new { roleIds = new[] { SystemPresetIds.For(tenantId, "Staff") } }))
             .ShouldBe(HttpStatusCode.NoContent);
 
+        await (await staffClient.PostAsync("/api/conversations", new
+            {
+                requestId = Guid.NewGuid(),
+                participantTenantIds = new[] { tenantId, TenantSeedIds.For(fixture.SeedState.ArtistManager1.Id) }
+            }))
+            .ShouldBe(HttpStatusCode.Forbidden);
+
         var preview = Assert.Single(await GetPreviewsAsync(ownerClient));
         var before = await GetConversationAsync(ownerClient, preview.ConversationId);
         await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))

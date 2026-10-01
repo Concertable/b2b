@@ -1,5 +1,6 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.IntegrationTests.Fixtures;
+using Reunion;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -7,7 +8,7 @@ using Npgsql;
 
 namespace Concertable.B2B.DataAccess.IntegrationTests;
 
-public sealed class DataAccessApiFixture : ApiFixture
+public sealed class ApiFixture : Concertable.B2B.IntegrationTests.Fixtures.ApiFixture
 {
     internal AmbiguousCommitTransactionCommitter Committer { get; } = new();
 
@@ -44,6 +45,7 @@ public sealed class DataAccessApiFixture : ApiFixture
         services.Replace(ServiceDescriptor.Singleton<ICommandTransactionCommitter>(this.Committer));
         services.AddDbContext<CommitProbeDbContext>((provider, options) =>
             options.UseNpgsql(provider.GetRequiredService<NpgsqlDataSource>()));
+        services.AddScoped<CommitProbeFlushHook>();
         services.AddScoped<CommitProbeCommand>();
     }
 }
@@ -67,7 +69,9 @@ internal sealed class AmbiguousCommitTransactionCommitter : ICommandTransactionC
 
 internal sealed class CommitProbeCommand(
     CommitProbeDbContext context,
-    CommandTransactionAccessor transactions)
+    CommandTransactionAccessor transactions,
+    ICommandAuthorizationContext authorization,
+    CommitProbeFlushHook flushHook)
 {
     internal async Task StageAsync(Guid id, CancellationToken ct)
     {
@@ -76,12 +80,34 @@ internal sealed class CommitProbeCommand(
             .EnlistAsync(context, ct);
         context.Probes.Add(new CommitProbe(id));
     }
+
+    internal void RegisterAuthorityFailure() =>
+        authorization.RegisterFailure<Result<int, string>>(() => Result.Failure<int, string>("authority"));
+
+    internal void Deny() => authorization.MarkAuthorityFailed();
+
+    internal void RegisterValidator(Func<CancellationToken, Task<bool>> validator) =>
+        authorization.RegisterValidator(validator);
+
+    internal void OnFlush(Action action) => flushHook.OnSaving = action;
 }
 
-internal sealed class CommitProbeDbContext(DbContextOptions<CommitProbeDbContext> options)
-    : DbContext(options)
+internal sealed class CommitProbeFlushHook
+{
+    internal Action? OnSaving { get; set; }
+}
+
+internal sealed class CommitProbeDbContext(
+    DbContextOptions<CommitProbeDbContext> options,
+    CommitProbeFlushHook flushHook) : DbContext(options)
 {
     internal DbSet<CommitProbe> Probes => this.Set<CommitProbe>();
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        flushHook.OnSaving?.Invoke();
+        return base.SaveChangesAsync(cancellationToken);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

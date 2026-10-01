@@ -62,6 +62,20 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ResolveMany_ActorTenantOutsideTargetsStillResolvesWithoutReturningActorTenant()
+    {
+        var actor = Snapshot(fixture.Memberships.First());
+        var targetTenantId = fixture.Tenants.First(tenant => tenant.Id != actor.TenantId).Id;
+
+        var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
+            resolver.ResolveManyAsync(actor, [targetTenantId], ct));
+
+        Assert.True(resolved.TryGetValue(out var resolution));
+        Assert.True(actor.HasSameAuthorityAs(resolution.Actor));
+        Assert.True(resolution.ExistingTenantIds.SetEquals([targetTenantId]));
+    }
+
+    [Fact]
     public async Task ResolveMany_DuplicateAndMissingTenants_ReturnsUniqueExistingTenants()
     {
         var actor = Snapshot(fixture.Memberships.First());

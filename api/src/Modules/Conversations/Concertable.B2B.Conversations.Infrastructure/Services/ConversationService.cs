@@ -21,9 +21,11 @@ internal sealed class ConversationService : IConversationService
     private readonly IMessageRepository messageRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
     private readonly ITenantResolver tenantResolver;
+    private readonly ITenantCapabilityAuthorization tenantCapabilities;
+    private readonly ICommandAuthorizationContext commandAuthorization;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
     private readonly CommandTransactionAccessor transactions;
     private readonly ITenantContext tenantContext;
     private readonly IBus bus;
@@ -36,9 +38,11 @@ internal sealed class ConversationService : IConversationService
         IMessageRepository messageRepository,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
         ITenantResolver tenantResolver,
+        ITenantCapabilityAuthorization tenantCapabilities,
+        ICommandAuthorizationContext commandAuthorization,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        ICommandExecutor commandExecutor,
+        ITransactionRunner transactionRunner,
         CommandTransactionAccessor transactions,
         ITenantContext tenantContext,
         IBus bus,
@@ -50,9 +54,11 @@ internal sealed class ConversationService : IConversationService
         this.messageRepository = messageRepository;
         this.unitOfWork = unitOfWork;
         this.tenantResolver = tenantResolver;
+        this.tenantCapabilities = tenantCapabilities;
+        this.commandAuthorization = commandAuthorization;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
         this.transactions = transactions;
         this.tenantContext = tenantContext;
         this.bus = bus;
@@ -64,16 +70,22 @@ internal sealed class ConversationService : IConversationService
         CancellationToken ct = default)
     {
         if (membership.Membership is not { } actor)
+        {
+            if (commandAuthorization.IsActive)
+            {
+                commandAuthorization.RegisterFailure<Result<ConversationDto, CreateConversationError>>(
+                    () => new CreateConversationError.NotPermitted());
+                commandAuthorization.MarkAuthorityFailed();
+            }
             return Task.FromResult<Result<ConversationDto, CreateConversationError>>(
                 new CreateConversationError.NotPermitted());
+        }
 
         if (transactions.Current is not null)
             return unitOfWork.ExecuteAsync(() => CreateCoreAsync(request, actor, ct), ct);
 
-        return commandExecutor.ExecuteAsync<ConversationService, Result<ConversationDto, CreateConversationError>>(
+        return transactionRunner.ExecuteAsync<ConversationService, Result<ConversationDto, CreateConversationError>>(
             (service, token) => service.CreateCommandAsync(request, actor, token),
-            (service, _, token) => service.ValidateCreateAuthorityAsync(actor, token),
-            () => new CreateConversationError.NotPermitted(),
             ct);
     }
 
@@ -88,6 +100,9 @@ internal sealed class ConversationService : IConversationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
+        commandAuthorization.RegisterFailure<Result<ConversationDto, CreateConversationError>>(
+            () => new CreateConversationError.NotPermitted());
+
         var participants = request.ParticipantTenantIds.Distinct().Order().ToArray();
         if (request.RequestId == Guid.Empty
             || participants.Length < 2
@@ -96,13 +111,13 @@ internal sealed class ConversationService : IConversationService
             return new CreateConversationError.InvalidParticipants();
 
         var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, participants, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.Actor.HasPermission(TenantPermission.MessagesSend)
-            || resolution.Actor.AudienceFor(TenantPermission.MessagesSend)
-                != ResourceAudience.TenantResources)
+        if (!resolutionOption.TryGetValue(out var resolution))
             return new CreateConversationError.NotPermitted();
         if (!resolution.ExistingTenantIds.SetEquals(participants))
             return new CreateConversationError.InvalidParticipants();
+        if (await tenantCapabilities.RequireAsync(TenantPermission.MessagesSend, ct)
+            != AuthorizationDecision.Allowed)
+            return new CreateConversationError.NotPermitted();
 
         var payloadHash = CommandPayloadHash.Create(string.Join(",", participants));
         var receipt = await privilegedRepository.GetCreationReceiptForUpdateAsync(
@@ -167,7 +182,7 @@ internal sealed class ConversationService : IConversationService
         if (transactions.Current is not null)
             return unitOfWork.ExecuteAsync(
                 () => SendCoreAsync(conversationId, request, action, actor, ct), ct);
-        return commandExecutor.ExecuteAsync<ConversationService, Result<MessageDto, SendMessageError>>(
+        return transactionRunner.ExecuteAsync<ConversationService, Result<MessageDto, SendMessageError>>(
             (service, token) => service.SendCommandAsync(conversationId, request, action, actor, token),
             (service, _, token) => service.ValidateAccessAsync(
                 conversationId, actor, TenantPermission.MessagesSend, ConversationAccessScope.SendMessages, token),
@@ -232,7 +247,7 @@ internal sealed class ConversationService : IConversationService
     {
         if (membership.Membership is not { } actor)
             return Task.FromResult<UnitResult<ConversationAccessError>>(new ConversationAccessError.NotPermitted());
-        return commandExecutor.ExecuteAsync<ConversationService, UnitResult<ConversationAccessError>>(
+        return transactionRunner.ExecuteAsync<ConversationService, UnitResult<ConversationAccessError>>(
             (service, token) => service.AdvanceReadPositionCommandAsync(conversationId, request, actor, token),
             (service, _, token) => service.ValidateAccessAsync(
                 conversationId, actor, TenantPermission.MessagesRead, ConversationAccessScope.Read, token),
@@ -292,7 +307,7 @@ internal sealed class ConversationService : IConversationService
         if (membership.Membership is not { } actor)
             return Task.FromResult<UnitResult<AssignConversationMemberError>>(
                 new AssignConversationMemberError.NotPermitted());
-        return commandExecutor.ExecuteAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
+        return transactionRunner.ExecuteAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
             (service, token) => service.ChangeAssignmentCommandAsync(
                 conversationId, membershipId, expectedAccessVersion, assign, actor, token),
             (service, _, token) => service.ValidatePrincipalAsync(conversationId, actor, token),
@@ -410,17 +425,6 @@ internal sealed class ConversationService : IConversationService
                 id,
                 displays.TryGetValue(id, out var display) ? display.DisplayName : UnknownTenant))
             .ToList();
-    }
-
-    private async Task<bool> ValidateCreateAuthorityAsync(
-        MembershipSnapshot expectedActor,
-        CancellationToken ct)
-    {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        return actorOption.TryGetValue(out var actor)
-               && actor.HasPermission(TenantPermission.MessagesSend)
-               && actor.AudienceFor(TenantPermission.MessagesSend)
-                   == ResourceAudience.TenantResources;
     }
 
     private async Task<bool> ValidateAccessAsync(

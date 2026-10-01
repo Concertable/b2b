@@ -42,7 +42,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
     private readonly CommandTransactionAccessor transactions;
 
     public ApplicationWorkflow(
@@ -60,7 +60,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
-        ICommandExecutor commandExecutor,
+        ITransactionRunner transactionRunner,
         CommandTransactionAccessor transactions)
     {
         this.privilegedRepository = privilegedRepository;
@@ -77,7 +77,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
         this.transactions = transactions;
     }
 
@@ -103,7 +103,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         }
         catch (DbUpdateException exception) when (exception.IsDuplicateKey())
         {
-            return await commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
+            return await transactionRunner.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
                 (workflow, token) => workflow.ClassifyApplyConflictAsync(opportunityId, actor, token),
                 ct);
         }
@@ -116,7 +116,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IPAddress ipAddress,
         string? userAgent,
         CancellationToken ct) =>
-        commandExecutor.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
+        transactionRunner.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
             (workflow, token) => workflow.ApplyCommandAsync(
                 opportunityId,
                 eSignature,
@@ -295,7 +295,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ESignatureRequest eSignature,
         MembershipSnapshot actor,
         CancellationToken ct) =>
-        commandExecutor.ExecuteAsync<ApplicationWorkflow, UnitResult<AcceptApplicationError>>(
+        transactionRunner.ExecuteAsync<ApplicationWorkflow, UnitResult<AcceptApplicationError>>(
             (workflow, token) => workflow.AcceptCommandAsync(
                 applicationId,
                 eSignature,

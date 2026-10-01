@@ -1,6 +1,7 @@
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Infrastructure.Authorization;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Resolvers;
 
@@ -8,11 +9,14 @@ internal sealed class TenantResolver : ITenantResolver
 {
     private readonly ITenantRepository tenantRepository;
     private readonly IMembershipRepository membershipRepository;
+    private readonly TenantAuthorityResolver authority;
 
-    public TenantResolver(ITenantRepository tenantRepository, IMembershipRepository membershipRepository)
+    public TenantResolver(ITenantRepository tenantRepository, IMembershipRepository membershipRepository,
+        TenantAuthorityResolver authority)
     {
         this.tenantRepository = tenantRepository;
         this.membershipRepository = membershipRepository;
+        this.authority = authority;
     }
 
     public async Task<Option<TenantResolution>> ResolveAsync(
@@ -41,10 +45,11 @@ internal sealed class TenantResolver : ITenantResolver
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default)
     {
-        var existingTenantIds = await tenantRepository.GetExistingIdsForShareAsync(tenantIds, ct);
-        var memberships = await membershipRepository.GetSnapshotsByIdsForShareAsync(
-            [expectedActor.MembershipId], ct);
-        var actor = memberships.SingleOrDefault(membership => membership.HasSameAuthorityAs(expectedActor));
-        return actor is null ? null : new TenantSetResolution(actor, existingTenantIds);
+        var requestedTenantIds = tenantIds.Distinct().ToHashSet();
+        var lockSet = requestedTenantIds.Append(expectedActor.TenantId).Order().ToArray();
+        var existingTenantIds = await tenantRepository.GetExistingIdsForShareAsync(lockSet, ct);
+        var current = await authority.ResolveForCommandAsync(expectedActor, ct);
+        return !current.TryGetValue(out var actor) ? null : new TenantSetResolution(actor.Actor,
+            existingTenantIds.Where(requestedTenantIds.Contains).ToHashSet());
     }
 }

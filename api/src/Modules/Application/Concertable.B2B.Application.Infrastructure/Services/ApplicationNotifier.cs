@@ -23,7 +23,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly IOpportunityPrivilegedReadRepository opportunityRepository;
     private readonly IVenuePrivilegedReadRepository venueRepository;
     private readonly ITenantModule tenantModule;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
 
     public ApplicationNotifier(
@@ -34,7 +34,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         IOpportunityPrivilegedReadRepository opportunityRepository,
         IVenuePrivilegedReadRepository venueRepository,
         ITenantModule tenantModule,
-        ICommandExecutor commandExecutor,
+        ITransactionRunner transactionRunner,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork)
     {
         this.repository = repository;
@@ -44,7 +44,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         this.opportunityRepository = opportunityRepository;
         this.venueRepository = venueRepository;
         this.tenantModule = tenantModule;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
         this.unitOfWork = unitOfWork;
     }
 
@@ -54,7 +54,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         if (venueTenantId is null)
             return;
 
-        var venueCreatorUserId = await commandExecutor.ExecuteAsync<ApplicationNotifier, Guid?>(
+        var venueCreatorUserId = await transactionRunner.ExecuteAsync<ApplicationNotifier, Guid?>(
             (notifier, ct) => notifier.GetVenueCreatorUserIdAsync(applicationId, ct));
         if (venueCreatorUserId is null)
             return;

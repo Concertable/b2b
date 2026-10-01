@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Infrastructure.Authorization;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Requests;
@@ -17,6 +18,8 @@ internal sealed class RoleService : IRoleService
     private readonly IInvitationRepository invitations;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
+    private readonly TenantAuthorityResolver authority;
+    private readonly ICommandAuthorizationContext command;
 
     public RoleService(
         IRoleRepository roles,
@@ -27,7 +30,9 @@ internal sealed class RoleService : IRoleService
         IMembershipResolver membershipResolver,
         IInvitationRepository invitations,
         IOutboxUnitOfWorkBehavior unitOfWork,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        TenantAuthorityResolver authority,
+        ICommandAuthorizationContext command)
     {
         this.roles = roles;
         this.tenants = tenants;
@@ -38,6 +43,8 @@ internal sealed class RoleService : IRoleService
         this.invitations = invitations;
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
+        this.authority = authority;
+        this.command = command;
     }
 
     public Task<Result<IReadOnlyList<RoleDto>, ListRolesError>> ListAsync(CancellationToken ct = default) =>
@@ -90,10 +97,12 @@ internal sealed class RoleService : IRoleService
     private async Task<Result<RoleDto, CreateRoleError>> CreateCoreAsync(
         CreateRoleRequest request, CancellationToken ct)
     {
+        command.RegisterFailure<Result<RoleDto, CreateRoleError>>(
+            () => Result.Failure<RoleDto, CreateRoleError>(new CreateRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || await GetCurrentActorAsync(tenantId, ct) is not { } actor
-            || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
+        if (tenant is null || await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.MembersManageRoles, true, ct) is null)
             return new CreateRoleError.NotPermitted();
         if (!TryParseGrants(request.Permissions, out var grants)
             || !ValidName(request.Name))
@@ -105,7 +114,9 @@ internal sealed class RoleService : IRoleService
         var role = TenantRoleDefinition.CreateCustom(
             tenantId, name, request.IsInvitationAssignable, grants);
         roles.Insert(role);
+        var beforeVersion = tenant.RolePolicyVersion;
         tenant.AdvanceRolePolicyVersion();
+        authority.RecordPolicyVersion(tenant, beforeVersion);
         return ToDto(role);
     }
 
@@ -116,10 +127,12 @@ internal sealed class RoleService : IRoleService
     private async Task<Result<RoleDto, UpdateRoleError>> UpdateCoreAsync(
         Guid roleId, UpdateRoleRequest request, CancellationToken ct)
     {
+        command.RegisterFailure<Result<RoleDto, UpdateRoleError>>(
+            () => Result.Failure<RoleDto, UpdateRoleError>(new UpdateRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || await GetCurrentActorAsync(tenantId, ct) is not { } actor
-            || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
+        if (tenant is null || await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.MembersManageRoles, true, ct) is null)
             return new UpdateRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
         if (role is null)
@@ -135,7 +148,9 @@ internal sealed class RoleService : IRoleService
             return new UpdateRoleError.NameInUse();
 
         role.Update(name, request.IsInvitationAssignable, grants);
+        var beforeVersion = tenant.RolePolicyVersion;
         tenant.AdvanceRolePolicyVersion();
+        authority.RecordPolicyVersion(tenant, beforeVersion);
         return ToDto(role);
     }
 
@@ -146,10 +161,13 @@ internal sealed class RoleService : IRoleService
     private async Task<UnitResult<RetireRoleError>> RetireCoreAsync(
         Guid roleId, RetireRoleRequest request, CancellationToken ct)
     {
+        command.RegisterFailure<UnitResult<RetireRoleError>>(
+            () => UnitResult.Failure<RetireRoleError>(new RetireRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || await GetCurrentActorAsync(tenantId, ct) is not { } actor
-            || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
+        var actor = tenant is null ? null : await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.MembersManageRoles, true, ct);
+        if (tenant is null || actor is null)
             return new RetireRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
         if (role is null)
@@ -171,19 +189,29 @@ internal sealed class RoleService : IRoleService
         if (affected.Count > 0 && replacement is null)
             return new RetireRoleError.ReplacementRequired();
 
+        foreach (var member in affected.OrderBy(member => member.Id))
+        {
+            if (!await authority.TrackMembershipAsync(member, ct))
+                return new RetireRoleError.Superseded();
+        }
         var now = timeProvider.GetUtcNow().UtcDateTime;
         foreach (var member in affected)
         {
             var roleIds = member.Assignments.Where(row => row.RoleId != roleId)
                 .Select(row => row.RoleId).Append(replacement!.Id).Distinct().ToArray();
+            var beforeVersion = member.PermissionVersion;
             member.ReplaceRoles(roleIds, actor.MembershipId, now);
+            if (member.PermissionVersion != beforeVersion)
+                authority.RecordMembershipVersion(member, beforeVersion);
         }
         var pendingInvitations = await invitations.ListPendingAssignedToRoleAsync(
             tenantId, roleId, ct);
         foreach (var invitation in pendingInvitations)
             invitation.Revoke();
         role.Retire(now);
+        var beforePolicyVersion = tenant.RolePolicyVersion;
         tenant.AdvanceRolePolicyVersion();
+        authority.RecordPolicyVersion(tenant, beforePolicyVersion);
         return new Success();
     }
 

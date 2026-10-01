@@ -1,3 +1,4 @@
+using Concertable.B2B.Tenant.Infrastructure.Authorization;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.User.Contracts;
@@ -16,6 +17,8 @@ internal sealed class MembershipService : IMembershipService
     private readonly IUserModule userModule;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
+    private readonly TenantAuthorityResolver authority;
+    private readonly ICommandAuthorizationContext command;
 
     public MembershipService(
         IMembershipRepository repository,
@@ -26,7 +29,9 @@ internal sealed class MembershipService : IMembershipService
         IMembershipResolver membershipResolver,
         IUserModule userModule,
         IOutboxUnitOfWorkBehavior unitOfWork,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        TenantAuthorityResolver authority,
+        ICommandAuthorizationContext command)
     {
         this.repository = repository;
         this.tenantRepository = tenantRepository;
@@ -37,6 +42,8 @@ internal sealed class MembershipService : IMembershipService
         this.userModule = userModule;
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
+        this.authority = authority;
+        this.command = command;
     }
 
     public Task<Result<IReadOnlyList<MemberDto>, ListMembersError>> ListMembersAsync(
@@ -71,16 +78,22 @@ internal sealed class MembershipService : IMembershipService
         ChangeMemberRolesRequest request,
         CancellationToken ct)
     {
+        command.RegisterFailure<UnitResult<ChangeMemberRolesError>>(
+            () => UnitResult.Failure<ChangeMemberRolesError>(
+                new ChangeMemberRolesError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new ChangeMemberRolesError.NotPermitted();
-        var actor = await GetCurrentActorAsync(tenantId, ct);
-        if (actor is null || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
+        var actor = await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.MembersManageRoles, true, ct);
+        if (actor is null)
             return new ChangeMemberRolesError.NotPermitted();
 
         var member = await repository.FindMembershipAsync(tenantId, userId, ct);
         if (member is null)
             return new ChangeMemberRolesError.MemberNotFound(userId);
+        if (!await authority.TrackMembershipAsync(member, ct))
+            return new ChangeMemberRolesError.NotPermitted();
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
         if (selectedRoles is null)
             return new ChangeMemberRolesError.InvalidRoles();
@@ -91,7 +104,10 @@ internal sealed class MembershipService : IMembershipService
             && await repository.CountOwnersAsync(tenantId, ct) <= 1)
             return new ChangeMemberRolesError.LastOwner();
 
+        var beforeVersion = member.PermissionVersion;
         member.ReplaceRoles(request.RoleIds, actor.MembershipId, timeProvider.GetUtcNow().UtcDateTime);
+        if (member.PermissionVersion != beforeVersion)
+            authority.RecordMembershipVersion(member, beforeVersion);
         return new Success();
     }
 
@@ -104,22 +120,28 @@ internal sealed class MembershipService : IMembershipService
         Guid userId,
         CancellationToken ct)
     {
+        command.RegisterFailure<UnitResult<RemoveMemberError>>(
+            () => UnitResult.Failure<RemoveMemberError>(new RemoveMemberError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new RemoveMemberError.NotPermitted();
-        var actor = await GetCurrentActorAsync(tenantId, ct);
-        if (actor is null || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
+        var actor = await authority.ProveAdministrationAsync(
+            tenantId, TenantPermission.MembersRemove, true, ct);
+        if (actor is null)
             return new RemoveMemberError.NotPermitted();
 
         var member = await repository.FindMembershipAsync(tenantId, userId, ct);
         if (member is null)
             return new RemoveMemberError.MemberNotFound(userId);
+        if (!await authority.TrackMembershipAsync(member, ct))
+            return new RemoveMemberError.NotPermitted();
 
         var isOwner = (await roles.GetSummariesForMembershipAsync(member.TenantId, member.Id, ct))
             .Any(role => role.IsProtectedOwner);
         if (isOwner && await repository.CountOwnersAsync(tenantId, ct) <= 1)
             return new RemoveMemberError.LastOwner();
 
+        authority.RecordMembershipRemoval(member);
         repository.Remove(member);
         return new Success();
     }

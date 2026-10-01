@@ -76,6 +76,27 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task OwnerCanDowngradeOwnRolesWhenAnotherOwnerRemains()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var coOwner = fixture.SeedState.VenueManagerNoVenue;
+        var tenantId = fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == owner.Id).Id;
+        await fixture.AddOwnerMembershipAsync(tenantId, coOwner.Id);
+        var before = fixture.Memberships.Single(value => value.TenantId == tenantId && value.UserId == owner.Id);
+
+        var changed = await fixture.CreateClient(owner).PutAsJsonAsync(
+            $"/api/organization/members/{owner.Id}/roles",
+            new { roleIds = new[] { TenantApiFixture.RoleId(tenantId, "Staff") } });
+
+        await changed.ShouldBe(HttpStatusCode.NoContent);
+        var after = fixture.Memberships.Single(value => value.TenantId == tenantId && value.UserId == owner.Id);
+        Assert.Equal(before.PermissionVersion + 1, after.PermissionVersion);
+        Assert.Equal(TenantApiFixture.RoleId(tenantId, "Staff"), Assert.Single(after.Assignments).RoleId);
+        Assert.Equal(1, fixture.Memberships.Count(value => value.TenantId == tenantId
+            && value.Assignments.Any(row => row.RoleId == TenantApiFixture.RoleId(tenantId, "Owner"))));
+    }
+
+    [Fact]
     public async Task ZeroPermissionRoleKeepsCurrentMembershipVisible()
     {
         var owner = fixture.SeedState.VenueManager1;

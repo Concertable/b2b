@@ -45,6 +45,12 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
             .ToHashSetAsync(ct);
     }
 
+    public Task<string?> GetAuthorizationCatalogRevisionAsync(CancellationToken ct = default) =>
+        context.AuthorizationCatalogStates.AsNoTracking()
+            .Where(state => state.Id == 1)
+            .Select(state => state.Revision)
+            .SingleOrDefaultAsync(ct);
+
     public async Task<TenantEntity?> GetByIdForAdministrationAsync(
         Guid tenantId,
         CancellationToken ct = default)

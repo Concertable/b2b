@@ -1,4 +1,5 @@
 using System.Data;
+using Concertable.B2B.Authorization.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -17,8 +18,9 @@ public static class CommandTransactionExtensions
             return builder.Build();
         });
         services.AddScoped<CommandTransactionAccessor>();
+        services.AddScoped<ICommandAuthorizationContext, CommandAuthorizationContext>();
         services.AddSingleton<ICommandTransactionCommitter, CommandTransactionCommitter>();
-        services.AddSingleton<ICommandExecutor>(provider => new CommandExecutor(
+        services.AddSingleton<ITransactionRunner>(provider => new TransactionRunner(
             provider.GetRequiredService<IServiceScopeFactory>(),
             provider.GetRequiredService<NpgsqlDataSource>(),
             provider.GetRequiredService<ICommandTransactionCommitter>()));

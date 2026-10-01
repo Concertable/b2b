@@ -14,6 +14,11 @@ public sealed class CommandTransaction : IAsyncDisposable
     private readonly IDbContextAccessor outboxAccessor;
     private readonly List<DbContext> participants = [];
     private readonly List<Func<CancellationToken, Task>> authorityValidators = [];
+    private readonly List<Func<CancellationToken, Task<bool>>> requiredAuthorityValidators = [];
+    private readonly Dictionary<Type, Delegate> authorityFailures = [];
+    private bool authorityManaged;
+    private bool authorityFailed;
+    private bool authorityPending;
     private bool failed;
     private bool commitAttempted;
     private bool completed;
@@ -79,7 +84,39 @@ public sealed class CommandTransaction : IAsyncDisposable
     public void ValidateAuthority(Func<CancellationToken, Task> validator) =>
         this.authorityValidators.Add(validator);
 
+    public Guid Id { get; } = Guid.NewGuid();
+
     public bool HasFailed => this.failed;
+    public bool HasAuthorityFailed => this.authorityFailed;
+    internal bool IsAuthorityManaged => this.authorityManaged;
+
+    public void RegisterAuthorityFailure<TResult>(Func<TResult> failure)
+    {
+        ArgumentNullException.ThrowIfNull(failure);
+        this.authorityManaged = true;
+        this.authorityFailures.TryAdd(typeof(TResult), failure);
+    }
+
+    public TResult AuthorityFailure<TResult>() =>
+        this.authorityFailures.TryGetValue(typeof(TResult), out var failure)
+            ? ((Func<TResult>)failure)()
+            : throw new InvalidOperationException(
+                $"No authority failure result was registered for {typeof(TResult).Name}.");
+
+    public void RegisterRequiredAuthority(Func<CancellationToken, Task<bool>> validator)
+    {
+        ArgumentNullException.ThrowIfNull(validator);
+        this.authorityManaged = true;
+        this.authorityPending = true;
+        this.requiredAuthorityValidators.Add(validator);
+    }
+
+    public void MarkAuthorityFailed()
+    {
+        this.authorityManaged = true;
+        this.authorityFailed = true;
+        this.failed = true;
+    }
 
     public void MarkFailed() => this.failed = true;
 
@@ -109,12 +146,44 @@ public sealed class CommandTransaction : IAsyncDisposable
 
     public async Task ValidateAuthorityAsync(CancellationToken ct = default)
     {
-        foreach (var validator in this.authorityValidators)
-            await validator(ct);
+        var regularIndex = 0;
+        var requiredIndex = 0;
+        while (regularIndex < this.authorityValidators.Count
+            || requiredIndex < this.requiredAuthorityValidators.Count)
+        {
+            while (regularIndex < this.authorityValidators.Count)
+                await this.authorityValidators[regularIndex++](ct);
+
+            if (requiredIndex < this.requiredAuthorityValidators.Count
+                && !await this.requiredAuthorityValidators[requiredIndex++](ct))
+            {
+                this.MarkAuthorityFailed();
+                return;
+            }
+        }
+
+        this.authorityPending = false;
+        if (this.authorityManaged
+            && this.participants.Any(participant => participant.ChangeTracker.HasChanges()))
+            throw new InvalidOperationException("Authority validation staged changes after final flush.");
+    }
+
+    public TResult FailedResult<TResult>(TResult result)
+    {
+        if (CommandOutcome.IsFailure(result))
+            return result;
+        if (this.authorityFailed)
+            return this.AuthorityFailure<TResult>();
+        throw new InvalidOperationException(
+            "A nested command failed after the outer action returned success.");
     }
 
     public async Task CommitAsync(CancellationToken ct = default)
     {
+        if (this.authorityManaged && (this.failed || this.authorityPending
+            || this.participants.Any(participant => participant.ChangeTracker.HasChanges())))
+            throw new InvalidOperationException("An authorization-managed command cannot commit before validation.");
+
         this.commitAttempted = true;
         try
         {

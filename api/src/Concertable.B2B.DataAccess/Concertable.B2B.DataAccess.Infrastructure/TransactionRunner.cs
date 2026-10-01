@@ -4,27 +4,27 @@ using Npgsql;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-internal sealed class CommandExecutor(
+internal sealed class TransactionRunner(
     IServiceScopeFactory scopeFactory,
     NpgsqlDataSource dataSource,
-    ICommandTransactionCommitter committer) : ICommandExecutor
+    ICommandTransactionCommitter committer) : ITransactionRunner
 {
     public async Task<TResult> ExecuteAsync<TService, TResult>(
-        Func<TService, CancellationToken, Task<TResult>> command,
+        Func<TService, CancellationToken, Task<TResult>> operation,
         CancellationToken ct = default)
         where TService : notnull
-        => await ExecuteCoreAsync(command, null, null, ct);
+        => await ExecuteCoreAsync(operation, null, null, ct);
 
     public async Task<TResult> ExecuteAsync<TService, TResult>(
-        Func<TService, CancellationToken, Task<TResult>> command,
+        Func<TService, CancellationToken, Task<TResult>> operation,
         Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
         Func<TResult> authorityFailure,
         CancellationToken ct = default)
         where TService : notnull
-        => await ExecuteCoreAsync(command, validateAuthority, authorityFailure, ct);
+        => await ExecuteCoreAsync(operation, validateAuthority, authorityFailure, ct);
 
     private async Task<TResult> ExecuteCoreAsync<TService, TResult>(
-        Func<TService, CancellationToken, Task<TResult>> command,
+        Func<TService, CancellationToken, Task<TResult>> operation,
         Func<TService, TResult, CancellationToken, Task<bool>>? validateAuthority,
         Func<TResult>? authorityFailure,
         CancellationToken ct)
@@ -46,21 +46,29 @@ internal sealed class CommandExecutor(
             accessor.Current = transaction;
 
             var service = services.GetRequiredService<TService>();
-            var result = await command(service, ct);
+            var result = await operation(service, ct);
             if (CommandOutcome.IsFailure(result))
                 transaction.MarkFailed();
 
             if (transaction.HasFailed)
             {
                 await transaction.RollbackAsync(CancellationToken.None);
-                if (!CommandOutcome.IsFailure(result))
-                    throw new InvalidOperationException(
-                        "A nested command failed after the outer action returned success.");
-                return result;
+                return transaction.FailedResult(result);
             }
 
             await transaction.FlushAsync(ct);
+            if (transaction.IsAuthorityManaged && transaction.HasFailed)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return transaction.FailedResult(result);
+            }
+
             await transaction.ValidateAuthorityAsync(ct);
+            if (transaction.IsAuthorityManaged && transaction.HasFailed)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return transaction.FailedResult(result);
+            }
             if (validateAuthority is not null
                 && !await validateAuthority(service, result, ct))
             {
@@ -68,6 +76,12 @@ internal sealed class CommandExecutor(
                 return (authorityFailure
                     ?? throw new InvalidOperationException("An authority failure result is required."))();
             }
+            if (transaction.IsAuthorityManaged && transaction.HasFailed)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                return transaction.FailedResult(result);
+            }
+
             await transaction.CommitAsync(ct);
             return result;
         }

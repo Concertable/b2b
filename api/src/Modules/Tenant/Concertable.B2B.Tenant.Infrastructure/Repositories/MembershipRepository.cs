@@ -45,6 +45,29 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         return await MaterializeAsync(members, ct);
     }
 
+    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForUpdateAsync(
+        IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
+    {
+        var transaction = transactions.Current
+            ?? throw new InvalidOperationException("Membership updates require an active transaction.");
+        await transaction.EnlistAsync(context, ct);
+        var distinctIds = membershipIds.Distinct().Order().ToArray();
+        foreach (var membershipId in distinctIds)
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                 SELECT 1
+                 FROM tenant."Memberships"
+                 WHERE "Id" = {membershipId}
+                 FOR UPDATE
+                 """,
+                ct);
+        }
+        var members = await context.Memberships.AsNoTracking()
+            .Where(member => distinctIds.Contains(member.Id)).ToListAsync(ct);
+        return await MaterializeAsync(members, ct);
+    }
+
     public Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
         Guid membershipId, CancellationToken ct = default) =>
         ReadWithFenceAsync(async readCt =>
@@ -59,6 +82,24 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
                 .Where(member => member.Id == membershipId && member.TenantId == tenantId)
                 .ToListAsync(readCt);
             return (await MaterializeAsync(members, readCt)).SingleOrDefault();
+        }, ct);
+
+    public Task<AuthoritySnapshot?> GetAuthoritySnapshotByUserIdAndTenantIdAsync(
+        Guid userId, Guid tenantId, CancellationToken ct = default) =>
+        ReadWithFenceAsync(async readCt =>
+        {
+            await LockTenantForShareAsync(tenantId, readCt);
+            var members = await context.Memberships.AsNoTracking()
+                .Where(member => member.UserId == userId && member.TenantId == tenantId)
+                .ToListAsync(readCt);
+            var actor = (await MaterializeAsync(members, readCt)).SingleOrDefault();
+            if (actor is null)
+                return null;
+            var revision = await context.AuthorizationCatalogStates.AsNoTracking()
+                .Where(state => state.Id == 1)
+                .Select(state => state.Revision)
+                .SingleOrDefaultAsync(readCt);
+            return revision is null ? null : new AuthoritySnapshot(actor, revision);
         }, ct);
 
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(

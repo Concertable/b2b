@@ -37,6 +37,21 @@ public sealed class TenantRoleAssignmentPolicyTests
         Assert.False(result);
     }
 
+    [Fact]
+    public void CanAssign_ManagerCannotDelegateCustomInvitationAdministration()
+    {
+        var tenantId = Guid.NewGuid();
+        var actor = Snapshot(tenantId, "Manager");
+        var role = TenantRoleDefinition.CreateCustom(tenantId, "Inviter", true,
+            new Dictionary<TenantPermission, ResourceAudience>
+            {
+                [TenantPermission.MembersInvite] = ResourceAudience.TenantResources,
+            });
+
+        Assert.False(TenantRoleAssignmentPolicy.CanAssign(actor, false, [role]));
+        Assert.True(TenantRoleAssignmentPolicy.CanAssign(actor, true, [role]));
+    }
+
     private static MembershipSnapshot Snapshot(Guid tenantId, string presetKey)
     {
         var preset = AuthorizationCatalog.Presets[presetKey];

@@ -54,17 +54,17 @@ public sealed class ConcertWorkflowTests
                 It.IsAny<DateTime>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        var commandExecutor = new ImmediateCommandExecutor(settlementService.Object);
+        var transactionRunner = new ImmediateTransactionRunner(settlementService.Object);
         workflow = new ConcertWorkflow(
             concertRepository.Object,
-            commandExecutor,
+            transactionRunner,
             cancelFactory.Object,
             completeFactory.Object,
             immediateBehavior,
             membership.Object,
             membershipResolver.Object,
             TimeProvider.System);
-        commandExecutor.Workflow = workflow;
+        transactionRunner.Workflow = workflow;
     }
 
     [Fact]
@@ -211,7 +211,7 @@ public sealed class ConcertWorkflowTests
         }
     }
 
-    private sealed class ImmediateCommandExecutor(ISettlementService settlementService) : ICommandExecutor
+    private sealed class ImmediateTransactionRunner(ISettlementService settlementService) : ITransactionRunner
     {
         public ConcertWorkflow Workflow { get; set; } = null!;
 

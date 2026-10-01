@@ -19,7 +19,7 @@ public sealed class TenantApiFixture : ApiFixture
 {
     private const long TenantCreationLockSeed = 638457220;
     private TenantDbContext dbContext = null!;
-    private ICommandExecutor commandExecutor = null!;
+    private ITransactionRunner transactionRunner = null!;
     private TenantProvisioningHandler provisioningHandler = null!;
     internal VerificationReviewRaceInterceptor VerificationReviewRace { get; } = new();
 
@@ -33,7 +33,7 @@ public sealed class TenantApiFixture : ApiFixture
     public Task<TResult> ExecuteResolutionAsync<TResult>(
         Func<ITenantResolver, CancellationToken, Task<TResult>> resolve,
         CancellationToken ct = default) =>
-        commandExecutor.ExecuteAsync(resolve, ct);
+        transactionRunner.ExecuteAsync(resolve, ct);
 
     public Task ProvisionAsync(CredentialRegisteredEvent @event, MessageEnvelope? envelope = null) =>
         provisioningHandler.HandleAsync(
@@ -282,7 +282,7 @@ public sealed class TenantApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<TenantDbContext>();
-        commandExecutor = scope.ServiceProvider.GetRequiredService<ICommandExecutor>();
+        transactionRunner = scope.ServiceProvider.GetRequiredService<ITransactionRunner>();
         VerificationReviewRace.UseDataSource(scope.ServiceProvider.GetRequiredService<NpgsqlDataSource>());
         provisioningHandler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()

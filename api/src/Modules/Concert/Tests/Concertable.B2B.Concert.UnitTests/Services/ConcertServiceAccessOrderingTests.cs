@@ -84,7 +84,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var membership = new Mock<IMembershipContext>();
         var resolution = new Mock<ITenantResolver>();
-        var executor = new ImmediateCommandExecutor();
+        var executor = new ImmediateTransactionRunner();
         repository
             .Setup(value => value.GetIdentityByIdForUpdateAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ConcertAccessIdentity(1, Guid.NewGuid(), Guid.NewGuid(), 0));
@@ -140,7 +140,7 @@ public sealed class ConcertServiceAccessOrderingTests
         ConcertService Service,
         Mock<IConcertPrivilegedRepository> Repository);
 
-    private sealed class ImmediateCommandExecutor : ICommandExecutor
+    private sealed class ImmediateTransactionRunner : ITransactionRunner
     {
         public ConcertService Service { get; set; } = null!;
 

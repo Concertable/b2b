@@ -67,7 +67,7 @@ public sealed class ApplicationServiceCancellationTests
             Mock.Of<IPrivilegedUnitOfWorkBehavior>(),
             Mock.Of<IMembershipContext>(),
             Mock.Of<IMembershipResolver>(),
-            Mock.Of<ICommandExecutor>());
+            Mock.Of<ITransactionRunner>());
 
         var result = await service.GetByOpportunityIdAsync(opportunityId, ct);
 
