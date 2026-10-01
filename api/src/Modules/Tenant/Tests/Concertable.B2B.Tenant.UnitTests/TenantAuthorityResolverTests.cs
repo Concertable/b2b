@@ -77,6 +77,31 @@ public sealed class TenantAuthorityResolverTests
         Assert.True(await fixture.Authority.ValidateForCommitAsync(fixture.OriginalAuthority));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ValidateForCommit_MembershipChangeLeavesNoOwner_Rejects(bool remove)
+    {
+        var fixture = new Fixture();
+        Assert.NotNull(await fixture.Authority.ProveAdministrationAsync(
+            fixture.Tenant.Id, TenantPermission.MembersManageRoles, true));
+        Assert.True(await fixture.Authority.TrackMembershipAsync(fixture.Member));
+        if (remove)
+        {
+            fixture.Authority.RecordMembershipRemoval(fixture.Member);
+            fixture.MemberPresent = false;
+        }
+        else
+        {
+            var before = fixture.Member.PermissionVersion;
+            fixture.Member.ReplaceRoles([Guid.NewGuid()], fixture.Member.Id, DateTime.UtcNow);
+            fixture.Authority.RecordMembershipVersion(fixture.Member, before);
+        }
+        fixture.OwnerCount = 0;
+
+        Assert.False(await fixture.Authority.ValidateForCommitAsync(fixture.OriginalAuthority));
+    }
+
     private sealed class Fixture
     {
         private readonly Mock<ITenantRepository> tenants = new();
@@ -121,6 +146,8 @@ public sealed class TenantAuthorityResolverTests
             memberships.Setup(value => value.IsMemberAsync(tenantId, Member.UserId,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => MemberPresent);
+            memberships.Setup(value => value.CountOwnersAsync(tenantId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => OwnerCount);
             roles.Setup(value => value.HasProtectedOwnerAsync(tenantId, Member.Id,
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
@@ -137,6 +164,7 @@ public sealed class TenantAuthorityResolverTests
         public TenantAuthorityResolver Authority { get; }
         public TenantResolver Resolver { get; }
         public bool MemberPresent { get; set; } = true;
+        public int OwnerCount { get; set; } = 1;
         public ImmutableDictionary<TenantPermission, ResourceAudience> CurrentPermissions { get; set; }
 
         private MembershipSnapshot Snapshot() =>

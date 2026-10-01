@@ -11,6 +11,8 @@ internal interface IContractRepository : IRepository<ContractEntity, int>
     Task<ContractEntity?> GetByBookingIdAsync(
         int bookingId,
         CancellationToken ct = default);
+    Task<IReadOnlyDictionary<int, int>> GetIdsByApplicationIdsAsync(
+        IReadOnlyCollection<int> applicationIds, CancellationToken ct = default);
     Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);

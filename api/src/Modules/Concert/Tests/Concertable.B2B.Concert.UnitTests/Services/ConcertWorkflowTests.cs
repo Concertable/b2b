@@ -23,6 +23,8 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 public sealed class ConcertWorkflowTests
 {
     private readonly Mock<IConcertPrivilegedRepository> concertRepository = new();
+    private readonly Mock<IResourceAuthorization> resources = new();
+    private readonly Mock<ICommandAuthorizationContext> commandAuthorization = new();
     private readonly Mock<ISettlementService> settlementService = new();
     private readonly Mock<IDealStrategyFactory<ICancelStep>> cancelFactory = new();
     private readonly Mock<IDealStrategyFactory<ICompleteStep>> completeFactory = new();
@@ -42,18 +44,9 @@ public sealed class ConcertWorkflowTests
         immediateBehavior = new ImmediateBehavior();
         var membership = new Mock<IMembershipContext>();
         membership.SetupGet(context => context.Membership).Returns(actor);
-        var membershipResolver = new Mock<IMembershipResolver>();
-        membershipResolver
-            .Setup(resolver => resolver.ResolveSnapshotAsync(actor, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Option<MembershipSnapshot>)actor);
-        concertRepository
-            .Setup(repository => repository.CanManageAsync(
-                It.IsAny<int>(),
-                actor,
-                ResourceAudience.TenantResources,
-                It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        resources.Setup(value => value.RequireAsync(
+                It.IsAny<AuthorizationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AuthorizationDecision.Allowed);
         var transactionRunner = new ImmediateTransactionRunner(settlementService.Object);
         workflow = new ConcertWorkflow(
             concertRepository.Object,
@@ -62,9 +55,29 @@ public sealed class ConcertWorkflowTests
             completeFactory.Object,
             immediateBehavior,
             membership.Object,
-            membershipResolver.Object,
-            TimeProvider.System);
+            resources.Object,
+            commandAuthorization.Object);
         transactionRunner.Workflow = workflow;
+    }
+
+    [Theory]
+    [InlineData(AuthorizationDecision.Denied)]
+    [InlineData(AuthorizationDecision.AuthorityChanged)]
+    public async Task CancelAsync_WithoutAuthority_DoesNotLoadOrCancel(AuthorizationDecision decision)
+    {
+        resources.Setup(value => value.RequireAsync(
+                It.IsAny<AuthorizationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(decision);
+
+        var result = await workflow.CancelAsync(42);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<CancelConcertError.NotPermitted>(error);
+        concertRepository.Verify(repository => repository.GetByIdForUpdateAsync(
+            It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        cancelFactory.Verify(factory => factory.Create(It.IsAny<DealType>()), Times.Never);
+        commandAuthorization.Verify(context => context.RegisterFailure(
+            It.IsAny<Func<UnitResult<CancelConcertError>>>()), Times.Once);
     }
 
     [Fact]

@@ -13,11 +13,13 @@ namespace Concertable.B2B.Tenant.Infrastructure.Events;
 internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<CredentialRegisteredEvent>
 {
     private readonly TenantDbContext context;
+    private readonly ITenantRepository repository;
     private readonly TimeProvider timeProvider;
 
-    public TenantProvisioningHandler(TenantDbContext context, TimeProvider timeProvider)
+    public TenantProvisioningHandler(TenantDbContext context, ITenantRepository repository, TimeProvider timeProvider)
     {
         this.context = context;
+        this.repository = repository;
         this.timeProvider = timeProvider;
     }
 
@@ -133,7 +135,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
         DateTime now,
         CancellationToken ct)
     {
-        var tenant = await context.Tenants.FirstOrDefaultAsync(candidate => candidate.CreatedByUserId == e.UserId, ct);
+        var tenant = await repository.GetByCreatedByUserIdForCreationAsync(e.UserId, ct);
         if (tenant is null)
         {
             tenant = TenantEntity.Create(e.Email, e.Email, e.UserId, now);

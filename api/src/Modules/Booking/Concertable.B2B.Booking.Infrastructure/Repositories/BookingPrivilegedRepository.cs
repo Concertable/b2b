@@ -11,6 +11,16 @@ namespace Concertable.B2B.Booking.Infrastructure.Repositories;
 internal sealed class BookingPrivilegedRepository(BookingPrivilegedDbContext context)
     : IBookingPrivilegedRepository
 {
+    public async Task<IReadOnlyList<Guid>> GetPartyTenantIdsAsync(
+        int bookingId, CancellationToken ct = default)
+    {
+        var booking = await context.Bookings.AsNoTracking()
+            .Where(candidate => candidate.Id == bookingId)
+            .Select(candidate => new { candidate.VenueTenantId, candidate.ArtistTenantId })
+            .SingleOrDefaultAsync(ct);
+        return booking is null ? [] : [booking.VenueTenantId, booking.ArtistTenantId];
+    }
+
     public Task<BookingEntity?> GetByIdAsync(int bookingId, CancellationToken ct = default) =>
         context.Bookings.SingleOrDefaultAsync(booking => booking.Id == bookingId, ct);
 
@@ -54,28 +64,6 @@ internal sealed class BookingPrivilegedRepository(BookingPrivilegedDbContext con
             .Where(booking => booking.Id == bookingId)
             .Select(booking => (BookingState?)booking.State)
             .SingleOrDefaultAsync(ct);
-
-    public Task<bool> CanCancelAsync(
-        int bookingId,
-        MembershipSnapshot actor,
-        ResourceAudience audience,
-        DateTime at,
-        CancellationToken ct = default) =>
-        context.Bookings.AsNoTracking().AnyAsync(booking =>
-            booking.Id == bookingId
-            && (booking.VenueTenantId == actor.TenantId || booking.ArtistTenantId == actor.TenantId)
-            && context.BookingAccessGrants.Any(grant =>
-                grant.ResourceId == booking.Id
-                && grant.Scope == BookingAccessScope.Operations
-                && grant.TenantId == actor.TenantId
-                && grant.RevokedAt == null
-                && grant.ValidFrom <= at
-                && (grant.ValidUntil == null || at < grant.ValidUntil)
-                && (audience == ResourceAudience.TenantResources
-                        && (grant.MembershipId == null || grant.MembershipId == actor.MembershipId)
-                    || audience == ResourceAudience.AssignedResources
-                        && grant.MembershipId == actor.MembershipId)),
-            ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default) => context.SaveChangesAsync(ct);
 

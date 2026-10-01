@@ -126,6 +126,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
             || !CanChangeMembership(current))
             throw new InvalidOperationException("Invalid membership authority transition.");
         tracked.ExpectedVersion = member.PermissionVersion;
+        current.MembershipChanged = true;
     }
 
     internal void RecordMembershipRemoval(TenantMembershipEntity member)
@@ -139,6 +140,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
             || !CanChangeMembership(current))
             throw new InvalidOperationException("Invalid membership removal transition.");
         tracked.Removed = true;
+        current.MembershipChanged = true;
     }
 
     internal void RecordPolicyVersion(TenantEntity tenant, long beforeVersion)
@@ -281,6 +283,8 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
                 var tenant = await tenants.GetByIdAsync(tenantId, ct);
                 if (!exists || tenant?.RolePolicyVersion != current.ExpectedPolicyVersion)
                     return false;
+                if (current.MembershipChanged && await memberships.CountOwnersAsync(tenantId, ct) == 0)
+                    return false;
             }
             foreach (var (membershipId, tracked) in current.Members)
             {
@@ -363,6 +367,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         public List<InvitationProof> InvitationProofs { get; } = [];
         public List<InvitationCreationProof> CreatedInvitations { get; } = [];
         public bool TenantDeleted { get; set; }
+        public bool MembershipChanged { get; set; }
     }
 
     private sealed class MemberTransition(Guid tenantId, Guid userId, long expectedVersion)

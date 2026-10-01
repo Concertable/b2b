@@ -8,6 +8,7 @@ using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Concert.Infrastructure;
+using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.Contracts.Enums;
 using Concertable.Kernel.Identity;
@@ -67,6 +68,9 @@ public sealed class ConcertServiceCreateTests
             .Returns((Func<Task> action, CancellationToken _) => action());
         service = new ConcertService(
             Mock.Of<IConcertRepository>(),
+            Mock.Of<IConcertPrivateReadRepository>(),
+            Mock.Of<IResourceAuthorization>(),
+            Mock.Of<ICommandAuthorizationContext>(),
             repository.Object,
             unitOfWork.Object,
             Mock.Of<IConcertReadRepository>(),

@@ -1,4 +1,6 @@
 using Concertable.B2B.Booking.Domain.Entities;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Contracts.Enums;
@@ -12,36 +14,40 @@ namespace Concertable.B2B.Booking.Infrastructure.Repositories;
 internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRepository
 {
     private readonly BookingDbContext context;
+    private readonly IMembershipContext membership;
+    private readonly ITenantCapabilityAuthorization capabilities;
+    private readonly TimeProvider clock;
 
-    public BookingRepository(BookingDbContext context) : base(context) =>
+    public BookingRepository(BookingDbContext context, IMembershipContext membership,
+        ITenantCapabilityAuthorization capabilities, TimeProvider clock) : base(context)
+    {
         this.context = context;
-
-    public Task<BookingEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default) =>
-        context.Bookings
-            .Include(booking => booking.AccessGrants)
-            .FirstOrDefaultAsync(booking => booking.Id == id, ct);
+        this.membership = membership;
+        this.capabilities = capabilities;
+        this.clock = clock;
+    }
 
     public async ValueTask AddContractAsync(ContractEntity contract, CancellationToken ct = default) =>
         await context.Contracts.AddAsync(contract, ct);
 
-    public Task<BookingEntity?> GetSummaryByApplicationIdAsync(
+    public async Task<BookingEntity?> GetSummaryByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        WithScope(BookingAccessScope.Summary).SingleOrDefaultAsync(
+        await (await WithFacetAsync(ResourceFacet.Summary, ct)).SingleOrDefaultAsync(
             booking => booking.ApplicationId == applicationId,
             ct);
 
-    public Task<BookingEntity?> GetOperationsByApplicationIdAsync(
+    public async Task<BookingEntity?> GetOperationsByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        WithScope(BookingAccessScope.Operations).SingleOrDefaultAsync(
+        await (await WithFacetAsync(ResourceFacet.Operations, ct)).SingleOrDefaultAsync(
             booking => booking.ApplicationId == applicationId,
             ct);
 
-    public Task<int?> GetIdByApplicationIdAsync(
+    public async Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        WithScope(BookingAccessScope.Summary)
+        await (await WithFacetAsync(ResourceFacet.Summary, ct))
             .Where(booking => booking.ApplicationId == applicationId)
             .Select(booking => (int?)booking.Id)
             .SingleOrDefaultAsync(ct);
@@ -49,7 +55,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
     public async Task<IReadOnlyList<BookingEntity>> GetByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds,
         CancellationToken ct = default) =>
-        await WithScope(BookingAccessScope.Summary)
+        await (await WithFacetAsync(ResourceFacet.Summary, ct))
             .Where(booking => applicationIds.Contains(booking.ApplicationId))
             .ToListAsync(ct);
 
@@ -76,11 +82,11 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
             .Select(booking => (BookingState?)booking.State)
             .FirstOrDefaultAsync(ct);
 
-    public Task<int> GetAwaitingCheckoutCountByArtistTenantIdAsync(
+    public async Task<int> GetAwaitingCheckoutCountByArtistTenantIdAsync(
         Guid artistTenantId,
         DateTime now,
         CancellationToken ct = default) =>
-        WithScope(BookingAccessScope.Operations).CountAsync(
+        await (await WithFacetAsync(ResourceFacet.Operations, ct)).CountAsync(
             booking =>
                 booking.ArtistTenantId == artistTenantId &&
                 booking.EndDate > now &&
@@ -89,9 +95,18 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
                  booking.State == BookingState.ConfirmationFailed),
             ct);
 
-    private IQueryable<BookingEntity> WithScope(BookingAccessScope scope) =>
-        context.Bookings.Where(booking =>
-            context.BookingAccessGrants.Any(grant =>
-                grant.ResourceId == booking.Id && grant.Scope == scope));
+    private async Task<IQueryable<BookingEntity>> WithFacetAsync(ResourceFacet facet, CancellationToken ct)
+    {
+        var actor = membership.Membership;
+        if (actor is null || await capabilities.CheckAsync(TenantPermission.OperationsView, ct)
+            != AuthorizationDecision.Allowed)
+            return context.Bookings.Where(_ => false);
 
+        var binding = ResourcePolicyBinding.FromCatalog(
+            TenantPermission.OperationsView, ResourceKind.Booking, facet);
+        return BookingGrantPolicy.VisibleBookings(
+            context.Bookings.IgnoreQueryFilters([TenantFilters.Key]),
+            context.BookingAccessGrants.IgnoreQueryFilters([TenantFilters.Key]),
+            context.MembershipAuthority.AsNoTracking(), actor, binding, clock.GetUtcNow().UtcDateTime);
+    }
 }

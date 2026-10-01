@@ -6,13 +6,12 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
-
-internal sealed class BookingResourceAuthorizationEvaluator(
+internal sealed class ContractResourceAuthorizationEvaluator(
     BookingPrivilegedDbContext context,
     CommandTransactionAccessor transactions)
     : IResourceAuthorizationEvaluator
 {
-    public ResourceKind Kind => ResourceKind.Booking;
+    public ResourceKind Kind => ResourceKind.Contract;
 
     public Task<ResourceAuthorizationEvidence?> CheckAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
@@ -24,12 +23,12 @@ internal sealed class BookingResourceAuthorizationEvaluator(
         DateTimeOffset now, CancellationToken ct = default)
     {
         var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Booking authorization requires an active command transaction.");
+            ?? throw new InvalidOperationException("Contract authorization requires an active command transaction.");
         await transaction.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""SELECT 1 FROM booking."Bookings" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
+            $"""SELECT 1 FROM booking."Contracts" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""SELECT 1 FROM booking."BookingAccessGrants" WHERE "ResourceId" = {request.Resource.Id} ORDER BY "Id" FOR UPDATE""", ct);
+            $"""SELECT 1 FROM booking."ContractAccessGrants" WHERE "ResourceId" = {request.Resource.Id} ORDER BY "Id" FOR UPDATE""", ct);
         return await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct);
     }
 
@@ -48,22 +47,17 @@ internal sealed class BookingResourceAuthorizationEvaluator(
     }
 
     private async Task<ResourceAuthorizationEvidence?> ReadEvidenceAsync(
-        int bookingId, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        int contractId, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct,
         ResourceAuthorizationEvidence? pinned = null)
     {
         if (binding.Resource != Kind || actor.AudienceFor(binding.Permission) == ResourceAudience.None)
             return null;
 
-        var booking = await BookingGrantPolicy.EligibleBookingResources(
-                context.Bookings.AsNoTracking(), actor.TenantId, binding.Policy)
-            .Where(candidate => candidate.Id == bookingId)
-            .Select(candidate => new { candidate.VenueTenantId, candidate.ArtistTenantId })
-            .SingleOrDefaultAsync(ct);
-        if (booking is null)
+        if (!await BookingGrantPolicy.EligibleContractResources(
+                context.Contracts.AsNoTracking(), binding.Policy)
+            .AnyAsync(contract => contract.Id == contractId, ct))
             return null;
-
-        Guid? principal = binding.Policy == "booking_grant" ? null : actor.TenantId;
 
         if (pinned is not null && pinned.Grants.Length != binding.RequiredScopes.Length)
             return null;
@@ -71,7 +65,7 @@ internal sealed class BookingResourceAuthorizationEvaluator(
         var evidence = ImmutableArray.CreateBuilder<ResourceGrantEvidence>();
         foreach (var requiredScope in binding.RequiredScopes)
         {
-            if (!Enum.TryParse<BookingAccessScope>(requiredScope, false, out var scope)
+            if (!Enum.TryParse<ContractAccessScope>(requiredScope, false, out var scope)
                 || !Enum.IsDefined(scope))
                 return null;
 
@@ -80,9 +74,9 @@ internal sealed class BookingResourceAuthorizationEvaluator(
                 return null;
 
             var selectedId = pinnedGrant?.GrantId;
-            var grant = await BookingGrantPolicy.EligibleBookings(
-                    context.BookingAccessGrants.AsNoTracking(), actor, binding.Permission, scope, now.UtcDateTime)
-                .Where(candidate => candidate.ResourceId == bookingId
+            var grant = await BookingGrantPolicy.EligibleContracts(
+                    context.ContractAccessGrants.AsNoTracking(), actor, binding.Permission, scope, now.UtcDateTime)
+                .Where(candidate => candidate.ResourceId == contractId
                     && (selectedId == null || candidate.Id == selectedId))
                 .OrderBy(candidate => candidate.Id)
                 .Select(candidate => new
@@ -102,6 +96,6 @@ internal sealed class BookingResourceAuthorizationEvaluator(
                 grant.ValidUntil is { } until ? new DateTimeOffset(until, TimeSpan.Zero) : null));
         }
 
-        return new ResourceAuthorizationEvidence(principal, evidence.ToImmutable());
+        return new ResourceAuthorizationEvidence(null, evidence.ToImmutable());
     }
 }

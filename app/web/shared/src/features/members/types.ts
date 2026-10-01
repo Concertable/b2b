@@ -45,7 +45,7 @@ export interface PermissionMetadata {
   permission: TenantPermission;
   label: string;
   category: string;
-  resourceBindings: ReadonlyArray<{ resource: string; facet: string; policy: string; requiresScopes: ReadonlyArray<string> }>;
+  resourceBindings: ReadonlyArray<{ resource: string; facet: string | null; policy: string; requiresScopes: ReadonlyArray<string> }>;
   assignableAudiences: ReadonlyArray<ResourceAudience>;
   ownerOnly: boolean;
 }

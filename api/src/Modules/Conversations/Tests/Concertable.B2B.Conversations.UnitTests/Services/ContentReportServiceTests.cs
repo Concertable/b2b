@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Interfaces;
@@ -33,7 +34,8 @@ public sealed class ContentReportServiceTests
     private static ContentReportService Service(
         Mock<IMessageRepository> messages,
         Mock<IContentReportRepository> reports,
-        Mock<IContentReportNotifier> notifier)
+        Mock<IContentReportNotifier> notifier,
+        AuthorizationDecision decision = AuthorizationDecision.Allowed)
     {
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(u => u.Id).Returns(ReportingUserId);
@@ -41,9 +43,39 @@ public sealed class ContentReportServiceTests
         var tenantContext = new Mock<ITenantContext>();
         tenantContext.SetupGet(t => t.TenantId).Returns(VenueTenantId);
 
-        return new ContentReportService(messages.Object, reports.Object, notifier.Object,
+        var resources = new Mock<IResourceAuthorization>();
+        resources.Setup(resource => resource.CheckAsync(
+                It.Is<AuthorizationRequest>(request =>
+                    request.Permission == TenantPermission.MessagesRead
+                    && request.Resource.Kind == ResourceKind.Conversation
+                    && request.Facet == ResourceFacet.Read),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(decision);
+
+        return new ContentReportService(messages.Object, resources.Object, reports.Object, notifier.Object,
             currentUser.Object, tenantContext.Object, TimeProvider.System,
             NullLogger<ContentReportService>.Instance);
+    }
+
+    [Theory]
+    [InlineData(AuthorizationDecision.Denied)]
+    [InlineData(AuthorizationDecision.AuthorityChanged)]
+    public async Task Submit_WithoutReadAuthority_DoesNotLoadOrReport(AuthorizationDecision decision)
+    {
+        var messages = new Mock<IMessageRepository>();
+        var reports = new Mock<IContentReportRepository>();
+        var notifier = new Mock<IContentReportNotifier>();
+
+        var result = await Service(messages, reports, notifier, decision)
+            .SubmitAsync(ConversationId, 7, new ReportMessageRequest { Category = ReportCategory.Spam });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<ReportMessageError.MessageNotFound>(error);
+        messages.Verify(repository => repository.GetByIdAsync(
+            It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        reports.Verify(repository => repository.AddAsync(
+            It.IsAny<ContentReportEntity>(), It.IsAny<CancellationToken>()), Times.Never);
+        notifier.VerifyNoOtherCalls();
     }
 
     [Fact]

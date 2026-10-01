@@ -28,14 +28,13 @@ export function useRoleManagement() {
   const { create, update, retire: retireMutation } = useRoleMutations();
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [editVersion, setEditVersion] = useState<number | undefined>();
+  const [editTarget, setEditTarget] = useState<{ id: string; version: number } | undefined>();
   const [replacementRoleId, setReplacementRoleId] = useState("");
   const [showEditor, setShowEditor] = useState(false);
   const roles = rolesQuery.data ?? [];
   const metadata = permissionsQuery.data ?? [];
   const selected = roles.find((role) => role.id === selectedId);
   const editable = showEditor && (selected === undefined || !selected.isSystemPreset);
-  const candidate = selected?.isSystemPreset ? undefined : selected;
   const parsed = roleRequestSchema.safeParse(draft);
   const nameError = parsed.success ? undefined : parsed.error.issues.find((issue) => issue.path[0] === "name")?.message;
   const retirement = selected && !selected.isSystemPreset
@@ -54,7 +53,7 @@ export function useRoleManagement() {
     resetMutations();
     setSelectedId(undefined);
     setDraft(emptyDraft());
-    setEditVersion(undefined);
+    setEditTarget(undefined);
     setReplacementRoleId("");
     setShowEditor(true);
   };
@@ -62,7 +61,7 @@ export function useRoleManagement() {
     resetMutations();
     setSelectedId(role.id);
     setDraft(draftFromRole(role, metadata));
-    setEditVersion(undefined);
+    setEditTarget(undefined);
     setReplacementRoleId("");
     setShowEditor(false);
   };
@@ -70,14 +69,14 @@ export function useRoleManagement() {
     resetMutations();
     setSelectedId(undefined);
     setDraft(draftFromRole(role, metadata));
-    setEditVersion(undefined);
+    setEditTarget(undefined);
     setReplacementRoleId("");
     setShowEditor(true);
   };
   const startEditing = (role: Role) => {
     resetMutations();
     setDraft(draftFromRole(role, metadata));
-    setEditVersion(role.version);
+    setEditTarget({ id: role.id, version: role.version });
     setShowEditor(true);
   };
   const setName = (name: string) => setDraft((current) => ({ ...current, name }));
@@ -100,11 +99,10 @@ export function useRoleManagement() {
     }));
   const save = () => {
     if (!parsed.success) return;
-    if (candidate) {
-      if (editVersion === undefined) return;
-      const request = updateRoleRequestSchema.safeParse({ ...parsed.data, expectedVersion: editVersion });
+    if (editTarget) {
+      const request = updateRoleRequestSchema.safeParse({ ...parsed.data, expectedVersion: editTarget.version });
       if (!request.success) return;
-      update.mutate({ id: candidate.id, request: request.data }, {
+      update.mutate({ id: editTarget.id, request: request.data }, {
         onSuccess: (role) => { toast.success("Role updated"); openRole(role); },
       });
     } else {

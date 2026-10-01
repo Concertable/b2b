@@ -15,13 +15,13 @@ internal sealed class ConversationService : IConversationService
 {
     private const string InboxHref = "/?inbox=open";
     private const string UnknownTenant = "Unknown business";
-    private readonly IConversationRepository repository;
     private readonly IConversationPrivilegedRepository privilegedRepository;
     private readonly IConversationReadPositionRepository readPositionRepository;
     private readonly IMessageRepository messageRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
     private readonly ITenantResolver tenantResolver;
     private readonly ITenantCapabilityAuthorization tenantCapabilities;
+    private readonly IResourceAuthorization resources;
     private readonly ICommandAuthorizationContext commandAuthorization;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
@@ -32,13 +32,13 @@ internal sealed class ConversationService : IConversationService
     private readonly TimeProvider timeProvider;
 
     public ConversationService(
-        IConversationRepository repository,
         IConversationPrivilegedRepository privilegedRepository,
         IConversationReadPositionRepository readPositionRepository,
         IMessageRepository messageRepository,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
         ITenantResolver tenantResolver,
         ITenantCapabilityAuthorization tenantCapabilities,
+        IResourceAuthorization resources,
         ICommandAuthorizationContext commandAuthorization,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
@@ -48,13 +48,13 @@ internal sealed class ConversationService : IConversationService
         IBus bus,
         TimeProvider timeProvider)
     {
-        this.repository = repository;
         this.privilegedRepository = privilegedRepository;
         this.readPositionRepository = readPositionRepository;
         this.messageRepository = messageRepository;
         this.unitOfWork = unitOfWork;
         this.tenantResolver = tenantResolver;
         this.tenantCapabilities = tenantCapabilities;
+        this.resources = resources;
         this.commandAuthorization = commandAuthorization;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
@@ -153,7 +153,8 @@ internal sealed class ConversationService : IConversationService
         int conversationId,
         CancellationToken ct = default)
     {
-        if (await repository.GetByIdAsync(conversationId, ct) is null)
+        if (conversationId <= 0
+            || await resources.CheckAsync(ReadRequest(conversationId), ct) != AuthorizationDecision.Allowed)
             return new ConversationAccessError.NotFound(conversationId);
         var conversation = await privilegedRepository.GetWithGrantsByIdAsync(conversationId, ct)
             ?? throw new InvalidOperationException($"Conversation {conversationId} disappeared after authorization.");
@@ -164,7 +165,8 @@ internal sealed class ConversationService : IConversationService
         int conversationId,
         CancellationToken ct = default)
     {
-        if (await repository.GetByIdAsync(conversationId, ct) is null)
+        if (conversationId <= 0
+            || await resources.CheckAsync(ReadRequest(conversationId), ct) != AuthorizationDecision.Allowed)
             return new ConversationAccessError.NotFound(conversationId);
         var messages = await messageRepository.GetByConversationIdAsync(conversationId, ct);
         var activeTenantId = tenantContext.GetTenantId();
@@ -178,15 +180,20 @@ internal sealed class ConversationService : IConversationService
         CancellationToken ct = default)
     {
         if (membership.Membership is not { } actor)
+        {
+            if (commandAuthorization.IsActive)
+            {
+                commandAuthorization.RegisterFailure<Result<MessageDto, SendMessageError>>(
+                    () => new SendMessageError.NotPermitted());
+                commandAuthorization.MarkAuthorityFailed();
+            }
             return Task.FromResult<Result<MessageDto, SendMessageError>>(new SendMessageError.NotPermitted());
+        }
         if (transactions.Current is not null)
             return unitOfWork.ExecuteAsync(
                 () => SendCoreAsync(conversationId, request, action, actor, ct), ct);
         return transactionRunner.ExecuteAsync<ConversationService, Result<MessageDto, SendMessageError>>(
             (service, token) => service.SendCommandAsync(conversationId, request, action, actor, token),
-            (service, _, token) => service.ValidateAccessAsync(
-                conversationId, actor, TenantPermission.MessagesSend, ConversationAccessScope.SendMessages, token),
-            () => new SendMessageError.NotPermitted(),
             ct);
     }
 
@@ -205,18 +212,24 @@ internal sealed class ConversationService : IConversationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
+        commandAuthorization.RegisterFailure<Result<MessageDto, SendMessageError>>(
+            () => new SendMessageError.NotPermitted());
         if (request.RequestId == Guid.Empty || string.IsNullOrWhiteSpace(request.Content))
             return new SendMessageError.InvalidMessage();
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
             || !actor.HasPermission(TenantPermission.MessagesSend))
+        {
+            commandAuthorization.MarkAuthorityFailed();
+            return new SendMessageError.NotPermitted();
+        }
+        if (conversationId <= 0)
+            return new SendMessageError.NotFound(conversationId);
+        if (await resources.RequireAsync(SendRequest(conversationId), ct) != AuthorizationDecision.Allowed)
             return new SendMessageError.NotPermitted();
         var conversation = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(conversationId, ct);
         if (conversation is null)
             return new SendMessageError.NotFound(conversationId);
-        if (!Allows(conversation, actor, TenantPermission.MessagesSend, ConversationAccessScope.SendMessages))
-            return new SendMessageError.NotPermitted();
-
         var payloadHash = CommandPayloadHash.Create(request.Content, action);
         var replay = await privilegedRepository.GetMessageReceiptForUpdateAsync(
             conversationId, actor.MembershipId, request.RequestId, ct);
@@ -246,12 +259,18 @@ internal sealed class ConversationService : IConversationService
         CancellationToken ct = default)
     {
         if (membership.Membership is not { } actor)
-            return Task.FromResult<UnitResult<ConversationAccessError>>(new ConversationAccessError.NotPermitted());
+        {
+            if (commandAuthorization.IsActive)
+            {
+                commandAuthorization.RegisterFailure<UnitResult<ConversationAccessError>>(
+                    () => new ConversationAccessError.NotPermitted());
+                commandAuthorization.MarkAuthorityFailed();
+            }
+            return Task.FromResult<UnitResult<ConversationAccessError>>(
+                new ConversationAccessError.NotPermitted());
+        }
         return transactionRunner.ExecuteAsync<ConversationService, UnitResult<ConversationAccessError>>(
             (service, token) => service.AdvanceReadPositionCommandAsync(conversationId, request, actor, token),
-            (service, _, token) => service.ValidateAccessAsync(
-                conversationId, actor, TenantPermission.MessagesRead, ConversationAccessScope.Read, token),
-            () => new ConversationAccessError.NotPermitted(),
             ct);
     }
 
@@ -268,14 +287,21 @@ internal sealed class ConversationService : IConversationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
+        commandAuthorization.RegisterFailure<UnitResult<ConversationAccessError>>(
+            () => new ConversationAccessError.NotPermitted());
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor) || !actor.HasPermission(TenantPermission.MessagesRead))
+        {
+            commandAuthorization.MarkAuthorityFailed();
+            return new ConversationAccessError.NotPermitted();
+        }
+        if (conversationId <= 0)
+            return new ConversationAccessError.NotFound(conversationId);
+        if (await resources.RequireAsync(ReadRequest(conversationId), ct) != AuthorizationDecision.Allowed)
             return new ConversationAccessError.NotPermitted();
         var conversation = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(conversationId, ct);
         if (conversation is null)
             return new ConversationAccessError.NotFound(conversationId);
-        if (!Allows(conversation, actor, TenantPermission.MessagesRead, ConversationAccessScope.Read))
-            return new ConversationAccessError.NotPermitted();
         if (request.ThroughSequence <= 0
             || !await messageRepository.ContainsSequenceAsync(conversationId, request.ThroughSequence, ct))
             return new ConversationAccessError.InvalidSequence();
@@ -305,13 +331,19 @@ internal sealed class ConversationService : IConversationService
         CancellationToken ct)
     {
         if (membership.Membership is not { } actor)
+        {
+            if (commandAuthorization.IsActive)
+            {
+                commandAuthorization.RegisterFailure<UnitResult<AssignConversationMemberError>>(
+                    () => new AssignConversationMemberError.NotPermitted());
+                commandAuthorization.MarkAuthorityFailed();
+            }
             return Task.FromResult<UnitResult<AssignConversationMemberError>>(
                 new AssignConversationMemberError.NotPermitted());
+        }
         return transactionRunner.ExecuteAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
             (service, token) => service.ChangeAssignmentCommandAsync(
                 conversationId, membershipId, expectedAccessVersion, assign, actor, token),
-            (service, _, token) => service.ValidatePrincipalAsync(conversationId, actor, token),
-            () => new AssignConversationMemberError.NotPermitted(),
             ct);
     }
 
@@ -335,18 +367,25 @@ internal sealed class ConversationService : IConversationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
+        commandAuthorization.RegisterFailure<UnitResult<AssignConversationMemberError>>(
+            () => new AssignConversationMemberError.NotPermitted());
         var resolutionOption = await tenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
+        {
+            commandAuthorization.MarkAuthorityFailed();
             return new AssignConversationMemberError.NotPermitted();
+        }
         if (assign && resolution.TargetMembership is null)
             return new AssignConversationMemberError.InvalidMembership();
+        if (conversationId <= 0)
+            return new AssignConversationMemberError.NotFound(conversationId);
+        if (await resources.RequireAsync(ShareRequest(conversationId), ct) != AuthorizationDecision.Allowed)
+            return new AssignConversationMemberError.NotPermitted();
         var conversation = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(conversationId, ct);
         if (conversation is null)
             return new AssignConversationMemberError.NotFound(conversationId);
-        if (!IsPrincipal(conversation, resolution.Actor.TenantId))
-            return new AssignConversationMemberError.NotPermitted();
         if (conversation.AccessVersion != expectedAccessVersion)
             return new AssignConversationMemberError.Superseded(conversationId);
 
@@ -374,19 +413,20 @@ internal sealed class ConversationService : IConversationService
         return new Success();
     }
 
-    public Task<int> GetUnreadCountAsync(CancellationToken ct = default) =>
-        membership.Membership is { } actor
-            ? messageRepository.GetUnreadCountAsync(actor.TenantId, actor.MembershipId, ct)
-            : Task.FromResult(0);
+    public async Task<int> GetUnreadCountAsync(CancellationToken ct = default)
+    {
+        var actor = await ReadActorAsync(ct);
+        return actor is null ? 0 : await messageRepository.GetUnreadCountAsync(actor, ct);
+    }
 
     public async Task<IReadOnlyList<MessagePreviewDto>> GetRecentPreviewsAsync(
         int pageNumber,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        var actor = await ReadActorAsync(ct);
+        if (actor is null)
             return [];
-        var previews = await messageRepository.GetRecentPreviewsByTenantIdAsync(
-            actor.TenantId, actor.MembershipId, pageNumber, ct);
+        var previews = await messageRepository.GetRecentPreviewsAsync(actor, pageNumber, ct);
         var results = new List<MessagePreviewDto>(previews.Count);
         foreach (var preview in previews)
         {
@@ -403,6 +443,16 @@ internal sealed class ConversationService : IConversationService
                 InboxHref));
         }
         return results;
+    }
+
+    private async Task<MembershipSnapshot?> ReadActorAsync(CancellationToken ct)
+    {
+        if (membership.Membership is not { } expected || !expected.HasPermission(TenantPermission.MessagesRead))
+            return null;
+        var resolution = await membershipResolver.ResolveSnapshotAsync(expected, ct);
+        return resolution.TryGetValue(out var actor) && actor.HasPermission(TenantPermission.MessagesRead)
+            ? actor
+            : null;
     }
 
     private async Task<ConversationDto> ToDtoAsync(ConversationEntity conversation, CancellationToken ct) =>
@@ -427,51 +477,17 @@ internal sealed class ConversationService : IConversationService
             .ToList();
     }
 
-    private async Task<bool> ValidateAccessAsync(
-        int conversationId,
-        MembershipSnapshot expectedActor,
-        TenantPermission permission,
-        ConversationAccessScope scope,
-        CancellationToken ct)
-    {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        var conversation = await privilegedRepository.GetWithGrantsByIdAsync(conversationId, ct);
-        return actorOption.TryGetValue(out var actor)
-               && conversation is not null
-               && actor.HasPermission(permission)
-               && Allows(conversation, actor, permission, scope);
-    }
+    private static AuthorizationRequest ReadRequest(int conversationId) =>
+        new(TenantPermission.MessagesRead,
+            ResourceAddress.Create(ResourceKind.Conversation, conversationId),
+            ResourceFacet.Read);
 
-    private async Task<bool> ValidatePrincipalAsync(
-        int conversationId,
-        MembershipSnapshot expectedActor,
-        CancellationToken ct)
-    {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        var conversation = await privilegedRepository.GetWithGrantsByIdAsync(conversationId, ct);
-        return actorOption.TryGetValue(out var actor)
-               && conversation is not null
-               && actor.HasPermission(TenantPermission.ResourcesShare)
-               && IsPrincipal(conversation, actor.TenantId);
-    }
+    private static AuthorizationRequest SendRequest(int conversationId) =>
+        new(TenantPermission.MessagesSend,
+            ResourceAddress.Create(ResourceKind.Conversation, conversationId),
+            ResourceFacet.SendMessages);
 
-    private bool Allows(
-        ConversationEntity conversation,
-        MembershipSnapshot actor,
-        TenantPermission permission,
-        ConversationAccessScope scope) =>
-        ResourceGrantPolicy.Allows(
-            conversation.AccessGrants,
-            scope,
-            actor,
-            actor.AudienceFor(permission),
-            timeProvider.GetUtcNow().UtcDateTime);
-
-    private static bool IsPrincipal(ConversationEntity conversation, Guid tenantId) =>
-        conversation.AccessGrants.Any(grant =>
-            grant.TenantId == tenantId
-            && grant.Kind == ResourceGrantKind.Principal
-            && grant.MembershipId is null
-            && grant.Scope == ConversationAccessScope.Read
-            && grant.RevokedAt is null);
+    private static AuthorizationRequest ShareRequest(int conversationId) =>
+        new(TenantPermission.ResourcesShare,
+            ResourceAddress.Create(ResourceKind.Conversation, conversationId));
 }

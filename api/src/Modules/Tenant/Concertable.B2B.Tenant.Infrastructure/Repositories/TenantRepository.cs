@@ -89,9 +89,10 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         Guid userId,
         CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant creation requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        if (transactions.Current is { } transaction)
+            await transaction.EnlistAsync(context, ct);
+        else if (context.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Tenant creation requires an active transaction.");
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT pg_advisory_xact_lock(hashtextextended(CAST({userId} AS text), {CreationLockSeed}))

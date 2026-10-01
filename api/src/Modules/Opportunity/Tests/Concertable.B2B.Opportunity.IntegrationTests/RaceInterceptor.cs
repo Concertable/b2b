@@ -5,7 +5,7 @@ using Npgsql;
 
 namespace Concertable.B2B.Opportunity.IntegrationTests;
 
-internal sealed class OpportunityLifecycleRaceInterceptor : DbCommandInterceptor, IResettable
+internal sealed class RaceInterceptor : DbCommandInterceptor, IResettable
 {
     private readonly Lock gate = new();
     private Func<Task>? competingChange;
@@ -76,7 +76,7 @@ internal sealed class OpportunityLifecycleRaceInterceptor : DbCommandInterceptor
         {
             CaptureCompetingBackend(command);
 
-            if (competingChange is not null && IsOpportunityUpdate(command))
+            if (competingChange is not null && IsUpdate(command))
             {
                 change = competingChange;
                 competingChange = null;
@@ -115,17 +115,17 @@ internal sealed class OpportunityLifecycleRaceInterceptor : DbCommandInterceptor
         return ValueTask.FromResult(result);
     }
 
-    private static bool IsOpportunityUpdate(DbCommand command) =>
+    private static bool IsUpdate(DbCommand command) =>
         command.CommandText.Contains("UPDATE opportunity.\"Opportunities\"", StringComparison.Ordinal);
 
-    private static bool IsOpportunityLock(DbCommand command) =>
+    private static bool IsUpdateLock(DbCommand command) =>
         command.CommandText.Contains("FROM opportunity.\"Opportunities\"", StringComparison.Ordinal)
         && command.CommandText.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase);
 
     private void CaptureCompetingBackend(DbCommand command)
     {
         if (awaitingCompetingLock
-            && IsOpportunityLock(command)
+            && IsUpdateLock(command)
             && command.Connection is NpgsqlConnection connection)
             competingBackend.TrySetResult(connection.ProcessID);
     }

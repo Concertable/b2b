@@ -91,6 +91,7 @@ internal static class ServiceCollectionExtensions
         services.AddPaymentClient(configuration);
         services.AddNotificationClient();
         services.AddConversationsModule(configuration);
+        services.AddResourceAuthorization();
 
         services.AddSingleton(TimeProvider.System);
 

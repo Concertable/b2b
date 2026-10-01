@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Application.Errors;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
@@ -94,6 +95,25 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
         Assert.Equal(TenantApiFixture.RoleId(tenantId, "Staff"), Assert.Single(after.Assignments).RoleId);
         Assert.Equal(1, fixture.Memberships.Count(value => value.TenantId == tenantId
             && value.Assignments.Any(row => row.RoleId == TenantApiFixture.RoleId(tenantId, "Owner"))));
+    }
+
+    [Fact]
+    public async Task RemovingBothOwnersInOneCommand_RollsBackBothRemovals()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var coOwner = fixture.SeedState.VenueManagerNoVenue;
+        var tenantId = fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == owner.Id).Id;
+        await fixture.AddOwnerMembershipAsync(tenantId, coOwner.Id);
+
+        var result = await fixture.RemoveOwnersInOneCommandAsync(owner.Id, coOwner.Id, tenantId);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<RemoveMemberError.NotPermitted>(error);
+        var owners = fixture.Memberships.Where(value => value.TenantId == tenantId
+            && value.Assignments.Any(row => row.RoleId == TenantApiFixture.RoleId(tenantId, "Owner")))
+            .Select(value => value.UserId)
+            .ToHashSet();
+        Assert.True(owners.SetEquals([owner.Id, coOwner.Id]));
     }
 
     [Fact]

@@ -18,6 +18,7 @@ using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Tenant.Contracts;
+using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
     private readonly IMembershipContext membership;
-    private readonly IMembershipResolver membershipResolver;
+    private readonly ICommandAuthorizationContext commandAuthorization;
+    private readonly ITenantResolver tenantResolver;
+    private readonly IResourceAuthorization resources;
     private readonly ITransactionRunner transactionRunner;
 
     public BookingWorkflow(
@@ -61,7 +64,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
         IMembershipContext membership,
-        IMembershipResolver membershipResolver,
+        ICommandAuthorizationContext commandAuthorization,
+        ITenantResolver tenantResolver,
+        IResourceAuthorization resources,
         ITransactionRunner transactionRunner)
     {
         this.bookingRepository = bookingRepository;
@@ -79,7 +84,9 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.membership = membership;
-        this.membershipResolver = membershipResolver;
+        this.commandAuthorization = commandAuthorization;
+        this.tenantResolver = tenantResolver;
+        this.resources = resources;
         this.transactionRunner = transactionRunner;
     }
 
@@ -99,8 +106,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         {
             return await transactionRunner.ExecuteAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
                 (workflow, token) => workflow.CancelCommandAsync(bookingId, actor, token),
-                (workflow, _, token) => workflow.ValidateCancelAuthorityAsync(bookingId, actor, token),
-                () => new CancelBookingError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsBookingConcurrencyConflict(bookingId))
@@ -133,7 +138,10 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
         => await privilegedUnitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            if (!await ValidateCancelAuthorityAsync(bookingId, expectedActor, ct))
+            if (await resources.CheckAsync(new AuthorizationRequest(
+                TenantPermission.BookingsCancel,
+                ResourceAddress.Create(ResourceKind.Booking, bookingId),
+                ResourceFacet.Operations), ct) != AuthorizationDecision.Allowed)
                 return (UnitResult<CancelBookingError>)new CancelBookingError.NotPermitted();
 
             if (await privilegedRepository.GetStateByIdAsync(bookingId, ct)
@@ -156,15 +164,25 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        if (!actorOption.TryGetValue(out var actor)
-            || !actor.HasPermission(TenantPermission.BookingsCancel))
+        commandAuthorization.RegisterFailure<UnitResult<CancelBookingError>>(
+            () => new CancelBookingError.NotPermitted());
+        var parties = await privilegedRepository.GetPartyTenantIdsAsync(bookingId, ct);
+        if (parties.Count == 0)
+            return new CancelBookingError.BookingNotFound(bookingId);
+        var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        if (!resolutionOption.TryGetValue(out var resolution)
+            || !resolution.ExistingTenantIds.SetEquals(parties)
+            || await resources.RequireAsync(new AuthorizationRequest(
+                TenantPermission.BookingsCancel,
+                ResourceAddress.Create(ResourceKind.Booking, bookingId),
+                ResourceFacet.Operations), ct) != AuthorizationDecision.Allowed)
             return new CancelBookingError.NotPermitted();
+        var actor = resolution.Actor;
 
         var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);
         if (booking is null)
             return new CancelBookingError.BookingNotFound(bookingId);
-        if (!await CanCancelAsync(bookingId, actor, ct))
+        if (!parties.ToHashSet().SetEquals([booking.VenueTenantId, booking.ArtistTenantId]))
             return new CancelBookingError.NotPermitted();
         if (booking.State is BookingState.Cancelled or BookingState.CancellationPending)
             return new Success();
@@ -175,28 +193,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         await privilegedRepository.SaveChangesAsync(ct);
         return new Success();
     }
-
-    private async Task<bool> ValidateCancelAuthorityAsync(
-        int bookingId,
-        MembershipSnapshot expectedActor,
-        CancellationToken ct)
-    {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        return actorOption.TryGetValue(out var actor)
-            && actor.HasPermission(TenantPermission.BookingsCancel)
-            && await CanCancelAsync(bookingId, actor, ct);
-    }
-
-    private Task<bool> CanCancelAsync(
-        int bookingId,
-        MembershipSnapshot actor,
-        CancellationToken ct) =>
-        privilegedRepository.CanCancelAsync(
-            bookingId,
-            actor,
-            actor.AudienceFor(TenantPermission.BookingsCancel),
-            timeProvider.GetUtcNow().UtcDateTime,
-            ct);
 
     private async Task<BookingDto> ConfirmCoreAsync(
         AcceptedApplication application,

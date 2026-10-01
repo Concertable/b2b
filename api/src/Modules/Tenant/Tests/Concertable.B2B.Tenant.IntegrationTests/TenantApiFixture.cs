@@ -1,17 +1,23 @@
 using Concertable.B2B.DataAccess.Infrastructure;
+using System.Security.Claims;
 using System.Runtime.ExceptionServices;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Application.Errors;
+using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using Reunion;
+using RequestTenantResolver = Concertable.Kernel.Identity.ITenantResolver;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
@@ -34,6 +40,44 @@ public sealed class TenantApiFixture : ApiFixture
         Func<ITenantResolver, CancellationToken, Task<TResult>> resolve,
         CancellationToken ct = default) =>
         transactionRunner.ExecuteAsync(resolve, ct);
+
+    public async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
+        Guid ownerUserId,
+        Guid otherOwnerUserId,
+        Guid tenantId)
+    {
+        var accessor = Services.GetRequiredService<IHttpContextAccessor>();
+        var previous = accessor.HttpContext;
+        var request = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim("sub", ownerUserId.ToString()),
+                 new Claim(ClaimTypes.NameIdentifier, ownerUserId.ToString())],
+                "Test"))
+        };
+        request.Request.Headers[TenantHeaders.TenantId] = tenantId.ToString();
+        accessor.HttpContext = request;
+        try
+        {
+            return await transactionRunner.ExecuteAsync<IServiceProvider, UnitResult<RemoveMemberError>>(
+                async (services, ct) =>
+                {
+                    await services.GetRequiredService<RequestTenantResolver>().ResolveAsync(ct);
+                    var members = services.GetRequiredService<IMembershipService>();
+                    var first = await members.RemoveMemberAsync(otherOwnerUserId, ct);
+                    if (first.TryGetError(out var firstError))
+                        throw new InvalidOperationException($"First owner removal failed: {firstError}.");
+                    var second = await members.RemoveMemberAsync(ownerUserId, ct);
+                    if (second.TryGetError(out var secondError))
+                        throw new InvalidOperationException($"Second owner removal failed: {secondError}.");
+                    return second;
+                });
+        }
+        finally
+        {
+            accessor.HttpContext = previous;
+        }
+    }
 
     public Task ProvisionAsync(CredentialRegisteredEvent @event, MessageEnvelope? envelope = null) =>
         provisioningHandler.HandleAsync(
@@ -117,7 +161,10 @@ public sealed class TenantApiFixture : ApiFixture
         return verification;
     }
 
-    public async Task<T> RunWithTenantCreationBarrierAsync<T>(Guid userId, Func<Task<T>> action)
+    public async Task<T> RunWithTenantCreationBarrierAsync<T>(
+        Guid userId,
+        Func<Task<T>> action,
+        Action? afterFirstWaiter = null)
     {
         await using var control = new NpgsqlConnection(dbContext.Database.GetConnectionString());
         await control.OpenAsync();
@@ -129,7 +176,12 @@ public sealed class TenantApiFixture : ApiFixture
         var result = action();
         try
         {
-            await WaitForTenantCreationWaitersAsync(control);
+            if (afterFirstWaiter is not null)
+            {
+                await WaitForTenantCreationWaitersAsync(control, 1);
+                afterFirstWaiter();
+            }
+            await WaitForTenantCreationWaitersAsync(control, 2);
             await ExecuteScalarAsync(
                 control,
                 "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
@@ -243,7 +295,7 @@ public sealed class TenantApiFixture : ApiFixture
         return outcome!;
     }
 
-    private static async Task WaitForTenantCreationWaitersAsync(NpgsqlConnection connection)
+    private static async Task WaitForTenantCreationWaitersAsync(NpgsqlConnection connection, int count)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
@@ -257,7 +309,7 @@ public sealed class TenantApiFixture : ApiFixture
                   AND wait_event = 'advisory'
                   AND query LIKE '%pg_advisory_xact_lock(hashtextextended%'
                 """;
-            if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) >= 2)
+            if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) >= count)
                 return;
             await Task.Delay(25, timeout.Token);
         }

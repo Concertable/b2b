@@ -32,10 +32,27 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
         var transaction = transactions.Current
             ?? throw new InvalidOperationException("Application authorization requires an active command transaction.");
         await transaction.EnlistAsync(context, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""SELECT 1 FROM application."Applications" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""SELECT 1 FROM application."ApplicationAccessGrants" WHERE "ResourceId" = {request.Resource.Id} ORDER BY "Id" FOR UPDATE""", ct);
+        var ids = new[] { request.Resource.Id };
+        if (binding.Permission == TenantPermission.ApplicationsDecide)
+        {
+            var opportunityId = await context.Applications.AsNoTracking()
+                .Where(application => application.Id == request.Resource.Id)
+                .Select(application => (int?)application.OpportunityId)
+                .SingleOrDefaultAsync(ct);
+            if (opportunityId is { } id)
+                ids = await context.Applications.AsNoTracking()
+                    .Where(application => application.OpportunityId == id)
+                    .OrderBy(application => application.Id)
+                    .Select(application => application.Id)
+                    .ToArrayAsync(ct);
+        }
+        foreach (var id in ids)
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""SELECT 1 FROM application."Applications" WHERE "Id" = {id} FOR UPDATE""", ct);
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"""SELECT 1 FROM application."ApplicationAccessGrants" WHERE "ResourceId" = {id} ORDER BY "Id" FOR UPDATE""", ct);
+        }
         return await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct);
     }
 

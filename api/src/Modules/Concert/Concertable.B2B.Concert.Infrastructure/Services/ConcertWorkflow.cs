@@ -19,8 +19,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IMembershipContext membership;
-    private readonly IMembershipResolver membershipResolver;
-    private readonly TimeProvider timeProvider;
+    private readonly IResourceAuthorization resources;
+    private readonly ICommandAuthorizationContext commandAuthorization;
 
     public ConcertWorkflow(
         IConcertPrivilegedRepository privilegedRepository,
@@ -29,8 +29,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IDealStrategyFactory<ICompleteStep> completeFactory,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IMembershipContext membership,
-        IMembershipResolver membershipResolver,
-        TimeProvider timeProvider)
+        IResourceAuthorization resources,
+        ICommandAuthorizationContext commandAuthorization)
     {
         this.privilegedRepository = privilegedRepository;
         this.transactionRunner = transactionRunner;
@@ -38,8 +38,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         this.completeFactory = completeFactory;
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.membership = membership;
-        this.membershipResolver = membershipResolver;
-        this.timeProvider = timeProvider;
+        this.resources = resources;
+        this.commandAuthorization = commandAuthorization;
     }
 
     public async Task<UnitResult<CancelConcertError>> CancelAsync(
@@ -47,14 +47,20 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         CancellationToken ct = default)
     {
         if (membership.Membership is not { } actor)
+        {
+            if (commandAuthorization.IsActive)
+            {
+                commandAuthorization.RegisterFailure<UnitResult<CancelConcertError>>(
+                    () => new CancelConcertError.NotPermitted());
+                commandAuthorization.MarkAuthorityFailed();
+            }
             return new CancelConcertError.NotPermitted();
+        }
 
         try
         {
             return await transactionRunner.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
                 (workflow, token) => workflow.CancelCommandAsync(concertId, actor, token),
-                (workflow, _, token) => workflow.ValidateCancelAuthorityAsync(concertId, actor, token),
-                () => new CancelConcertError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(concertId))
@@ -98,7 +104,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         CancellationToken ct)
         => await privilegedOutboxUnitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            if (!await ValidateCancelAuthorityAsync(concertId, expectedActor, ct))
+            if (!await RequireCancellationAsync(concertId, expectedActor, ct))
                 return (UnitResult<CancelConcertError>)new CancelConcertError.NotPermitted();
 
             if (await privilegedRepository.GetStateByIdAsync(concertId, ct)
@@ -121,16 +127,12 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        if (!actorOption.TryGetValue(out var actor)
-            || !actor.HasPermission(TenantPermission.ConcertsManage))
+        if (!await RequireCancellationAsync(concertId, expectedActor, ct))
             return new CancelConcertError.NotPermitted();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(concertId, ct);
         if (concert is null)
             return new CancelConcertError.ConcertNotFound(concertId);
-        if (!await CanCancelAsync(concertId, actor, ct))
-            return new CancelConcertError.NotPermitted();
         if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)
             return new Success();
         if (concert.ValidateBeginCancellation().TryGetError(out var transitionError))
@@ -141,25 +143,24 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         return new Success();
     }
 
-    private async Task<bool> ValidateCancelAuthorityAsync(
+    private async Task<bool> RequireCancellationAsync(
         int concertId,
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        return actorOption.TryGetValue(out var actor)
-            && actor.HasPermission(TenantPermission.ConcertsManage)
-            && await CanCancelAsync(concertId, actor, ct);
-    }
+        commandAuthorization.RegisterFailure<UnitResult<CancelConcertError>>(
+            () => new CancelConcertError.NotPermitted());
+        if (concertId <= 0 || membership.Membership is not { } actor
+            || actor.MembershipId != expectedActor.MembershipId
+            || actor.TenantId != expectedActor.TenantId)
+        {
+            commandAuthorization.MarkAuthorityFailed();
+            return false;
+        }
 
-    private Task<bool> CanCancelAsync(
-        int concertId,
-        MembershipSnapshot actor,
-        CancellationToken ct) =>
-        privilegedRepository.CanManageAsync(
-            concertId,
-            actor,
-            actor.AudienceFor(TenantPermission.ConcertsManage),
-            timeProvider.GetUtcNow().UtcDateTime,
-            ct);
+        return await resources.RequireAsync(new AuthorizationRequest(
+            TenantPermission.ConcertsManage,
+            ResourceAddress.Create(ResourceKind.Concert, concertId),
+            ResourceFacet.Operations), ct) == AuthorizationDecision.Allowed;
+    }
 }

@@ -13,6 +13,7 @@ using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
+using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Specifications;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
@@ -26,6 +27,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ConcertService : IConcertService
 {
     private readonly IConcertRepository concertRepository;
+    private readonly IConcertPrivateReadRepository privateReads;
+    private readonly IResourceAuthorization authorization;
+    private readonly ICommandAuthorizationContext commandAuthorization;
     private readonly IConcertPrivilegedRepository privilegedRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IConcertReadRepository readRepository;
@@ -49,6 +53,9 @@ internal sealed class ConcertService : IConcertService
 
     public ConcertService(
         IConcertRepository concertRepository,
+        IConcertPrivateReadRepository privateReads,
+        IResourceAuthorization authorization,
+        ICommandAuthorizationContext commandAuthorization,
         IConcertPrivilegedRepository privilegedRepository,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IConcertReadRepository readRepository,
@@ -71,6 +78,9 @@ internal sealed class ConcertService : IConcertService
         ILogger<ConcertService> logger)
     {
         this.concertRepository = concertRepository;
+        this.privateReads = privateReads;
+        this.authorization = authorization;
+        this.commandAuthorization = commandAuthorization;
         this.privilegedRepository = privilegedRepository;
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.readRepository = readRepository;
@@ -164,30 +174,39 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentVenueAsync()
     {
-        if (tenantContext.TenantId is not { } tenantId)
+        if (tenantContext.TenantId is not { } tenantId
+            || membership.Membership is not { } actor)
             return new ConcertError.MissingVenue();
 
         return new Success<IReadOnlyList<ManagerConcertCard>>(
-            await concertRepository.GetUpcomingCardsForVenueTenantIdAsync(tenantId));
+            await privateReads.GetUpcomingCardsForVenueTenantIdAsync(
+                tenantId, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Operations),
+                actor, timeProvider.GetUtcNow()));
     }
 
     public async Task<Result<IReadOnlyList<ConcertDraftReference>, ConcertError>> GetDraftsForCurrentVenueAsync(
         CancellationToken ct = default)
     {
-        if (tenantContext.TenantId is not { } tenantId)
+        if (tenantContext.TenantId is not { } tenantId
+            || membership.Membership is not { } actor)
             return new ConcertError.MissingVenue();
 
         return new Success<IReadOnlyList<ConcertDraftReference>>(
-            await concertRepository.GetDraftReferencesForVenueTenantIdAsync(tenantId, ct));
+            await privateReads.GetDraftReferencesForVenueTenantIdAsync(
+                tenantId, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Operations),
+                actor, timeProvider.GetUtcNow(), ct));
     }
 
     public async Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentArtistAsync()
     {
-        if (tenantContext.TenantId is not { } tenantId)
+        if (tenantContext.TenantId is not { } tenantId
+            || membership.Membership is not { } actor)
             return new ConcertError.MissingArtist();
 
         return new Success<IReadOnlyList<ManagerConcertCard>>(
-            await concertRepository.GetUpcomingCardsForArtistTenantIdAsync(tenantId));
+            await privateReads.GetUpcomingCardsForArtistTenantIdAsync(
+                tenantId, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Operations),
+                actor, timeProvider.GetUtcNow()));
     }
 
     public Task<IReadOnlyList<PublishedConcert>> GetHistoryByArtistIdAsync(
@@ -207,18 +226,30 @@ internal sealed class ConcertService : IConcertService
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id));
 
-    public Task<Result<ConcertSummary, ConcertError>> GetSummaryAsync(
+    public async Task<Result<ConcertSummary, ConcertError>> GetSummaryAsync(
         int id,
-        CancellationToken ct = default) =>
-        concertRepository.GetSummaryByIdAsync(id, ct)
+        CancellationToken ct = default)
+    {
+        if (membership.Membership is not { } actor)
+            return new ConcertError.NotFound(id);
+
+        return await privateReads.GetSummaryByIdAsync(
+                id, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Summary),
+                actor, timeProvider.GetUtcNow(), ct)
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id));
+    }
 
     public async Task<Result<ConcertOperations, ConcertError>> GetOperationsAsync(
         int id,
         CancellationToken ct = default)
     {
-        return await concertRepository.GetOperationsByIdAsync(id, ct)
+        if (membership.Membership is not { } actor)
+            return new ConcertError.NotFound(id);
+
+        return await privateReads.GetOperationsByIdAsync(
+                id, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Operations),
+                actor, timeProvider.GetUtcNow(), ct)
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id))
             .MapAsync(operations => WithOperationsActionsAsync(operations, ct));
@@ -228,7 +259,14 @@ internal sealed class ConcertService : IConcertService
         int id,
         CancellationToken ct = default)
     {
-        return await concertRepository.GetFinanceByIdAsync(id, ct)
+        if (membership.Membership is not { } actor)
+            return new ConcertError.NotFound(id);
+
+        return await privateReads.GetFinanceByIdAsync(
+                id, ConcertBinding(TenantPermission.SettlementView, ResourceFacet.Finance),
+                ResourcePolicyBinding.FromCatalog(
+                    TenantPermission.SettlementView, ResourceKind.Invoice, ResourceFacet.Read),
+                actor, timeProvider.GetUtcNow(), ct)
             .ToOption()
             .OrFailure(() => (ConcertError)new ConcertError.NotFound(id))
             .MapAsync(finance => WithFinanceActionsAsync(finance, ct));
@@ -246,9 +284,6 @@ internal sealed class ConcertService : IConcertService
         {
             return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertUpdateResponse, UpdateConcertError>>(
                 (service, token) => service.UpdateCommandAsync(id, request, actor, token),
-                (service, _, token) => service.ValidateOperationsAuthorityAsync(
-                    id, actor, TenantPermission.ConcertsOpsEdit, token),
-                () => new UpdateConcertError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
@@ -269,15 +304,12 @@ internal sealed class ConcertService : IConcertService
         {
             return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<PostConcertError>>(
                 (service, token) => service.PostCommandAsync(id, request, actor, token),
-                (service, _, token) => service.ValidateOperationsAuthorityAsync(
-                    id, actor, TenantPermission.ConcertsOpsEdit, token),
-                () => new PostConcertError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
         {
             return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<PostConcertError>>(
-                (service, token) => service.ClassifyPostConflictAsync(id, token),
+                (service, token) => service.ClassifyPostConflictAsync(id, actor, token),
                 ct);
         }
     }
@@ -294,8 +326,6 @@ internal sealed class ConcertService : IConcertService
         {
             return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<DeclareDoorRevenueError>>(
                 (service, token) => service.DeclareDoorRevenueCommandAsync(id, doorRevenue, actor, token),
-                (service, _, token) => service.ValidateDoorRevenueAuthorityAsync(id, actor, token),
-                () => new DeclareDoorRevenueError.VenueForbidden(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
@@ -324,11 +354,16 @@ internal sealed class ConcertService : IConcertService
             || !actor.HasPermission(TenantPermission.ConcertsOpsEdit))
             return new UpdateConcertError.NotPermitted();
 
+        commandAuthorization.RegisterFailure<Result<ConcertUpdateResponse, UpdateConcertError>>(
+            () => new UpdateConcertError.NotPermitted());
+        if (await RequireConcertAsync(
+                id, TenantPermission.ConcertsOpsEdit, ResourceFacet.Operations, ct)
+            != AuthorizationDecision.Allowed)
+            return new UpdateConcertError.NotPermitted();
+
         var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
         if (concert is null)
             return new UpdateConcertError.ConcertNotFound(id);
-        if (!await CanOperateAsync(id, actor, TenantPermission.ConcertsOpsEdit, ct))
-            return new UpdateConcertError.NotPermitted();
 
         var validation = concertValidator.CanUpdate(concert, request.TotalTickets);
         if (validation.TryGetErrors(out var errors))
@@ -365,14 +400,19 @@ internal sealed class ConcertService : IConcertService
     {
         var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
         if (!actorOption.TryGetValue(out var actor)
-            || !actor.HasPermission(TenantPermission.ConcertsOpsEdit))
+            || !actor.HasPermission(TenantPermission.ConcertsPublish))
+            return new PostConcertError.NotPermitted();
+
+        commandAuthorization.RegisterFailure<UnitResult<PostConcertError>>(
+            () => new PostConcertError.NotPermitted());
+        if (await RequireConcertAsync(
+                id, TenantPermission.ConcertsPublish, ResourceFacet.Operations, ct)
+            != AuthorizationDecision.Allowed)
             return new PostConcertError.NotPermitted();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
         if (concert is null)
             return new PostConcertError.ConcertNotFound(id);
-        if (!await CanOperateAsync(id, actor, TenantPermission.ConcertsOpsEdit, ct))
-            return new PostConcertError.NotPermitted();
 
         var validation = concertValidator.CanPost(concert);
         if (validation.TryGetErrors(out var errors))
@@ -391,14 +431,28 @@ internal sealed class ConcertService : IConcertService
         return new Success();
     }
 
-    private async Task<UnitResult<PostConcertError>> ClassifyPostConflictAsync(
+    private Task<UnitResult<PostConcertError>> ClassifyPostConflictAsync(
         int id,
+        MembershipSnapshot expectedActor,
         CancellationToken ct) =>
-        await privilegedOutboxUnitOfWorkBehavior.ExecuteAsync(async () =>
-            await privilegedRepository.GetStateByIdAsync(id, ct) == ConcertState.Posted
+        privilegedOutboxUnitOfWorkBehavior.ExecuteAsync(async () =>
+        {
+            var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+            if (!actorOption.TryGetValue(out var actor)
+                || !actor.HasPermission(TenantPermission.ConcertsPublish))
+                return (UnitResult<PostConcertError>)new PostConcertError.NotPermitted();
+
+            commandAuthorization.RegisterFailure<UnitResult<PostConcertError>>(
+                () => new PostConcertError.NotPermitted());
+            if (await RequireConcertAsync(
+                    id, TenantPermission.ConcertsPublish, ResourceFacet.Operations, ct)
+                != AuthorizationDecision.Allowed)
+                return new PostConcertError.NotPermitted();
+
+            return await privilegedRepository.GetStateByIdAsync(id, ct) == ConcertState.Posted
                 ? (UnitResult<PostConcertError>)new Success()
-                : new PostConcertError.Superseded(id),
-            ct);
+                : new PostConcertError.Superseded(id);
+        }, ct);
 
     private Task<UnitResult<DeclareDoorRevenueError>> DeclareDoorRevenueCommandAsync(
         int id,
@@ -420,16 +474,16 @@ internal sealed class ConcertService : IConcertService
             || !actor.HasPermission(TenantPermission.ConcertsDeclareDoorRevenue))
             return new DeclareDoorRevenueError.VenueForbidden();
 
+        commandAuthorization.RegisterFailure<UnitResult<DeclareDoorRevenueError>>(
+            () => new DeclareDoorRevenueError.VenueForbidden());
+        if (await RequireConcertAsync(
+                id, TenantPermission.ConcertsDeclareDoorRevenue, ResourceFacet.Finance, ct)
+            != AuthorizationDecision.Allowed)
+            return new DeclareDoorRevenueError.VenueForbidden();
+
         var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
         if (concert is null)
             return new DeclareDoorRevenueError.ConcertNotFound(id);
-        if (!await privilegedRepository.CanDeclareDoorRevenueAsync(
-                id,
-                actor,
-                actor.AudienceFor(TenantPermission.ConcertsDeclareDoorRevenue),
-                timeProvider.GetUtcNow().UtcDateTime,
-                ct))
-            return new DeclareDoorRevenueError.VenueForbidden();
 
         if (concert is not DoorRevenueConcert doorRevenueConcert)
             return new DeclareDoorRevenueError.WrongDealType();
@@ -443,46 +497,6 @@ internal sealed class ConcertService : IConcertService
         await privilegedRepository.SaveChangesAsync(ct);
         return new Success();
     }
-
-    private async Task<bool> ValidateOperationsAuthorityAsync(
-        int id,
-        MembershipSnapshot expectedActor,
-        TenantPermission permission,
-        CancellationToken ct)
-    {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        return actorOption.TryGetValue(out var actor)
-            && actor.HasPermission(permission)
-            && await CanOperateAsync(id, actor, permission, ct);
-    }
-
-    private async Task<bool> ValidateDoorRevenueAuthorityAsync(
-        int id,
-        MembershipSnapshot expectedActor,
-        CancellationToken ct)
-    {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        return actorOption.TryGetValue(out var actor)
-            && actor.HasPermission(TenantPermission.ConcertsDeclareDoorRevenue)
-            && await privilegedRepository.CanDeclareDoorRevenueAsync(
-                id,
-                actor,
-                actor.AudienceFor(TenantPermission.ConcertsDeclareDoorRevenue),
-                timeProvider.GetUtcNow().UtcDateTime,
-                ct);
-    }
-
-    private Task<bool> CanOperateAsync(
-        int id,
-        MembershipSnapshot actor,
-        TenantPermission permission,
-        CancellationToken ct) =>
-        privilegedRepository.CanOperateAsync(
-            id,
-            actor,
-            actor.AudienceFor(permission),
-            timeProvider.GetUtcNow().UtcDateTime,
-            ct);
 
     public async Task<Result<ConcertSummaryShare, ShareConcertSummaryError>> ShareSummaryAsync(
         int id,
@@ -499,8 +513,6 @@ internal sealed class ConcertService : IConcertService
         {
             return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
                 (service, token) => service.ShareSummaryCommandAsync(id, request, actor, token),
-                (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
-                () => new ShareConcertSummaryError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
@@ -511,8 +523,6 @@ internal sealed class ConcertService : IConcertService
         {
             return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
                 (service, token) => service.RecoverSummaryShareDuplicateAsync(id, request, actor, token),
-                (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
-                () => new ShareConcertSummaryError.NotPermitted(),
                 ct);
         }
     }
@@ -532,22 +542,27 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        if (!actorOption.TryGetValue(out var actor)
-            || !actor.HasPermission(TenantPermission.ResourcesShare))
+        var resolutionOption = await tenantResolver.ResolveAsync(
+            expectedActor, request.RecipientTenantId, request.RecipientMembershipId, ct);
+        if (!resolutionOption.TryGetValue(out var resolution)
+            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
-        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
-            return new ShareConcertSummaryError.ConcertNotFound(id);
-        if (!await CanShareAsync(id, actor, ct))
+        commandAuthorization.RegisterFailure<Result<ConcertSummaryShare, ShareConcertSummaryError>>(
+            () => new ShareConcertSummaryError.NotPermitted());
+        if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
+            != AuthorizationDecision.Allowed)
             return new ShareConcertSummaryError.NotPermitted();
+        if (!resolution.TargetTenantExists
+            || request.RecipientMembershipId is not null && resolution.TargetMembership is null)
+            return new ShareConcertSummaryError.InvalidRecipient();
 
         var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
         var payloadHash = CommandPayloadHash.Create(
             id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
         var receipt = await receiptRepository.GetByRequestForUpdateAsync(
-            actor.TenantId,
+            resolution.Actor.TenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);
@@ -555,18 +570,6 @@ internal sealed class ConcertService : IConcertService
             return ReplaySummaryShare(concert, receipt, payloadHash);
         if (concert.AccessVersion != request.ExpectedAccessVersion)
             return new ShareConcertSummaryError.Superseded(id);
-
-        var resolutionOption = await tenantResolver.ResolveAsync(
-            expectedActor,
-            request.RecipientTenantId,
-            request.RecipientMembershipId,
-            ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
-            return new ShareConcertSummaryError.NotPermitted();
-        if (!resolution.TargetTenantExists
-            || request.RecipientMembershipId is not null && resolution.TargetMembership is null)
-            return new ShareConcertSummaryError.InvalidRecipient();
 
         var decidedAt = resourceAccess.UtcNow;
         var validation = concert.ValidateSummaryShare(
@@ -636,20 +639,25 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        if (!actorOption.TryGetValue(out var actor)
-            || !actor.HasPermission(TenantPermission.ResourcesShare))
+        var resolutionOption = await tenantResolver.ResolveAsync(
+            expectedActor, request.RecipientTenantId, request.RecipientMembershipId, ct);
+        if (!resolutionOption.TryGetValue(out var resolution)
+            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
-        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
-            return new ShareConcertSummaryError.ConcertNotFound(id);
-        if (!await CanShareAsync(id, actor, ct))
+        commandAuthorization.RegisterFailure<Result<ConcertSummaryShare, ShareConcertSummaryError>>(
+            () => new ShareConcertSummaryError.NotPermitted());
+        if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
+            != AuthorizationDecision.Allowed)
             return new ShareConcertSummaryError.NotPermitted();
+        if (!resolution.TargetTenantExists
+            || request.RecipientMembershipId is not null && resolution.TargetMembership is null)
+            return new ShareConcertSummaryError.InvalidRecipient();
 
         var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
         var receipt = await receiptRepository.GetByRequestForUpdateAsync(
-            actor.TenantId,
+            resolution.Actor.TenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);
@@ -683,8 +691,6 @@ internal sealed class ConcertService : IConcertService
             return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<RevokeConcertSummaryShareError>>(
                 (service, token) => service.RevokeSummaryShareCommandAsync(
                     id, grantId, expectedAccessVersion, actor, token),
-                (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
-                () => new RevokeConcertSummaryShareError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
@@ -715,9 +721,10 @@ internal sealed class ConcertService : IConcertService
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new RevokeConcertSummaryShareError.NotPermitted();
 
-        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
-            return new RevokeConcertSummaryShareError.ConcertNotFound(id);
-        if (!await CanShareAsync(id, resolution.Actor, ct))
+        commandAuthorization.RegisterFailure<UnitResult<RevokeConcertSummaryShareError>>(
+            () => new RevokeConcertSummaryShareError.NotPermitted());
+        if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
+            != AuthorizationDecision.Allowed)
             return new RevokeConcertSummaryShareError.NotPermitted();
         var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
@@ -743,8 +750,6 @@ internal sealed class ConcertService : IConcertService
         {
             return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
                 (service, token) => service.AssignMemberCommandAsync(id, request, actor, token),
-                (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
-                () => new AssignConcertMemberError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
@@ -776,9 +781,10 @@ internal sealed class ConcertService : IConcertService
         if (resolution.TargetMembership is null)
             return new AssignConcertMemberError.InvalidMembership();
 
-        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
-            return new AssignConcertMemberError.ConcertNotFound(id);
-        if (!await CanShareAsync(id, resolution.Actor, ct))
+        commandAuthorization.RegisterFailure<UnitResult<AssignConcertMemberError>>(
+            () => new AssignConcertMemberError.NotPermitted());
+        if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
+            != AuthorizationDecision.Allowed)
             return new AssignConcertMemberError.NotPermitted();
         var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
@@ -812,8 +818,6 @@ internal sealed class ConcertService : IConcertService
             return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
                 (service, token) => service.RemoveMemberAssignmentCommandAsync(
                     id, membershipId, expectedAccessVersion, actor, token),
-                (service, _, token) => service.ValidateShareAuthorityAsync(id, actor, token),
-                () => new AssignConcertMemberError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
@@ -845,9 +849,10 @@ internal sealed class ConcertService : IConcertService
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConcertMemberError.NotPermitted();
 
-        if (await privilegedRepository.GetIdentityByIdForUpdateAsync(id, ct) is null)
-            return new AssignConcertMemberError.ConcertNotFound(id);
-        if (!await CanShareAsync(id, resolution.Actor, ct))
+        commandAuthorization.RegisterFailure<UnitResult<AssignConcertMemberError>>(
+            () => new AssignConcertMemberError.NotPermitted());
+        if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
+            != AuthorizationDecision.Allowed)
             return new AssignConcertMemberError.NotPermitted();
         var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
@@ -861,37 +866,23 @@ internal sealed class ConcertService : IConcertService
         return new Success();
     }
 
-    private async Task<bool> ValidateShareAuthorityAsync(
-        int id,
-        MembershipSnapshot expectedActor,
-        CancellationToken ct)
-    {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        return actorOption.TryGetValue(out var actor)
-            && actor.HasPermission(TenantPermission.ResourcesShare)
-            && await CanShareAsync(id, actor, ct);
-    }
-
-    private Task<bool> CanShareAsync(
-        int id,
-        MembershipSnapshot actor,
-        CancellationToken ct) =>
-        privilegedRepository.CanShareAsync(
-            id,
-            actor,
-            actor.AudienceFor(TenantPermission.ResourcesShare),
-            timeProvider.GetUtcNow().UtcDateTime,
-            ct);
-
     public Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(
         int id,
         CancellationToken ct = default) =>
-        concertRepository.GetUnpostedByArtistIdAsync(id, ct);
+        membership.Membership is { } actor
+            ? privateReads.GetUnpostedByArtistIdAsync(
+                id, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Summary),
+                actor, timeProvider.GetUtcNow(), ct)
+            : Task.FromResult<IReadOnlyList<ConcertSummary>>([]);
 
     public Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(
         int id,
         CancellationToken ct = default) =>
-        concertRepository.GetUnpostedByVenueIdAsync(id, ct);
+        membership.Membership is { } actor
+            ? privateReads.GetUnpostedByVenueIdAsync(
+                id, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Summary),
+                actor, timeProvider.GetUtcNow(), ct)
+            : Task.FromResult<IReadOnlyList<ConcertSummary>>([]);
 
     public Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,
@@ -902,19 +893,9 @@ internal sealed class ConcertService : IConcertService
         ConcertOperations operations,
         CancellationToken ct)
     {
-        if (membership.Membership is not { } actor
-            || await concertRepository.GetWithGrantsByIdAsync(operations.Id, ct) is not { } concert)
-            return operations with { CanCancel = false };
-
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        var canCancel = actor.HasPermission(TenantPermission.ConcertsManage)
-            && (concert.VenueTenantId == actor.TenantId || concert.ArtistTenantId == actor.TenantId)
-            && ResourceGrantPolicy.Allows(
-                concert.AccessGrants,
-                Concertable.B2B.Concert.Contracts.Enums.ConcertAccessScope.Operations,
-                actor,
-                actor.AudienceFor(TenantPermission.ConcertsManage),
-                now);
+        var canCancel = await authorization.CheckAsync(
+            ConcertRequest(operations.Id, TenantPermission.ConcertsManage, ResourceFacet.Operations),
+            ct) == AuthorizationDecision.Allowed;
         return operations with
         {
             CanCancel = canCancel
@@ -926,32 +907,35 @@ internal sealed class ConcertService : IConcertService
         ConcertFinance finance,
         CancellationToken ct)
     {
-        if (membership.Membership is not { } actor
-            || await concertRepository.GetWithGrantsByIdAsync(finance.Id, ct) is not { } concert)
+        if (membership.Membership is not { } actor)
             return finance with { CanDeclareDoorRevenue = false };
 
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        var canDeclareDoorRevenue = actor.HasPermission(TenantPermission.ConcertsDeclareDoorRevenue)
-            && concert.VenueTenantId == actor.TenantId
-            && ResourceGrantPolicy.Allows(
-                concert.AccessGrants,
-                Concertable.B2B.Concert.Contracts.Enums.ConcertAccessScope.Operations,
-                actor,
-                actor.AudienceFor(TenantPermission.ConcertsDeclareDoorRevenue),
-                now)
-            && ResourceGrantPolicy.Allows(
-                concert.AccessGrants,
-                Concertable.B2B.Concert.Contracts.Enums.ConcertAccessScope.Finance,
-                actor,
-                actor.AudienceFor(TenantPermission.ConcertsDeclareDoorRevenue),
-                now);
+        var canDeclareDoorRevenue = await authorization.CheckAsync(
+            ConcertRequest(
+                finance.Id, TenantPermission.ConcertsDeclareDoorRevenue, ResourceFacet.Finance),
+            ct) == AuthorizationDecision.Allowed;
 
         return finance with
         {
             CanDeclareDoorRevenue = canDeclareDoorRevenue
-                && concert.State is ConcertState.Draft or ConcertState.Posted
-                && concert is DoorRevenueConcert { DoorRevenue: null }
-                && concert.Period.End < now,
+                && await privateReads.CanDeclareDoorRevenueByIdAsync(
+                    finance.Id,
+                    ConcertBinding(TenantPermission.SettlementView, ResourceFacet.Finance),
+                    actor, timeProvider.GetUtcNow(), ct),
         };
     }
+
+    private Task<AuthorizationDecision> RequireConcertAsync(
+        int id, TenantPermission permission, ResourceFacet? facet, CancellationToken ct) =>
+        id > 0
+            ? authorization.RequireAsync(ConcertRequest(id, permission, facet), ct)
+            : Task.FromResult(AuthorizationDecision.Denied);
+
+    private static AuthorizationRequest ConcertRequest(
+        int id, TenantPermission permission, ResourceFacet? facet) =>
+        new(permission, ResourceAddress.Create(ResourceKind.Concert, id), facet);
+
+    private static ResourcePolicyBinding ConcertBinding(
+        TenantPermission permission, ResourceFacet? facet) =>
+        ResourcePolicyBinding.FromCatalog(permission, ResourceKind.Concert, facet);
 }
