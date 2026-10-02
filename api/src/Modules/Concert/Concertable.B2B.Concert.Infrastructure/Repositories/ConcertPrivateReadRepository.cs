@@ -55,9 +55,9 @@ internal sealed class ConcertPrivateReadRepository(
         int id, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
         FinanceRoot(binding, actor, now)
-            .OfType<DoorRevenueConcert>()
             .AnyAsync(concert => concert.Id == id
-                && concert.DoorRevenue == null
+                && (concert is DoorSplitConcert && ((DoorSplitConcert)concert).DoorRevenue == null
+                    || concert is VersusConcert && ((VersusConcert)concert).DoorRevenue == null)
                 && concert.Period.End < now.UtcDateTime
                 && (concert.State == Concertable.B2B.Concert.Domain.Lifecycle.ConcertState.Draft
                     || concert.State == Concertable.B2B.Concert.Domain.Lifecycle.ConcertState.Posted), ct);
