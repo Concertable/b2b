@@ -1,6 +1,8 @@
+using Concertable.B2B.DataAccess.Application;
+
 namespace Concertable.B2B.Privacy.Domain.Entities;
 
-public sealed class SubjectErasureRequestEntity : IGuidEntity
+public sealed class SubjectErasureRequestEntity : IGuidEntity, IConcurrencyVersioned
 {
     private static readonly ErasureStateMachine stateMachine = new();
 
@@ -9,6 +11,8 @@ public sealed class SubjectErasureRequestEntity : IGuidEntity
     public Guid Id { get; private set; }
     public Guid SubjectId { get; private set; }
     public ErasureState State { get; private set; }
+    public uint Version { get; private set; }
+    public DateTime? LastAttemptedAtUtc { get; private set; }
     public DateTime RequestedAtUtc { get; private set; }
     public DateTime? CompletedAtUtc { get; private set; }
     public string? DeferralReason { get; private set; }
@@ -33,6 +37,8 @@ public sealed class SubjectErasureRequestEntity : IGuidEntity
         this.State = next;
         return new Success();
     }
+
+    internal void RecordAttempt(DateTime at) => this.LastAttemptedAtUtc = at;
 
     internal void RecordDeferral(string reason) => this.DeferralReason = reason;
 

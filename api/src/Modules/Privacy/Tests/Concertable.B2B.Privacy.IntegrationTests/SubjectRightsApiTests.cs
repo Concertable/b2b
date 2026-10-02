@@ -4,6 +4,9 @@ using System.Text.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Privacy.Application.Interfaces;
 using Concertable.B2B.Privacy.Domain.Lifecycle;
+using Concertable.B2B.Privacy.Domain.Entities;
+using Concertable.B2B.Privacy.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Microsoft.Extensions.DependencyInjection;
@@ -85,6 +88,62 @@ public sealed class SubjectRightsApiTests : IAsyncLifetime
     }
 
     #endregion
+
+    [Fact]
+    public async Task CompletedJournal_RejectsStaleCaptureFromAnotherContext()
+    {
+        var subjectId = Guid.NewGuid();
+        await using var firstScope = this.fixture.Services.CreateAsyncScope();
+        var firstContext = firstScope.ServiceProvider.GetRequiredService<PrivacyDbContext>();
+        var request = SubjectErasureRequestEntity.Create(subjectId, this.fixture.SeedNow);
+        request.Fire(ErasureTrigger.Begin);
+        firstContext.SubjectErasureRequests.Add(request);
+        await firstContext.SaveChangesAsync();
+
+        await using var staleScope = this.fixture.Services.CreateAsyncScope();
+        var staleContext = staleScope.ServiceProvider.GetRequiredService<PrivacyDbContext>();
+        var staleRequest = await staleContext.SubjectErasureRequests.SingleAsync(value => value.SubjectId == subjectId);
+
+        request.CaptureFanOutState("original@example.test", new HashSet<Guid> { Guid.NewGuid() });
+        await firstContext.SaveChangesAsync();
+        request.Fire(ErasureTrigger.Complete);
+        request.RecordCompletion(this.fixture.SeedNow);
+        await firstContext.SaveChangesAsync();
+
+        staleRequest.CaptureFanOutState("original@example.test", new HashSet<Guid> { Guid.NewGuid() });
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => staleContext.SaveChangesAsync());
+
+        await using var verificationScope = this.fixture.Services.CreateAsyncScope();
+        var verificationContext = verificationScope.ServiceProvider.GetRequiredService<PrivacyDbContext>();
+        var completed = await verificationContext.SubjectErasureRequests.SingleAsync(value => value.SubjectId == subjectId);
+        Assert.Equal(ErasureState.Completed, completed.State);
+        Assert.Null(completed.SubjectEmail);
+        Assert.Null(completed.TenantIds);
+    }
+
+    [Fact]
+    public async Task ResumableBatch_RotatesPastPersistentlyDeferredRequests()
+    {
+        var start = this.fixture.SeedNow.AddDays(-1);
+        var requests = Enumerable.Range(0, 101)
+            .Select(index => SubjectErasureRequestEntity.Create(Guid.NewGuid(), start.AddSeconds(index)))
+            .ToArray();
+        foreach (var request in requests)
+            request.Fire(ErasureTrigger.Defer);
+        await using var scope = this.fixture.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<PrivacyDbContext>();
+        context.SubjectErasureRequests.AddRange(requests);
+        await context.SaveChangesAsync();
+        var repository = scope.ServiceProvider.GetRequiredService<ISubjectErasureRepository>();
+        var first = await repository.ListResumableSubjectIdsAsync(100);
+        Assert.DoesNotContain(requests[100].SubjectId, first);
+
+        foreach (var request in requests.Take(100))
+            request.RecordAttempt(this.fixture.SeedNow);
+        await context.SaveChangesAsync();
+        var next = await repository.ListResumableSubjectIdsAsync(100);
+        Assert.Equal(requests[100].SubjectId, next[0]);
+    }
 
     #region Export
 

@@ -9,9 +9,14 @@ internal abstract partial record ErasureTransitionError : IError
     {
         InvalidTransition(var current, var trigger) =>
             ErrorDefinition.Conflict<InvalidTransition>(
-                $"Cannot {trigger} a subject-erasure request from {current}.")
+                $"Cannot {trigger} a subject-erasure request from {current}."),
+        ConcurrentRequest => ErrorDefinition.Conflict<ConcurrentRequest>(
+            "Another attempt changed this subject-erasure request.")
     };
 
     [ErrorCode("privacy.erasure.invalid_state")]
     public partial record InvalidTransition(ErasureState Current, ErasureTrigger Trigger);
+
+    [ErrorCode("privacy.erasure.concurrent_request")]
+    public partial record ConcurrentRequest;
 }

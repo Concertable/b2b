@@ -7,6 +7,7 @@ using Concertable.B2B.Privacy.Infrastructure.Services;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.User.Contracts;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 
 namespace Concertable.B2B.Privacy.UnitTests;
@@ -55,6 +56,22 @@ public sealed class SubjectErasureServiceTests
         this.conversationsModule.Verify(c => c.SeverAuthoredMessagesAsync(subjectId, It.IsAny<CancellationToken>()), Times.Once);
         this.conversationsModule.Verify(c => c.ScrubParticipantProfilesAsync(It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()), Times.Once);
         this.tenantModule.Verify(t => t.PurgePendingInvitationsAsync("subject@test.invalid", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RequestErasureAsync_StaleJournal_ReturnsConflictBeforeAnonymising()
+    {
+        var subjectId = Guid.NewGuid();
+        this.repository.Setup(value => value.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DbUpdateConcurrencyException());
+
+        var outcome = await this.service.RequestErasureAsync(subjectId);
+
+        Assert.True(outcome.TryGetError(out var error));
+        Assert.IsType<ErasureTransitionError.ConcurrentRequest>(error);
+        this.tenantModule.Verify(value => value.SeverMembershipsAsync(
+            It.IsAny<Guid>(), It.IsAny<IReadOnlySet<Guid>>(), It.IsAny<CancellationToken>()), Times.Never);
+        this.userModule.Verify(value => value.EraseAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

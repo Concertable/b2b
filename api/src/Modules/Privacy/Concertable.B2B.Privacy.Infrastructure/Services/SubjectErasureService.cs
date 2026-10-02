@@ -1,5 +1,6 @@
 using Concertable.B2B.Privacy.Infrastructure.Mappers;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Privacy.Infrastructure.Services;
 
@@ -45,13 +46,22 @@ internal sealed class SubjectErasureService : ISubjectErasureService
         if (request.State == ErasureState.Completed)
             return request.ToDto();
 
-        return await DriveAsync(request, ct);
+        try
+        {
+            return await DriveAsync(request, ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return new ErasureTransitionError.ConcurrentRequest();
+        }
     }
 
     private async Task<Result<SubjectErasureRequestDto, ErasureTransitionError>> DriveAsync(
         SubjectErasureRequestEntity request,
         CancellationToken ct)
     {
+        request.RecordAttempt(this.timeProvider.GetUtcNow().UtcDateTime);
+
         if (await this.obligationChecker.HasLiveObligationsAsync(request.SubjectId, request.CapturedTenantIds, ct))
         {
             if (request.Fire(ErasureTrigger.Defer).TryGetError(out var deferError))
@@ -72,7 +82,7 @@ internal sealed class SubjectErasureService : ISubjectErasureService
         {
             await AnonymiseAsync(request, ct);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        catch (Exception exception) when (exception is not (OperationCanceledException or DbUpdateConcurrencyException))
         {
             if (request.Fire(ErasureTrigger.Fail).TryGetError(out _))
                 throw;

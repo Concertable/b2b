@@ -5,7 +5,8 @@
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
 **Review status:** `complete`
-**Reviewed up to commit:** `bc51d670844e2668586acabb94ebad2cfdb19009`  `(2026-09-17)`
+**Reviewed up to commit:** `f1040fb2e7503d8c919a4b7b38207f6a3df4fec3`
+**Security-reviewed up to commit:** `f1040fb2e7503d8c919a4b7b38207f6a3df4fec3`
 **Judgment:** `changes-requested`
 
 ## Review pass — 2026-09-15 — full
@@ -68,7 +69,7 @@ tree before being kept.
 - [x] **F12 — MEDIUM — module boundaries** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Application/DTOs/SubjectErasureRequestDto.cs:5`
   `public` where sibling Application DTOs are `internal`, and `FileDownload.cs:3` beside it is internal. The `InternalsVisibleTo` chain already covers its only consumer. Privacy has no Contracts project, so this is the whole public surface of an Application assembly that Workers also references.
 
-- [ ] **F13 — MEDIUM — product decision** — `api/src/Modules/Booking/Concertable.B2B.Booking.Contracts/IBookingModule.cs:29`
+- [x] **F13 — MEDIUM — product decision** — `api/src/Modules/Booking/Concertable.B2B.Booking.Contracts/IBookingModule.cs:29`
   The export returns tenant-level records for every tenant the subject belongs to, including `SubjectContractDto.ArtistName` — a named individual when the counterparty is a sole trader. UK GDPR art. 15(4) says access must not adversely affect others' rights, and these are the tenant's records rather than the subject's personal data. No loaded doc rules either way; this needs an owner decision, not a silent default.
 
 - [x] **F14 — MEDIUM — efficiency** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Services/SubjectObligationChecker.cs:29`
@@ -210,7 +211,7 @@ would have read as live and the fix would have reintroduced the bug.
   integration tier — so the merge queue closes this, not a local run. Resolution condition unchanged: a green
   `Category=Integration` pass over `GetSubjectContractsAsync` and `HasLiveObligationsByTenantIdsAsync`.
 
-- [ ] **F13 — still the owner's.** Whether `SubjectContractDto.ArtistName` — a named individual when the
+- [x] **F13 — still the owner's.** Whether `SubjectContractDto.ArtistName` — a named individual when the
   counterparty is a sole trader — belongs in another tenant's export under UK GDPR art. 15(4). This is a
   product and legal judgement, not an engineering one, and no loaded doc rules either way. **Owner: Tommy.**
 
@@ -222,3 +223,38 @@ assertions: `IReadOnlySet<Guid>.Contains` does emit `IN`, so all six queries ret
 own progress ledger had recorded as never having run.
 
 That leaves **F13** as the single open finding, and it is a product/legal judgement rather than a defect.
+
+
+## Review pass — 2026-10-02 — reconciled subject rights
+
+**Candidate base:** `84b7d89641aad0ca6e0273af3794234a7fd934af`
+**Candidate head:** `f1040fb2e7503d8c919a4b7b38207f6a3df4fec3`
+**Candidate branch:** `Feature/MonorepoBacklogPort`
+**Candidate scope:** `all`
+**Candidate path-set:** `c3721f2fbc58ec630f4de9490230898434cf87233fb65a90bcddb0073d4ff457`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\pr-disposition-20261002\review\0f47f5e3642c620cc92db01d557f89e19719d1a0db07c812ebc7877e1ca7002f`
+**Candidate bundle identity:** `9c35f6e8f84836b8dc7c967ac382945fa739cdb910ba027007dfcabdaf98603e`
+**Candidate patch identity:** `627a75828221d9787d46d8f0827c801537e2b45839045f26be84c8904508d851`
+**Work-order path:** `reviews/Feature-MonorepoBacklogPort.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+Synchronized tracked-clean source with origin/main once through native Git. Untracked audit Markdown was preserved; runtime synchronization had rejected those working documents before any source operation. Frozen descriptor: C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\pr-disposition-20261002\review\0f47f5e3642c620cc92db01d557f89e19719d1a0db07c812ebc7877e1ca7002f\descriptor.json
+
+Native Codex CLI unavailable; configured native-general review model unavailable. Parent fallback and fresh independent read-only contexts cover the immutable range. Full ordinary pass covers the coherent 160-path capability; source contracts, persistence/migrations and security/recovery concerns receive separate bounded lenses. No repository route table; .NET tier rules and root/nearest guidance apply. Security is required by actual admin subject export and destructive PII erasure even though the helper generic substring classifier reports no qualifying path.
+
+Historical F13: conservative source repair removes VenueName and ArtistName from contract exports; wire-format regression forbids both. Final judgment remains pending. Crash retry repair persists tenant IDs before membership removal and clears completed journal PII; focused Tenant provider replay passed 1/1, Privacy unit regressions passed 38/38. New PostgreSQL migrations regenerated through repository owner helper.
+
+
+### Findings in reconciled candidate
+
+- [ ] **F14 — HIGH — financial obligation guard** — `api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/ObligationChecker.cs:12` treats Draft as settled. A confirmed booking hands off to a draft concert before financial completion; the booking checker then excludes it, allowing erasure while settlement is still due. Fix: keep Draft live and verify the handoff boundary.
+- [ ] **F15 — HIGH — production migrations** — `migrations.psd1:9` adds Privacy to validation but the production migration executable has a separate catalog without it. Add its project reference, factory visibility and migration catalog entry; extend the clean-database/idempotence regression.
+- [ ] **F16 — HIGH — concurrent journal writes** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Services/SubjectErasureService.cs:102` persists captured PII without a concurrency token. A stale scoped attempt can write original email after another scope completed and cleared it. Add persisted compare-and-swap fencing and a separate-DbContext regression proving stale capture fails and completed PII remains null.
+
+- [ ] **F17 — HIGH — background handoff** — `api/src/Modules/Booking/Concertable.B2B.Booking.Infrastructure/Events/ConcertCreatedIntegrationEventHandler.cs:23` uses a tenant-filtered repository without an active request tenant, silently missing the booking and leaving confirmed obligations live indefinitely. Use the module privileged context and verify background delivery/replay.
+- [ ] **F18 — MEDIUM — retry fairness** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Repositories/SubjectErasureRepository.cs:24` always selects the oldest 100; persistent deferrals starve every newer request. Persist last-attempt time and order by oldest attempt; verify a 101st request rotates into the next batch.
+
+The 2026-10-02 immutable pass is complete with five retained findings, deduplicated across three fresh read-only lenses and parent validation. Security was reviewed at f1040fb2e7503d8c919a4b7b38207f6a3df4fec3. Repairs are local and require a new immutable pass after regression/migration qualification.
+
+The user explicitly confirmed counterparty exclusion. F13 is resolved by removing both VenueName and ArtistName; the wire-format regression forbids both. No policy ratification or broader GDPR-compliance claim is implied.

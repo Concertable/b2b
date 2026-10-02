@@ -1,4 +1,6 @@
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.Messaging.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
@@ -53,5 +55,23 @@ public sealed class TenantScopingTests : IAsyncLifetime
             sp.GetRequiredService<IBookingModule>().HasLiveObligationsByTenantIdsAsync(tenantIds));
 
         Assert.True(live);
+    }
+    [Fact]
+    public async Task ConcertCreated_BackgroundDelivery_RecordsHandOffOnce()
+    {
+        var booking = this.fixture.SeedState.ConfirmedBooking;
+        var created = new ConcertCreatedEvent(123, booking.ApplicationId, booking.OpportunityId,
+            1, 1, booking.VenueTenantId, booking.ArtistTenantId, this.fixture.SeedNow);
+        var envelope = MessageEnvelope.Create<ConcertCreatedEvent>(this.fixture.SeedNow);
+
+        await this.fixture.Services.RunScopedAsync(sp =>
+            sp.GetRequiredService<IIntegrationEventHandler<ConcertCreatedEvent>>().HandleAsync(created, envelope));
+        var first = await this.fixture.Bookings.SingleAsync(value => value.Id == booking.Id);
+        Assert.NotNull(first.HandedOffAtUtc);
+
+        await this.fixture.Services.RunScopedAsync(sp =>
+            sp.GetRequiredService<IIntegrationEventHandler<ConcertCreatedEvent>>().HandleAsync(created, envelope));
+        var replayed = await this.fixture.Bookings.SingleAsync(value => value.Id == booking.Id);
+        Assert.Equal(first.HandedOffAtUtc, replayed.HandedOffAtUtc);
     }
 }

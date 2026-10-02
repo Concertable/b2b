@@ -42,11 +42,16 @@ public sealed class MigrationJobTests
                 "messaging.__EFMigrationsHistory_Inbox",
                 "messaging.__EFMigrationsHistory_Outbox",
                 "opportunity.__EFMigrationsHistory",
+                "privacy.__EFMigrationsHistory",
                 "tenant.__EFMigrationsHistory",
                 "user.__EFMigrationsHistory",
                 "venue.__EFMigrationsHistory",
             ],
             histories);
+            await reader.DisposeAsync();
+            await using var privacyTable = connection.CreateCommand();
+            privacyTable.CommandText = "SELECT to_regclass('privacy.\"SubjectErasureRequests\"')::text";
+            Assert.Equal("privacy.\"SubjectErasureRequests\"", await privacyTable.ExecuteScalarAsync());
         }
         finally
         {

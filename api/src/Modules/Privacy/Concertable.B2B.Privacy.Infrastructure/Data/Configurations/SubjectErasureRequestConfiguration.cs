@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,6 +11,7 @@ internal sealed class SubjectErasureRequestConfiguration : IEntityTypeConfigurat
         builder.ToTable(Schema.Tables.SubjectErasureRequests, Schema.Name);
         builder.HasKey(x => x.Id);
         builder.Property(x => x.State);
+        builder.HasConcurrencyVersion();
         builder.Property(x => x.DeferralReason).HasMaxLength(200);
         builder.Property(x => x.FailureReason).HasMaxLength(1000);
         builder.HasIndex(x => x.SubjectId).IsUnique();

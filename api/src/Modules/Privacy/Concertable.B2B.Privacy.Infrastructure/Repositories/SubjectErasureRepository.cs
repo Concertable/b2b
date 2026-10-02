@@ -21,7 +21,8 @@ internal sealed class SubjectErasureRepository : Repository<SubjectErasureReques
     public async Task<IReadOnlyList<Guid>> ListResumableSubjectIdsAsync(int take, CancellationToken ct = default) =>
         await this.context.SubjectErasureRequests
             .Where(r => ResumableStates.Contains(r.State))
-            .OrderBy(r => r.RequestedAtUtc)
+            .OrderBy(r => r.LastAttemptedAtUtc ?? r.RequestedAtUtc)
+            .ThenBy(r => r.Id)
             .Take(take)
             .Select(r => r.SubjectId)
             .ToListAsync(ct);

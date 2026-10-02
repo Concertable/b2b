@@ -22,6 +22,8 @@ namespace Concertable.B2B.Privacy.Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SubjectId = table.Column<Guid>(type: "uuid", nullable: false),
                     State = table.Column<int>(type: "integer", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    LastAttemptedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     RequestedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CompletedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeferralReason = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),

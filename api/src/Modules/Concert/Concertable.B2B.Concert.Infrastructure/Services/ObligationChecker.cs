@@ -9,7 +9,6 @@ internal sealed class ObligationChecker : IObligationChecker
 {
     private static readonly ConcertState[] SettledStates =
     [
-        ConcertState.Draft,
         ConcertState.Complete,
         ConcertState.Cancelled,
     ];
