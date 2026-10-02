@@ -7,7 +7,7 @@ This plan owns the B2B-local work salvaged from PR #14. The PR-disposition owner
 ## Candidate scope
 
 - An admin-only JSON export reads the subject's User profile, Tenant memberships, authored messages and bounded Booking/Concert metadata through owning module facades.
-- Contract export contains deal type and creation time; both counterparty names are omitted.
+- Contract export contains deal type and creation time; both counterparty names are omitted. Invoice numbers are omitted because they embed the supplier tax identifier.
 - Privacy coordinates a read-only export and owns no database schema. No erasure endpoint, timer, journal, migration or mutation hook lands with this export.
 
 Erasure is retired from the delivered candidate. Fresh security review found that deleting the sole owner can strand a shared tenant and that membership changes can widen fan-out beyond checked financial obligations. Safe erasure requires a coordinated membership/financial fence and ownership handover policy. Original and repaired erasure code, tests and migrations remain reachable in existing PR history, including f8e709536b3d62aa9cc362e73aa2d2076fc7e0d8 and ef1868da9.

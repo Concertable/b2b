@@ -1,5 +1,11 @@
 # Open PR audit and disposition
 
+## Current execution state
+
+Authorized delivery remains active. All ten Renovate update sets landed through merged #28 and #29; their causal main CI runs passed and eight superseded originals are closed. #14 is being narrowed and qualified as an admin-only read-only subject export, excluding counterparty names and identifier-bearing invoice numbers. Erasure is retired from this candidate and preserved in prior history. Separate #18/#38–#42 owners remain untouched.
+
+Next: commit the financial privacy repair and review the immutable delta; publish #14 and own exact-head CI, normal queue merge and causal main CI. The earlier audit-only limits below are historical and were superseded by the user's request to act.
+
 ## Original audit ownership and authorization
 
 User requested on2October2026: an agent handoff to investigate which open PRs should be closed. Scope is Concertable/b2b. This is a separately authorized, read-only GitHub audit; no PR closure, merge, branch deletion, commits, pushes or code changes are authorized. Produce recommendations and preserve unique work. The originating agent retains RBAC repair/CI ownership in FinalReconciliation; do not take over or edit its files or the LegacyBindings plan.
@@ -121,3 +127,12 @@ Dependency disposition: consolidate the remaining ordinary package/tool/action v
 
 
 User steering confirmed: exclude counterparty personal details from #14 export. Both party-name fields are already removed and the wire-format regression forbids them; F13 is now explicitly resolved. Privacy fenced migration regeneration succeeded with current pair 20261002163513_InitialCreate. Privacy fenced unit suite passed (artifact e385062b416f93c9-privacy-fenced-unit.log); serial provider qualification continues in shell 35354. #29 monitor shell 37198 continues its already published 6377f6438 candidate.
+
+
+### Final export review checkpoint
+
+Dependency delivery is complete: #28/#29 actually merged and both causal main CI runs passed. #14's export-only candidate 9c9908c3c9d9e032cb433c78528b8492c56f2484 passed four unit, four Privacy PostgreSQL, all 22 architecture and all 16 startup checks. Full owning-base source review retained two findings: invoice numbers embed counterparty supplier NI/UTR identifiers, and financial fragments need provider assertions with real records. Remove identifier-bearing invoice number metadata, add actual customer export privacy coverage plus owning Booking/Concert selection/value regressions, run those focused checks, commit and review the immutable repair delta. No #14 push yet. Original/repaired erasure stays preserved in existing history. Separate #18 and #38–#42 owners remain untouched.
+
+Concert financial provider regressions passed 2/2 (33dfe91d5bf0ae81-subject-Concert-financial-provider.log), including a real settled invoice and customer JSON excluding the supplier NI identifier/encoded invoice number. Booking seed-count expectations failed because the observed shared seed population differs from the static cohort; no runtime defect or package drift was proved. Replaced that test with two valid, isolated contracts through the owner factory and production two-save path. One helper compile error was corrected; focused provider verification is running.
+
+Final financial repair qualification passed: Booking isolated contract provider 3/3, Concert invoice/agreement provider 2/2, and final Privacy export API provider 4/4 (cd7e3e41597fd7a3-privacy-export-financial-final.log). Base refreshed immediately before final review: HEAD..origin/main is 0 at d8bec353bc55db0c919134876522bd522caa0210. Source repair is ready for a scoped checkpoint and immutable incremental review; #14 is still unpublished.

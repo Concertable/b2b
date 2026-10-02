@@ -9,7 +9,6 @@ internal static class SubjectRecordMappers
     {
         public SubjectInvoiceDto ToSubjectInvoiceDto() => new()
         {
-            InvoiceNumber = invoice.InvoiceNumber,
             TaxPointUtc = invoice.TaxPointUtc,
             Net = invoice.Amounts.Net,
             Vat = invoice.Amounts.Vat,

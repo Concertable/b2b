@@ -54,6 +54,7 @@ public sealed class SubjectRightsApiTests : IAsyncLifetime
         Assert.Equal(subject.Id, root.GetProperty("subjectId").GetGuid());
         Assert.Equal(JsonValueKind.Object, root.GetProperty("user").ValueKind);
         Assert.NotEqual(0, root.GetProperty("memberships").GetArrayLength());
+        Assert.NotEqual(0, root.GetProperty("contracts").GetArrayLength());
         var contents = root.GetProperty("messages").EnumerateArray()
             .Select(message => message.GetProperty("content").GetString()).ToArray();
         Assert.Contains("Test inbox message — venue to artist.", contents);

@@ -10,7 +10,6 @@ public sealed record SubjectConcertRecordsDto
 
 public sealed record SubjectInvoiceDto
 {
-    public required string InvoiceNumber { get; init; }
     public DateTime TaxPointUtc { get; init; }
     public decimal Net { get; init; }
     public decimal Vat { get; init; }

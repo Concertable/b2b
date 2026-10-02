@@ -4,10 +4,10 @@
 > findings directly and report what changed. Tick each `[x]` as you land it. Pause only for a genuinely
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
-**Review status:** `in-progress`
-**Reviewed up to commit:** `938e9d8a25ff3b91723abdbf402057074b596a47`
-**Security-reviewed up to commit:** `938e9d8a25ff3b91723abdbf402057074b596a47`
-**Judgment:** `pending`
+**Review status:** `complete`
+**Reviewed up to commit:** `9c9908c3c9d9e032cb433c78528b8492c56f2484`
+**Security-reviewed up to commit:** `9c9908c3c9d9e032cb433c78528b8492c56f2484`
+**Judgment:** `changes-requested`
 
 ## Review pass — 2026-09-15 — full
 
@@ -288,3 +288,33 @@ The immutable 938e9d8 safety pass is complete. Fresh general and persistence len
 F14–F18 repairs passed 39 unit and seven Privacy provider cases, plus Booking handoff, Concert obligation and production migration provider projects. The final export salvage removes those mutation and persistence prerequisites completely, restores main's Booking/Conversations schemas and migration catalog, and preserves the repaired checkpoint in ef1868da9 history. All newly retained erasure findings are resolved for the landed scope through removal, not a claim that the preserved implementation is safe.
 
 The final export-only candidate remains review-pending. A fresh full owning-base pass will cover the admin route, module readers, subject isolation and financial metadata with independent general and security lenses.
+
+
+## Full review pass — final read-only export — 2026-10-02
+
+**Candidate base:** `d8bec353bc55db0c919134876522bd522caa0210`
+**Candidate head:** `9c9908c3c9d9e032cb433c78528b8492c56f2484`
+**Candidate branch:** `Feature/MonorepoBacklogPort`
+**Candidate scope:** `all`
+**Candidate path-set:** `f930a6907e7c6489f5566588876231a6a85194a5181c4c838ee08194e22e2213` (72 paths)
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\pr-disposition-20261002\review\8d41271e94c7536e41fb1abbe6c7376495ce418f3a645e09fcdd258439b8ac88`
+**Candidate bundle identity:** `b0d86206e1986494d5616af9cd7b131117fa52a39150106d35efd4b19a0f59ec`
+**Candidate patch identity:** `88fdfc32d1ec6b91eb28d8729bcf40575fdca01e6c2fa17ce80addb315f6d0b0`
+**Candidate tree archive identity:** `01bb5fb67a8dbbb288e288d96a1ee3d3c910e170218213fb66f16f54d42f91c8`
+**Work-order path:** `reviews/Feature-MonorepoBacklogPort.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+Tracked-clean source synchronized once with merged main d8bec353 through native Git; untracked working review Markdown is preserved. Full owning-base candidate supersedes the broader erasure scope. Native Codex CLI and configured native-general role/model are unavailable; parent native fallback covers the exact frozen source with fresh independent general/module/test and security evidence contexts. Tier convention hashes remain cached from this logical workflow; no repository route table. Security explicitly covers the new admin PII export and unfiltered subject readers, despite the helper's generic classifier having no matching path. Read-only ownership, admin authorization, subject/tenant constraints, counterparty exclusion and absence of mutations are reviewed. Four unit and four PostgreSQL export cases passed; all 22 architecture tests passed after removing erasure-only test dependencies. Startup and exact-head remote CI remain required.
+
+
+### Financial export findings
+
+Both fresh immutable lenses completed and verified all supplied hashes. Parent native/source fallback confirmed the same 72-path candidate and retained two findings:
+
+- [x] **F22 — MEDIUM — financial export regression coverage** — SubjectRightsApiTests:61–65 does not verify financial metadata values or existing-tenant isolation. Canonical seeds persist 14 contracts, but no invoices or self-billing agreements. Add owning-module PostgreSQL coverage with real invoice and agreement records, both invoice tenant sides, explicit expected contract cohorts and exclusion/empty-set behavior. No runtime defect was retained by the general lens.
+- [x] **F23 — MEDIUM — counterparty tax identifier disclosure** — SubjectRecordMappers:12 exports InvoiceNumber verbatim. InvoiceIssuer:60 constructs it from supplier SellerIdentifier, which supports NI/UTR input. A customer export can therefore disclose another person's tax identifier. Omit the number from conservative invoice metadata and verify a customer export after minting an invoice for a supplier with a distinct tax identifier contains neither that identifier nor the encoded number.
+
+Repairs are in progress against a later candidate: invoice number removed from DTO and mapper, nonempty contract assertion added, and Booking/Concert owner provider regressions added. The reviewed 9c9908c pass is complete with changes requested; final approval awaits passing repair regressions and immutable delta review.
+
+F22/F23 repair evidence: Booking provider tests passed 3/3 using isolated valid contract factories and both tenant axes, combined deduplication, expected metadata and unrelated/empty sets. Concert provider tests passed 2/2 with a real settled invoice, both parties, agreement history and customer JSON excluding the supplier NI identifier and its encoded invoice number. The shared seed cardinality was not reliable; no package drift was proved and isolated owned records replace those expectations. Findings and original pass judgment remain unchanged; the repair must receive its own immutable incremental review before publication.
