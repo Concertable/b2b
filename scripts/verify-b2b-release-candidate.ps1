@@ -329,15 +329,22 @@ try {
         $archivePath = Join-Path $imageRoot $candidate.archive
         $stem = [System.IO.Path]::GetFileNameWithoutExtension($candidate.archive) -replace '\.tar$', ''
 
-        & dotnet publish $project `
-            --configuration $Configuration `
-            --no-restore `
-            -t:PublishContainer `
-            -p:ContainerRepository=$repository `
-            -p:ContainerImageTag=$releaseVersion `
-            -p:ContainerImageFormat=Docker `
-            -p:ContainerArchiveOutputPath=$archivePath `
-            -p:SourceRevisionId=$revision
+        if ($candidate.repository -eq 'ghcr.io/concertable/b2b-workers') {
+            & (Join-Path $PSScriptRoot 'build-workers-image.ps1') `
+                -Configuration $Configuration -ImageTag $releaseVersion `
+                -ArchivePath $archivePath -SourceRevision $revision
+        }
+        else {
+            & dotnet publish $project `
+                --configuration $Configuration `
+                --no-restore `
+                -t:PublishContainer `
+                -p:ContainerRepository=$repository `
+                -p:ContainerImageTag=$releaseVersion `
+                -p:ContainerImageFormat=Docker `
+                -p:ContainerArchiveOutputPath=$archivePath `
+                -p:SourceRevisionId=$revision
+        }
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $archivePath) -or (Get-Item -LiteralPath $archivePath).Length -eq 0) {
             throw "Could not build release-candidate image for '$($candidate.project)'."
         }
