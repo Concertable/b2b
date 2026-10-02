@@ -28,7 +28,7 @@ public sealed class ApplicationFacetTests : IAsyncLifetime
     [Fact]
     public async Task TermsReaderCanSeeProposalAndContractWithoutOperations()
     {
-        var tenantId = fixture.SeedState.ConfirmedApp.VenueTenantId;
+        var tenantId = fixture.SeedState.PostedFlatFeeApp.VenueTenantId;
         var owner = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var roleId = await CreateRoleAsync(owner, "Terms reader", "terms.read", "TenantResources");
         await (await owner.PutAsJsonAsync(
@@ -37,13 +37,13 @@ public sealed class ApplicationFacetTests : IAsyncLifetime
 
         var reader = fixture.CreateClient(fixture.SeedState.VenueManager3);
         reader.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
-        var proposal = await reader.GetAsync($"/api/application/{fixture.SeedState.ConfirmedApp.Id}/proposal");
+        var proposal = await reader.GetAsync($"/api/application/{fixture.SeedState.PostedFlatFeeApp.Id}/proposal");
         await proposal.ShouldBe(HttpStatusCode.OK);
         var body = await proposal.Content.ReadFromJsonAsync<JsonElement>();
         var actions = body.GetProperty("actions");
         Assert.True(actions.TryGetProperty("contract", out _));
         Assert.False(actions.TryGetProperty("accept", out _));
-        await (await reader.GetAsync($"/api/application/{fixture.SeedState.ConfirmedApp.Id}/summary"))
+        await (await reader.GetAsync($"/api/application/{fixture.SeedState.PostedFlatFeeApp.Id}/summary"))
             .ShouldBe(HttpStatusCode.Forbidden);
     }
 
@@ -70,14 +70,14 @@ public sealed class ApplicationFacetTests : IAsyncLifetime
     {
         var application = fixture.SeedState.FlatFeeApp;
         var owner = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var roleId = await CreateRoleAsync(owner, "Assigned reader", "terms.read", "AssignedResources");
+        var roleId = await CreateRoleAsync(owner, "Assigned reader", "operations.view", "AssignedResources");
         await (await owner.PutAsJsonAsync(
             $"/api/organization/members/{fixture.SeedState.VenueManager3.Id}/roles",
             new { roleIds = new[] { roleId } })).ShouldBe(HttpStatusCode.NoContent);
 
         var reader = fixture.CreateClient(fixture.SeedState.VenueManager3);
         reader.DefaultRequestHeaders.Add(TenantHeaders.TenantId, application.VenueTenantId.ToString());
-        await (await reader.GetAsync($"/api/application/{application.Id}/proposal"))
+        await (await reader.GetAsync($"/api/application/{application.Id}/summary"))
             .ShouldBe(HttpStatusCode.NotFound);
     }
 
