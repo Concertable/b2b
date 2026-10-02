@@ -27,8 +27,8 @@ reads and writes through its privileged context. Generic capability naming belon
 `persistence`, and tenant visibility belongs to `multitenancy`.
 
 A service holding both `repository` and `readRepository` uses those fields for the two stances of its own
-aggregate. The domain capability `IConcertAvailability` has its own purpose-named abstraction over the
-read context.
+aggregate. Application owns `IConcertAvailabilityChecker`; its `ConcertAvailabilityChecker` queries
+`IApplicationReadDbContext` for opportunity, artist and venue availability.
 
 ## Which entities are filtered
 

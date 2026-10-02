@@ -4,9 +4,9 @@
 [Tenant and resource access](RESOURCE_ACCESS.md)
 
 This document owns B2B's transaction precedent and its safety conditions. Framework semantics link to
-their official owners. Generic .NET conventions belong in the authored `tj-agents/dotnet` source;
-its transaction-pattern extraction is pending with that checkout's existing owner. The installed
-`persistence` skill's ambient-scope carrier example does not describe B2B's current implementation.
+their official owners. Generic .NET conventions belong in the authored `tj-agents/dotnet` source.
+The `persistence` skill's ambient-scope carrier example describes its selected library implementation;
+B2B uses the explicit shared-connection coordinator below.
 
 ## Select the boundary from the required work
 

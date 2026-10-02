@@ -6,7 +6,8 @@
 
 Declared vertically at each owning module's composition root through `DealStrategyBuilder`, then resolved
 through the shared scoped `IDealStrategyFactory<TStrategy>`. Named facades remain the business API:
-`DealMapper`, `DealUpdater`, `DealTermsRenderer`, and `SettlementAmountResolver`.
+`DealMapper`, `DealUpdater`, and `SettlementAmountResolver`. Terms rendering belongs to
+`DealTerms.Render()` in Deal.Contracts.
 
 The Deal-specific builder composes `KeyedStrategyBuilder<DealType>` and makes complete `DealType` coverage
 innate for every registered strategy family. Adding a `DealType` member therefore fails composition until
