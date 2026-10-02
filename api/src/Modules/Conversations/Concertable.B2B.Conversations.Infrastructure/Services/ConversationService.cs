@@ -25,6 +25,7 @@ internal sealed class ConversationService : IConversationService
     private readonly IAuthorizationContext authorizationContext;
     private readonly IMembershipContext membership;
     private readonly IMembershipResolver membershipResolver;
+    private readonly IAuthorityResolver authorityResolver;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
     private readonly ITenantContext tenantContext;
@@ -42,6 +43,7 @@ internal sealed class ConversationService : IConversationService
         IAuthorizationContext authorizationContext,
         IMembershipContext membership,
         IMembershipResolver membershipResolver,
+        IAuthorityResolver authorityResolver,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor,
         ITenantContext tenantContext,
@@ -58,6 +60,7 @@ internal sealed class ConversationService : IConversationService
         this.authorizationContext = authorizationContext;
         this.membership = membership;
         this.membershipResolver = membershipResolver;
+        this.authorityResolver = authorityResolver;
         this.transactionRunner = transactionRunner;
         this.unitOfWorkAccessor = unitOfWorkAccessor;
         this.tenantContext = tenantContext;
@@ -449,9 +452,12 @@ internal sealed class ConversationService : IConversationService
     {
         if (membership.Membership is not { } expected || !expected.HasPermission(TenantPermission.MessagesRead))
             return null;
-        var resolution = await membershipResolver.ResolveSnapshotAsync(expected, ct);
-        return resolution.TryGetValue(out var actor) && actor.HasPermission(TenantPermission.MessagesRead)
-            ? actor
+        var resolution = await authorityResolver.ResolveAsync(expected, ct);
+        return resolution.TryGetValue(out var authority)
+            && authority.Actor.HasSameAuthorityAs(expected)
+            && authority.CatalogRevision == AuthorizationCatalog.Revision
+            && authority.Actor.HasPermission(TenantPermission.MessagesRead)
+            ? authority.Actor
             : null;
     }
 
