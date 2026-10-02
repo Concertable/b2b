@@ -25,11 +25,18 @@ completion; it is not B2B's default.
 
 | B2B operation | Boundary |
 |---|---|
-| Ordinary read or parallel dashboard reads | Independently configured context/connection; no coordinator |
+| Ordinary module read | Its configured context/connection; no application coordinator |
+| Several reads sharing a scoped context through their collaborators | Await the module calls sequentially; authority reads retain their short fenced transaction |
+| Parallel reads | Isolate all database contexts and connections used by the calls, including scoped collaborators |
 | Isolated write needing only one context/save and no protected-command pipeline | Normal EF save, through the selected module abstraction |
 | Protected mutation, even with one context | Current B2B unit of work, because locks, outbox work and final authority checks outlive an individual save |
 | Several module contexts in one database operation | One B2B unit of work, sequential enlistment and flushing |
 | Calls to a payment gateway or another service | Local state/outbox commit followed by the external operation; the database transaction does not make external effects atomic |
+
+Separate module contexts can still share a scoped collaborator's context. Artist KPI reads use Tenant's
+authority-read context through Application, Booking and Concert. [ArtistDashboardService.GetAsync](../api/src/Modules/Dashboard/Artist/Concertable.B2B.Dashboard.Artist.Infrastructure/ArtistDashboardService.cs)
+awaits those module calls sequentially. The [Dashboard provider tests](../api/src/Modules/Dashboard/Tests/Concertable.B2B.Dashboard.IntegrationTests/ArtistDashboardApiTests.cs)
+cover the accepted-booking KPI path and the absent-profile result.
 
 ## Name the actual responsibility
 

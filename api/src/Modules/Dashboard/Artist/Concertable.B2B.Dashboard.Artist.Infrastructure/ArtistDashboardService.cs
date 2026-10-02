@@ -50,26 +50,23 @@ internal sealed class ArtistDashboardService : IArtistDashboardService
     {
         var tenantId = tenantContext.GetTenantId();
         var period = DashboardReportingPeriod.From(timeProvider.GetUtcNow().UtcDateTime);
-        var pendingTask = applicationModule.GetArtistPendingCountAsync(tenantId, ct);
-        var awaitingCheckoutTask = bookingModule.GetArtistAwaitingCheckoutCountAsync(tenantId, ct);
-        var concertCountsTask = concertModule.GetArtistDashboardCountsAsync(tenantId, ct);
-        var payoutsTask = period.HasElapsedTime
-            ? paymentReportingClient.GetSettlementPayoutsAsync(
+        var pendingApplications = await applicationModule.GetArtistPendingCountAsync(tenantId, ct);
+        var awaitingCheckoutBookings = await bookingModule.GetArtistAwaitingCheckoutCountAsync(tenantId, ct);
+        var concertCounts = await concertModule.GetArtistDashboardCountsAsync(tenantId, ct);
+        var payouts = period.HasElapsedTime
+            ? await paymentReportingClient.GetSettlementPayoutsAsync(
                 tenantId,
                 new DateRange(period.MonthStart, period.Now),
                 ct)
-            : Task.FromResult(Money.Gbp(0m));
-
-        await Task.WhenAll(pendingTask, awaitingCheckoutTask, concertCountsTask, payoutsTask);
-        var concertCounts = await concertCountsTask;
+            : Money.Gbp(0m);
         if (!concertCounts.TryGetValue(out var counts))
             return null;
 
         return new ArtistDashboardKpis(
-            await pendingTask,
-            await awaitingCheckoutTask,
+            pendingApplications,
+            awaitingCheckoutBookings,
             counts.UpcomingConcerts,
-            (await payoutsTask).ToMinorUnits(),
+            payouts.ToMinorUnits(),
             null);
     }
 
