@@ -46,6 +46,12 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
+        services.AddDbContext<ConversationsReadDbContext>(opts =>
+            opts.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        services.AddScoped<IConversationsReadDbContext>(sp =>
+            sp.GetRequiredService<ConversationsReadDbContext>());
+
         services.AddSingleton<ConversationsConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<ConversationsConfigurationProvider>());
 
@@ -63,6 +69,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IContentReportNotifier, ContentReportNotifier>();
         services.AddScoped<IContentReportService, ContentReportService>();
         services.AddScoped<IModerationService, ModerationService>();
+        services.AddScoped<IMessageReadRepository, MessageReadRepository>();
+        services.AddScoped<ISubjectMessageReader, SubjectMessageReader>();
         services.AddScoped<IConversationsModule, ConversationsModule>();
         services.AddScoped<IIntegrationEventHandler<ArtistChangedEvent>, ArtistParticipantProfileProjectionHandler>();
         services.AddScoped<IIntegrationEventHandler<VenueChangedEvent>, VenueParticipantProfileProjectionHandler>();

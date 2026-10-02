@@ -25,6 +25,7 @@ using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Contracts.Events;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.User.Api.Extensions;
+using Concertable.B2B.Privacy.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Api.Extensions;
 using Concertable.B2B.Venue.Contracts.Events;
@@ -233,6 +234,7 @@ public static class B2BWebHostExtensions
             services.AddCurrentUser();
             services.AddAdminApi(builder.Configuration);
             services.AddUserApi(builder.Configuration);
+            services.AddPrivacyApi(builder.Configuration);
             services.AddAuth(builder.Configuration, builder.Environment);
             services.AddValidation();
             services.AddExceptionHandler<MalformedTenantHeaderExceptionHandler>();
@@ -247,6 +249,7 @@ public static class B2BWebHostExtensions
             builder.AddRateLimitPolicy(RateLimitPolicies.Messaging, new RateLimitWindow { PermitLimit = 20, WindowSeconds = 60 }, perUser: true);
             builder.AddRateLimitPolicy(RateLimitPolicies.Checkout, new RateLimitWindow { PermitLimit = 10, WindowSeconds = 60 }, perUser: true);
             builder.AddRateLimitPolicy(RateLimitPolicies.ProfileImage, new RateLimitWindow { PermitLimit = 20, WindowSeconds = 60 }, perUser: true);
+            builder.AddRateLimitPolicy(RateLimitPolicies.Sensitive, new RateLimitWindow { PermitLimit = 10, WindowSeconds = 60 }, perUser: true);
             return builder;
         }
     }

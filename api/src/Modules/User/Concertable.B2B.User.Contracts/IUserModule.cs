@@ -17,4 +17,6 @@ public interface IUserModule
     /// <summary>Resolves a user id from an email, for callers that only need a yes/no identity check
     /// (e.g. "is this candidate already a user?") without fetching the full user roster.</summary>
     Task<Option<Guid>> GetIdByEmailAsync(string email);
+
+    Task<Option<SubjectProfileDto>> GetSubjectProfileAsync(Guid subjectId, CancellationToken ct = default);
 }

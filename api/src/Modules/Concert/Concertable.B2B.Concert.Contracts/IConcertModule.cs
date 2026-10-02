@@ -13,4 +13,6 @@ public interface IConcertModule
     Task<IReadOnlyList<SettlementContext>> GetSettlementContextsAsync(
         IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default);
+
+    Task<SubjectConcertRecordsDto> GetSubjectRecordsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }

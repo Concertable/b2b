@@ -25,4 +25,7 @@ internal sealed class UserModule : IUserModule
 
     public Task<Option<Guid>> GetIdByEmailAsync(string email) =>
         userService.GetIdByEmailAsync(email);
+
+    public Task<Option<SubjectProfileDto>> GetSubjectProfileAsync(Guid subjectId, CancellationToken ct = default) =>
+        this.userService.GetSubjectProfileAsync(subjectId, ct);
 }

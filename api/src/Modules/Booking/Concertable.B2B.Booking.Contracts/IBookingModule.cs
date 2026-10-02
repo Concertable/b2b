@@ -19,6 +19,8 @@ public interface IBookingModule
     Task<int> GetArtistAwaitingCheckoutCountAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<SubjectContractDto>> GetSubjectContractsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }
 
 public sealed record BookingSummary(

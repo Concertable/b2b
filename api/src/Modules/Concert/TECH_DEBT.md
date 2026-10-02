@@ -43,4 +43,3 @@ Resolves when: that test exists and passes.
 Owner decision: change `IssueAsync` to return `UnitResult<TError>` over a Concert error union covering both lookups, and adapt the acceptance path that calls it. The two `OrNotFound` calls become `OrFailure`, and the error surfaces through the existing lifecycle error terminal rather than an exception filter.
 
 Resolves when: `IssueAsync` returns a Result, neither lookup throws, and a test proves a missing application yields the typed error rather than a `NotFoundException`.
-

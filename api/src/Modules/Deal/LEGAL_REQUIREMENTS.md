@@ -181,13 +181,11 @@ flow; no cookie consent.
 log); cookie consent on the SPA; versioned terms so re-acceptance can be forced on material
 change. Launch-blocking and independent of the money model.
 
-## 8. GDPR data retention + right to erasure — ABSENT
+## 8. GDPR data retention + right to erasure — PARTIAL
 **Legal basis:** UK GDPR arts. 5(1)(e), 17.
-No soft-delete, retention policy, or anonymisation/purge path. PII held for artists, venues,
-managers.
-**Build:** retention policy per data category; erasure path that **anonymises the person but
-preserves the statutory financial records** (invoices must survive erasure for HMRC). Note
-the tension explicitly.
+B2B-local subject export is being qualified. Erasure remains undelivered. Auth/Payment/Customer data, statutory retention
+scheduling and policy ratification remain outstanding; the launch compliance requirement stays open.
+Current engineering scope and evidence: [B2B subject-rights delivery](../../../../docs/plans/gdpr-subject-rights/GDPR_SUBJECT_RIGHTS_PLAN.md).
 
 ## 9. Audit trail on the booking lifecycle — PARTIAL
 **Legal basis:** dispute evidence; financial record-keeping.

@@ -1,0 +1,8 @@
+global using Concertable.B2B.Privacy.Application.DTOs;
+global using Concertable.B2B.Privacy.Application.Interfaces;
+global using Concertable.B2B.User.Contracts;
+global using Concertable.B2B.Tenant.Contracts;
+global using Concertable.B2B.Conversations.Contracts;
+global using Concertable.B2B.Concert.Contracts;
+global using Concertable.Kernel;
+global using Reunion;

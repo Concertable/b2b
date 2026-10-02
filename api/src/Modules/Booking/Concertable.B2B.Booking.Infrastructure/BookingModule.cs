@@ -8,13 +8,16 @@ internal sealed class BookingModule : IBookingModule
 {
     private readonly IBookingService bookingService;
     private readonly IContractService contractService;
+    private readonly ISubjectContractReader subjectContractReader;
 
     public BookingModule(
         IBookingService bookingService,
-        IContractService contractService)
+        IContractService contractService,
+        ISubjectContractReader subjectContractReader)
     {
         this.bookingService = bookingService;
         this.contractService = contractService;
+        this.subjectContractReader = subjectContractReader;
     }
 
     public async Task<Option<BookingSummary>> GetByApplicationIdAsync(
@@ -53,4 +56,7 @@ internal sealed class BookingModule : IBookingModule
         Guid artistTenantId,
         CancellationToken ct = default) =>
         bookingService.GetArtistAwaitingCheckoutCountAsync(artistTenantId, ct);
+
+    public Task<IReadOnlyList<SubjectContractDto>> GetSubjectContractsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
+        this.subjectContractReader.GetSubjectContractsAsync(tenantIds, ct);
 }

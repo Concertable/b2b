@@ -70,6 +70,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IBookingService, BookingService>();
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IContractPdfRenderer, ContractPdfRenderer>();
+            services.AddScoped<ISubjectContractReader, SubjectContractReader>();
             services.AddScoped<IBookingModule, BookingModule>();
             services.AddScoped<ITenantDeletionGuard, BookingTenantDeletionGuard>();
             services.AddBookingDealStrategies();
