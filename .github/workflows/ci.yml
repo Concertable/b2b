@@ -104,13 +104,13 @@ jobs:
             -p:ContainerArchiveOutputPath=${{ github.workspace }}/artifacts/images/b2b-migrations.tar.gz
 
       - name: Build B2B Workers image candidate
-        run: |
-          dotnet publish api/src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj \
-            --configuration Release \
-            --no-restore \
-            /t:PublishContainer \
-            -p:ContainerImageTag="$CANDIDATE_IMAGE_TAG" \
-            -p:ContainerArchiveOutputPath=${{ github.workspace }}/artifacts/images/b2b-workers.tar.gz
+        shell: pwsh
+        run: >-
+          ./scripts/build-workers-image.ps1
+          -Configuration Release
+          -ImageTag '${{ env.CANDIDATE_IMAGE_TAG }}'
+          -ArchivePath '${{ github.workspace }}/artifacts/images/b2b-workers.tar.gz'
+          -SourceRevision '${{ github.sha }}'
 
       - name: Build B2B seeding simulator image candidate
         run: |
