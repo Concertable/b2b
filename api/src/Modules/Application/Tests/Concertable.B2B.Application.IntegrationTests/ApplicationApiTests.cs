@@ -307,7 +307,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 new { eSignature = new { signatoryName = "Test Signatory" } }),
             () => competitor.PostAsync($"/api/application/{applicationId}/reject"));
 
-        AssertSerialized(responses);
+        await AssertSerializedAsync(responses);
         var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
         Assert.True(state is ApplicationState.Accepted or ApplicationState.Rejected);
     }
@@ -324,7 +324,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 new { eSignature = new { signatoryName = "Test Signatory" } }),
             () => competitor.PostAsync($"/api/application/{applicationId}/cancel"));
 
-        AssertSerialized(responses);
+        await AssertSerializedAsync(responses);
         var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
         Assert.True(state is ApplicationState.Accepted or ApplicationState.Cancelled);
     }
@@ -341,7 +341,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 new { eSignature = new { signatoryName = "Test Signatory" } }),
             () => artist.PostAsync($"/api/application/{applicationId}/withdraw"));
 
-        AssertSerialized(responses);
+        await AssertSerializedAsync(responses);
         var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
         Assert.True(state is ApplicationState.Accepted or ApplicationState.Withdrawn);
     }
@@ -403,7 +403,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 $"/api/application/{winnerApplicationId}/accept",
                 new { eSignature = new { signatoryName = "Test Signatory" } }));
 
-        AssertSerialized(responses);
+        await AssertSerializedAsync(responses);
         var states = await fixture.Applications
             .Where(value => value.Id == winnerApplicationId || value.Id == loserApplicationId)
             .Select(value => value.State)
@@ -674,10 +674,20 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         return await Task.WhenAll(firstTask, secondTask);
     }
 
-    private static void AssertSerialized(IEnumerable<HttpResponseMessage> responses) =>
-        Assert.Equal(
-            [HttpStatusCode.NoContent, HttpStatusCode.Conflict],
-            responses.Select(response => response.StatusCode).Order().ToArray());
+    private static async Task AssertSerializedAsync(IEnumerable<HttpResponseMessage> responses)
+    {
+        var all = responses.ToArray();
+        HttpStatusCode[] expected = [HttpStatusCode.NoContent, HttpStatusCode.Conflict];
+        var actual = all.Select(response => response.StatusCode).Order().ToArray();
+        if (actual.SequenceEqual(expected))
+            return;
+
+        var details = await Task.WhenAll(all.Select(async response =>
+            $"{(int)response.StatusCode} {response.StatusCode}: {await response.Content.ReadAsStringAsync()}"));
+        Assert.True(false,
+            $"Expected [{string.Join(", ", expected)}], got [{string.Join(", ", actual)}]. "
+            + $"Responses: {string.Join(" | ", details)}");
+    }
 
     private static async Task AssertProblemCodeAsync(
         HttpResponseMessage response,
