@@ -280,7 +280,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         Assert.Empty(await GetPreviewsAsync(staffClient));
         Assert.Equal(0, await GetUnreadCountAsync(staffClient));
         var inbound = (await GetMessagesAsync(ownerClient, preview.ConversationId))
-            .Single(message => message.Content == "Test inbox message — artist to venue.");
+            .Single(message => message.Content == "Test inbox message â€” artist to venue.");
         await (await staffClient.PostAsync(
                 $"/api/conversations/{preview.ConversationId}/messages/{inbound.Id}/report",
                 new { category = "illegalContent" }))
