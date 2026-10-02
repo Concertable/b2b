@@ -64,13 +64,11 @@ public sealed class TenantScopingTests : IAsyncLifetime
             1, 1, booking.VenueTenantId, booking.ArtistTenantId, this.fixture.SeedNow);
         var envelope = MessageEnvelope.Create<ConcertCreatedEvent>(this.fixture.SeedNow);
 
-        await this.fixture.Services.RunScopedAsync(sp =>
-            sp.GetRequiredService<IIntegrationEventHandler<ConcertCreatedEvent>>().HandleAsync(created, envelope));
+        await this.fixture.DispatchIntegrationEventAsync(created, envelope);
         var first = await this.fixture.Bookings.SingleAsync(value => value.Id == booking.Id);
         Assert.NotNull(first.HandedOffAtUtc);
 
-        await this.fixture.Services.RunScopedAsync(sp =>
-            sp.GetRequiredService<IIntegrationEventHandler<ConcertCreatedEvent>>().HandleAsync(created, envelope));
+        await this.fixture.DispatchIntegrationEventAsync(created, envelope);
         var replayed = await this.fixture.Bookings.SingleAsync(value => value.Id == booking.Id);
         Assert.Equal(first.HandedOffAtUtc, replayed.HandedOffAtUtc);
     }
