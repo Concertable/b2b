@@ -4,27 +4,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-public abstract class CommandUnitOfWorkBehavior<TContext> : IUnitOfWorkBehavior<TContext>
+public abstract class UnitOfWorkBehavior<TContext> : IUnitOfWorkBehavior<TContext>
     where TContext : DbContextBase
 {
     private readonly TContext context;
-    private readonly CommandTransactionFactory transactions;
-    private readonly CommandTransactionAccessor accessor;
+    private readonly UnitOfWorkRunner unitOfWorkRunner;
+    private readonly UnitOfWorkAccessor accessor;
 
-    public CommandUnitOfWorkBehavior(
+    public UnitOfWorkBehavior(
         TContext context,
-        CommandTransactionFactory transactions,
-        CommandTransactionAccessor accessor)
+        UnitOfWorkRunner unitOfWorkRunner,
+        UnitOfWorkAccessor accessor)
     {
         this.context = context;
-        this.transactions = transactions;
+        this.unitOfWorkRunner = unitOfWorkRunner;
         this.accessor = accessor;
     }
 
     public Task<TResult> ExecuteAsync<TResult>(
         Func<Task<TResult>> action,
         CancellationToken cancellationToken = default) =>
-        this.transactions.ExecuteAsync(this.context, action, cancellationToken);
+        this.unitOfWorkRunner.ExecuteAsync(this.context, action, cancellationToken);
 
     public Task ExecuteAsync(
         Func<Task> action,

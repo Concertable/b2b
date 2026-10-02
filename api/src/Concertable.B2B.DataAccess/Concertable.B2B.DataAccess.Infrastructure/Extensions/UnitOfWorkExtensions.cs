@@ -6,9 +6,9 @@ using Npgsql;
 
 namespace Concertable.B2B.DataAccess.Infrastructure.Extensions;
 
-public static class CommandTransactionExtensions
+public static class UnitOfWorkExtensions
 {
-    public static IServiceCollection AddCommandTransactions(
+    public static IServiceCollection AddUnitOfWork(
         this IServiceCollection services)
     {
         services.AddSingleton(provider =>
@@ -17,18 +17,18 @@ public static class CommandTransactionExtensions
             builder.UseNetTopologySuite();
             return builder.Build();
         });
-        services.AddScoped<CommandTransactionAccessor>();
-        services.AddScoped<ICommandAuthorizationContext, CommandAuthorizationContext>();
-        services.AddSingleton<ICommandTransactionCommitter, CommandTransactionCommitter>();
+        services.AddScoped<UnitOfWorkAccessor>();
+        services.AddScoped<IAuthorizationContext, AuthorizationContext>();
+        services.AddSingleton<ITransactionCommitter, TransactionCommitter>();
         services.AddSingleton<ITransactionRunner>(provider => new TransactionRunner(
             provider.GetRequiredService<IServiceScopeFactory>(),
             provider.GetRequiredService<NpgsqlDataSource>(),
-            provider.GetRequiredService<ICommandTransactionCommitter>()));
-        services.AddScoped(provider => new CommandTransactionFactory(
+            provider.GetRequiredService<ITransactionCommitter>()));
+        services.AddScoped(provider => new UnitOfWorkRunner(
             provider.GetRequiredService<NpgsqlDataSource>(),
-            provider.GetRequiredService<CommandTransactionAccessor>(),
+            provider.GetRequiredService<UnitOfWorkAccessor>(),
             provider.GetRequiredService<Concertable.Messaging.Infrastructure.Outbox.IDbContextAccessor>(),
-            provider.GetRequiredService<ICommandTransactionCommitter>()));
+            provider.GetRequiredService<ITransactionCommitter>()));
         services.AddTransient<IDbConnection>(provider =>
             provider.GetRequiredService<NpgsqlDataSource>().CreateConnection());
 

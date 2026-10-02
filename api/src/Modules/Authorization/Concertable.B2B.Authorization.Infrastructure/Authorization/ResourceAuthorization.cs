@@ -4,7 +4,7 @@ namespace Concertable.B2B.Authorization.Infrastructure.Authorization;
 
 internal sealed class ResourceAuthorization(
     ActorAuthoritySession actor,
-    ICommandAuthorizationContext command,
+    IAuthorizationContext authorizationContext,
     ResourceBindingRegistry registry,
     TimeProvider clock) : IResourceAuthorization
 {
@@ -50,7 +50,7 @@ internal sealed class ResourceAuthorization(
             return actor.Fail(AuthorizationDecision.Denied).Decision;
 
         var proof = new ResourceAuthorizationProof(request, binding!, authority, evidence);
-        command.RegisterValidator(token => evaluator.ValidateForCommitAsync(proof, clock.GetUtcNow(), token));
+        authorizationContext.RegisterValidator(token => evaluator.ValidateForCommitAsync(proof, clock.GetUtcNow(), token));
         return AuthorizationDecision.Allowed;
     }
 

@@ -24,7 +24,7 @@ internal sealed class TenantService : ITenantService
     private readonly IReadOnlyList<ITenantDeletionGuard> deletionGuards;
     private readonly ICurrentUser currentUser;
     private readonly TenantAuthorityResolver authority;
-    private readonly ICommandAuthorizationContext command;
+    private readonly IAuthorizationContext authorizationContext;
 
     public TenantService(
         ITenantRepository repository,
@@ -40,7 +40,7 @@ internal sealed class TenantService : ITenantService
         IEnumerable<ITenantDeletionGuard> deletionGuards,
         ICurrentUser currentUser,
         TenantAuthorityResolver authority,
-        ICommandAuthorizationContext command)
+        IAuthorizationContext authorizationContext)
     {
         this.repository = repository;
         this.membershipRepository = membershipRepository;
@@ -55,7 +55,7 @@ internal sealed class TenantService : ITenantService
         this.deletionGuards = deletionGuards.ToList();
         this.currentUser = currentUser;
         this.authority = authority;
-        this.command = command;
+        this.authorizationContext = authorizationContext;
     }
 
     public async Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
@@ -171,7 +171,7 @@ internal sealed class TenantService : ITenantService
         UpdateTenantRequest request,
         CancellationToken ct)
     {
-        command.RegisterFailure<Result<TenantDetails, UpdateTenantError>>(
+        authorizationContext.RegisterFailure<Result<TenantDetails, UpdateTenantError>>(
             () => Result.Failure<TenantDetails, UpdateTenantError>(
                 new UpdateTenantError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
@@ -219,7 +219,7 @@ internal sealed class TenantService : ITenantService
                     new ValidationErrors([new(nameof(kind), "The organization activity is invalid.")]));
             }
 
-            command.RegisterFailure<Result<TenantDetails, ChangeBusinessActivityError>>(
+            authorizationContext.RegisterFailure<Result<TenantDetails, ChangeBusinessActivityError>>(
                 () => Result.Failure<TenantDetails, ChangeBusinessActivityError>(
                     new ChangeBusinessActivityError.NotPermitted()));
             var tenantId = tenantContext.GetTenantId();
@@ -246,7 +246,7 @@ internal sealed class TenantService : ITenantService
 
     private async Task<UnitResult<DeleteTenantError>> DeleteCoreAsync(CancellationToken ct)
     {
-        command.RegisterFailure<UnitResult<DeleteTenantError>>(
+        authorizationContext.RegisterFailure<UnitResult<DeleteTenantError>>(
             () => UnitResult.Failure<DeleteTenantError>(new DeleteTenantError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);

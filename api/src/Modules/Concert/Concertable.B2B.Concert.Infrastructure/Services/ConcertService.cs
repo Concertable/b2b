@@ -29,7 +29,7 @@ internal sealed class ConcertService : IConcertService
     private readonly IConcertRepository concertRepository;
     private readonly IConcertPrivateReadRepository privateReads;
     private readonly IResourceAuthorization authorization;
-    private readonly ICommandAuthorizationContext commandAuthorization;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly IConcertPrivilegedRepository privilegedRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IConcertReadRepository readRepository;
@@ -55,7 +55,7 @@ internal sealed class ConcertService : IConcertService
         IConcertRepository concertRepository,
         IConcertPrivateReadRepository privateReads,
         IResourceAuthorization authorization,
-        ICommandAuthorizationContext commandAuthorization,
+        IAuthorizationContext authorizationContext,
         IConcertPrivilegedRepository privilegedRepository,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IConcertReadRepository readRepository,
@@ -80,7 +80,7 @@ internal sealed class ConcertService : IConcertService
         this.concertRepository = concertRepository;
         this.privateReads = privateReads;
         this.authorization = authorization;
-        this.commandAuthorization = commandAuthorization;
+        this.authorizationContext = authorizationContext;
         this.privilegedRepository = privilegedRepository;
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.readRepository = readRepository;
@@ -354,7 +354,7 @@ internal sealed class ConcertService : IConcertService
             || !actor.HasPermission(TenantPermission.ConcertsOpsEdit))
             return new UpdateConcertError.NotPermitted();
 
-        commandAuthorization.RegisterFailure<Result<ConcertUpdateResponse, UpdateConcertError>>(
+        authorizationContext.RegisterFailure<Result<ConcertUpdateResponse, UpdateConcertError>>(
             () => new UpdateConcertError.NotPermitted());
         if (await RequireConcertAsync(
                 id, TenantPermission.ConcertsOpsEdit, ResourceFacet.Operations, ct)
@@ -403,7 +403,7 @@ internal sealed class ConcertService : IConcertService
             || !actor.HasPermission(TenantPermission.ConcertsPublish))
             return new PostConcertError.NotPermitted();
 
-        commandAuthorization.RegisterFailure<UnitResult<PostConcertError>>(
+        authorizationContext.RegisterFailure<UnitResult<PostConcertError>>(
             () => new PostConcertError.NotPermitted());
         if (await RequireConcertAsync(
                 id, TenantPermission.ConcertsPublish, ResourceFacet.Operations, ct)
@@ -442,7 +442,7 @@ internal sealed class ConcertService : IConcertService
                 || !actor.HasPermission(TenantPermission.ConcertsPublish))
                 return (UnitResult<PostConcertError>)new PostConcertError.NotPermitted();
 
-            commandAuthorization.RegisterFailure<UnitResult<PostConcertError>>(
+            authorizationContext.RegisterFailure<UnitResult<PostConcertError>>(
                 () => new PostConcertError.NotPermitted());
             if (await RequireConcertAsync(
                     id, TenantPermission.ConcertsPublish, ResourceFacet.Operations, ct)
@@ -474,7 +474,7 @@ internal sealed class ConcertService : IConcertService
             || !actor.HasPermission(TenantPermission.ConcertsDeclareDoorRevenue))
             return new DeclareDoorRevenueError.VenueForbidden();
 
-        commandAuthorization.RegisterFailure<UnitResult<DeclareDoorRevenueError>>(
+        authorizationContext.RegisterFailure<UnitResult<DeclareDoorRevenueError>>(
             () => new DeclareDoorRevenueError.VenueForbidden());
         if (await RequireConcertAsync(
                 id, TenantPermission.ConcertsDeclareDoorRevenue, ResourceFacet.Finance, ct)
@@ -548,7 +548,7 @@ internal sealed class ConcertService : IConcertService
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
-        commandAuthorization.RegisterFailure<Result<ConcertSummaryShare, ShareConcertSummaryError>>(
+        authorizationContext.RegisterFailure<Result<ConcertSummaryShare, ShareConcertSummaryError>>(
             () => new ShareConcertSummaryError.NotPermitted());
         if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
             != AuthorizationDecision.Allowed)
@@ -645,7 +645,7 @@ internal sealed class ConcertService : IConcertService
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
-        commandAuthorization.RegisterFailure<Result<ConcertSummaryShare, ShareConcertSummaryError>>(
+        authorizationContext.RegisterFailure<Result<ConcertSummaryShare, ShareConcertSummaryError>>(
             () => new ShareConcertSummaryError.NotPermitted());
         if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
             != AuthorizationDecision.Allowed)
@@ -721,7 +721,7 @@ internal sealed class ConcertService : IConcertService
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new RevokeConcertSummaryShareError.NotPermitted();
 
-        commandAuthorization.RegisterFailure<UnitResult<RevokeConcertSummaryShareError>>(
+        authorizationContext.RegisterFailure<UnitResult<RevokeConcertSummaryShareError>>(
             () => new RevokeConcertSummaryShareError.NotPermitted());
         if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
             != AuthorizationDecision.Allowed)
@@ -781,7 +781,7 @@ internal sealed class ConcertService : IConcertService
         if (resolution.TargetMembership is null)
             return new AssignConcertMemberError.InvalidMembership();
 
-        commandAuthorization.RegisterFailure<UnitResult<AssignConcertMemberError>>(
+        authorizationContext.RegisterFailure<UnitResult<AssignConcertMemberError>>(
             () => new AssignConcertMemberError.NotPermitted());
         if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
             != AuthorizationDecision.Allowed)
@@ -849,7 +849,7 @@ internal sealed class ConcertService : IConcertService
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConcertMemberError.NotPermitted();
 
-        commandAuthorization.RegisterFailure<UnitResult<AssignConcertMemberError>>(
+        authorizationContext.RegisterFailure<UnitResult<AssignConcertMemberError>>(
             () => new AssignConcertMemberError.NotPermitted());
         if (await RequireConcertAsync(id, TenantPermission.ResourcesShare, null, ct)
             != AuthorizationDecision.Allowed)

@@ -4,18 +4,18 @@ using Npgsql;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-public sealed class CommandTransactionFactory
+public sealed class UnitOfWorkRunner
 {
     private readonly NpgsqlDataSource dataSource;
-    private readonly CommandTransactionAccessor accessor;
+    private readonly UnitOfWorkAccessor accessor;
     private readonly IDbContextAccessor outboxAccessor;
-    private readonly ICommandTransactionCommitter committer;
+    private readonly ITransactionCommitter committer;
 
-    internal CommandTransactionFactory(
+    internal UnitOfWorkRunner(
         NpgsqlDataSource dataSource,
-        CommandTransactionAccessor accessor,
+        UnitOfWorkAccessor accessor,
         IDbContextAccessor outboxAccessor,
-        ICommandTransactionCommitter committer)
+        ITransactionCommitter committer)
     {
         this.dataSource = dataSource;
         this.accessor = accessor;
@@ -35,7 +35,7 @@ public sealed class CommandTransactionFactory
             {
                 await current.EnlistAsync(context, ct);
                 var nestedResult = await action();
-                if (CommandOutcome.IsFailure(nestedResult))
+                if (ResultOutcome.IsFailure(nestedResult))
                     current.MarkFailed();
                 return nestedResult;
             }
@@ -46,46 +46,46 @@ public sealed class CommandTransactionFactory
             }
         }
 
-        await using var command = await CommandTransaction.BeginAsync(
+        await using var unitOfWork = await UnitOfWork.BeginAsync(
             this.dataSource,
             this.outboxAccessor,
             this.committer,
             ct);
-        this.accessor.Current = command;
+        this.accessor.Current = unitOfWork;
         try
         {
-            await command.EnlistAsync(context, ct);
+            await unitOfWork.EnlistAsync(context, ct);
             var result = await action();
-            var resultFailed = CommandOutcome.IsFailure(result);
+            var resultFailed = ResultOutcome.IsFailure(result);
             if (resultFailed)
-                command.MarkFailed();
+                unitOfWork.MarkFailed();
 
-            if (command.HasFailed)
+            if (unitOfWork.HasFailed)
             {
-                await command.RollbackAsync(CancellationToken.None);
-                return command.FailedResult(result);
+                await unitOfWork.RollbackAsync(CancellationToken.None);
+                return unitOfWork.FailedResult(result);
             }
 
-            await command.FlushAsync(ct);
-            if (command.IsAuthorityManaged && command.HasFailed)
+            await unitOfWork.FlushAsync(ct);
+            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
             {
-                await command.RollbackAsync(CancellationToken.None);
-                return command.FailedResult(result);
+                await unitOfWork.RollbackAsync(CancellationToken.None);
+                return unitOfWork.FailedResult(result);
             }
 
-            await command.ValidateAuthorityAsync(ct);
-            if (command.IsAuthorityManaged && command.HasFailed)
+            await unitOfWork.ValidateAuthorityAsync(ct);
+            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
             {
-                await command.RollbackAsync(CancellationToken.None);
-                return command.FailedResult(result);
+                await unitOfWork.RollbackAsync(CancellationToken.None);
+                return unitOfWork.FailedResult(result);
             }
 
-            await command.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
             return result;
         }
         catch
         {
-            await command.RollbackAsync(CancellationToken.None);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
             throw;
         }
         finally

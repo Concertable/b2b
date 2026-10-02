@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 internal sealed class ContractResourceAuthorizationEvaluator(
     BookingPrivilegedDbContext context,
-    CommandTransactionAccessor transactions)
+    UnitOfWorkAccessor unitOfWorkAccessor)
     : IResourceAuthorizationEvaluator
 {
     public ResourceKind Kind => ResourceKind.Contract;
@@ -22,9 +22,9 @@ internal sealed class ContractResourceAuthorizationEvaluator(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Contract authorization requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Contract authorization requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""SELECT 1 FROM booking."Contracts" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
         await context.Database.ExecuteSqlInterpolatedAsync(

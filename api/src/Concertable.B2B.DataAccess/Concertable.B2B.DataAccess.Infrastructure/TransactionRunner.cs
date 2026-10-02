@@ -7,7 +7,7 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 internal sealed class TransactionRunner(
     IServiceScopeFactory scopeFactory,
     NpgsqlDataSource dataSource,
-    ICommandTransactionCommitter committer) : ITransactionRunner
+    ITransactionCommitter committer) : ITransactionRunner
 {
     public async Task<TResult> ExecuteAsync<TService, TResult>(
         Func<TService, CancellationToken, Task<TResult>> operation,
@@ -31,64 +31,64 @@ internal sealed class TransactionRunner(
         where TService : notnull
     {
         var scope = scopeFactory.CreateAsyncScope();
-        CommandTransaction? transaction = null;
-        CommandTransactionAccessor? accessor = null;
+        UnitOfWork? unitOfWork = null;
+        UnitOfWorkAccessor? accessor = null;
 
         try
         {
             var services = scope.ServiceProvider;
-            accessor = services.GetRequiredService<CommandTransactionAccessor>();
-            transaction = await CommandTransaction.BeginAsync(
+            accessor = services.GetRequiredService<UnitOfWorkAccessor>();
+            unitOfWork = await UnitOfWork.BeginAsync(
                 dataSource,
                 services.GetRequiredService<IDbContextAccessor>(),
                 committer,
                 ct);
-            accessor.Current = transaction;
+            accessor.Current = unitOfWork;
 
             var service = services.GetRequiredService<TService>();
             var result = await operation(service, ct);
-            if (CommandOutcome.IsFailure(result))
-                transaction.MarkFailed();
+            if (ResultOutcome.IsFailure(result))
+                unitOfWork.MarkFailed();
 
-            if (transaction.HasFailed)
+            if (unitOfWork.HasFailed)
             {
-                await transaction.RollbackAsync(CancellationToken.None);
-                return transaction.FailedResult(result);
+                await unitOfWork.RollbackAsync(CancellationToken.None);
+                return unitOfWork.FailedResult(result);
             }
 
-            await transaction.FlushAsync(ct);
-            if (transaction.IsAuthorityManaged && transaction.HasFailed)
+            await unitOfWork.FlushAsync(ct);
+            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
             {
-                await transaction.RollbackAsync(CancellationToken.None);
-                return transaction.FailedResult(result);
+                await unitOfWork.RollbackAsync(CancellationToken.None);
+                return unitOfWork.FailedResult(result);
             }
 
-            await transaction.ValidateAuthorityAsync(ct);
-            if (transaction.IsAuthorityManaged && transaction.HasFailed)
+            await unitOfWork.ValidateAuthorityAsync(ct);
+            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
             {
-                await transaction.RollbackAsync(CancellationToken.None);
-                return transaction.FailedResult(result);
+                await unitOfWork.RollbackAsync(CancellationToken.None);
+                return unitOfWork.FailedResult(result);
             }
             if (validateAuthority is not null
                 && !await validateAuthority(service, result, ct))
             {
-                await transaction.RollbackAsync(ct);
+                await unitOfWork.RollbackAsync(ct);
                 return (authorityFailure
                     ?? throw new InvalidOperationException("An authority failure result is required."))();
             }
-            if (transaction.IsAuthorityManaged && transaction.HasFailed)
+            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
             {
-                await transaction.RollbackAsync(CancellationToken.None);
-                return transaction.FailedResult(result);
+                await unitOfWork.RollbackAsync(CancellationToken.None);
+                return unitOfWork.FailedResult(result);
             }
 
-            await transaction.CommitAsync(ct);
+            await unitOfWork.CommitAsync(ct);
             return result;
         }
         catch
         {
-            if (transaction is not null)
-                await transaction.RollbackAsync(ct);
+            if (unitOfWork is not null)
+                await unitOfWork.RollbackAsync(ct);
             throw;
         }
         finally
@@ -101,8 +101,8 @@ internal sealed class TransactionRunner(
             }
             finally
             {
-                if (transaction is not null)
-                    await transaction.DisposeAsync();
+                if (unitOfWork is not null)
+                    await unitOfWork.DisposeAsync();
             }
         }
     }

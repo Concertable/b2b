@@ -41,7 +41,7 @@ internal static class ServiceCollectionExtensions
         {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
-        services.AddCommandTransactions();
+        services.AddUnitOfWork();
         services.AddUris(configuration);
         services.AddSharedBlob(configuration);
         services.AddSharedEmail(configuration);

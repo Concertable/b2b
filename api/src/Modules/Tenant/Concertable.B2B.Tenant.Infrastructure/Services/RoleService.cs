@@ -19,7 +19,7 @@ internal sealed class RoleService : IRoleService
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly TenantAuthorityResolver authority;
-    private readonly ICommandAuthorizationContext command;
+    private readonly IAuthorizationContext authorizationContext;
 
     public RoleService(
         IRoleRepository roles,
@@ -32,7 +32,7 @@ internal sealed class RoleService : IRoleService
         IOutboxUnitOfWorkBehavior unitOfWork,
         TimeProvider timeProvider,
         TenantAuthorityResolver authority,
-        ICommandAuthorizationContext command)
+        IAuthorizationContext authorizationContext)
     {
         this.roles = roles;
         this.tenants = tenants;
@@ -44,7 +44,7 @@ internal sealed class RoleService : IRoleService
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
         this.authority = authority;
-        this.command = command;
+        this.authorizationContext = authorizationContext;
     }
 
     public Task<Result<IReadOnlyList<RoleDto>, ListRolesError>> ListAsync(CancellationToken ct = default) =>
@@ -97,7 +97,7 @@ internal sealed class RoleService : IRoleService
     private async Task<Result<RoleDto, CreateRoleError>> CreateCoreAsync(
         CreateRoleRequest request, CancellationToken ct)
     {
-        command.RegisterFailure<Result<RoleDto, CreateRoleError>>(
+        authorizationContext.RegisterFailure<Result<RoleDto, CreateRoleError>>(
             () => Result.Failure<RoleDto, CreateRoleError>(new CreateRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
@@ -127,7 +127,7 @@ internal sealed class RoleService : IRoleService
     private async Task<Result<RoleDto, UpdateRoleError>> UpdateCoreAsync(
         Guid roleId, UpdateRoleRequest request, CancellationToken ct)
     {
-        command.RegisterFailure<Result<RoleDto, UpdateRoleError>>(
+        authorizationContext.RegisterFailure<Result<RoleDto, UpdateRoleError>>(
             () => Result.Failure<RoleDto, UpdateRoleError>(new UpdateRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
@@ -161,7 +161,7 @@ internal sealed class RoleService : IRoleService
     private async Task<UnitResult<RetireRoleError>> RetireCoreAsync(
         Guid roleId, RetireRoleRequest request, CancellationToken ct)
     {
-        command.RegisterFailure<UnitResult<RetireRoleError>>(
+        authorizationContext.RegisterFailure<UnitResult<RetireRoleError>>(
             () => UnitResult.Failure<RetireRoleError>(new RetireRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);

@@ -9,7 +9,7 @@ public interface IAuthorityResolver
     Task<Option<AuthoritySnapshot>> ResolveAsync(
         MembershipSnapshot requestActor, CancellationToken ct = default);
 
-    Task<Option<AuthoritySnapshot>> ResolveForCommandAsync(
+    Task<Option<AuthoritySnapshot>> ResolveForUnitOfWorkAsync(
         MembershipSnapshot requestActor, CancellationToken ct = default);
 
     Task<bool> ValidateForCommitAsync(

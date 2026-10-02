@@ -9,7 +9,7 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ApplicationResourceAuthorizationEvaluator(
     ApplicationPrivilegedDbContext context,
-    CommandTransactionAccessor transactions)
+    UnitOfWorkAccessor unitOfWorkAccessor)
     : IResourceAuthorizationEvaluator
 {
     public ResourceKind Kind => ResourceKind.Application;
@@ -29,9 +29,9 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
         DateTimeOffset now,
         CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Application authorization requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Application authorization requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         var ids = new[] { request.Resource.Id };
         if (binding.Permission == TenantPermission.ApplicationsDecide)
         {

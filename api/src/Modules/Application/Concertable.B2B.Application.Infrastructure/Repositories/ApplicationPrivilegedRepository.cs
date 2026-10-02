@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Concertable.B2B.Application.Infrastructure.Repositories;
 
 internal sealed class ApplicationPrivilegedRepository(
-    ApplicationPrivilegedDbContext context, CommandTransactionAccessor transactions)
+    ApplicationPrivilegedDbContext context, UnitOfWorkAccessor unitOfWorkAccessor)
     : IApplicationPrivilegedRepository
 {
     private const int OpportunityLockNamespace = 10241001;
@@ -23,9 +23,9 @@ internal sealed class ApplicationPrivilegedRepository(
     {
         if (opportunityId <= 0)
             throw new ArgumentOutOfRangeException(nameof(opportunityId));
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("An opportunity lock requires a command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("An opportunity lock requires a unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"SELECT pg_advisory_xact_lock({OpportunityLockNamespace}, {opportunityId})", ct);
     }

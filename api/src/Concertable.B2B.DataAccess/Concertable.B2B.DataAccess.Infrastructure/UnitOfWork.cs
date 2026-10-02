@@ -1,16 +1,17 @@
 using System.Data;
+using System.Data.Common;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-public sealed class CommandTransaction : IAsyncDisposable
+public sealed class UnitOfWork : IAsyncDisposable
 {
     private readonly NpgsqlDataSource dataSource;
-    private readonly NpgsqlConnection connection;
-    private readonly NpgsqlTransaction transaction;
-    private readonly ICommandTransactionCommitter committer;
+    private readonly DbConnection connection;
+    private readonly DbTransaction transaction;
+    private readonly ITransactionCommitter committer;
     private readonly IDbContextAccessor outboxAccessor;
     private readonly List<DbContext> participants = [];
     private readonly List<Func<CancellationToken, Task>> authorityValidators = [];
@@ -23,11 +24,11 @@ public sealed class CommandTransaction : IAsyncDisposable
     private bool commitAttempted;
     private bool completed;
 
-    private CommandTransaction(
+    private UnitOfWork(
         NpgsqlDataSource dataSource,
-        NpgsqlConnection connection,
-        NpgsqlTransaction transaction,
-        ICommandTransactionCommitter committer,
+        DbConnection connection,
+        DbTransaction transaction,
+        ITransactionCommitter committer,
         IDbContextAccessor outboxAccessor)
     {
         this.dataSource = dataSource;
@@ -37,10 +38,10 @@ public sealed class CommandTransaction : IAsyncDisposable
         this.outboxAccessor = outboxAccessor;
     }
 
-    internal static async Task<CommandTransaction> BeginAsync(
+    internal static async Task<UnitOfWork> BeginAsync(
         NpgsqlDataSource dataSource,
         IDbContextAccessor outboxAccessor,
-        ICommandTransactionCommitter committer,
+        ITransactionCommitter committer,
         CancellationToken ct = default)
     {
         var connection = await dataSource.OpenConnectionAsync(ct);
@@ -49,7 +50,7 @@ public sealed class CommandTransaction : IAsyncDisposable
             var transaction = await connection.BeginTransactionAsync(
                 IsolationLevel.ReadCommitted,
                 ct);
-            return new CommandTransaction(dataSource, connection, transaction, committer, outboxAccessor);
+            return new UnitOfWork(dataSource, connection, transaction, committer, outboxAccessor);
         }
         catch
         {
@@ -66,7 +67,7 @@ public sealed class CommandTransaction : IAsyncDisposable
         var existingConnection = context.Database.GetDbConnection();
         if (existingConnection.State is not ConnectionState.Closed)
             throw new InvalidOperationException(
-                $"{context.GetType().Name} opened its connection before command enlistment.");
+                $"{context.GetType().Name} opened its connection before unit of work enlistment.");
 
         context.Database.SetDbConnection(this.connection, contextOwnsConnection: false);
         this.participants.Add(context);
@@ -170,19 +171,19 @@ public sealed class CommandTransaction : IAsyncDisposable
 
     public TResult FailedResult<TResult>(TResult result)
     {
-        if (CommandOutcome.IsFailure(result))
+        if (ResultOutcome.IsFailure(result))
             return result;
         if (this.authorityFailed)
             return this.AuthorityFailure<TResult>();
         throw new InvalidOperationException(
-            "A nested command failed after the outer action returned success.");
+            "A nested operation failed after the outer operation returned success.");
     }
 
     public async Task CommitAsync(CancellationToken ct = default)
     {
         if (this.authorityManaged && (this.failed || this.authorityPending
             || this.participants.Any(participant => participant.ChangeTracker.HasChanges())))
-            throw new InvalidOperationException("An authorization-managed command cannot commit before validation.");
+            throw new InvalidOperationException("An authorization-managed unit of work cannot commit before validation.");
 
         this.commitAttempted = true;
         try

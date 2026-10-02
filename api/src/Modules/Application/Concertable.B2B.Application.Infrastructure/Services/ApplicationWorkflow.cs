@@ -42,12 +42,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
-    private readonly ICommandAuthorizationContext commandAuthorization;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantResolver tenantResolver;
     private readonly IPermissionAuthorization permissions;
     private readonly IResourceAuthorization resources;
     private readonly ITransactionRunner transactionRunner;
-    private readonly CommandTransactionAccessor transactions;
+    private readonly UnitOfWorkAccessor unitOfWorkAccessor;
 
     public ApplicationWorkflow(
         IApplicationPrivilegedRepository privilegedRepository,
@@ -63,12 +63,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
-        ICommandAuthorizationContext commandAuthorization,
+        IAuthorizationContext authorizationContext,
         ITenantResolver tenantResolver,
         IPermissionAuthorization permissions,
         IResourceAuthorization resources,
         ITransactionRunner transactionRunner,
-        CommandTransactionAccessor transactions)
+        UnitOfWorkAccessor unitOfWorkAccessor)
     {
         this.privilegedRepository = privilegedRepository;
         this.notifier = notifier;
@@ -83,12 +83,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
-        this.commandAuthorization = commandAuthorization;
+        this.authorizationContext = authorizationContext;
         this.tenantResolver = tenantResolver;
         this.permissions = permissions;
         this.resources = resources;
         this.transactionRunner = transactionRunner;
-        this.transactions = transactions;
+        this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
     public async Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyAsync(
@@ -161,7 +161,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         string? userAgent,
         CancellationToken ct)
     {
-        commandAuthorization.RegisterFailure<Result<ApplicationProposal, ApplyApplicationError>>(
+        authorizationContext.RegisterFailure<Result<ApplicationProposal, ApplyApplicationError>>(
             () => new ApplyApplicationError.NotPermitted());
         if (!expectedActor.HasPermission(TenantPermission.ApplicationsSubmit))
             return new ApplyApplicationError.NotPermitted();
@@ -232,10 +232,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             CalculateTermsFingerprint(deal, opportunity));
         application.NotifyCounterparty(ApplicationNotification.Applied);
         await privilegedRepository.AddAsync(application, ct);
-        await (transactions.Current
-            ?? throw new InvalidOperationException("Apply requires an active command transaction."))
+        await (unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Apply requires an active unit of work."))
             .FlushAsync(ct);
-        commandAuthorization.RegisterValidator(async token =>
+        authorizationContext.RegisterValidator(async token =>
             await resources.CheckAsync(new AuthorizationRequest(
                 TenantPermission.ApplicationsSubmit,
                 ResourceAddress.Create(ResourceKind.Application, application.Id),
@@ -345,7 +345,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        commandAuthorization.RegisterFailure<UnitResult<AcceptApplicationError>>(
+        authorizationContext.RegisterFailure<UnitResult<AcceptApplicationError>>(
             () => new AcceptApplicationError.NotPermitted());
         var opportunityId = await privilegedRepository.GetOpportunityIdAsync(applicationId, ct);
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, true, ct);

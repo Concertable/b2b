@@ -9,9 +9,9 @@ internal sealed record ActorAuthorityResolution(
 internal sealed class ActorAuthoritySession(
     IMembershipContext membership,
     IAuthorityResolver resolver,
-    ICommandAuthorizationContext command)
+    IAuthorizationContext authorizationContext)
 {
-    private Guid? transactionId;
+    private Guid? unitOfWorkId;
     private AuthoritySnapshot? retained;
 
     public async Task<ActorAuthorityResolution> CheckAsync(CancellationToken ct = default)
@@ -30,13 +30,13 @@ internal sealed class ActorAuthoritySession(
 
     public async Task<ActorAuthorityResolution> RequireAsync(CancellationToken ct = default)
     {
-        if (!command.IsActive || command.TransactionId is not { } currentTransactionId)
-            throw new InvalidOperationException("Authorization requires an active command.");
+        if (!authorizationContext.IsActive || authorizationContext.UnitOfWorkId is not { } currentUnitOfWorkId)
+            throw new InvalidOperationException("Authorization requires an active unit of work.");
 
-        if (transactionId != currentTransactionId)
+        if (unitOfWorkId != currentUnitOfWorkId)
         {
             retained = null;
-            transactionId = currentTransactionId;
+            unitOfWorkId = currentUnitOfWorkId;
         }
 
         if (membership.Membership is not { } requestActor)
@@ -44,14 +44,14 @@ internal sealed class ActorAuthoritySession(
 
         if (retained is null)
         {
-            var option = await resolver.ResolveForCommandAsync(requestActor, ct);
+            var option = await resolver.ResolveForUnitOfWorkAsync(requestActor, ct);
             if (!option.TryGetValue(out var authority)
                 || !authority.Actor.HasSameAuthorityAs(requestActor)
                 || authority.CatalogRevision != AuthorizationCatalog.Revision)
                 return Fail(AuthorizationDecision.AuthorityChanged);
 
             retained = authority;
-            command.RegisterValidator(token => resolver.ValidateForCommitAsync(authority, token));
+            authorizationContext.RegisterValidator(token => resolver.ValidateForCommitAsync(authority, token));
         }
         else if (retained.Actor.MembershipId != requestActor.MembershipId
                  || retained.Actor.TenantId != requestActor.TenantId
@@ -63,7 +63,7 @@ internal sealed class ActorAuthoritySession(
 
     public ActorAuthorityResolution Fail(AuthorizationDecision decision)
     {
-        command.MarkAuthorityFailed();
+        authorizationContext.MarkAuthorityFailed();
         return new(decision, null);
     }
 }

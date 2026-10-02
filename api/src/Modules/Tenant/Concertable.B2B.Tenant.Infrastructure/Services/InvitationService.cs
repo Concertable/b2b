@@ -24,7 +24,7 @@ internal sealed class InvitationService : IInvitationService
     private readonly IMembershipContext membershipContext;
     private readonly IMembershipResolver membershipResolver;
     private readonly TenantAuthorityResolver authority;
-    private readonly ICommandAuthorizationContext command;
+    private readonly IAuthorizationContext authorizationContext;
 
     public InvitationService(
         ITenantRepository tenantRepository,
@@ -39,7 +39,7 @@ internal sealed class InvitationService : IInvitationService
         IMembershipContext membershipContext,
         IMembershipResolver membershipResolver,
         TenantAuthorityResolver authority,
-        ICommandAuthorizationContext command)
+        IAuthorizationContext authorizationContext)
     {
         this.tenantRepository = tenantRepository;
         this.membershipRepository = membershipRepository;
@@ -53,7 +53,7 @@ internal sealed class InvitationService : IInvitationService
         this.membershipContext = membershipContext;
         this.membershipResolver = membershipResolver;
         this.authority = authority;
-        this.command = command;
+        this.authorizationContext = authorizationContext;
     }
 
     public Task<Result<IReadOnlyList<InvitationDto>, ListInvitationsError>> ListPendingInvitationsAsync(
@@ -87,7 +87,7 @@ internal sealed class InvitationService : IInvitationService
         InviteMemberRequest request,
         CancellationToken ct)
     {
-        command.RegisterFailure<Result<InvitationDto, InviteMemberError>>(
+        authorizationContext.RegisterFailure<Result<InvitationDto, InviteMemberError>>(
             () => Result.Failure<InvitationDto, InviteMemberError>(
                 new InviteMemberError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
@@ -135,7 +135,7 @@ internal sealed class InvitationService : IInvitationService
     private async Task<UnitResult<RevokeInvitationError>> RevokeInvitationCoreAsync(
         Guid invitationId, CancellationToken ct)
     {
-        command.RegisterFailure<UnitResult<RevokeInvitationError>>(
+        authorizationContext.RegisterFailure<UnitResult<RevokeInvitationError>>(
             () => UnitResult.Failure<RevokeInvitationError>(
                 new RevokeInvitationError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
@@ -158,7 +158,7 @@ internal sealed class InvitationService : IInvitationService
     private async Task<Result<MembershipDto, AcceptInvitationError>> AcceptInvitationCoreAsync(
         Guid invitationId, CancellationToken ct)
     {
-        command.RegisterFailure<Result<MembershipDto, AcceptInvitationError>>(
+        authorizationContext.RegisterFailure<Result<MembershipDto, AcceptInvitationError>>(
             () => Result.Failure<MembershipDto, AcceptInvitationError>(
                 new AcceptInvitationError.InviterNotAuthorized()));
         if (currentUser.Id is not { } userId)

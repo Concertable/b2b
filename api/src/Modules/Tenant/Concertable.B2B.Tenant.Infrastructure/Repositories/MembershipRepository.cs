@@ -11,23 +11,23 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
     IMembershipReadRepository
 {
     private readonly TenantDbContext context;
-    private readonly CommandTransactionAccessor transactions;
+    private readonly UnitOfWorkAccessor unitOfWorkAccessor;
 
     public MembershipRepository(
         TenantDbContext context,
-        CommandTransactionAccessor transactions) : base(context)
+        UnitOfWorkAccessor unitOfWorkAccessor) : base(context)
     {
         this.context = context;
-        this.transactions = transactions;
+        this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
     public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForShareAsync(
         IReadOnlyCollection<Guid> membershipIds,
         CancellationToken ct = default)
     {
-        var transaction = transactions.Current
+        var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Membership locking requires an active transaction.");
-        await transaction.EnlistAsync(context, ct);
+        await unitOfWork.EnlistAsync(context, ct);
         var distinctIds = membershipIds.Distinct().Order().ToArray();
         foreach (var membershipId in distinctIds)
         {
@@ -48,9 +48,9 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
     public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForUpdateAsync(
         IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
     {
-        var transaction = transactions.Current
+        var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Membership updates require an active transaction.");
-        await transaction.EnlistAsync(context, ct);
+        await unitOfWork.EnlistAsync(context, ct);
         var distinctIds = membershipIds.Distinct().Order().ToArray();
         foreach (var membershipId in distinctIds)
         {
@@ -243,9 +243,9 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
     private async Task<TResult> ReadWithFenceAsync<TResult>(
         Func<CancellationToken, Task<TResult>> read, CancellationToken ct)
     {
-        if (transactions.Current is { } command)
+        if (unitOfWorkAccessor.Current is { } unitOfWork)
         {
-            await command.EnlistAsync(context, ct);
+            await unitOfWork.EnlistAsync(context, ct);
             return await read(ct);
         }
 

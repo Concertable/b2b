@@ -24,7 +24,7 @@ public sealed class ConcertWorkflowTests
 {
     private readonly Mock<IConcertPrivilegedRepository> concertRepository = new();
     private readonly Mock<IResourceAuthorization> resources = new();
-    private readonly Mock<ICommandAuthorizationContext> commandAuthorization = new();
+    private readonly Mock<IAuthorizationContext> authorizationContext = new();
     private readonly Mock<ISettlementService> settlementService = new();
     private readonly Mock<IDealStrategyFactory<ICancelStep>> cancelFactory = new();
     private readonly Mock<IDealStrategyFactory<ICompleteStep>> completeFactory = new();
@@ -56,7 +56,7 @@ public sealed class ConcertWorkflowTests
             immediateBehavior,
             membership.Object,
             resources.Object,
-            commandAuthorization.Object);
+            authorizationContext.Object);
         transactionRunner.Workflow = workflow;
     }
 
@@ -76,7 +76,7 @@ public sealed class ConcertWorkflowTests
         concertRepository.Verify(repository => repository.GetByIdForUpdateAsync(
             It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         cancelFactory.Verify(factory => factory.Create(It.IsAny<DealType>()), Times.Never);
-        commandAuthorization.Verify(context => context.RegisterFailure(
+        authorizationContext.Verify(context => context.RegisterFailure(
             It.IsAny<Func<UnitResult<CancelConcertError>>>()), Times.Once);
     }
 

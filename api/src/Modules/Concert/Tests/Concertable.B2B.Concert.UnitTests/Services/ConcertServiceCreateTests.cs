@@ -70,7 +70,7 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IConcertRepository>(),
             Mock.Of<IConcertPrivateReadRepository>(),
             Mock.Of<IResourceAuthorization>(),
-            Mock.Of<ICommandAuthorizationContext>(),
+            Mock.Of<IAuthorizationContext>(),
             repository.Object,
             unitOfWork.Object,
             Mock.Of<IConcertReadRepository>(),

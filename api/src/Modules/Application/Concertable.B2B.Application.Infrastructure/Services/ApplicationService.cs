@@ -35,7 +35,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
-    private readonly ICommandAuthorizationContext commandAuthorization;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantResolver tenantResolver;
     private readonly IResourceAuthorization resources;
     private readonly IPermissionAuthorization permissions;
@@ -57,7 +57,7 @@ internal sealed class ApplicationService : IApplicationService
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
-        ICommandAuthorizationContext commandAuthorization,
+        IAuthorizationContext authorizationContext,
         ITenantResolver tenantResolver,
         IResourceAuthorization resources,
         IPermissionAuthorization permissions,
@@ -78,7 +78,7 @@ internal sealed class ApplicationService : IApplicationService
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
-        this.commandAuthorization = commandAuthorization;
+        this.authorizationContext = authorizationContext;
         this.tenantResolver = tenantResolver;
         this.resources = resources;
         this.permissions = permissions;
@@ -330,7 +330,7 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        commandAuthorization.RegisterFailure<UnitResult<WithdrawApplicationError>>(
+        authorizationContext.RegisterFailure<UnitResult<WithdrawApplicationError>>(
             () => new WithdrawApplicationError.NotPermitted());
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
@@ -378,7 +378,7 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        commandAuthorization.RegisterFailure<UnitResult<RejectApplicationError>>(
+        authorizationContext.RegisterFailure<UnitResult<RejectApplicationError>>(
             () => new RejectApplicationError.NotPermitted());
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
@@ -426,7 +426,7 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        commandAuthorization.RegisterFailure<UnitResult<CancelApplicationError>>(
+        authorizationContext.RegisterFailure<UnitResult<CancelApplicationError>>(
             () => new CancelApplicationError.NotPermitted());
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)

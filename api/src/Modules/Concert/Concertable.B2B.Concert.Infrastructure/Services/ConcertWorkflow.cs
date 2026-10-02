@@ -20,7 +20,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IMembershipContext membership;
     private readonly IResourceAuthorization resources;
-    private readonly ICommandAuthorizationContext commandAuthorization;
+    private readonly IAuthorizationContext authorizationContext;
 
     public ConcertWorkflow(
         IConcertPrivilegedRepository privilegedRepository,
@@ -30,7 +30,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IMembershipContext membership,
         IResourceAuthorization resources,
-        ICommandAuthorizationContext commandAuthorization)
+        IAuthorizationContext authorizationContext)
     {
         this.privilegedRepository = privilegedRepository;
         this.transactionRunner = transactionRunner;
@@ -39,7 +39,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.membership = membership;
         this.resources = resources;
-        this.commandAuthorization = commandAuthorization;
+        this.authorizationContext = authorizationContext;
     }
 
     public async Task<UnitResult<CancelConcertError>> CancelAsync(
@@ -48,11 +48,11 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     {
         if (membership.Membership is not { } actor)
         {
-            if (commandAuthorization.IsActive)
+            if (authorizationContext.IsActive)
             {
-                commandAuthorization.RegisterFailure<UnitResult<CancelConcertError>>(
+                authorizationContext.RegisterFailure<UnitResult<CancelConcertError>>(
                     () => new CancelConcertError.NotPermitted());
-                commandAuthorization.MarkAuthorityFailed();
+                authorizationContext.MarkAuthorityFailed();
             }
             return new CancelConcertError.NotPermitted();
         }
@@ -148,13 +148,13 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        commandAuthorization.RegisterFailure<UnitResult<CancelConcertError>>(
+        authorizationContext.RegisterFailure<UnitResult<CancelConcertError>>(
             () => new CancelConcertError.NotPermitted());
         if (concertId <= 0 || membership.Membership is not { } actor
             || actor.MembershipId != expectedActor.MembershipId
             || actor.TenantId != expectedActor.TenantId)
         {
-            commandAuthorization.MarkAuthorityFailed();
+            authorizationContext.MarkAuthorityFailed();
             return false;
         }
 

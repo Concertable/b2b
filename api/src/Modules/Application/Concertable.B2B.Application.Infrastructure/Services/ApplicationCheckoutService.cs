@@ -20,7 +20,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IApplicationRepository repository;
     private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IMembershipContext membership;
-    private readonly ICommandAuthorizationContext commandAuthorization;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantResolver tenantResolver;
     private readonly ITransactionRunner transactionRunner;
     private readonly IPermissionAuthorization permissions;
@@ -39,7 +39,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IApplicationRepository repository,
         IApplicationPrivilegedRepository privilegedRepository,
         IMembershipContext membership,
-        ICommandAuthorizationContext commandAuthorization,
+        IAuthorizationContext authorizationContext,
         ITenantResolver tenantResolver,
         ITransactionRunner transactionRunner,
         IPermissionAuthorization permissions,
@@ -57,7 +57,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.repository = repository;
         this.privilegedRepository = privilegedRepository;
         this.membership = membership;
-        this.commandAuthorization = commandAuthorization;
+        this.authorizationContext = authorizationContext;
         this.tenantResolver = tenantResolver;
         this.transactionRunner = transactionRunner;
         this.permissions = permissions;
@@ -205,7 +205,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private async Task<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>
         PrepareAcceptCheckoutCoreAsync(int applicationId, MembershipSnapshot expectedActor, CancellationToken ct)
     {
-        commandAuthorization.RegisterFailure<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>(
+        authorizationContext.RegisterFailure<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>(
             () => new ApplicationCheckoutError.ApplicationNotFound());
         var opportunityId = await privilegedRepository.GetOpportunityIdAsync(applicationId, ct);
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);

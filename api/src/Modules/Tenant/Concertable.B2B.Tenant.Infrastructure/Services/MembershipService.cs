@@ -18,7 +18,7 @@ internal sealed class MembershipService : IMembershipService
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly TenantAuthorityResolver authority;
-    private readonly ICommandAuthorizationContext command;
+    private readonly IAuthorizationContext authorizationContext;
 
     public MembershipService(
         IMembershipRepository repository,
@@ -31,7 +31,7 @@ internal sealed class MembershipService : IMembershipService
         IOutboxUnitOfWorkBehavior unitOfWork,
         TimeProvider timeProvider,
         TenantAuthorityResolver authority,
-        ICommandAuthorizationContext command)
+        IAuthorizationContext authorizationContext)
     {
         this.repository = repository;
         this.tenantRepository = tenantRepository;
@@ -43,7 +43,7 @@ internal sealed class MembershipService : IMembershipService
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
         this.authority = authority;
-        this.command = command;
+        this.authorizationContext = authorizationContext;
     }
 
     public Task<Result<IReadOnlyList<MemberDto>, ListMembersError>> ListMembersAsync(
@@ -78,7 +78,7 @@ internal sealed class MembershipService : IMembershipService
         ChangeMemberRolesRequest request,
         CancellationToken ct)
     {
-        command.RegisterFailure<UnitResult<ChangeMemberRolesError>>(
+        authorizationContext.RegisterFailure<UnitResult<ChangeMemberRolesError>>(
             () => UnitResult.Failure<ChangeMemberRolesError>(
                 new ChangeMemberRolesError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
@@ -120,7 +120,7 @@ internal sealed class MembershipService : IMembershipService
         Guid userId,
         CancellationToken ct)
     {
-        command.RegisterFailure<UnitResult<RemoveMemberError>>(
+        authorizationContext.RegisterFailure<UnitResult<RemoveMemberError>>(
             () => UnitResult.Failure<RemoveMemberError>(new RemoveMemberError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)

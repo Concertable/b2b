@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Reunion;
@@ -42,15 +43,15 @@ public sealed class ApiFixture : Concertable.B2B.IntegrationTests.Fixtures.ApiFi
 
     protected override void OnConfigureServices(IServiceCollection services)
     {
-        services.Replace(ServiceDescriptor.Singleton<ICommandTransactionCommitter>(this.Committer));
+        services.Replace(ServiceDescriptor.Singleton<ITransactionCommitter>(this.Committer));
         services.AddDbContext<CommitProbeDbContext>((provider, options) =>
             options.UseNpgsql(provider.GetRequiredService<NpgsqlDataSource>()));
         services.AddScoped<CommitProbeFlushHook>();
-        services.AddScoped<CommitProbeCommand>();
+        services.AddScoped<CommitProbeWriter>();
     }
 }
 
-internal sealed class AmbiguousCommitTransactionCommitter : ICommandTransactionCommitter
+internal sealed class AmbiguousCommitTransactionCommitter : ITransactionCommitter
 {
     private int failNextCommit;
 
@@ -59,7 +60,7 @@ internal sealed class AmbiguousCommitTransactionCommitter : ICommandTransactionC
 
     internal void FailNextCommit() => Interlocked.Exchange(ref this.failNextCommit, 1);
 
-    public async Task CommitAsync(NpgsqlTransaction transaction, CancellationToken ct)
+    public async Task CommitAsync(DbTransaction transaction, CancellationToken ct)
     {
         await transaction.CommitAsync(ct);
         if (Interlocked.Exchange(ref this.failNextCommit, 0) == 1)
@@ -67,16 +68,16 @@ internal sealed class AmbiguousCommitTransactionCommitter : ICommandTransactionC
     }
 }
 
-internal sealed class CommitProbeCommand(
+internal sealed class CommitProbeWriter(
     CommitProbeDbContext context,
-    CommandTransactionAccessor transactions,
-    ICommandAuthorizationContext authorization,
+    UnitOfWorkAccessor unitOfWorkAccessor,
+    IAuthorizationContext authorization,
     CommitProbeFlushHook flushHook)
 {
     internal async Task StageAsync(Guid id, CancellationToken ct)
     {
-        await (transactions.Current
-            ?? throw new InvalidOperationException("A command transaction is required."))
+        await (unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("A unit of work is required."))
             .EnlistAsync(context, ct);
         context.Probes.Add(new CommitProbe(id));
     }

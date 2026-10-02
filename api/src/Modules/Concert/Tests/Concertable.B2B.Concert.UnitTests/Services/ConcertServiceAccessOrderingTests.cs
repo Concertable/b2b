@@ -138,7 +138,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var resolution = new Mock<ITenantResolver>();
         var membershipResolver = new Mock<IMembershipResolver>();
         var authorization = new Mock<IResourceAuthorization>();
-        var commandAuthorization = new Mock<ICommandAuthorizationContext>();
+        var authorizationContext = new Mock<IAuthorizationContext>();
         var steps = new List<string>();
         var executor = new ImmediateTransactionRunner();
         authorization
@@ -182,7 +182,7 @@ public sealed class ConcertServiceAccessOrderingTests
             Mock.Of<IConcertRepository>(),
             Mock.Of<IConcertPrivateReadRepository>(),
             authorization.Object,
-            commandAuthorization.Object,
+            authorizationContext.Object,
             repository.Object,
             unitOfWork.Object,
             Mock.Of<IConcertReadRepository>(),
@@ -204,14 +204,14 @@ public sealed class ConcertServiceAccessOrderingTests
             Mock.Of<IResourceAccessContext>(value => value.UtcNow == DateTime.UnixEpoch),
             Mock.Of<ILogger<ConcertService>>());
         executor.Service = service;
-        return new Fixture(service, repository, authorization, commandAuthorization, steps);
+        return new Fixture(service, repository, authorization, authorizationContext, steps);
     }
 
     private sealed record Fixture(
         ConcertService Service,
         Mock<IConcertPrivilegedRepository> Repository,
         Mock<IResourceAuthorization> Authorization,
-        Mock<ICommandAuthorizationContext> CommandAuthorization,
+        Mock<IAuthorizationContext> AuthorizationContext,
         IReadOnlyList<string> Steps);
 
     private sealed class ImmediateTransactionRunner : ITransactionRunner

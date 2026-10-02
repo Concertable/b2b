@@ -1,10 +1,10 @@
 namespace Concertable.B2B.Authorization.Contracts;
 
-public interface ICommandAuthorizationContext
+public interface IAuthorizationContext
 {
     bool IsActive { get; }
 
-    Guid? TransactionId { get; }
+    Guid? UnitOfWorkId { get; }
 
     void RegisterFailure<TResult>(Func<TResult> authorityFailure);
 

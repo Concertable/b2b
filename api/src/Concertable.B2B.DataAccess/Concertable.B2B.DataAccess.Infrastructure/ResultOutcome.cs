@@ -3,7 +3,7 @@ using Reunion;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-internal static class CommandOutcome
+internal static class ResultOutcome
 {
     public static bool IsFailure<TResult>(TResult result) =>
         FailureDetector<TResult>.IsFailure(result);

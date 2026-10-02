@@ -9,7 +9,7 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class BookingResourceAuthorizationEvaluator(
     BookingPrivilegedDbContext context,
-    CommandTransactionAccessor transactions)
+    UnitOfWorkAccessor unitOfWorkAccessor)
     : IResourceAuthorizationEvaluator
 {
     public ResourceKind Kind => ResourceKind.Booking;
@@ -23,9 +23,9 @@ internal sealed class BookingResourceAuthorizationEvaluator(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Booking authorization requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Booking authorization requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""SELECT 1 FROM booking."Bookings" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
         await context.Database.ExecuteSqlInterpolatedAsync(

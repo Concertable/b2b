@@ -43,7 +43,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
     private readonly IMembershipContext membership;
-    private readonly ICommandAuthorizationContext commandAuthorization;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantResolver tenantResolver;
     private readonly IResourceAuthorization resources;
     private readonly ITransactionRunner transactionRunner;
@@ -64,7 +64,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
         IMembershipContext membership,
-        ICommandAuthorizationContext commandAuthorization,
+        IAuthorizationContext authorizationContext,
         ITenantResolver tenantResolver,
         IResourceAuthorization resources,
         ITransactionRunner transactionRunner)
@@ -84,7 +84,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.membership = membership;
-        this.commandAuthorization = commandAuthorization;
+        this.authorizationContext = authorizationContext;
         this.tenantResolver = tenantResolver;
         this.resources = resources;
         this.transactionRunner = transactionRunner;
@@ -164,7 +164,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        commandAuthorization.RegisterFailure<UnitResult<CancelBookingError>>(
+        authorizationContext.RegisterFailure<UnitResult<CancelBookingError>>(
             () => new CancelBookingError.NotPermitted());
         var parties = await privilegedRepository.GetPartyTenantIdsAsync(bookingId, ct);
         if (parties.Count == 0)

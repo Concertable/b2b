@@ -32,12 +32,12 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
         var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeCommand, Result<int, string>>(
-            async (command, ct) =>
+        var result = await executor.ExecuteAsync<CommitProbeWriter, Result<int, string>>(
+            async (writer, ct) =>
             {
-                await command.StageAsync(id, ct);
-                command.RegisterAuthorityFailure();
-                command.Deny();
+                await writer.StageAsync(id, ct);
+                writer.RegisterAuthorityFailure();
+                writer.Deny();
                 return Result.Success<int, string>(1);
             });
 
@@ -53,13 +53,13 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
         var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeCommand, Result<int, string>>(
-            async (command, ct) =>
+        var result = await executor.ExecuteAsync<CommitProbeWriter, Result<int, string>>(
+            async (writer, ct) =>
             {
-                await command.StageAsync(id, ct);
-                command.RegisterAuthorityFailure();
-                command.OnFlush(() =>
-                    command.RegisterValidator(_ => Task.FromResult(false)));
+                await writer.StageAsync(id, ct);
+                writer.RegisterAuthorityFailure();
+                writer.OnFlush(() =>
+                    writer.RegisterValidator(_ => Task.FromResult(false)));
                 return Result.Success<int, string>(1);
             });
 
@@ -75,12 +75,12 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
         var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeCommand, Result<int, string>>(
-            async (command, ct) =>
+        var result = await executor.ExecuteAsync<CommitProbeWriter, Result<int, string>>(
+            async (writer, ct) =>
             {
-                await command.StageAsync(id, ct);
-                command.RegisterAuthorityFailure();
-                command.Deny();
+                await writer.StageAsync(id, ct);
+                writer.RegisterAuthorityFailure();
+                writer.Deny();
                 return Result.Failure<int, string>("domain");
             });
 
@@ -90,17 +90,17 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TransactionFactory_IgnoredAuthorityDenial_RollsBack()
+    public async Task UnitOfWorkRunner_IgnoredAuthorityDenial_RollsBack()
     {
         await this.fixture.PrepareCommitProbeAsync();
         await using var scope = this.fixture.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
-        var factory = services.GetRequiredService<CommandTransactionFactory>();
+        var runner = services.GetRequiredService<UnitOfWorkRunner>();
         var context = services.GetRequiredService<CommitProbeDbContext>();
-        var authorization = services.GetRequiredService<ICommandAuthorizationContext>();
+        var authorization = services.GetRequiredService<IAuthorizationContext>();
         var id = Guid.NewGuid();
 
-        var result = await factory.ExecuteAsync(context, () =>
+        var result = await runner.ExecuteAsync(context, () =>
         {
             context.Probes.Add(new CommitProbe(id));
             authorization.RegisterFailure<Result<int, string>>(
@@ -121,12 +121,12 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
         var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeCommand, Result<int, string>>(
-            async (command, ct) =>
+        var result = await executor.ExecuteAsync<CommitProbeWriter, Result<int, string>>(
+            async (writer, ct) =>
             {
-                await command.StageAsync(id, ct);
-                command.RegisterAuthorityFailure();
-                command.OnFlush(command.Deny);
+                await writer.StageAsync(id, ct);
+                writer.RegisterAuthorityFailure();
+                writer.OnFlush(writer.Deny);
                 return Result.Success<int, string>(1);
             });
 
@@ -136,18 +136,18 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TransactionFactory_FlushRegisteredValidator_RollsBack()
+    public async Task UnitOfWorkRunner_FlushRegisteredValidator_RollsBack()
     {
         await this.fixture.PrepareCommitProbeAsync();
         await using var scope = this.fixture.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
-        var factory = services.GetRequiredService<CommandTransactionFactory>();
+        var runner = services.GetRequiredService<UnitOfWorkRunner>();
         var context = services.GetRequiredService<CommitProbeDbContext>();
-        var authorization = services.GetRequiredService<ICommandAuthorizationContext>();
+        var authorization = services.GetRequiredService<IAuthorizationContext>();
         var flushHook = services.GetRequiredService<CommitProbeFlushHook>();
         var id = Guid.NewGuid();
 
-        var result = await factory.ExecuteAsync(context, () =>
+        var result = await runner.ExecuteAsync(context, () =>
         {
             context.Probes.Add(new CommitProbe(id));
             authorization.RegisterFailure<Result<int, string>>(
@@ -169,10 +169,10 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
         var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeCommand, int>(
-            async (command, ct) =>
+        var result = await executor.ExecuteAsync<CommitProbeWriter, int>(
+            async (writer, ct) =>
             {
-                await command.StageAsync(id, ct);
+                await writer.StageAsync(id, ct);
                 return 1;
             });
 
@@ -190,10 +190,10 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
         this.fixture.Committer.FailNextCommit();
 
         var exception = await Assert.ThrowsAsync<Npgsql.NpgsqlException>(() =>
-            executor.ExecuteAsync<CommitProbeCommand, int>(async (command, ct) =>
+            executor.ExecuteAsync<CommitProbeWriter, int>(async (writer, ct) =>
             {
                 attempts++;
-                await command.StageAsync(probeId, ct);
+                await writer.StageAsync(probeId, ct);
                 return attempts;
             }));
 

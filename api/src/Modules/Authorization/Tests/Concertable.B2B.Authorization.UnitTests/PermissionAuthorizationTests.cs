@@ -10,7 +10,7 @@ public sealed class PermissionAuthorizationTests
     private readonly MembershipSnapshot actor;
     private readonly MembershipContext membership;
     private readonly AuthorityResolver resolver;
-    private readonly CommandContext context;
+    private readonly AuthorizationContext context;
     private readonly PermissionAuthorization permissions;
 
     public PermissionAuthorizationTests()
@@ -23,7 +23,7 @@ public sealed class PermissionAuthorizationTests
                 TenantPermission.OperationsView, ResourceAudience.TenantResources));
         this.membership = new MembershipContext(this.actor);
         this.resolver = new AuthorityResolver(this.actor);
-        this.context = new CommandContext();
+        this.context = new AuthorizationContext();
         this.permissions = new PermissionAuthorization(new ActorAuthoritySession(
             this.membership, this.resolver, this.context));
     }
@@ -63,7 +63,7 @@ public sealed class PermissionAuthorizationTests
     }
 
     [Fact]
-    public async Task Require_DeniedCreationAudience_PoisonsCommand()
+    public async Task Require_DeniedCreationAudience_PoisonsUnitOfWork()
     {
         var actor = this.actor with
         {
@@ -72,7 +72,7 @@ public sealed class PermissionAuthorizationTests
         };
         this.membership.Membership = actor;
         this.resolver.Current = new AuthoritySnapshot(actor, AuthorizationCatalog.Revision);
-        this.context.TransactionId = Guid.NewGuid();
+        this.context.UnitOfWorkId = Guid.NewGuid();
 
         Assert.Equal(AuthorizationDecision.Denied, await this.permissions.RequireAsync(
             TenantPermission.ApplicationsSubmit, ResourceAudience.TenantResources));
@@ -80,9 +80,9 @@ public sealed class PermissionAuthorizationTests
     }
 
     [Fact]
-    public async Task Require_DoesNotUsePermissionAddedWithinSameCommand()
+    public async Task Require_DoesNotUsePermissionAddedWithinSameUnitOfWork()
     {
-        this.context.TransactionId = Guid.NewGuid();
+        this.context.UnitOfWorkId = Guid.NewGuid();
         Assert.Equal(AuthorizationDecision.Allowed, await this.permissions.RequireAsync(
             TenantPermission.OperationsView, ResourceAudience.TenantResources));
         var changed = this.actor with
@@ -111,9 +111,9 @@ public sealed class PermissionAuthorizationTests
     [Theory]
     [InlineData(ResourceAudience.None)]
     [InlineData((ResourceAudience)99)]
-    public async Task Require_InvalidAudience_PoisonsCommand(ResourceAudience audience)
+    public async Task Require_InvalidAudience_PoisonsUnitOfWork(ResourceAudience audience)
     {
-        this.context.TransactionId = Guid.NewGuid();
+        this.context.UnitOfWorkId = Guid.NewGuid();
 
         Assert.Equal(AuthorizationDecision.Denied,
             await this.permissions.RequireAsync(TenantPermission.OperationsView, audience));
@@ -135,17 +135,17 @@ public sealed class PermissionAuthorizationTests
             this.Current = new AuthoritySnapshot(actor, AuthorizationCatalog.Revision);
         public Task<Option<AuthoritySnapshot>> ResolveAsync(MembershipSnapshot expected, CancellationToken ct = default) =>
             Task.FromResult(this.Current.ToOption());
-        public Task<Option<AuthoritySnapshot>> ResolveForCommandAsync(
+        public Task<Option<AuthoritySnapshot>> ResolveForUnitOfWorkAsync(
             MembershipSnapshot expected, CancellationToken ct = default) => this.ResolveAsync(expected, ct);
         public Task<bool> ValidateForCommitAsync(AuthoritySnapshot original, CancellationToken ct = default) =>
             Task.FromResult(this.Current is { } current && current.CatalogRevision == original.CatalogRevision
                 && current.Actor.HasSameAuthorityAs(original.Actor));
     }
 
-    private sealed class CommandContext : ICommandAuthorizationContext
+    private sealed class AuthorizationContext : IAuthorizationContext
     {
-        public bool IsActive => this.TransactionId is not null;
-        public Guid? TransactionId { get; set; }
+        public bool IsActive => this.UnitOfWorkId is not null;
+        public Guid? UnitOfWorkId { get; set; }
         public bool AuthorityFailed { get; private set; }
         public void RegisterFailure<TResult>(Func<TResult> authorityFailure) { }
         public void RegisterValidator(Func<CancellationToken, Task<bool>> validator) { }

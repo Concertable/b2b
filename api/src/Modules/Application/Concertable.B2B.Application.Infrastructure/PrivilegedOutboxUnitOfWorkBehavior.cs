@@ -10,9 +10,9 @@ internal interface IPrivilegedOutboxUnitOfWorkBehavior
 
 internal sealed class PrivilegedOutboxUnitOfWorkBehavior(
     ApplicationPrivilegedDbContext context,
-    CommandTransactionFactory transactions,
-    CommandTransactionAccessor commandAccessor,
+    UnitOfWorkRunner unitOfWorkRunner,
+    UnitOfWorkAccessor unitOfWorkAccessor,
     IDbContextAccessor outboxAccessor)
-    : CommandOutboxUnitOfWorkBehavior<ApplicationPrivilegedDbContext>(
-        context, transactions, commandAccessor, outboxAccessor),
+    : Concertable.B2B.DataAccess.Infrastructure.OutboxUnitOfWorkBehavior<ApplicationPrivilegedDbContext>(
+        context, unitOfWorkRunner, unitOfWorkAccessor, outboxAccessor),
         IPrivilegedOutboxUnitOfWorkBehavior;

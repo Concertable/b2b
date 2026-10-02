@@ -9,9 +9,9 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
     private readonly IRoleRepository roles;
     private readonly IInvitationRepository invitations;
     private readonly IMembershipContext membershipContext;
-    private readonly ICommandAuthorizationContext command;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly TimeProvider clock;
-    private CommandState? state;
+    private UnitOfWorkState? state;
 
     public TenantAuthorityResolver(
         ITenantRepository tenants,
@@ -19,7 +19,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         IRoleRepository roles,
         IInvitationRepository invitations,
         IMembershipContext membershipContext,
-        ICommandAuthorizationContext command,
+        IAuthorizationContext authorizationContext,
         TimeProvider clock)
     {
         this.tenants = tenants;
@@ -27,7 +27,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         this.roles = roles;
         this.invitations = invitations;
         this.membershipContext = membershipContext;
-        this.command = command;
+        this.authorizationContext = authorizationContext;
         this.clock = clock;
     }
 
@@ -36,10 +36,10 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         (await memberships.GetAuthoritySnapshotByUserIdAndTenantIdAsync(
             requestActor.UserId, requestActor.TenantId, ct)).ToOption();
 
-    public async Task<Option<AuthoritySnapshot>> ResolveForCommandAsync(
+    public async Task<Option<AuthoritySnapshot>> ResolveForUnitOfWorkAsync(
         MembershipSnapshot requestActor, CancellationToken ct = default)
     {
-        var current = StateForCurrentCommand();
+        var current = StateForCurrentUnitOfWork();
         if (current.Original is { } retained)
             return retained.Actor.MembershipId == requestActor.MembershipId
                 && retained.Actor.TenantId == requestActor.TenantId
@@ -78,7 +78,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         var expected = membershipContext.Membership;
         if (expected is null || expected.TenantId != tenantId)
             return null;
-        var resolved = await ResolveForCommandAsync(expected, ct);
+        var resolved = await ResolveForUnitOfWorkAsync(expected, ct);
         if (!resolved.TryGetValue(out var authority)
             || !authority.Actor.HasPermission(permission))
             return null;
@@ -211,7 +211,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         Guid acceptingUserId,
         CancellationToken ct = default)
     {
-        var current = StateForCurrentCommand();
+        var current = StateForCurrentUnitOfWork();
         if (invitation.TenantId != inviter.TenantId
             || invitation.InviterMembershipId != inviter.MembershipId
             || invitation.InviterPermissionVersion != inviter.PermissionVersion
@@ -234,35 +234,35 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         return true;
     }
 
-    private CommandState StateForCurrentCommand()
+    private UnitOfWorkState StateForCurrentUnitOfWork()
     {
-        if (!command.IsActive || command.TransactionId is not { } transactionId)
-            throw new InvalidOperationException("Authority requires an active command transaction.");
-        if (state is not null && state.TransactionId == transactionId)
+        if (!authorizationContext.IsActive || authorizationContext.UnitOfWorkId is not { } unitOfWorkId)
+            throw new InvalidOperationException("Authority requires an active unit of work.");
+        if (state is not null && state.UnitOfWorkId == unitOfWorkId)
             return state;
-        state = new CommandState(transactionId);
+        state = new UnitOfWorkState(unitOfWorkId);
         var captured = state;
-        command.RegisterValidator(ct => ValidateStateAsync(captured, ct));
+        authorizationContext.RegisterValidator(ct => ValidateStateAsync(captured, ct));
         return state;
     }
 
-    private CommandState? ExistingState() =>
-        command.IsActive && command.TransactionId is { } id && state?.TransactionId == id
+    private UnitOfWorkState? ExistingState() =>
+        authorizationContext.IsActive && authorizationContext.UnitOfWorkId is { } id && state?.UnitOfWorkId == id
             ? state : null;
 
-    private CommandState? ProvenState() =>
+    private UnitOfWorkState? ProvenState() =>
         ExistingState() is { Original: not null } current && current.ProvenPermissions.Count > 0
             ? current : null;
 
-    private static bool CanChangeMembership(CommandState current) =>
+    private static bool CanChangeMembership(UnitOfWorkState current) =>
         current.InitialIsProtectedOwner == true
         && (current.ProvenPermissions.Contains(TenantPermission.MembersManageRoles)
             || current.ProvenPermissions.Contains(TenantPermission.MembersRemove)
             || current.ProvenPermissions.Contains(TenantPermission.TenantDelete));
 
-    private async Task<bool> ValidateStateAsync(CommandState current, CancellationToken ct)
+    private async Task<bool> ValidateStateAsync(UnitOfWorkState current, CancellationToken ct)
     {
-        if (!command.IsActive || command.TransactionId != current.TransactionId)
+        if (!authorizationContext.IsActive || authorizationContext.UnitOfWorkId != current.UnitOfWorkId)
             return false;
         var revision = await tenants.GetAuthorizationCatalogRevisionAsync(ct);
         if (revision != AuthorizationCatalog.Revision)
@@ -356,9 +356,9 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         return true;
     }
 
-    private sealed class CommandState(Guid transactionId)
+    private sealed class UnitOfWorkState(Guid unitOfWorkId)
     {
-        public Guid TransactionId { get; } = transactionId;
+        public Guid UnitOfWorkId { get; } = unitOfWorkId;
         public AuthoritySnapshot? Original { get; set; }
         public long ExpectedPolicyVersion { get; set; }
         public bool? InitialIsProtectedOwner { get; set; }

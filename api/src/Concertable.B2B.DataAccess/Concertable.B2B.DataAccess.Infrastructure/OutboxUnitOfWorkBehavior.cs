@@ -4,23 +4,23 @@ using Concertable.Messaging.Infrastructure.Outbox;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-public abstract class CommandOutboxUnitOfWorkBehavior<TContext> : IOutboxUnitOfWorkBehavior<TContext>
+public abstract class OutboxUnitOfWorkBehavior<TContext> : IOutboxUnitOfWorkBehavior<TContext>
     where TContext : DbContextBase
 {
     private readonly TContext context;
-    private readonly CommandTransactionFactory transactions;
-    private readonly CommandTransactionAccessor commandAccessor;
+    private readonly UnitOfWorkRunner unitOfWorkRunner;
+    private readonly UnitOfWorkAccessor unitOfWorkAccessor;
     private readonly IDbContextAccessor outboxAccessor;
 
-    public CommandOutboxUnitOfWorkBehavior(
+    public OutboxUnitOfWorkBehavior(
         TContext context,
-        CommandTransactionFactory transactions,
-        CommandTransactionAccessor commandAccessor,
+        UnitOfWorkRunner unitOfWorkRunner,
+        UnitOfWorkAccessor unitOfWorkAccessor,
         IDbContextAccessor outboxAccessor)
     {
         this.context = context;
-        this.transactions = transactions;
-        this.commandAccessor = commandAccessor;
+        this.unitOfWorkRunner = unitOfWorkRunner;
+        this.unitOfWorkAccessor = unitOfWorkAccessor;
         this.outboxAccessor = outboxAccessor;
     }
 
@@ -28,24 +28,24 @@ public abstract class CommandOutboxUnitOfWorkBehavior<TContext> : IOutboxUnitOfW
         Func<Task<TResult>> action,
         CancellationToken cancellationToken = default)
     {
-        if (this.commandAccessor.Current is { } command)
+        if (this.unitOfWorkAccessor.Current is { } unitOfWork)
         {
             try
             {
-                await command.EnlistAsync(this.context, cancellationToken);
+                await unitOfWork.EnlistAsync(this.context, cancellationToken);
                 var result = await this.RunAsync(action, saveChanges: false, cancellationToken);
-                if (CommandOutcome.IsFailure(result))
-                    command.MarkFailed();
+                if (ResultOutcome.IsFailure(result))
+                    unitOfWork.MarkFailed();
                 return result;
             }
             catch
             {
-                command.MarkFailed();
+                unitOfWork.MarkFailed();
                 throw;
             }
         }
 
-        return await this.transactions.ExecuteAsync(
+        return await this.unitOfWorkRunner.ExecuteAsync(
             this.context,
             () => this.RunAsync(action, saveChanges: false, cancellationToken),
             cancellationToken);

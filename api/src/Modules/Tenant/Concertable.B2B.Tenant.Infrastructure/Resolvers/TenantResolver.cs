@@ -48,7 +48,7 @@ internal sealed class TenantResolver : ITenantResolver
         var requestedTenantIds = tenantIds.Distinct().ToHashSet();
         var lockSet = requestedTenantIds.Append(expectedActor.TenantId).Order().ToArray();
         var existingTenantIds = await tenantRepository.GetExistingIdsForShareAsync(lockSet, ct);
-        var current = await authority.ResolveForCommandAsync(expectedActor, ct);
+        var current = await authority.ResolveForUnitOfWorkAsync(expectedActor, ct);
         return !current.TryGetValue(out var actor) ? null : new TenantSetResolution(actor.Actor,
             existingTenantIds.Where(requestedTenantIds.Contains).ToHashSet());
     }

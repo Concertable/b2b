@@ -23,7 +23,7 @@ public sealed class TenantAuthorityResolverTests
         fixture.Authority.RecordMembershipVersion(fixture.Member, before);
         fixture.CurrentPermissions = ImmutableDictionary<TenantPermission, ResourceAudience>.Empty;
 
-        var retained = await fixture.Authority.ResolveForCommandAsync(fixture.Original);
+        var retained = await fixture.Authority.ResolveForUnitOfWorkAsync(fixture.Original);
         Assert.True(retained.TryGetValue(out var authority));
         Assert.True(authority.Actor.HasPermission(TenantPermission.MembersManageRoles));
         Assert.True(await fixture.Authority.ValidateForCommitAsync(fixture.OriginalAuthority));
@@ -109,7 +109,7 @@ public sealed class TenantAuthorityResolverTests
         private readonly Mock<IRoleRepository> roles = new();
         private readonly Mock<IInvitationRepository> invitations = new();
         private readonly Mock<IMembershipContext> membershipContext = new();
-        private readonly Mock<ICommandAuthorizationContext> command = new();
+        private readonly Mock<IAuthorizationContext> authorizationContext = new();
 
         public Fixture()
         {
@@ -121,8 +121,8 @@ public sealed class TenantAuthorityResolverTests
             Original = Snapshot();
             OriginalAuthority = new AuthoritySnapshot(Original, AuthorizationCatalog.Revision);
             membershipContext.SetupGet(value => value.Membership).Returns(Original);
-            command.SetupGet(value => value.IsActive).Returns(true);
-            command.SetupGet(value => value.TransactionId).Returns(Guid.NewGuid());
+            authorizationContext.SetupGet(value => value.IsActive).Returns(true);
+            authorizationContext.SetupGet(value => value.UnitOfWorkId).Returns(Guid.NewGuid());
             tenants.Setup(value => value.GetExistingIdsForShareAsync(
                     It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
@@ -152,7 +152,7 @@ public sealed class TenantAuthorityResolverTests
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
             Authority = new TenantAuthorityResolver(tenants.Object, memberships.Object,
-                roles.Object, invitations.Object, membershipContext.Object, command.Object,
+                roles.Object, invitations.Object, membershipContext.Object, authorizationContext.Object,
                 TimeProvider.System);
             Resolver = new TenantResolver(tenants.Object, memberships.Object, Authority);
         }

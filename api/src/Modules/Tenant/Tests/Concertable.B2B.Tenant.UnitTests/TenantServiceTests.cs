@@ -25,7 +25,7 @@ public sealed class TenantServiceTests
     private readonly Mock<IMembershipContext> membershipContext;
     private readonly Mock<IMembershipResolver> membershipResolver;
     private readonly Mock<IRoleRepository> roles;
-    private readonly Mock<ICommandAuthorizationContext> command;
+    private readonly Mock<IAuthorizationContext> authorizationContext;
     private readonly TenantService service;
 
     public TenantServiceTests()
@@ -45,9 +45,9 @@ public sealed class TenantServiceTests
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => (Option<MembershipSnapshot>)expected);
         this.roles = new Mock<IRoleRepository>();
-        this.command = new Mock<ICommandAuthorizationContext>();
-        this.command.SetupGet(value => value.IsActive).Returns(true);
-        this.command.SetupGet(value => value.TransactionId).Returns(Guid.NewGuid());
+        this.authorizationContext = new Mock<IAuthorizationContext>();
+        this.authorizationContext.SetupGet(value => value.IsActive).Returns(true);
+        this.authorizationContext.SetupGet(value => value.UnitOfWorkId).Returns(Guid.NewGuid());
         this.repository.Setup(value => value.GetExistingIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
@@ -62,7 +62,7 @@ public sealed class TenantServiceTests
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         var authority = new TenantAuthorityResolver(repository.Object, membershipRepository.Object,
-            roles.Object, invitationRepository.Object, membershipContext.Object, command.Object,
+            roles.Object, invitationRepository.Object, membershipContext.Object, authorizationContext.Object,
             TimeProvider.System);
         this.service = new TenantService(
             repository.Object,
@@ -78,7 +78,7 @@ public sealed class TenantServiceTests
             [],
             Mock.Of<ICurrentUser>(),
             authority,
-            command.Object);
+            authorizationContext.Object);
     }
 
     private static TenantEntity Bare() =>

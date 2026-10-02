@@ -2,10 +2,10 @@ using Concertable.B2B.Authorization.Contracts;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-internal sealed class CommandAuthorizationContext(CommandTransactionAccessor accessor) : ICommandAuthorizationContext
+internal sealed class AuthorizationContext(UnitOfWorkAccessor accessor) : IAuthorizationContext
 {
     public bool IsActive => accessor.Current is not null;
-    public Guid? TransactionId => accessor.Current?.Id;
+    public Guid? UnitOfWorkId => accessor.Current?.Id;
 
     public void RegisterFailure<TResult>(Func<TResult> authorityFailure) =>
         Current.RegisterAuthorityFailure(authorityFailure);
@@ -15,6 +15,6 @@ internal sealed class CommandAuthorizationContext(CommandTransactionAccessor acc
 
     public void MarkAuthorityFailed() => Current.MarkAuthorityFailed();
 
-    private CommandTransaction Current => accessor.Current
-        ?? throw new InvalidOperationException("No command transaction is active.");
+    private UnitOfWork Current => accessor.Current
+        ?? throw new InvalidOperationException("No unit of work is active.");
 }

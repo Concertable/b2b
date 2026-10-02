@@ -51,7 +51,7 @@ public sealed class ResourceAuthorizationTests
     [Fact]
     public async Task Require_ReacquiresAuthorityForEachCommandInSameScope()
     {
-        var context = new CommandContext();
+        var context = new AuthorizationContext();
         var resolver = new AuthorityResolver();
         var service = new ResourceAuthorization(
             new ActorAuthoritySession(new MembershipContext(), resolver, context), context,
@@ -62,19 +62,19 @@ public sealed class ResourceAuthorizationTests
         var request = new AuthorizationRequest(TenantPermission.OperationsView,
             ResourceAddress.Create(ResourceKind.Application, 1), ResourceFacet.Summary);
 
-        context.TransactionId = Guid.NewGuid();
+        context.UnitOfWorkId = Guid.NewGuid();
         Assert.Equal(AuthorizationDecision.Allowed, await service.RequireAsync(request));
-        context.TransactionId = Guid.NewGuid();
+        context.UnitOfWorkId = Guid.NewGuid();
         Assert.Equal(AuthorizationDecision.Allowed, await service.RequireAsync(request));
 
-        Assert.Equal(2, resolver.CommandResolutions);
+        Assert.Equal(2, resolver.UnitOfWorkResolutions);
         Assert.Equal(4, context.ValidatorCount);
     }
 
     [Fact]
     public async Task Check_DeniesEvidenceMissingItsRequiredScope()
     {
-        var context = new CommandContext();
+        var context = new AuthorizationContext();
         var service = new ResourceAuthorization(
             new ActorAuthoritySession(new MembershipContext(), new AuthorityResolver(), context), context,
             new ResourceBindingRegistry(
@@ -100,7 +100,7 @@ public sealed class ResourceAuthorizationTests
         {
             Permissions = Actor.Permissions.Add(TenantPermission.MessagesSend, ResourceAudience.TenantResources),
         };
-        var context = new CommandContext { TransactionId = Guid.NewGuid() };
+        var context = new AuthorizationContext { UnitOfWorkId = Guid.NewGuid() };
         var resolver = new AuthorityResolver();
         var session = new ActorAuthoritySession(new MembershipContext(actor), resolver, context);
         var resources = new ResourceAuthorization(session, context,
@@ -114,7 +114,7 @@ public sealed class ResourceAuthorizationTests
             TenantPermission.OperationsView, ResourceAddress.Create(ResourceKind.Application, 1),
             ResourceFacet.Summary)));
         Assert.Equal(AuthorizationDecision.Allowed, await tenant.RequireAsync(TenantPermission.MessagesSend));
-        Assert.Equal(1, resolver.CommandResolutions);
+        Assert.Equal(1, resolver.UnitOfWorkResolutions);
         Assert.Equal(2, context.ValidatorCount);
 
         var assignedActor = actor with
@@ -123,7 +123,7 @@ public sealed class ResourceAuthorizationTests
                 TenantPermission.MessagesSend, ResourceAudience.AssignedResources),
         };
         var assignedSession = new ActorAuthoritySession(
-            new MembershipContext(assignedActor), new AuthorityResolver(), new CommandContext());
+            new MembershipContext(assignedActor), new AuthorityResolver(), new AuthorizationContext());
         var assignedTenant = new TenantCapabilityAuthorization(
             assignedSession, new TenantCapabilityRegistry([tenantDescriptor]));
         Assert.Equal(AuthorizationDecision.Denied,
@@ -143,15 +143,15 @@ public sealed class ResourceAuthorizationTests
 
     private sealed class AuthorityResolver : IAuthorityResolver
     {
-        public int CommandResolutions { get; private set; }
+        public int UnitOfWorkResolutions { get; private set; }
 
         public Task<Option<AuthoritySnapshot>> ResolveAsync(MembershipSnapshot actor, CancellationToken ct = default) =>
             Task.FromResult<Option<AuthoritySnapshot>>(new AuthoritySnapshot(actor, AuthorizationCatalog.Revision));
 
-        public Task<Option<AuthoritySnapshot>> ResolveForCommandAsync(
+        public Task<Option<AuthoritySnapshot>> ResolveForUnitOfWorkAsync(
             MembershipSnapshot actor, CancellationToken ct = default)
         {
-            CommandResolutions++;
+            UnitOfWorkResolutions++;
             return ResolveAsync(actor, ct);
         }
 
@@ -159,10 +159,10 @@ public sealed class ResourceAuthorizationTests
             Task.FromResult(true);
     }
 
-    private sealed class CommandContext : ICommandAuthorizationContext
+    private sealed class AuthorizationContext : IAuthorizationContext
     {
-        public bool IsActive => TransactionId is not null;
-        public Guid? TransactionId { get; set; }
+        public bool IsActive => UnitOfWorkId is not null;
+        public Guid? UnitOfWorkId { get; set; }
         public int ValidatorCount { get; private set; }
         public void RegisterFailure<TResult>(Func<TResult> authorityFailure) { }
         public void RegisterValidator(Func<CancellationToken, Task<bool>> validator) => ValidatorCount++;

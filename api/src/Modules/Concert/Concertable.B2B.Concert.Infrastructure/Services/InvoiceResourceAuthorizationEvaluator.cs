@@ -9,7 +9,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class InvoiceResourceAuthorizationEvaluator(
     ConcertPrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : IResourceAuthorizationEvaluator
+    UnitOfWorkAccessor unitOfWorkAccessor) : IResourceAuthorizationEvaluator
 {
     public ResourceKind Kind => ResourceKind.Invoice;
 
@@ -22,9 +22,9 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Invoice authorization requires an active command.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Invoice authorization requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""SELECT 1 FROM concert."Invoices" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
         await context.Database.ExecuteSqlInterpolatedAsync(

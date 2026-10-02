@@ -23,7 +23,7 @@ public sealed class InvitationServiceTests
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<IRoleRepository> roles;
     private readonly Mock<IMembershipResolver> membershipResolver;
-    private readonly Mock<ICommandAuthorizationContext> command;
+    private readonly Mock<IAuthorizationContext> authorizationContext;
     private readonly InvitationService service;
 
     public InvitationServiceTests()
@@ -39,9 +39,9 @@ public sealed class InvitationServiceTests
         membershipResolver.Setup(value => value.ResolveSnapshotAsync(
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
-        command = new Mock<ICommandAuthorizationContext>();
-        command.SetupGet(value => value.IsActive).Returns(true);
-        command.SetupGet(value => value.TransactionId).Returns(Guid.NewGuid());
+        authorizationContext = new Mock<IAuthorizationContext>();
+        authorizationContext.SetupGet(value => value.IsActive).Returns(true);
+        authorizationContext.SetupGet(value => value.UnitOfWorkId).Returns(Guid.NewGuid());
         tenantRepository.Setup(value => value.GetExistingIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
@@ -56,7 +56,7 @@ public sealed class InvitationServiceTests
                         ? new[] { actor }
                         : Array.Empty<MembershipSnapshot>()));
         var authority = new TenantAuthorityResolver(tenantRepository.Object, membershipRepository.Object,
-            roles.Object, repository.Object, membershipContext.Object, command.Object, TimeProvider.System);
+            roles.Object, repository.Object, membershipContext.Object, authorizationContext.Object, TimeProvider.System);
         service = new InvitationService(
             tenantRepository.Object,
             membershipRepository.Object,
@@ -70,7 +70,7 @@ public sealed class InvitationServiceTests
             membershipContext.Object,
             membershipResolver.Object,
             authority,
-            command.Object);
+            authorizationContext.Object);
     }
 
     [Fact]
