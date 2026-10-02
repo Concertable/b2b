@@ -1,5 +1,6 @@
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Kernel;
 using Concertable.Kernel.DependencyInjection;
@@ -17,6 +18,7 @@ public sealed class BookingApiFixture : ApiFixture
 
     internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
 
+    internal string ConnectionString => dbContext.Database.GetConnectionString()!;
     internal IQueryable<BookingEntity> Bookings => readDbContext.Bookings;
     internal IQueryable<ContractEntity> Contracts => readDbContext.Contracts;
     internal IQueryable<InboxMessageEntity> InboxMessages => dbContext.Set<InboxMessageEntity>().AsNoTracking();
@@ -28,10 +30,6 @@ public sealed class BookingApiFixture : ApiFixture
     internal void ArmBookingConflict(Func<Task> competingChange) =>
         Conflicts.ArmOnce<BookingEntity>(competingChange);
 
-    // A CHECK constraint rather than a trigger: EF reads the row version back with an OUTPUT clause, and SQL
-    // Server rejects OUTPUT against a table that has an enabled trigger. It must name a column every booking
-    // update writes -- SQL Server skips constraints whose columns the UPDATE leaves alone -- and NOCHECK
-    // keeps the rows already seeded valid.
     internal Task FailBookingUpdatesAsync()
     {
         var state = dbContext.Database.DelimitIdentifier("State");
@@ -50,17 +48,12 @@ public sealed class BookingApiFixture : ApiFixture
 
     internal Task<int> GetConcertCountAsync(int bookingId) =>
         dbContext.Database.SqlQuery<int>($"""
-                SELECT COUNT(*) AS [Value]
-                FROM [concert].[Concerts]
-                WHERE [BookingId] = {bookingId}
+                SELECT COUNT(*)::int AS "Value"
+                FROM concert."Concerts"
+                WHERE "BookingId" = {bookingId}
                 """)
             .SingleAsync();
 
-    /// <summary>
-    /// Runs the event's pre-commit handlers the way <c>DomainEventDispatcher</c> does: handlers register
-    /// against <see cref="IDomainEventHandler{TEvent}"/> and the phase is chosen by the marker, so resolving
-    /// the marker interface directly would resolve nothing.
-    /// </summary>
     internal Task DispatchPreCommitDomainEventAsync<TEvent>(TEvent @event)
         where TEvent : IDomainEvent =>
         Services.GetRequiredService<IScoped<IEnumerable<IDomainEventHandler<TEvent>>>>()

@@ -40,8 +40,6 @@ public sealed class UserEntity : IGuidEntity
         Address = address;
     }
 
-    /// <summary>Anonymises the natural person for GDPR erasure (art. 17): the personal identifiers are scrubbed,
-    /// while the row and its <see cref="Id"/> (the Auth <c>sub</c>) survive so downstream foreign keys stay valid.</summary>
     public void Anonymise(string tombstoneEmail)
     {
         Email = tombstoneEmail;

@@ -4,13 +4,13 @@ import {
   useRecentDeniedApplicationsQuery,
   ConfirmActionDialog,
 } from "@concertable/web-b2b/features/concerts";
-import type { Application } from "@concertable/web-b2b/features/concerts/types";
+import type { ApplicationProposal } from "@concertable/web-b2b/features/concerts/types";
 import { Badge } from "@concertable/web/components/ui/badge";
 import { Button } from "@concertable/web/components/ui/button";
 import { useWithdrawApplication } from "../hooks/useWithdrawApplication";
 
 interface RowProps {
-  application: Application;
+  application: ApplicationProposal;
   onWithdraw?: (applicationId: number) => void;
 }
 

@@ -1,5 +1,6 @@
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Application.Contracts.Events;
+using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Commands;
@@ -21,7 +22,7 @@ public static class B2BTopology
     {
         public AsbTopology AddB2BTopology()
         {
-            topology.WithService(B2BConstants.ServiceName)
+            topology.WithService(B2BService.Name)
                     .Publish<ArtistChangedEvent>()
                     .Publish<ArtistRatingUpdatedEvent>()
                     .Publish<VenueChangedEvent>()
@@ -51,7 +52,8 @@ public static class B2BTopology
                     .Subscribe<ApplicationAcceptedEvent>()
                     .Subscribe<BookingConfirmedEvent>()
                     .Queue<SendEmailCommand>()
-                    .Queue<NotifyConcertDraftCreatedCommand>();
+                    .Queue<NotifyConcertDraftCreatedCommand>()
+                    .Queue<NotifyPaymentVerificationFailedCommand>();
 
             return topology;
         }

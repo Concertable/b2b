@@ -28,13 +28,13 @@ internal sealed class ObligationChecker : IObligationChecker
         if (tenantIds.Count == 0)
             return false;
 
-        if (await context.Concerts
+        if (await this.context.Concerts
             .Where(c => tenantIds.Contains(c.VenueTenantId) || tenantIds.Contains(c.ArtistTenantId))
             .AnyAsync(c => !SettledStates.Contains(c.State), ct))
             return true;
 
-        var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
-        return await context.SelfBillingAgreements
+        var nowUtc = this.timeProvider.GetUtcNow().UtcDateTime;
+        return await this.context.SelfBillingAgreements
             .AnyAsync(s => tenantIds.Contains(s.TenantId) && s.ExpiresAtUtc > nowUtc, ct);
     }
 }

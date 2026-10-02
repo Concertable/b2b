@@ -8,5 +8,5 @@ internal sealed class ConversationsReadDbContext(
     ConversationsConfigurationProvider provider)
     : ReadDbContext(options, provider, Schema.Name), IConversationsReadDbContext
 {
-    IQueryable<MessageEntity> IConversationsReadDbContext.Messages => Query<MessageEntity>();
+    IQueryable<MessageEntity> IConversationsReadDbContext.Messages => base.Query<MessageEntity>();
 }

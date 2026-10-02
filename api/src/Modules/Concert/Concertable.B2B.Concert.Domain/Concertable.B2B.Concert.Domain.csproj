@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" />
     <PackageReference Include="Dunet" />
     <PackageReference Include="Reunion" />
     <PackageReference Include="Reunion.Errors" />

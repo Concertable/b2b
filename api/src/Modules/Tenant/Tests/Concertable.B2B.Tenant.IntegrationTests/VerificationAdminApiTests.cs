@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
@@ -75,7 +75,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
         var tenantId = TenantOf(owner.Id);
-        var venue = fixture.SeedState.Venues.Single(v => v.TenantId == tenantId);
+        var tenant = fixture.Tenants.Single(t => t.Id == tenantId);
         await fixture.AddPendingVerificationAsync(
             tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
@@ -85,12 +85,12 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         var row = page!.Data.Single(r => r.TenantId == tenantId);
-        Assert.Equal(TenantType.Venue, row.TenantType);
-        Assert.Equal(new TenantContact(venue.Name, venue.Email), row.Contact);
+        Assert.Equal(tenant.LegalName, row.LegalName);
+        Assert.Equal(tenant.ContactEmail, row.ContactEmail);
     }
 
     [Fact]
-    public async Task GetPending_ShouldReturn200_WithArtistContactEnrichment()
+    public async Task GetPending_ShouldReturn200_WithTenantContactForABusinessWithNoMarketplaceProfile()
     {
         var owner = fixture.SeedState.ArtistManagerNoArtist;
         var tenantId = TenantOf(owner.Id);
@@ -105,8 +105,9 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
         var row = page!.Data.Single(r => r.TenantId == tenantId);
-        Assert.Equal(TenantType.Artist, row.TenantType);
-        Assert.Equal(new TenantContact("New Artist", owner.Email), row.Contact);
+        var tenant = fixture.Tenants.Single(t => t.Id == tenantId);
+        Assert.Equal(tenant.LegalName, row.LegalName);
+        Assert.Equal(tenant.ContactEmail, row.ContactEmail);
     }
 
     [Fact]
@@ -121,11 +122,8 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         Assert.DoesNotContain(page!.Data, r => r.TenantId == TenantOf(fixture.SeedState.VenueManager1.Id));
     }
 
-    /// <summary>Pins that contact enrichment awaits sequentially: two pending rows sharing a
-    /// <see cref="TenantType"/> would run concurrent queries against the same scoped Venue/ArtistReadDbContext
-    /// instance if enrichment ran in parallel, which EF Core rejects.</summary>
     [Fact]
-    public async Task GetPending_ShouldReturn200_WhenTwoPendingRowsShareTenantType()
+    public async Task GetPending_ShouldReturn200_WithEveryPendingTenantOnOnePage()
     {
         var firstTenantId = TenantOf(fixture.SeedState.UnverifiedVenueManager.Id);
         var secondTenantId = TenantOf(fixture.SeedState.VenueManagerNoVenue.Id);
@@ -208,26 +206,21 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         Assert.Contains(fixture.EmailSender.Sent, e => e.To == venue.Email);
     }
 
-    /// <summary>Mirrors <see cref="GetPending_ShouldReturn200_WithArtistContactEnrichment"/>'s proof that
-    /// <see cref="Concertable.B2B.Seed.Infrastructure.SeedState.ArtistManagerNoArtist"/> owns no artist
-    /// by default (that test explicitly creates one before asserting on it) — this test deliberately does not,
-    /// so the tenant is provably contactless.</summary>
     [Fact]
-    public async Task Approve_ShouldReturn204_AndSendNothing_WhenTenantOwnsNoProfile()
+    public async Task Approve_TenantOwnsNoMarketplaceActivity_NotifiesTenantContact()
     {
         var owner = fixture.SeedState.ArtistManagerNoArtist;
         var tenantId = TenantOf(owner.Id);
         await fixture.AddPendingVerificationAsync(
             tenantId, VerificationDocumentType.CompanyRegistration, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
-        var alreadySent = fixture.EmailSender.Sent.Count;
 
         var response = await admin.PostAsync($"/api/verification/{tenantId}/approve", null);
 
         await response.ShouldBe(HttpStatusCode.NoContent);
         var verification = fixture.Verifications.Single(v => v.TenantId == tenantId);
         Assert.Equal(TenantVerificationStatus.Approved, verification.Status);
-        Assert.Equal(alreadySent, fixture.EmailSender.Sent.Count);
+        Assert.Contains(fixture.EmailSender.Sent, email => email.To == owner.Email);
     }
 
     #endregion
@@ -298,6 +291,65 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
         Assert.Equal(TenantVerificationStatus.Rejected, verification.Status);
         Assert.Equal("Illegible scan.", verification.RejectionReason);
         Assert.Contains(fixture.EmailSender.Sent, e => e.To == venue.Email);
+    }
+
+    [Fact]
+    public async Task Review_ConcurrentApproveAndReject_RecordsOneDecisionAndNotification()
+    {
+        var owner = fixture.SeedState.UnverifiedVenueManager;
+        var tenantId = TenantOf(owner.Id);
+        var contactEmail = fixture.Tenants.Single(tenant => tenant.Id == tenantId).ContactEmail;
+        await fixture.AddPendingVerificationAsync(
+            tenantId,
+            VerificationDocumentType.Licence,
+            fixture.SeedNow.AddDays(-1));
+        using var approveClient = fixture.CreateClient(fixture.SeedState.Admin);
+        using var rejectClient = fixture.CreateClient(fixture.SeedState.Admin);
+
+        var responses = await fixture.RunWithVerificationReviewBarrierAsync(
+            tenantId,
+            ct => Task.WhenAll(
+                approveClient.PostAsync($"/api/verification/{tenantId}/approve", null, ct),
+                rejectClient.PostAsJsonAsync(
+                    $"/api/verification/{tenantId}/reject",
+                    new RejectVerificationRequest { Reason = "Conflicting decision." },
+                    ct)));
+
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.NoContent);
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Conflict);
+        var verification = fixture.Verifications.Single(candidate => candidate.TenantId == tenantId);
+        Assert.Contains(
+            verification.Status,
+            new[] { TenantVerificationStatus.Approved, TenantVerificationStatus.Rejected });
+        Assert.Single(fixture.EmailSender.Sent, email => email.To == contactEmail);
+    }
+
+    [Fact]
+    public async Task Review_BarrierFailure_PreservesFailureAndDrainsRequests()
+    {
+        var owner = fixture.SeedState.UnverifiedVenueManager;
+        var tenantId = TenantOf(owner.Id);
+        await fixture.AddPendingVerificationAsync(
+            tenantId,
+            VerificationDocumentType.Licence,
+            fixture.SeedNow.AddDays(-1));
+        using var approveClient = fixture.CreateClient(fixture.SeedState.Admin);
+        using var rejectClient = fixture.CreateClient(fixture.SeedState.Admin);
+        var failure = new InvalidOperationException("Injected verification barrier failure.");
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => fixture.RunWithVerificationReviewBarrierAsync(
+                tenantId,
+                ct => Task.WhenAll(
+                    approveClient.PostAsync($"/api/verification/{tenantId}/approve", null, ct),
+                    rejectClient.PostAsJsonAsync(
+                        $"/api/verification/{tenantId}/reject",
+                        new RejectVerificationRequest { Reason = "Conflicting decision." },
+                        ct)),
+                failure));
+
+        Assert.Same(failure, thrown);
+        Assert.Contains("RunWithVerificationReviewBarrierCoreAsync", thrown.StackTrace);
     }
 
     #endregion

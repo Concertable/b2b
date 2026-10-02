@@ -20,11 +20,11 @@ internal sealed class ConversationsModule : IConversationsModule
         messageService.SendAndNotifyAsync(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, action);
 
     public Task SeverAuthoredMessagesAsync(Guid userId, CancellationToken ct = default) =>
-        erasureService.SeverAuthoredMessagesAsync(userId, ct);
+        this.erasureService.SeverAuthoredMessagesAsync(userId, ct);
 
     public Task ScrubParticipantProfilesAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
-        erasureService.ScrubParticipantProfilesAsync(tenantIds, ct);
+        this.erasureService.ScrubParticipantProfilesAsync(tenantIds, ct);
 
     public Task<IReadOnlyList<SubjectMessageDto>> GetSubjectMessagesAsync(Guid userId, CancellationToken ct = default) =>
-        subjectMessageReader.GetSubjectMessagesAsync(userId, ct);
+        this.subjectMessageReader.GetSubjectMessagesAsync(userId, ct);
 }

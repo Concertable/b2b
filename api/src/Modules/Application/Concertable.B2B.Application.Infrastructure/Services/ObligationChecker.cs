@@ -19,7 +19,7 @@ internal sealed class ObligationChecker : IObligationChecker
         if (tenantIds.Count == 0)
             return false;
 
-        return await context.Applications
+        return await this.context.Applications
             .Where(a => tenantIds.Contains(a.VenueTenantId) || tenantIds.Contains(a.ArtistTenantId))
             .AnyAsync(a => !ApplicationObligation.SettledStates.Contains(a.State), ct);
     }

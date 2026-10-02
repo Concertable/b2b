@@ -18,24 +18,21 @@ public sealed class DeferredErasureRunnerTests
     public DeferredErasureRunnerTests()
     {
         this.runner = new DeferredErasureRunner(
-            repository.Object,
-            scoped.Object,
+            this.repository.Object,
+            this.scoped.Object,
             NullLogger<DeferredErasureRunner>.Instance);
     }
 
     [Fact]
     public async Task RunAsync_NoResumableSubjects_DoesNotOpenAScope()
     {
-        // Arrange
         repository
             .Setup(r => r.ListResumableSubjectIdsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        // Act
-        await runner.RunAsync();
+        await this.runner.RunAsync();
 
-        // Assert
-        scoped.Verify(
+        this.scoped.Verify(
             s => s.RunAsync(It.IsAny<Func<ISubjectErasureService, Task<Result<SubjectErasureRequestDto, ErasureTransitionError>>>>()),
             Times.Never);
     }
@@ -43,7 +40,6 @@ public sealed class DeferredErasureRunnerTests
     [Fact]
     public async Task RunAsync_OneSubjectThrows_StillProcessesTheRest()
     {
-        // Arrange
         var failing = Guid.NewGuid();
         var healthy = Guid.NewGuid();
         repository
@@ -75,10 +71,8 @@ public sealed class DeferredErasureRunnerTests
                 return work(service.Object);
             });
 
-        // Act
-        await runner.RunAsync();
+        await this.runner.RunAsync();
 
-        // Assert
         Assert.Equal([failing, healthy], processed);
     }
 }

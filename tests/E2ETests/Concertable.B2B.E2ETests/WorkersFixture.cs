@@ -13,7 +13,7 @@ public sealed class WorkersFixture : IDisposable
 
     public WorkersFixture(DistributedApplication app, IPollingService polling)
     {
-        client = app.CreateHttpClient(B2BConstants.WorkersResource);
+        client = app.CreateHttpClient(B2BWorkers.Name);
         this.polling = polling;
     }
 

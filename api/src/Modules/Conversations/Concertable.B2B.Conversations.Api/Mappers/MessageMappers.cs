@@ -3,8 +3,6 @@ using Concertable.B2B.Conversations.Application.DTOs;
 using Concertable.Contracts;
 using Microsoft.AspNetCore.Http;
 
-using Concertable.Shared.Api.Http;
-
 namespace Concertable.B2B.Conversations.Api.Mappers;
 
 internal static class MessageMappers
@@ -30,6 +28,6 @@ internal static class MessageMappers
     // You cannot report your own tenant's message, and the sender kind already answers that.
     private static ActionLink? ReportLink(MessageDto message) =>
         message.Sender.Kind == MessageSenderKind.Org
-            ? ActionLink.Post($"/api/Message/{message.Id}/report")
+            ? new ActionLink($"/api/Message/{message.Id}/report", HttpMethods.Post)
             : null;
 }

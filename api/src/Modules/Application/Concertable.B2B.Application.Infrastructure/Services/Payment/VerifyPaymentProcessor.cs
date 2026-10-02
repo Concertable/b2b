@@ -13,22 +13,22 @@ namespace Concertable.B2B.Application.Infrastructure.Services.Payment;
 internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
     private readonly IPaymentVerificationRecorder paymentVerificationRecorder;
-    private readonly IApplicationRepository applicationRepository;
+    private readonly IApplicationReadDbContext readDbContext;
     private readonly IPaymentSessionOperationsClient paymentSessions;
-    private readonly ApplicationDbContext context;
-    private readonly IUnitOfWork unitOfWork;
+    private readonly ApplicationPrivilegedDbContext context;
+    private readonly IPrivilegedUnitOfWorkBehavior unitOfWork;
     private readonly ILogger<VerifyPaymentProcessor> logger;
 
     public VerifyPaymentProcessor(
         IPaymentVerificationRecorder paymentVerificationRecorder,
-        IApplicationRepository applicationRepository,
+        IApplicationReadDbContext readDbContext,
         IPaymentSessionOperationsClient paymentSessions,
-        ApplicationDbContext context,
-        IUnitOfWork unitOfWork,
+        ApplicationPrivilegedDbContext context,
+        IPrivilegedUnitOfWorkBehavior unitOfWork,
         ILogger<VerifyPaymentProcessor> logger)
     {
         this.paymentVerificationRecorder = paymentVerificationRecorder;
-        this.applicationRepository = applicationRepository;
+        this.readDbContext = readDbContext;
         this.paymentSessions = paymentSessions;
         this.context = context;
         this.unitOfWork = unitOfWork;
@@ -46,26 +46,28 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentProcessor), ct))
             return;
 
-        var venueTenantId = await applicationRepository.GetByIdAsync(
-            applicationId,
-            VenueArtistTenantSpecification<ApplicationEntity>.CreateVenueTenantId(),
-            ct);
+        var venueTenantId = await readDbContext.Applications
+            .Where(application => application.Id == applicationId)
+            .Select(application => (Guid?)application.VenueTenantId)
+            .SingleOrDefaultAsync(ct);
         var owned = venueTenantId is { } payerOwnerId
             && (await paymentSessions.ValidatePaymentMethodAsync(
                 new PaymentMethodValidationRequest(@event.Reference, payerOwnerId), ct)).IsSuccess;
 
-        context.AddInboxMessage(envelope, nameof(VerifyPaymentProcessor));
         try
         {
-            if (!owned)
+            await unitOfWork.ExecuteAsync(async () =>
             {
-                logger.VerifyOutcomeNotOwnedByVenue(@event.Reference.ClientReference, applicationId);
-                await unitOfWork.SaveChangesAsync(ct);
-                return;
-            }
+                context.AddInboxMessage(envelope, nameof(VerifyPaymentProcessor));
+                if (!owned)
+                {
+                    logger.VerifyOutcomeNotOwnedByVenue(@event.Reference.ClientReference, applicationId);
+                    return;
+                }
 
-            logger.VerifyWebhookReceived(@event.Reference.ClientReference, applicationId);
-            await paymentVerificationRecorder.RecordAsync(new VerifyPaymentSucceeded(applicationId), ct);
+                logger.VerifyWebhookReceived(@event.Reference.ClientReference, applicationId);
+                await paymentVerificationRecorder.RecordAsync(new VerifyPaymentSucceeded(applicationId), ct);
+            }, ct);
         }
         catch (DbUpdateException ex) when (ex.IsDuplicateKey())
         {

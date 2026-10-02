@@ -5,6 +5,8 @@ namespace Concertable.B2B.Privacy.Infrastructure.Data;
 
 internal sealed class PrivacyDbContextFactory : B2BDesignTimeDbContextFactory<PrivacyDbContext>
 {
+    protected override string MigrationsSchema => Schema.Name;
+
     protected override PrivacyDbContext Create(DbContextOptions<PrivacyDbContext> options) =>
-        new(options, new PrivacyConfigurationProvider());
+        new(options, DefaultOutboxOptions, new PrivacyConfigurationProvider());
 }

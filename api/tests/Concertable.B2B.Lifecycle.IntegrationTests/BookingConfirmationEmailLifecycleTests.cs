@@ -33,14 +33,12 @@ public sealed class BookingConfirmationEmailLifecycleTests : IAsyncLifetime
             .Where(email => email.Subject.StartsWith("Booking confirmed:", StringComparison.Ordinal))
             .ToList();
         var recipients = confirmations.Select(email => email.To).ToList();
-        var venueRegisteredAddress = fixture.SeedState.Tenants
-            .Single(tenant => tenant.Id == fixture.SeedState.Venue.TenantId)
-            .TaxCompliance?
-            .RegisteredAddress;
-        var artistRegisteredAddress = fixture.SeedState.Tenants
-            .Single(tenant => tenant.Id == fixture.SeedState.Artist.TenantId)
-            .TaxCompliance?
-            .RegisteredAddress;
+        var venueTenant = fixture.SeedState.Tenants
+            .Single(tenant => tenant.Id == fixture.SeedState.Venue.TenantId);
+        var artistTenant = fixture.SeedState.Tenants
+            .Single(tenant => tenant.Id == fixture.SeedState.Artist.TenantId);
+        var venueRegisteredAddress = venueTenant.TaxCompliance?.RegisteredAddress;
+        var artistRegisteredAddress = artistTenant.TaxCompliance?.RegisteredAddress;
         Assert.NotNull(venueRegisteredAddress);
         Assert.NotNull(artistRegisteredAddress);
         var venueAddress = FormatAddress(
@@ -62,8 +60,8 @@ public sealed class BookingConfirmationEmailLifecycleTests : IAsyncLifetime
         Assert.NotEmpty(confirmations);
         Assert.All(confirmations, email =>
         {
-            Assert.Contains(fixture.SeedState.VenueManager1.Email, email.Body);
-            Assert.Contains(fixture.SeedState.ArtistManager1.Email, email.Body);
+            Assert.Contains(venueTenant.LegalName, email.Body);
+            Assert.Contains(artistTenant.LegalName, email.Body);
             Assert.Contains(venueAddress, email.Body);
             Assert.Contains(artistAddress, email.Body);
         });

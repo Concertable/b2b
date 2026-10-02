@@ -1,5 +1,6 @@
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
@@ -70,16 +71,12 @@ public sealed class OpportunityCancellationIntegrationEventHandlerTests : IAsync
     private async Task MarkFilledAsync(int opportunityId)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<OpportunityDbContext>();
+        var context = scope.ServiceProvider.GetRequiredService<OpportunityPrivilegedDbContext>();
         var opportunity = await context.Opportunities.SingleAsync(value => value.Id == opportunityId);
         opportunity.MarkFilled();
         await context.SaveChangesAsync();
     }
 
-    private async Task<OpportunityState> ReadStateAsync(int opportunityId)
-    {
-        await using var scope = fixture.Services.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<OpportunityDbContext>();
-        return (await context.Opportunities.SingleAsync(value => value.Id == opportunityId)).State;
-    }
+    private async Task<OpportunityState> ReadStateAsync(int opportunityId) =>
+        (await fixture.Opportunities.SingleAsync(value => value.Id == opportunityId)).State;
 }

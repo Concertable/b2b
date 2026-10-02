@@ -20,7 +20,7 @@ internal sealed class SubjectContractReader : ISubjectContractReader
         if (tenantIds.Count == 0)
             return [];
 
-        var contracts = await context.Contracts
+        var contracts = await this.context.Contracts
             .Where(c => tenantIds.Contains(c.VenueTenantId) || tenantIds.Contains(c.ArtistTenantId))
             .ToListAsync(ct);
 

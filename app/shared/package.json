@@ -49,6 +49,7 @@
     "@concertable/shared": "alpha",
     "@hookform/resolvers": "^5.9.1",
     "@tanstack/react-query": "^5.90.21",
+    "axios": "^1.13.6",
     "immer": "^11.1.4",
     "react-hook-form": "^7.86.0",
     "zod": "^4.3.6",

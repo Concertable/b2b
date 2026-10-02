@@ -22,12 +22,19 @@ public abstract class TenantScopedRepository<TEntity, TKey>
     protected IQueryable<TEntity> CurrentTenant =>
         base.Context.Query<TEntity>().Where(e => (Guid?)e.TenantId == tenant.TenantId);
 
+    // Both of these name the tenant they want, so the ambient filter must not narrow them as well:
+    // filtered, each answers only for a caller that already is that tenant, which is neither what
+    // "the owning tenant of this row" nor "another tenant's rows" is for.
     public async Task<Guid?> GetTenantIdByIdAsync(TKey id, CancellationToken ct = default) =>
         await base.Context.Query<TEntity>()
+            .IgnoreQueryFilters([TenantFilters.Key])
             .Where(e => e.Id!.Equals(id))
             .Select(e => (Guid?)e.TenantId)
             .FirstOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<TEntity>> GetAllByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
-        await base.Context.Query<TEntity>().Where(e => e.TenantId == tenantId).ToListAsync(ct);
+        await base.Context.Query<TEntity>()
+            .IgnoreQueryFilters([TenantFilters.Key])
+            .Where(e => e.TenantId == tenantId)
+            .ToListAsync(ct);
 }

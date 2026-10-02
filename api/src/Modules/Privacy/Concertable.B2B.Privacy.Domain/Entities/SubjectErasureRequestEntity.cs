@@ -1,12 +1,5 @@
 namespace Concertable.B2B.Privacy.Domain.Entities;
 
-/// <summary>
-/// The durable record that a GDPR erasure was raised for a data subject, carried through the
-/// <see cref="ErasureState"/> machine (Requested → Deferred/InProgress → Completed, plus Failed). It is the
-/// evidence an ICO enquiry would ask for, and — because a Deferred request is re-drivable — the anchor the
-/// hourly sweep re-evaluates until the subject's last financial obligation settles. Keyed by its own id;
-/// <see cref="SubjectId"/> is the Auth <c>sub</c> being erased.
-/// </summary>
 public sealed class SubjectErasureRequestEntity : IGuidEntity
 {
     private static readonly ErasureStateMachine stateMachine = new();
@@ -21,11 +14,8 @@ public sealed class SubjectErasureRequestEntity : IGuidEntity
     public string? DeferralReason { get; private set; }
     public string? FailureReason { get; private set; }
 
-    /// <summary>Captured on the first pass, before the User row is tombstoned and the memberships are severed:
-    /// a resumed pass can no longer derive either, so without them it would silently skip the profile scrub and
-    /// the invitation purge.</summary>
     public string? SubjectEmail { get; private set; }
-    public string? WoundDownTenantIds { get; private set; }
+    public string? TenantIds { get; private set; }
 
     public static SubjectErasureRequestEntity Create(Guid subjectId, DateTime nowUtc) => new()
     {
@@ -37,31 +27,37 @@ public sealed class SubjectErasureRequestEntity : IGuidEntity
 
     internal UnitResult<ErasureTransitionError> Fire(ErasureTrigger trigger)
     {
-        if (!stateMachine.Transition(State, trigger).TryGetValue(out var next))
-            return new ErasureTransitionError.InvalidTransition(State, trigger);
+        if (!stateMachine.Transition(this.State, trigger).TryGetValue(out var next))
+            return new ErasureTransitionError.InvalidTransition(this.State, trigger);
 
-        State = next;
+        this.State = next;
         return new Success();
     }
 
-    internal void RecordDeferral(string reason) => DeferralReason = reason;
+    internal void RecordDeferral(string reason) => this.DeferralReason = reason;
 
     internal void RecordCompletion(DateTime at)
     {
-        CompletedAtUtc = at;
-        DeferralReason = null;
+        this.CompletedAtUtc = at;
+        this.DeferralReason = null;
+        this.FailureReason = null;
+        this.SubjectEmail = null;
+        this.TenantIds = null;
     }
 
-    internal void RecordFailure(string reason) => FailureReason = reason;
+    internal void RecordFailure(string reason) => this.FailureReason = reason;
 
-    internal void CaptureFanOutState(string? email, IReadOnlySet<Guid> woundDownTenantIds)
+    internal void CaptureFanOutState(string? email, IReadOnlySet<Guid> tenantIds)
     {
-        SubjectEmail ??= email;
-        WoundDownTenantIds ??= string.Join(",", woundDownTenantIds);
+        this.SubjectEmail ??= email;
+        this.TenantIds ??= string.Join(",", tenantIds);
     }
 
-    internal IReadOnlySet<Guid> CapturedWoundDownTenantIds =>
-        string.IsNullOrEmpty(WoundDownTenantIds)
+    internal void RecordWoundDownTenants(IReadOnlySet<Guid> tenantIds) =>
+        this.TenantIds = string.Join(",", tenantIds);
+
+    internal IReadOnlySet<Guid> CapturedTenantIds =>
+        string.IsNullOrEmpty(this.TenantIds)
             ? new HashSet<Guid>()
-            : WoundDownTenantIds.Split(",").Select(Guid.Parse).ToHashSet();
+            : this.TenantIds.Split(",").Select(Guid.Parse).ToHashSet();
 }

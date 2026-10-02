@@ -23,21 +23,21 @@ internal sealed class DeferredErasureRunner : IDeferredErasureRunner
 
     public async Task RunAsync(CancellationToken ct = default)
     {
-        var subjectIds = await repository.ListResumableSubjectIdsAsync(SweepBatchSize, ct);
+        var subjectIds = await this.repository.ListResumableSubjectIdsAsync(SweepBatchSize, ct);
         if (subjectIds.Count == 0)
             return;
 
-        logger.DeferredErasureSweepStarted(subjectIds.Count);
+        this.logger.DeferredErasureSweepStarted(subjectIds.Count);
 
         foreach (var subjectId in subjectIds)
         {
             try
             {
-                await erasureService.RunAsync(service => service.RequestErasureAsync(subjectId, ct));
+                await this.erasureService.RunAsync(service => service.RequestErasureAsync(subjectId, ct));
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                logger.DeferredErasureFailed(exception, subjectId, Guid.Empty);
+                this.logger.DeferredErasureFailed(exception, subjectId, Guid.Empty);
             }
         }
     }

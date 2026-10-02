@@ -26,10 +26,15 @@ public sealed class SubjectErasureRequestEntityTests
         request.RecordDeferral("PendingFinancialObligations");
         var completedAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        request.CaptureFanOutState("subject@test.invalid", new HashSet<Guid> { Guid.NewGuid() });
+        request.RecordFailure("Historical failure");
         request.RecordCompletion(completedAt);
 
         Assert.Equal(completedAt, request.CompletedAtUtc);
         Assert.Null(request.DeferralReason);
+        Assert.Null(request.FailureReason);
+        Assert.Null(request.SubjectEmail);
+        Assert.Null(request.TenantIds);
     }
 
     [Fact]

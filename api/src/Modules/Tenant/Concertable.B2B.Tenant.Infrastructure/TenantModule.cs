@@ -22,11 +22,43 @@ internal sealed class TenantModule : ITenantModule
     public Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         service.GetByIdAsync(id, ct);
 
+    public Task RequireBookingTenantsAsync(Guid venueTenantId, Guid artistTenantId, CancellationToken ct = default) =>
+        service.RequireBookingTenantsAsync(venueTenantId, artistTenantId, ct);
+
     public Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default) =>
         service.GetMembershipsAsync(userId, ct);
 
     public Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default) =>
         service.GetMemberUserIdsAsync(tenantId, ct);
+
+    public Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default) =>
+        service.GetCurrentMembershipsAsync(tenantIds, ct);
+
+    public Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        service.GetCurrentMembershipsForNotificationAsync(tenantId, ct);
+
+    public Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
+        MembershipSnapshot expected,
+        CancellationToken ct = default) =>
+        service.RequireCurrentMembershipAsync(expected, ct);
+
+    public Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default) =>
+        service.GetTenantBusinessDetailsAsync(tenantId, ct);
+
+    public Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default) =>
+        service.GetTenantBusinessDetailsAsync(tenantIds, ct);
+
+    public Task<bool> HasBusinessActivityAsync(
+        Guid tenantId,
+        TenantBusinessActivityKind kind,
+        CancellationToken ct = default) =>
+        service.HasBusinessActivityAsync(tenantId, kind, ct);
 
     public Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default) =>
         service.IsTaxComplianceCompleteAsync(tenantId, ct);
@@ -49,9 +81,9 @@ internal sealed class TenantModule : ITenantModule
         CancellationToken ct = default) =>
         activityService.GetRecentAsync(tenantId, take, ct);
 
-    public Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default) =>
-        erasureService.SeverMembershipsAsync(userId, ct);
+    public Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, IReadOnlySet<Guid> capturedTenantIds, CancellationToken ct = default) =>
+        this.erasureService.SeverMembershipsAsync(userId, capturedTenantIds, ct);
 
     public Task PurgePendingInvitationsAsync(string email, CancellationToken ct = default) =>
-        erasureService.PurgePendingInvitationsAsync(email, ct);
+        this.erasureService.PurgePendingInvitationsAsync(email, ct);
 }

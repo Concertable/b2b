@@ -17,13 +17,13 @@ internal sealed class ConversationsErasureService : IConversationsErasureService
 
     public async Task SeverAuthoredMessagesAsync(Guid userId, CancellationToken ct = default)
     {
-        var authored = await messages.ListBySenderUserAsync(userId, ct);
+        var authored = await this.messages.ListBySenderUserAsync(userId, ct);
         if (authored.Count == 0)
             return;
 
         foreach (var message in authored)
             message.SeverAuthor();
-        await messages.SaveChangesAsync(ct);
+        await this.messages.SaveChangesAsync(ct);
     }
 
     public async Task ScrubParticipantProfilesAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
@@ -31,12 +31,12 @@ internal sealed class ConversationsErasureService : IConversationsErasureService
         if (tenantIds.Count == 0)
             return;
 
-        var profiles = await participantProfiles.ListByTenantIdsAsync(tenantIds, ct);
+        var profiles = await this.participantProfiles.ListByTenantIdsAsync(tenantIds, ct);
         if (profiles.Count == 0)
             return;
 
         foreach (var profile in profiles)
             profile.Update(ErasedPlaceholder, ErasedPlaceholder, ErasedPlaceholder);
-        await participantProfiles.SaveChangesAsync(ct);
+        await this.participantProfiles.SaveChangesAsync(ct);
     }
 }

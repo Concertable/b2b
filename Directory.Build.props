@@ -55,6 +55,10 @@
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(MSBuildProjectName)', '^Concertable\.B2B\..+\.Infrastructure$'))">
+    <InternalsVisibleTo Include="Concertable.B2B.Migrations" />
+  </ItemGroup>
+
   <!-- Registry lives here, not in publish-images.yml: a carve takes only the service folder. -->
   <PropertyGroup>
     <ContainerRegistry Condition="'$(ContainerRegistry)' == ''">ghcr.io</ContainerRegistry>

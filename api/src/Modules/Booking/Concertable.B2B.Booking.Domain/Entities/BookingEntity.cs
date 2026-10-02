@@ -19,7 +19,7 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     private static readonly BookingStateMachine stateMachine = new();
 
     public int Id { get; private set; }
-    public byte[] Version { get; private set; } = null!;
+    public uint Version { get; private set; }
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public Guid OperationId { get; private set; }
@@ -34,8 +34,6 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     public List<Genre> Genres { get; private set; } = [];
     internal BookingState State { get; private set; } = BookingState.AwaitingConfirmation;
 
-    /// <summary>When Concert acknowledged the confirmed-booking handoff. Null while the integration event is
-    /// still in flight, which is the window in which neither this stage nor Concert can see the obligation.</summary>
     internal DateTime? HandedOffAtUtc { get; private set; }
     public Guid? CancellationOperationId { get; private set; }
     internal FinancialFailure? FinancialFailure { get; private set; }

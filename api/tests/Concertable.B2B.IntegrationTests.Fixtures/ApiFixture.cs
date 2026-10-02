@@ -54,7 +54,7 @@ namespace Concertable.B2B.IntegrationTests.Fixtures;
 
 public class ApiFixture : IAsyncLifetime
 {
-    private SqlFixture sqlFixture = null!;
+    private B2BPostgresFixture postgresFixture = null!;
     private WebApplicationFactory<Program> factory = null!;
     private IServiceScope? scope;
     private readonly List<WebApplicationFactory<Program>> customFactories = [];
@@ -85,8 +85,8 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        sqlFixture = new SqlFixture();
-        await sqlFixture.InitializeAsync();
+        postgresFixture = new B2BPostgresFixture();
+        await postgresFixture.InitializeAsync();
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment(Environments.Integration);
@@ -94,10 +94,11 @@ public class ApiFixture : IAsyncLifetime
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:B2BDb"] = sqlFixture.ConnectionString,
+                    [$"ConnectionStrings:{B2BDb.Name}"] = postgresFixture.ConnectionString,
                     ["ExternalServices:UseRealStripe"] = "false",
                     ["ExternalServices:UseRealBlob"] = "false",
                     ["ExternalServices:UseRealEmail"] = "false",
+                    ["Urls:Frontends:Business"] = "https://localhost:5177",
                     ["Urls:Frontends:Venue"] = "https://localhost:5175",
                     ["Urls:Frontends:Artist"] = "https://localhost:5176",
                     ["BlobStorage:ContainerName"] = "images",
@@ -157,7 +158,7 @@ public class ApiFixture : IAsyncLifetime
         _ = factory.Services;
         PaymentTransport.Connect(factory.Services.GetRequiredService<IServiceScopeFactory>());
 
-        await sqlFixture.InitializeRespawnerAsync();
+        await postgresFixture.InitializeRespawnerAsync(B2BDb.Schemas);
         PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
     }
 
@@ -165,14 +166,14 @@ public class ApiFixture : IAsyncLifetime
     {
         scope?.Dispose();
         await factory.DisposeAsync();
-        await sqlFixture.DisposeAsync();
+        await postgresFixture.DisposeAsync();
     }
 
     public async Task ResetAsync()
     {
         await StopBackgroundDispatchAsync();
 
-        await sqlFixture.ResetAsync();
+        await postgresFixture.ResetAsync();
         foreach (var resettable in factory.Services.GetServices<IResettable>())
             resettable.Reset();
         PaymentSimulator = factory.Services.GetRequiredService<IWebhookSimulator>();
@@ -181,6 +182,9 @@ public class ApiFixture : IAsyncLifetime
         scope = factory.Services.CreateScope();
         var initializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
         await initializer.InitializeAsync();
+        await PostgresIdentitySequences.SynchronizeAsync(
+            postgresFixture.ConnectionString,
+            B2BDb.Schemas);
         SeedState = scope.ServiceProvider.GetRequiredService<SeedState>();
         OnReset(scope);
 
@@ -347,15 +351,21 @@ public class ApiFixture : IAsyncLifetime
                 .CountAsync(message => message.MessageType == messageType));
     }
 
-    public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(string messageType) => factory.Services
-        .GetRequiredService<IScoped<OutboxDbContext>>()
-        .RunAsync(async outbox =>
-        {
-            var row = await outbox.Set<OutboxMessageEntity>()
-                .AsNoTracking()
-                .SingleAsync(message => message.MessageType == messageType);
-            return new OutboxMessageSnapshot(row.Id, row.Payload, row.Status == OutboxStatus.Dispatched);
-        });
+    // Seeding publishes the same integration events the API does, so a message type identifies no single
+    // row; a caller after its own request's row takes the id that was not already there.
+    public Task<IReadOnlyList<OutboxMessageSnapshot>> GetOutboxMessagesAsync(string messageType) =>
+        factory.Services
+            .GetRequiredService<IScoped<OutboxDbContext>>()
+            .RunAsync(async Task<IReadOnlyList<OutboxMessageSnapshot>> (outbox) =>
+                await outbox.Set<OutboxMessageEntity>()
+                    .AsNoTracking()
+                    .Where(message => message.MessageType == messageType)
+                    .OrderBy(message => message.OccurredAtUtc)
+                    .Select(message => new OutboxMessageSnapshot(
+                        message.Id,
+                        message.Payload,
+                        message.Status == OutboxStatus.Dispatched))
+                    .ToListAsync());
 
     public Task<OutboxMessageSnapshot> GetOutboxMessageAsync(Guid id) => factory.Services
         .GetRequiredService<IScoped<OutboxDbContext>>()

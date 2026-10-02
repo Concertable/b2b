@@ -26,7 +26,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddConversationsModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<ConversationsDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<TenantInterceptor>(),
@@ -34,15 +36,18 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>())
                 .UseSeedingSupport(sp));
 
+        // No TenantInterceptor: this stance exists so an operator can write rows no tenant owns, and the
+        // write guard now throws on exactly that rather than standing aside for it.
         services.AddDbContext<ConversationsPrivilegedDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<TenantInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
         services.AddDbContext<ConversationsReadDbContext>(opts =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
         services.AddScoped<IConversationsReadDbContext>(sp =>
             sp.GetRequiredService<ConversationsReadDbContext>());

@@ -13,8 +13,8 @@ internal sealed class ParticipantProfilePrivilegedRepository : IParticipantProfi
     }
 
     public async Task<IReadOnlyList<ParticipantProfile>> ListByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
-        await context.ParticipantProfiles.Where(p => tenantIds.Contains(p.TenantId)).ToListAsync(ct);
+        await this.context.ParticipantProfiles.Where(p => tenantIds.Contains(p.TenantId)).ToListAsync(ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default) =>
-        context.SaveChangesAsync(ct);
+        this.context.SaveChangesAsync(ct);
 }

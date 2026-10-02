@@ -10,12 +10,12 @@ internal sealed class OpportunityCancellationIntegrationEventHandler :
     IIntegrationEventHandler<BookingCancelledEvent>,
     IIntegrationEventHandler<ConcertCancelledEvent>
 {
-    private readonly OpportunityDbContext context;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly OpportunityPrivilegedDbContext context;
+    private readonly IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior;
 
     public OpportunityCancellationIntegrationEventHandler(
-        OpportunityDbContext context,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        OpportunityPrivilegedDbContext context,
+        IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.context = context;
         this.unitOfWorkBehavior = unitOfWorkBehavior;

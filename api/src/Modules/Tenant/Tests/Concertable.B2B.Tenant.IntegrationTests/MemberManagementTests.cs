@@ -190,9 +190,9 @@ public sealed class MemberManagementTests : IAsyncLifetime
     [Fact]
     public async Task DeleteTenant_AsOwner_DeletesTenantAndMemberships()
     {
-        var owner = fixture.SeedState.VenueManager1;
+        var owner = fixture.SeedState.VenueManagerNoVenue;
         var tenantId = TenantOf(owner.Id);
-        await fixture.AddMembershipAsync(tenantId, fixture.SeedState.VenueManagerNoVenue.Id, TenantRole.Staff);
+        await fixture.AddMembershipAsync(tenantId, fixture.SeedState.ArtistManagerNoArtist.Id, TenantRole.Staff);
 
         var response = await fixture.CreateClient(owner).DeleteAsync("/api/organization");
 
@@ -243,20 +243,24 @@ public sealed class MemberManagementTests : IAsyncLifetime
     [Fact]
     public async Task SeverMembershipsAsync_ReturnsOnlyTheTenantsLeftWithNoMembers()
     {
-        // Arrange
-        var soleOwner = fixture.SeedState.VenueManagerNoVenue;
+        var soleOwner = this.fixture.SeedState.VenueManagerNoVenue;
         var soleOwnedTenantId = TenantOf(soleOwner.Id);
-        var sharedTenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
-        await fixture.AddMembershipAsync(sharedTenantId, soleOwner.Id, TenantRole.Staff);
+        var sharedTenantId = TenantOf(this.fixture.SeedState.VenueManager1.Id);
+        await this.fixture.AddMembershipAsync(sharedTenantId, soleOwner.Id, TenantRole.Staff);
 
-        // Act
-        var woundDown = await fixture.Services.RunScopedAsync(sp =>
-            sp.GetRequiredService<ITenantModule>().SeverMembershipsAsync(soleOwner.Id));
+        var woundDown = await this.fixture.Services.RunScopedAsync(sp =>
+            sp.GetRequiredService<ITenantModule>().SeverMembershipsAsync(soleOwner.Id, new HashSet<Guid> { soleOwnedTenantId, sharedTenantId }));
 
-        // Assert
         Assert.Contains(soleOwnedTenantId, woundDown);
         Assert.DoesNotContain(sharedTenantId, woundDown);
-        Assert.DoesNotContain(fixture.Memberships, m => m.UserId == soleOwner.Id);
+        Assert.DoesNotContain(this.fixture.Memberships, m => m.UserId == soleOwner.Id);
+
+        var replayed = await this.fixture.Services.RunScopedAsync(sp =>
+            sp.GetRequiredService<ITenantModule>().SeverMembershipsAsync(
+                soleOwner.Id, new HashSet<Guid> { soleOwnedTenantId, sharedTenantId }));
+        Assert.Contains(soleOwnedTenantId, replayed);
+        Assert.DoesNotContain(sharedTenantId, replayed);
+
     }
 
     #endregion

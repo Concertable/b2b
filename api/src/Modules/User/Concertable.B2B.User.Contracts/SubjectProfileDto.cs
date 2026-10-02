@@ -1,6 +1,5 @@
 namespace Concertable.B2B.User.Contracts;
 
-/// <summary>The subject's portable B2B User fragment for a GDPR access/portability export (arts. 15/20).</summary>
 public sealed record SubjectProfileDto
 {
     public required string Email { get; init; }

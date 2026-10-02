@@ -15,6 +15,9 @@ public sealed partial class SeedCatalog
 
     public SeedCatalog(TimeProvider timeProvider)
     {
-        this.Now = timeProvider.GetUtcNow().UtcDateTime;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        this.Now = new DateTime(
+            now.Ticks - now.Ticks % TimeSpan.TicksPerMicrosecond,
+            DateTimeKind.Utc);
     }
 }

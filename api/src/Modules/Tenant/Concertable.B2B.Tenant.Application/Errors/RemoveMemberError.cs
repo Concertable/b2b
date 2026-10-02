@@ -12,7 +12,10 @@ internal abstract partial record RemoveMemberError : IError
                 $"User {userId} is not a member of this organization."),
         LastOwner =>
             ErrorDefinition.Conflict<LastOwner>(
-                "The last owner of an organization cannot be removed.")
+                "The last owner of an organization cannot be removed."),
+        NotPermitted =>
+            ErrorDefinition.Forbidden<NotPermitted>(
+                "Only an owner can remove members.")
     };
 
     [ErrorCode("tenant.remove_member_not_found")]
@@ -20,4 +23,7 @@ internal abstract partial record RemoveMemberError : IError
 
     [ErrorCode("tenant.remove_member_last_owner")]
     public partial record LastOwner;
+
+    [ErrorCode("tenant.remove_member_not_permitted")]
+    public partial record NotPermitted;
 }

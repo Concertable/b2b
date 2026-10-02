@@ -19,15 +19,15 @@ internal sealed class SubjectObligationChecker : ISubjectObligationChecker
         this.concertModule = concertModule;
     }
 
-    public async Task<bool> HasLiveObligationsAsync(Guid subjectId, CancellationToken ct = default)
+    public async Task<bool> HasLiveObligationsAsync(Guid subjectId, IReadOnlySet<Guid> capturedTenantIds, CancellationToken ct = default)
     {
-        var memberships = await tenantModule.GetMembershipsAsync(subjectId, ct);
-        var tenantIds = memberships.Select(m => m.TenantId).ToHashSet();
+        var memberships = await this.tenantModule.GetMembershipsAsync(subjectId, ct);
+        var tenantIds = memberships.Select(m => m.TenantId).Concat(capturedTenantIds).ToHashSet();
         if (tenantIds.Count == 0)
             return false;
 
-        return await applicationModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct)
-            || await bookingModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct)
-            || await concertModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct);
+        return await this.applicationModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct)
+            || await this.bookingModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct)
+            || await this.concertModule.HasLiveObligationsByTenantIdsAsync(tenantIds, ct);
     }
 }

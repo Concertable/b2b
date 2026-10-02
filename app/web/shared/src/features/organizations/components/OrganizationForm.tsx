@@ -60,6 +60,20 @@ export function OrganizationForm({
           <FieldError id="legalName-error" message={errors.legalName?.message} />
         </div>
         <div className="space-y-1">
+          <Label htmlFor="contactEmail">Contact email</Label>
+          <Input
+            id="contactEmail"
+            type="email"
+            aria-invalid={errors.contactEmail !== undefined}
+            aria-describedby="contactEmail-error"
+            {...register("contactEmail")}
+          />
+          <FieldError
+            id="contactEmail-error"
+            message={errors.contactEmail?.message}
+          />
+        </div>
+        <div className="space-y-1">
           <Label htmlFor="sellerIdentifier">
             {taxFormLabels.sellerIdentifierLabel}
           </Label>

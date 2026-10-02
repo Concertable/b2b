@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Contracts.Events;
+﻿using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Events;
 using Concertable.Kernel;
 using Concertable.Messaging.Contracts;
@@ -9,15 +9,13 @@ namespace Concertable.B2B.Concert.Infrastructure.Events;
 
 internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHandler<ConcertChangedDomainEvent>
 {
-    private readonly IConcertRepository concertRepository;
+    private readonly IConcertPrivilegedRepository concertRepository;
     private readonly IBus bus;
-    private readonly IDealPayeeResolver dealPayeeResolver;
 
-    public ConcertChangedDomainEventHandler(IConcertRepository concertRepository, IBus bus, IDealPayeeResolver dealPayeeResolver)
+    public ConcertChangedDomainEventHandler(IConcertPrivilegedRepository concertRepository, IBus bus)
     {
         this.concertRepository = concertRepository;
         this.bus = bus;
-        this.dealPayeeResolver = dealPayeeResolver;
     }
 
     public async Task HandleAsync(ConcertChangedDomainEvent e, CancellationToken ct = default)
@@ -51,7 +49,7 @@ internal sealed class ConcertChangedDomainEventHandler : IPreCommitDomainEventHa
             venue.Location.Y,
             venue.Location.X,
             concert.Genres.ToArray(),
-            dealPayeeResolver.ResolveTicketUserId(concert),
-            dealPayeeResolver.ResolveTicketTenantId(concert)), ct);
+            concert.SettlementPayerTenantId == concert.VenueTenantId ? venue.UserId : artist.UserId,
+            concert.SettlementPayerTenantId), ct);
     }
 }

@@ -1,4 +1,5 @@
 using Concertable.B2B.Booking.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.Messaging.Infrastructure.Outbox;
 
@@ -8,5 +9,9 @@ internal interface IOutboxUnitOfWorkBehavior : IOutboxUnitOfWorkBehavior<Booking
 
 internal sealed class OutboxUnitOfWorkBehavior(
     BookingDbContext context,
-    IDbContextAccessor accessor)
-    : OutboxUnitOfWorkBehavior<BookingDbContext>(context, accessor), IOutboxUnitOfWorkBehavior;
+    CommandTransactionFactory transactions,
+    CommandTransactionAccessor commandAccessor,
+    IDbContextAccessor outboxAccessor)
+    : CommandOutboxUnitOfWorkBehavior<BookingDbContext>(
+        context, transactions, commandAccessor, outboxAccessor),
+        IOutboxUnitOfWorkBehavior;

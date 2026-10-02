@@ -61,8 +61,8 @@ internal sealed class BookingModule : IBookingModule
         bookingService.GetArtistAwaitingCheckoutCountAsync(artistTenantId, ct);
 
     public Task<bool> HasLiveObligationsByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
-        obligationChecker.HasLiveAsync(tenantIds, ct);
+        this.obligationChecker.HasLiveAsync(tenantIds, ct);
 
     public Task<IReadOnlyList<SubjectContractDto>> GetSubjectContractsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
-        subjectContractReader.GetSubjectContractsAsync(tenantIds, ct);
+        this.subjectContractReader.GetSubjectContractsAsync(tenantIds, ct);
 }

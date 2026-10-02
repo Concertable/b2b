@@ -1,4 +1,4 @@
-using Concertable.B2B.Seed.Infrastructure;
+﻿using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -9,16 +9,18 @@ internal sealed class OpportunityDevSeeder : IDevSeeder
 {
     public int Order => 4;
 
-    private readonly OpportunityDbContext context;
+    private readonly OpportunityPrivilegedDbContext context;
+    private readonly OpportunityDbContext migrations;
     private readonly SeedState seed;
 
-    public OpportunityDevSeeder(OpportunityDbContext context, SeedState seed)
+    public OpportunityDevSeeder(OpportunityPrivilegedDbContext context, OpportunityDbContext migrations, SeedState seed)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seed = seed;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
     public async Task SeedAsync(CancellationToken ct = default) =>
         await context.Opportunities.SeedIfEmptyAsync(async () =>

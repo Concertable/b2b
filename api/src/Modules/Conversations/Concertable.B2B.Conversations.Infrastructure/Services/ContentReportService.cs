@@ -56,7 +56,7 @@ internal sealed class ContentReportService : IContentReportService
             currentUser.GetId(),
             request.Category,
             request.Details,
-            timeProvider.GetUtcNow().DateTime);
+            timeProvider.GetUtcNow().UtcDateTime);
 
         await reportRepository.AddAsync(report);
         await reportRepository.SaveChangesAsync();

@@ -13,14 +13,16 @@ internal sealed class TenantInvitationEntityConfiguration : IEntityTypeConfigura
         builder.Property(i => i.Email).IsRequired();
         builder.Property(i => i.Role).IsRequired();
         builder.Property(i => i.Status).IsRequired();
-        builder.Property(i => i.CreatedByUserId).IsRequired();
+        builder.Property(i => i.InviterMembershipId).IsRequired();
+        builder.Property(i => i.InviterPermissionVersion).IsRequired();
+        builder.Property(i => i.Version).IsRequired().IsConcurrencyToken();
         builder.Property(i => i.CreatedAt).IsRequired();
         builder.Property(i => i.ExpiresAt).IsRequired();
 
         // One live invite per (tenant, email); filtered on Pending so a revoked/expired one doesn't block a re-invite.
         builder.HasIndex(i => new { i.TenantId, i.Email })
             .IsUnique()
-            .HasFilter($"[Status] = {(int)InvitationStatus.Pending}");
+            .HasFilter($"\"Status\" = {(int)InvitationStatus.Pending}");
 
         // Registration-match lookup in TenantProvisioningHandler.
         builder.HasIndex(i => i.Email);

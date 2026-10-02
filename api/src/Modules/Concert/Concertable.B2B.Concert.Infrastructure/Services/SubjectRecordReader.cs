@@ -20,10 +20,10 @@ internal sealed class SubjectRecordReader : ISubjectRecordReader
         if (tenantIds.Count == 0)
             return new SubjectConcertRecordsDto();
 
-        var invoices = await context.Invoices
+        var invoices = await this.context.Invoices
             .Where(i => tenantIds.Contains(i.VenueTenantId) || tenantIds.Contains(i.ArtistTenantId))
             .ToListAsync(ct);
-        var agreements = await context.SelfBillingAgreements
+        var agreements = await this.context.SelfBillingAgreements
             .Where(s => tenantIds.Contains(s.TenantId))
             .ToListAsync(ct);
 

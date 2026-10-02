@@ -181,16 +181,11 @@ flow; no cookie consent.
 log); cookie consent on the SPA; versioned terms so re-acceptance can be forced on material
 change. Launch-blocking and independent of the money model.
 
-## 8. GDPR data retention + right to erasure — DESIGNED (building)
-**Legal basis:** UK GDPR arts. 5(1)(e), 15, 17, 20.
-The retain-vs-erase design is ratified and building: a gated `SubjectErasureRequest` state machine
-anonymises the natural person while **retaining the statutory financial/legal records with identity
-severed** (invoices, self-billing agreements, signed contracts + e-signatures survive erasure for the
-HMRC six-year / contract-limitation windows), plus a portable JSON export for the access/portability
-rights. The exhaustive retain-vs-erase register, the statutory retention windows, and the
-one-calendar-month DSAR SLA — the solicitor's review surface — are the standing compliance record at
-[`GDPR_SUBJECT_RIGHTS.md`](../../../../docs/plans/gdpr-subject-rights/GDPR_SUBJECT_RIGHTS.md); do not
-restate them here.
+## 8. GDPR data retention + right to erasure — PARTIAL
+**Legal basis:** UK GDPR arts. 5(1)(e), 17.
+B2B-local subject export and erasure are being qualified. Auth/Payment/Customer data, statutory retention
+scheduling and policy ratification remain outstanding; the launch compliance requirement stays open.
+Current engineering scope and evidence: [B2B subject-rights delivery](../../../../docs/plans/gdpr-subject-rights/GDPR_SUBJECT_RIGHTS_PLAN.md).
 
 ## 9. Audit trail on the booking lifecycle — PARTIAL
 **Legal basis:** dispute evidence; financial record-keeping.

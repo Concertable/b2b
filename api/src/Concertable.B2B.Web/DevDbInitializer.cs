@@ -9,6 +9,7 @@ using System.Diagnostics;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel.Geometry;
 using Concertable.Kernel.Services.Geometry;
+using Concertable.B2B.DataAccess.Infrastructure;
 
 namespace Concertable.B2B.Web;
 
@@ -70,6 +71,10 @@ public sealed class DevDbInitializer : IDbInitializer
                 }
             }
         }
+
+        await PostgresIdentitySequences.SynchronizeAsync(
+            outbox.Database.GetConnectionString()!,
+            B2BDb.Schemas);
 
         total.Stop();
         logger.DbInitializationComplete(total.ElapsedMilliseconds);

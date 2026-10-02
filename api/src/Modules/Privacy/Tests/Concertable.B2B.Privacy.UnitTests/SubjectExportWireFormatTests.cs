@@ -16,22 +16,19 @@ public sealed class SubjectExportWireFormatTests
     [InlineData(DealType.VenueHire)]
     public void DealType_SerializesAsItsName(DealType dealType)
     {
-        // Arrange
         var contract = new SubjectContractDto
         {
-            VenueName = "Venue",
-            ArtistName = "Artist",
             DealType = dealType,
             CreatedAtUtc = DateTime.UtcNow,
         };
 
-        // Act
         var json = JsonSerializer.Serialize(contract, SerializerOptions);
 
-        // Assert
         using var document = JsonDocument.Parse(json);
         var written = document.RootElement.GetProperty("dealType");
         Assert.Equal(JsonValueKind.String, written.ValueKind);
         Assert.Equal(dealType.ToString(), written.GetString());
+        Assert.False(document.RootElement.TryGetProperty("venueName", out _));
+        Assert.False(document.RootElement.TryGetProperty("artistName", out _));
     }
 }

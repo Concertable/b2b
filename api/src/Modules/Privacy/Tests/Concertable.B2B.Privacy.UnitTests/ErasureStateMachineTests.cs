@@ -16,7 +16,7 @@ public sealed class ErasureStateMachineTests
     [InlineData(ErasureState.InProgress, ErasureTrigger.Fail, ErasureState.Failed)]
     public void Transition_LegalEdge_ReturnsNextState(ErasureState current, ErasureTrigger trigger, ErasureState expected)
     {
-        var result = machine.Transition(current, trigger);
+        var result = this.machine.Transition(current, trigger);
 
         Assert.True(result.TryGetValue(out var next));
         Assert.Equal(expected, next);
@@ -31,7 +31,7 @@ public sealed class ErasureStateMachineTests
     [InlineData(ErasureState.Completed, ErasureTrigger.Defer)]
     public void Transition_IllegalEdge_FailsClosed(ErasureState current, ErasureTrigger trigger)
     {
-        var result = machine.Transition(current, trigger);
+        var result = this.machine.Transition(current, trigger);
 
         Assert.True(result.TryGetError(out var error));
         Assert.NotNull(error);

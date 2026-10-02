@@ -11,21 +11,18 @@ internal sealed class TenantErasureService : ITenantErasureService
         this.invitationRepository = invitationRepository;
     }
 
-    public async Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, IReadOnlySet<Guid> capturedTenantIds, CancellationToken ct = default)
     {
-        var memberships = await membershipRepository.ListMembershipsByUserAsync(userId, ct);
-        if (memberships.Count == 0)
-            return new HashSet<Guid>();
-
-        var tenantIds = memberships.Select(m => m.TenantId).ToHashSet();
+        var memberships = await this.membershipRepository.ListMembershipsByUserAsync(userId, ct);
+        var tenantIds = memberships.Select(m => m.TenantId).Concat(capturedTenantIds).ToHashSet();
         foreach (var membership in memberships)
-            membershipRepository.Remove(membership);
-        await membershipRepository.SaveChangesAsync(ct);
+            this.membershipRepository.Remove(membership);
+        await this.membershipRepository.SaveChangesAsync(ct);
 
         var woundDown = new HashSet<Guid>();
         foreach (var tenantId in tenantIds)
         {
-            if (await membershipRepository.CountMembersAsync(tenantId, ct) == 0)
+            if (await this.membershipRepository.CountMembersAsync(tenantId, ct) == 0)
                 woundDown.Add(tenantId);
         }
 
@@ -35,12 +32,12 @@ internal sealed class TenantErasureService : ITenantErasureService
     public async Task PurgePendingInvitationsAsync(string email, CancellationToken ct = default)
     {
         var normalized = email.Trim().ToLowerInvariant();
-        var invitations = await invitationRepository.ListPendingInvitationsByEmailAsync(normalized, ct);
+        var invitations = await this.invitationRepository.ListPendingInvitationsByEmailAsync(normalized, ct);
         if (invitations.Count == 0)
             return;
 
         foreach (var invitation in invitations)
-            invitationRepository.Remove(invitation);
-        await invitationRepository.SaveChangesAsync(ct);
+            this.invitationRepository.Remove(invitation);
+        await this.invitationRepository.SaveChangesAsync(ct);
     }
 }

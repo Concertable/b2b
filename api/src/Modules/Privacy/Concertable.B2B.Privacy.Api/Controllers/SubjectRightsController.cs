@@ -8,8 +8,6 @@ using Reunion.AspNetCore.Mvc;
 
 namespace Concertable.B2B.Privacy.Api.Controllers;
 
-/// <summary>The reachable admin-gated GDPR subject-rights surface: raise an erasure (art. 17) or pull a
-/// portable export (arts. 15/20) for a data subject. A DSAR is an operator action, not a self-service one.</summary>
 [Admin]
 [EnableRateLimiting(RateLimitPolicies.Sensitive)]
 [ApiController]
@@ -27,12 +25,12 @@ internal sealed class SubjectRightsController : ControllerBase
 
     [HttpPost("subject-erasure/{subjectId:guid}")]
     public async Task<ActionResult<SubjectErasureRequestDto>> RequestErasure(Guid subjectId, CancellationToken ct) =>
-        (await erasureService.RequestErasureAsync(subjectId, ct)).ToOkOrProblem();
+        (await this.erasureService.RequestErasureAsync(subjectId, ct)).ToOkOrProblem();
 
     [HttpGet("subject-export/{subjectId:guid}")]
     public async Task<IActionResult> Export(Guid subjectId, CancellationToken ct)
     {
-        var download = await exporter.ExportAsync(subjectId, ct);
+        var download = await this.exporter.ExportAsync(subjectId, ct);
         return File(download.Content, download.ContentType, download.FileName);
     }
 }

@@ -7,20 +7,16 @@ public sealed class ApplicationObligationTests
     [Fact]
     public void EveryApplicationState_IsDeliberatelyClassified()
     {
-        // Arrange
         var all = Enum.GetValues<ApplicationState>();
 
-        // Act
         var unclassified = all.Where(state => ApplicationObligation.IsLive(state)).ToArray();
 
-        // Assert
         Assert.Empty(unclassified);
     }
 
     [Fact]
     public void AcceptedIsSettled_BecauseItHandsOffToBookingInTheSameTransaction()
     {
-        // Assert
         Assert.False(ApplicationObligation.IsLive(ApplicationState.Accepted));
     }
 }

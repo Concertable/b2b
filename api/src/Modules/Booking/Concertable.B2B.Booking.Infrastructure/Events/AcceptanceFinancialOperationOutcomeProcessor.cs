@@ -17,17 +17,17 @@ internal sealed class AcceptanceFinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<DepositEscrowSucceededEvent>,
     IIntegrationEventHandler<DepositEscrowRejectedEvent>
 {
-    private readonly BookingDbContext context;
+    private readonly BookingPrivilegedDbContext context;
     private readonly IBookingService bookingService;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
-    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+    private readonly IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly IScoped<AcceptanceFinancialOperationOutcomeProcessor> convergence;
 
     public AcceptanceFinancialOperationOutcomeProcessor(
-        BookingDbContext context,
+        BookingPrivilegedDbContext context,
         IBookingService bookingService,
-        IUnitOfWorkBehavior unitOfWorkBehavior,
-        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
+        IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         IScoped<AcceptanceFinancialOperationOutcomeProcessor> convergence)
     {
         this.context = context;

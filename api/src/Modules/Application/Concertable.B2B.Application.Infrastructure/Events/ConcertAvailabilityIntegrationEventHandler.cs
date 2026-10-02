@@ -10,12 +10,12 @@ internal sealed class ConcertAvailabilityIntegrationEventHandler :
     IIntegrationEventHandler<ConcertCreatedEvent>,
     IIntegrationEventHandler<ConcertCancelledEvent>
 {
-    private readonly ApplicationDbContext dbContext;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly ApplicationPrivilegedDbContext dbContext;
+    private readonly IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior;
 
     public ConcertAvailabilityIntegrationEventHandler(
-        ApplicationDbContext dbContext,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        ApplicationPrivilegedDbContext dbContext,
+        IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.dbContext = dbContext;
         this.unitOfWorkBehavior = unitOfWorkBehavior;

@@ -1,22 +1,26 @@
-import { useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
+import { useRouter } from "@tanstack/react-router";
+import { tenantSession } from "@concertable/b2b/features/tenant";
+import type { TenantSession } from "@concertable/b2b/features/tenant/types";
 import { notificationConnection } from "@concertable/web/lib/signalr";
 import type { ApplicationAcceptedPayload } from "@concertable/web/features/notifications/types";
 
-export function useArtistNotifications() {
+export function useArtistNotifications(session: TenantSession | undefined) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  useMountEffect(() => {
+  useEffect(() => {
+    if (session === undefined) return;
     notificationConnection.on("MessageReceived", () => {
+      if (!tenantSession.isCurrent(session)) return;
       void queryClient.invalidateQueries({ queryKey: ["messages"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "artist", "inbox"] });
     });
-
     notificationConnection.on(
       "ApplicationAccepted",
       (payload: ApplicationAcceptedPayload) => {
-        console.log("[SignalR] ApplicationAccepted:", payload);
+        if (!tenantSession.isCurrent(session)) return;
         void router.navigate({
           to: "/my/concerts/concert/$id",
           params: { id: payload },
@@ -28,5 +32,5 @@ export function useArtistNotifications() {
       notificationConnection.off("MessageReceived");
       notificationConnection.off("ApplicationAccepted");
     };
-  });
+  }, [queryClient, router, session]);
 }

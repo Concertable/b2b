@@ -9,8 +9,6 @@ internal static class SubjectContractMappers
     {
         public SubjectContractDto ToSubjectContractDto() => new()
         {
-            VenueName = contract.VenueName,
-            ArtistName = contract.ArtistName,
             DealType = contract.DealType,
             CreatedAtUtc = contract.CreatedAtUtc,
         };

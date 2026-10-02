@@ -20,11 +20,11 @@ internal sealed class ConcertCreatedIntegrationEventHandler : IIntegrationEventH
         MessageEnvelope envelope,
         CancellationToken ct = default)
     {
-        var booking = await bookingRepository.GetByApplicationIdAsync(@event.ApplicationId, ct);
+        var booking = await this.bookingRepository.GetByApplicationIdAsync(@event.ApplicationId, ct);
         if (booking is null)
             return;
 
-        booking.RecordHandOff(timeProvider.GetUtcNow().UtcDateTime);
-        await bookingRepository.SaveChangesAsync(ct);
+        booking.RecordHandOff(this.timeProvider.GetUtcNow().UtcDateTime);
+        await this.bookingRepository.SaveChangesAsync(ct);
     }
 }

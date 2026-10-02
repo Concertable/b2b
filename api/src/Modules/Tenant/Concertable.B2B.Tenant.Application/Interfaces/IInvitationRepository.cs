@@ -4,6 +4,8 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal interface IInvitationRepository : IRepository<TenantInvitationEntity, Guid>
 {
+    Task<TenantInvitationEntity?> GetByIdForUpdateAsync(Guid invitationId, CancellationToken ct = default);
+
     /// <summary>Every invitation row of a tenant — the delete-org cascade removes them so no invitation outlives its tenant.</summary>
     Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default);
 
@@ -17,7 +19,5 @@ internal interface IInvitationRepository : IRepository<TenantInvitationEntity, G
     /// retired before re-inviting.</summary>
     Task<TenantInvitationEntity?> GetPendingInvitationByEmailAsync(Guid tenantId, string email, CancellationToken ct = default);
 
-    /// <summary>Pending invitations addressed to an email across all tenants — GDPR erasure purges the invitee's
-    /// PII (the accepted rows are already severed with the membership).</summary>
     Task<IReadOnlyList<TenantInvitationEntity>> ListPendingInvitationsByEmailAsync(string email, CancellationToken ct = default);
 }

@@ -62,7 +62,7 @@ jobs:
         run: dotnet build Concertable.B2B.slnx --configuration Release --no-restore
 
       - name: Test backend
-        # Fourteen integration projects each own a Testcontainers SQL fixture. Serialize project
+        # Fourteen integration projects each own a Testcontainers PostgreSQL fixture. Serialize project
         # execution so they do not race Docker startup on the same runner.
         #
         # The tiers are named rather than excluded. The E2E suites (Category Api and Ui) boot the
@@ -94,6 +94,15 @@ jobs:
             -p:ContainerImageTag="$CANDIDATE_IMAGE_TAG" \
             -p:ContainerArchiveOutputPath=${{ github.workspace }}/artifacts/images/b2b-web.tar.gz
 
+      - name: Build B2B migrations image candidate
+        run: |
+          dotnet publish api/src/Concertable.B2B.Migrations/Concertable.B2B.Migrations.csproj \
+            --configuration Release \
+            --no-restore \
+            /t:PublishContainer \
+            -p:ContainerImageTag="$CANDIDATE_IMAGE_TAG" \
+            -p:ContainerArchiveOutputPath=${{ github.workspace }}/artifacts/images/b2b-migrations.tar.gz
+
       - name: Build B2B Workers image candidate
         run: |
           dotnet publish api/src/Concertable.B2B.Workers/Concertable.B2B.Workers.csproj \
@@ -114,6 +123,7 @@ jobs:
 
       - name: Verify image candidates
         run: |
+          test -s artifacts/images/b2b-migrations.tar.gz
           test -s artifacts/images/b2b-web.tar.gz
           test -s artifacts/images/b2b-workers.tar.gz
           test -s artifacts/images/b2b-seeding-simulator.tar.gz

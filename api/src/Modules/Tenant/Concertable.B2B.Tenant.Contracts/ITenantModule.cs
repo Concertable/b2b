@@ -3,8 +3,22 @@ namespace Concertable.B2B.Tenant.Contracts;
 public interface ITenantModule
 {
     Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task RequireBookingTenantsAsync(Guid venueTenantId, Guid artistTenantId, CancellationToken ct = default);
     Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
+    Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
+        Guid tenantId,
+        CancellationToken ct = default);
+    Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
+        MembershipSnapshot expected,
+        CancellationToken ct = default);
+
+    Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default);
+    Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
+    Task<bool> HasBusinessActivityAsync(Guid tenantId, TenantBusinessActivityKind kind, CancellationToken ct = default);
     Task<bool> IsTaxComplianceCompleteAsync(Guid tenantId, CancellationToken ct = default);
     Task<bool> IsVerifiedAsync(Guid tenantId, CancellationToken ct = default);
     Task<Option<TaxComplianceDto>> GetTaxComplianceAsync(Guid tenantId, CancellationToken ct = default);
@@ -17,11 +31,7 @@ public interface ITenantModule
         int take,
         CancellationToken ct = default);
 
-    /// <summary>GDPR erasure: removes the subject's tenant memberships across all tenants; returns the tenants left
-    /// with no members (wound down), for the caller to drive sole-trader wind-down handling. Erasure supersedes the
-    /// last-owner invariant.</summary>
-    Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, CancellationToken ct = default);
+    Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, IReadOnlySet<Guid> capturedTenantIds, CancellationToken ct = default);
 
-    /// <summary>GDPR erasure: purges pending invitations addressed to the subject's email (their PII).</summary>
     Task PurgePendingInvitationsAsync(string email, CancellationToken ct = default);
 }

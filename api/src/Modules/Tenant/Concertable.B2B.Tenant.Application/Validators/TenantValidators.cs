@@ -6,6 +6,29 @@ using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Tenant.Application.Validators;
 
+internal sealed class CreateTenantRequestValidator : AbstractValidator<CreateTenantRequest>
+{
+    public CreateTenantRequestValidator()
+    {
+        RuleFor(x => x.DisplayName)
+            .NotEmpty()
+            .MaximumLength(200);
+
+        RuleFor(x => x.ContactEmail)
+            .NotEmpty()
+            .EmailAddress()
+            .MaximumLength(320);
+
+        RuleFor(x => x.Activities)
+            .Cascade(CascadeMode.Stop)
+            .NotNull()
+            .Must(activities => activities.Count == activities.Distinct().Count())
+            .WithMessage("Activities must not contain duplicates.");
+
+        RuleForEach(x => x.Activities).IsInEnum();
+    }
+}
+
 internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTenantRequest>
 {
     public UpdateTenantRequestValidator(ITaxComplianceRules taxRules, IOptions<UkTaxComplianceOptions> taxOptions)
@@ -14,9 +37,25 @@ internal sealed class UpdateTenantRequestValidator : AbstractValidator<UpdateTen
             .NotEmpty()
             .MaximumLength(200);
 
+        RuleFor(x => x.ContactEmail)
+            .NotEmpty()
+            .EmailAddress()
+            .MaximumLength(320);
+
+        RuleFor(x => x.ExpectedVersion)
+            .GreaterThan(0);
+
         RuleFor(x => x.TaxCompliance)
             .NotNull()
             .SetValidator(new TaxComplianceDtoValidator(taxRules, taxOptions));
+    }
+}
+
+internal sealed class ChangeBusinessActivityRequestValidator : AbstractValidator<ChangeBusinessActivityRequest>
+{
+    public ChangeBusinessActivityRequestValidator()
+    {
+        RuleFor(x => x.ExpectedEligibilityVersion).GreaterThan(0);
     }
 }
 

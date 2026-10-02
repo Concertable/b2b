@@ -1,3 +1,7 @@
+# Historical GDPR progress and current B2B checkpoint
+
+The entries below are historical evidence. Current scope, limits and next steps are maintained in [B2B subject-rights delivery](GDPR_SUBJECT_RIGHTS_PLAN.md). No cross-service implementation or legal ratification is asserted by this reconciliation.
+
 # GDPR Subject Rights — Erasure + Data Export progress
 
 - Plan: `docs/plans/gdpr-subject-rights/GDPR_SUBJECT_RIGHTS_PLAN.md`
@@ -185,3 +189,10 @@ None yet — Phase 1 PR not yet opened; route through `/review` once opened.
 cd C:\Users\TommySeery\source\repos\Concertable.worktrees\Feature\launch_gdpr-subject-rights
 Read @docs/plans/gdpr-subject-rights/GDPR_SUBJECT_RIGHTS_PLAN.md and @docs/plans/gdpr-subject-rights/GDPR_SUBJECT_RIGHTS_PROGRESS.md and do what its `## Next Steps` says.
 ```
+
+
+## Reconciliation checkpoint — 2 October 2026
+
+PR #14 is being narrowed to the B2B subject-rights module and its owning facade/obligation support. Original mixed backlog refactors and commercial documents remain reachable at f8e709536b3d62aa9cc362e73aa2d2076fc7e0d8 but are removed from the proposed runtime change. Current PostgreSQL registration, outbox constructor contracts and prelaunch InitialCreate migrations replace stale SQL Server assumptions. Focused Privacy tests: 36 unit and 5 PostgreSQL integration tests passed. Contract export omits both counterparty name fields.
+
+This candidate provides B2B-local fragments; Auth, Payment, Customer, statutory retention scheduling and legal ratification remain outside this shipped capability. It does not establish full GDPR compliance or close launch compliance gates. Old provider/test claims above are historical. Current review and full CI are still required. Next: complete immutable review of the reconciled candidate, repair retained findings, then publish and qualify it.

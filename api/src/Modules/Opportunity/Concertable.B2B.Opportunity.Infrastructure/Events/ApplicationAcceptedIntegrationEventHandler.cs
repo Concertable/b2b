@@ -7,12 +7,12 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Events;
 
 internal sealed class ApplicationAcceptedIntegrationEventHandler : IIntegrationEventHandler<ApplicationAcceptedEvent>
 {
-    private readonly OpportunityDbContext context;
-    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
+    private readonly OpportunityPrivilegedDbContext context;
+    private readonly IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior;
 
     public ApplicationAcceptedIntegrationEventHandler(
-        OpportunityDbContext context,
-        IUnitOfWorkBehavior unitOfWorkBehavior)
+        OpportunityPrivilegedDbContext context,
+        IPrivilegedUnitOfWorkBehavior unitOfWorkBehavior)
     {
         this.context = context;
         this.unitOfWorkBehavior = unitOfWorkBehavior;

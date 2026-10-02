@@ -29,25 +29,30 @@ public static class ServiceCollectionExtensions
     {
         public IServiceCollection AddOpportunityModule(IConfiguration configuration)
         {
-            services.AddDbContext<OpportunityDbContext>((sp, options) =>
-                options.UseSqlServer(
+            services.AddDbContext<OpportunityPrivilegedDbContext>((sp, options) =>
+                options.UseNpgsql(
                         configuration.GetConnectionString(B2BDb.Name),
-                        sql => sql.UseNetTopologySuite())
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
+                    .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
+
+            services.AddDbContext<OpportunityDbContext>((sp, options) =>
+                options.UseNpgsql(
+                        configuration.GetConnectionString(B2BDb.Name),
+                        npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                     .AddInterceptors(
                         sp.GetRequiredService<AuditInterceptor>(),
                         sp.GetRequiredService<TenantInterceptor>())
                     .UseSeedingSupport(sp));
 
             services.AddDbContext<OpportunityReadDbContext>(options =>
-                options.UseSqlServer(
-                        configuration.GetConnectionString(B2BDb.Name),
-                        sql => sql.UseNetTopologySuite())
+                options.UseNpgsql(configuration.GetConnectionString(B2BDb.Name))
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
             services.AddScoped<IOpportunityReadDbContext>(
                 sp => sp.GetRequiredService<OpportunityReadDbContext>());
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IUnitOfWorkBehavior, UnitOfWorkBehavior>();
+            services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IOpportunityRepository, OpportunityRepository>();
             services.AddScoped<IOpportunityReadRepository, OpportunityReadRepository>();
             services.AddScoped<IOpportunityService, OpportunityService>();

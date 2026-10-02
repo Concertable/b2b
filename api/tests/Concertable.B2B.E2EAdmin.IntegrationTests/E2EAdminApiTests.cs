@@ -1,5 +1,6 @@
 using System.Data;
 using System.Net;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.E2ETests.Server;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.Testing.Integration;
@@ -12,15 +13,13 @@ public sealed class E2EAdminApiTests
 {
     private const string AdminKey = "admin-key";
     private const string AdminKeyHeader = "X-Concertable-E2E-Key";
-    private const string ConnectionStringName = "B2BDb";
-
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
     public void AddB2BE2EAdmin_BlankAdminKey_RejectsHostRegistration(string? adminKey)
     {
-        var builder = E2EAdminTestHost.CreateBuilder(adminKey, ConnectionStringName);
+        var builder = E2EAdminTestHost.CreateBuilder(adminKey, B2BDb.Name);
 
         var exception = Should.Throw<InvalidOperationException>(
             () => builder.Services.AddB2BE2EAdmin(builder.Configuration, builder.Environment));
@@ -31,7 +30,7 @@ public sealed class E2EAdminApiTests
     [Fact]
     public void AddB2BE2EAdmin_NonE2EEnvironment_RejectsHostRegistration()
     {
-        var builder = E2EAdminTestHost.CreateBuilder(AdminKey, ConnectionStringName, Environments.Development);
+        var builder = E2EAdminTestHost.CreateBuilder(AdminKey, B2BDb.Name, Environments.Development);
 
         var exception = Should.Throw<InvalidOperationException>(
             () => builder.Services.AddB2BE2EAdmin(builder.Configuration, builder.Environment));
@@ -66,7 +65,7 @@ public sealed class E2EAdminApiTests
     private static Task<E2EAdminTestHost> StartHostAsync() =>
         E2EAdminTestHost.StartAsync(
             AdminKey,
-            ConnectionStringName,
+            B2BDb.Name,
             (services, configuration, environment) =>
             {
                 services.AddSingleton<SeedState>(_ => throw new NotSupportedException());

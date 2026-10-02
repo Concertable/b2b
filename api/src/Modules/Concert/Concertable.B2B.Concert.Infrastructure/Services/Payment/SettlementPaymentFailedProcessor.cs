@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Application.Interfaces;
+﻿using Concertable.B2B.Concert.Application.Interfaces;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Infrastructure.Payments;
@@ -11,18 +11,21 @@ namespace Concertable.B2B.Concert.Infrastructure.Services.Payment;
 
 internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandler<PaymentFailedEvent>
 {
-    private readonly ConcertDbContext context;
+    private readonly ConcertPrivilegedDbContext context;
+    private readonly IConcertPrivilegedRepository concertRepository;
     private readonly ISettlementService settlementService;
-    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
     private readonly ILogger<SettlementPaymentFailedProcessor> logger;
 
     public SettlementPaymentFailedProcessor(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
+        IConcertPrivilegedRepository concertRepository,
         ISettlementService settlementService,
-        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
         ILogger<SettlementPaymentFailedProcessor> logger)
     {
         this.context = context;
+        this.concertRepository = concertRepository;
         this.settlementService = settlementService;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
         this.logger = logger;
@@ -35,31 +38,37 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
             || !@event.Metadata.TryGetOperationId(out var operationId))
             return;
         logger.SettlementPaymentFailed(concertId, @event.FailureCode, @event.FailureMessage);
-        if (!await context.Concerts.AnyAsync(value => value.Id == concertId, ct))
-        {
-            logger.SettlementOutcomeForUnknownConcert(concertId);
-            await RecordInboxAsync(envelope, ct);
-            return;
-        }
-
-        await settlementService.RecordFailureAsync(
-            concertId,
-            operationId,
-            @event.FailureCode ?? "unknown",
-            @event.FailureMessage ?? "Settlement payment failed.",
-            ct);
-        await RecordInboxAsync(envelope, ct);
-    }
-
-    private async Task RecordInboxAsync(MessageEnvelope envelope, CancellationToken ct)
-    {
         try
         {
             await outboxUnitOfWorkBehavior.ExecuteAsync(async () =>
             {
-                if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(SettlementPaymentFailedProcessor), ct))
+                if (await context.IsInboxMessageProcessedAsync(
+                        envelope.MessageId,
+                        nameof(SettlementPaymentFailedProcessor),
+                        ct))
                     return;
 
+                var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
+                if (concert is null)
+                {
+                    logger.SettlementOutcomeForUnknownConcert(concertId);
+                    throw new InvalidOperationException(
+                        $"Settlement outcome names concert {concertId}, which does not exist.");
+                }
+
+                if (concert.SettlementOperationId != operationId)
+                {
+                    logger.SettlementOutcomeForUnknownConcert(concertId);
+                    throw new InvalidOperationException(
+                        $"Settlement outcome names operation {operationId}, which concert {concertId} is not running.");
+                }
+
+                await settlementService.RecordFailureAsync(
+                    concertId,
+                    operationId,
+                    @event.FailureCode ?? "unknown",
+                    @event.FailureMessage ?? "Settlement payment failed.",
+                    ct);
                 context.AddInboxMessage(envelope, nameof(SettlementPaymentFailedProcessor));
             }, ct);
         }

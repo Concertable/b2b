@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure.Extensions;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,7 @@ internal sealed class VenueEntityConfiguration : IEntityTypeConfiguration<VenueE
     {
         builder.ToTable(Schema.Tables.Venues, Schema.Name);
         builder.HasIndex(v => v.TenantId).IsUnique();
-        builder.Property(v => v.Location).HasGeographyColumn();
+        builder.Property(v => v.Location).HasWgs84PointColumn();
         builder.OwnsAddress(v => v.Address);
     }
 }

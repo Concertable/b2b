@@ -1,3 +1,5 @@
+global using Concertable.B2B.Authorization.Contracts;
+global using Concertable.B2B.Authorization.Contracts.Enums;
 global using Concertable.B2B.Application.Application.DTOs;
 global using Concertable.B2B.Application.Application.Interfaces;
 global using Concertable.B2B.Application.Application.Requests;
@@ -8,4 +10,3 @@ global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
 global using Reunion;
 global using Reunion.AspNetCore.Mvc;
-global using Concertable.Shared.Api.Http;

@@ -7,14 +7,48 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 internal interface ITenantService
 {
     Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task RequireBookingTenantsAsync(Guid venueTenantId, Guid artistTenantId, CancellationToken ct = default);
 
     Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
 
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
+    Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
+        Guid tenantId,
+        CancellationToken ct = default);
+    Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
+        MembershipSnapshot expected,
+        CancellationToken ct = default);
+    Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
+
+    Task<bool> HasBusinessActivityAsync(
+        Guid tenantId,
+        TenantBusinessActivityKind kind,
+        CancellationToken ct = default);
 
     Task<Option<TenantDetails>> GetDetailsAsync(CancellationToken ct = default);
 
+    Task<Result<TenantDetails, CreateTenantError>> CreateAsync(
+        CreateTenantRequest request,
+        CancellationToken ct = default);
+
     Task<Result<TenantDetails, UpdateTenantError>> UpdateAsync(UpdateTenantRequest request, CancellationToken ct = default);
+
+    Task<Result<TenantDetails, ChangeBusinessActivityError>> ActivateBusinessActivityAsync(
+        TenantBusinessActivityKind kind,
+        ChangeBusinessActivityRequest request,
+        CancellationToken ct = default);
+
+    Task<Result<TenantDetails, ChangeBusinessActivityError>> RetireBusinessActivityAsync(
+        TenantBusinessActivityKind kind,
+        ChangeBusinessActivityRequest request,
+        CancellationToken ct = default);
 
     Task<UnitResult<DeleteTenantError>> DeleteAsync(CancellationToken ct = default);
 

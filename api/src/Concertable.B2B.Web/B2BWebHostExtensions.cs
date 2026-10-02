@@ -3,6 +3,7 @@ using Concertable.B2B.Admin.Api.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Application.Api.Extensions;
 using Concertable.B2B.Application.Contracts.Events;
+using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Artist.Api.Extensions;
 using Concertable.B2B.Artist.Contracts.Events;
 using Concertable.B2B.Booking.Api.Extensions;
@@ -29,6 +30,7 @@ using Concertable.B2B.User.Infrastructure.Extensions;
 using Concertable.B2B.Privacy.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Api.Extensions;
 using Concertable.B2B.Venue.Contracts.Events;
+using Concertable.B2B.Web.Exceptions;
 using Concertable.B2B.Web.Extensions;
 using Concertable.B2B.Web.Middleware;
 using Concertable.B2B.Web.Routing;
@@ -186,10 +188,15 @@ public static class B2BWebHostExtensions
                     reg.SubscribeTo<RefundEscrowRejectedEvent>();
                     reg.HandleCommand<SendEmailCommand>();
                     reg.HandleCommand<NotifyConcertDraftCreatedCommand>();
+                    reg.HandleCommand<NotifyPaymentVerificationFailedCommand>();
                 });
             services.AddDirectBusKeyed("webhook");
-            services.AddOutbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
-            services.AddInbox(opt => opt.UseSqlServer(builder.Configuration.GetConnectionString(B2BDb.Name)));
+            services.AddOutbox(opt => opt.UseNpgsql(
+                builder.Configuration.GetConnectionString(B2BDb.Name),
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory_Outbox", "messaging")));
+            services.AddInbox(opt => opt.UseNpgsql(
+                builder.Configuration.GetConnectionString(B2BDb.Name),
+                npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory_Inbox", "messaging")));
             services.AddInProcessEventDispatch();
             services.AddSeedingInfrastructure();
             if (!builder.Environment.IsIntegration())
@@ -232,6 +239,7 @@ public static class B2BWebHostExtensions
             services.AddPrivacyApi(builder.Configuration);
             services.AddAuth(builder.Configuration, builder.Environment);
             services.AddValidation();
+            services.AddExceptionHandler<MalformedTenantHeaderExceptionHandler>();
             services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddScoped<TenantResolutionMiddleware>();
             services.Configure<ForwardedHeadersOptions>(options =>

@@ -78,7 +78,9 @@ internal static class OpportunityMappers
                 opportunity.Genres,
                 new OpportunityActions(
                     deal.DealType.RequiresApplyCheckout()
-                        ? ActionLink.Post($"/api/application/opportunity/{opportunity.Id}/checkout")
+                        ? new ActionLink(
+                            $"/api/application/opportunity/{opportunity.Id}/checkout",
+                            HttpMethods.Post)
                         : null));
     }
 }

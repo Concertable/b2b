@@ -9,57 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SuccessRouteImport } from './routes/success'
-import { Route as StripeReturnRouteImport } from './routes/stripe-return'
-import { Route as StripeRefreshRouteImport } from './routes/stripe-refresh'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as FailRouteImport } from './routes/fail'
 import { Route as VenueRouteRouteImport } from './routes/_venue/route'
+import { Route as FailRouteImport } from './routes/fail'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as StripeRefreshRouteImport } from './routes/stripe-refresh'
+import { Route as StripeReturnRouteImport } from './routes/stripe-return'
+import { Route as SuccessRouteImport } from './routes/success'
 import { Route as VenueIndexRouteImport } from './routes/_venue/index'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as VenueCreateRouteImport } from './routes/_venue/create'
 import { Route as VenueSettingsRouteRouteImport } from './routes/_venue/settings/route'
-import { Route as VenueSettingsIndexRouteImport } from './routes/_venue/settings/index'
-import { Route as VenueMyIndexRouteImport } from './routes/_venue/my/index'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as VenueFindIndexRouteImport } from './routes/_venue/find/index'
-import { Route as VenueSettingsVerificationRouteImport } from './routes/_venue/settings/verification'
-import { Route as VenueSettingsSelfBillingAgreementRouteImport } from './routes/_venue/settings/self-billing-agreement'
-import { Route as VenueSettingsPaymentRouteImport } from './routes/_venue/settings/payment'
-import { Route as VenueSettingsOrganizationRouteImport } from './routes/_venue/settings/organization'
+import { Route as VenueMyIndexRouteImport } from './routes/_venue/my/index'
+import { Route as VenueSettingsIndexRouteImport } from './routes/_venue/settings/index'
 import { Route as VenueSettingsMembersRouteImport } from './routes/_venue/settings/members'
-import { Route as SettingsMembersAcceptInvitationIdRouteImport } from './routes/settings/members/accept.$invitationId'
-import { Route as VenueFindVenueIdRouteImport } from './routes/_venue/find/venue.$id'
-import { Route as VenueFindConcertIdRouteImport } from './routes/_venue/find/concert.$id'
-import { Route as VenueFindArtistIdRouteImport } from './routes/_venue/find/artist.$id'
-import { Route as VenueApplicationsApplicationIdCheckoutRouteImport } from './routes/_venue/applications/$applicationId/checkout'
+import { Route as VenueSettingsOrganizationRouteImport } from './routes/_venue/settings/organization'
+import { Route as VenueSettingsPaymentRouteImport } from './routes/_venue/settings/payment'
+import { Route as VenueSettingsSelfBillingAgreementRouteImport } from './routes/_venue/settings/self-billing-agreement'
+import { Route as VenueSettingsVerificationRouteImport } from './routes/_venue/settings/verification'
 import { Route as VenueApplicationsApplicationIdAcceptRouteImport } from './routes/_venue/applications/$applicationId/accept'
-import { Route as VenueMyOpportunitiesOpportunityIdApplicationsRouteImport } from './routes/_venue/my/opportunities/$opportunityId/applications'
+import { Route as VenueApplicationsApplicationIdCheckoutRouteImport } from './routes/_venue/applications/$applicationId/checkout'
+import { Route as VenueFindArtistIdRouteImport } from './routes/_venue/find/artist.$id'
+import { Route as VenueFindConcertIdRouteImport } from './routes/_venue/find/concert.$id'
+import { Route as VenueFindVenueIdRouteImport } from './routes/_venue/find/venue.$id'
+import { Route as SettingsMembersAcceptInvitationIdRouteImport } from './routes/settings/members/accept.$invitationId'
 import { Route as VenueMyConcertsConcertIdRouteImport } from './routes/_venue/my/concerts/concert.$id'
+import { Route as VenueMyOpportunitiesOpportunityIdApplicationsRouteImport } from './routes/_venue/my/opportunities/$opportunityId/applications'
 
-const SuccessRoute = SuccessRouteImport.update({
-  id: '/success',
-  path: '/success',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StripeReturnRoute = StripeReturnRouteImport.update({
-  id: '/stripe-return',
-  path: '/stripe-return',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StripeRefreshRoute = StripeRefreshRouteImport.update({
-  id: '/stripe-refresh',
-  path: '/stripe-refresh',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const VenueRouteRoute = VenueRouteRouteImport.update({
+  id: '/_venue',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FailRoute = FailRouteImport.update({
@@ -67,19 +46,35 @@ const FailRoute = FailRouteImport.update({
   path: '/fail',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VenueRouteRoute = VenueRouteRouteImport.update({
-  id: '/_venue',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StripeRefreshRoute = StripeRefreshRouteImport.update({
+  id: '/stripe-refresh',
+  path: '/stripe-refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StripeReturnRoute = StripeReturnRouteImport.update({
+  id: '/stripe-return',
+  path: '/stripe-return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuccessRoute = SuccessRouteImport.update({
+  id: '/success',
+  path: '/success',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VenueIndexRoute = VenueIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => VenueRouteRoute,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const VenueCreateRoute = VenueCreateRouteImport.update({
   id: '/create',
@@ -91,36 +86,29 @@ const VenueSettingsRouteRoute = VenueSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => VenueRouteRoute,
 } as any)
-const VenueSettingsIndexRoute = VenueSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => VenueSettingsRouteRoute,
-} as any)
-const VenueMyIndexRoute = VenueMyIndexRouteImport.update({
-  id: '/my/',
-  path: '/my/',
-  getParentRoute: () => VenueRouteRoute,
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const VenueFindIndexRoute = VenueFindIndexRouteImport.update({
   id: '/find/',
   path: '/find/',
   getParentRoute: () => VenueRouteRoute,
 } as any)
-const VenueSettingsVerificationRoute =
-  VenueSettingsVerificationRouteImport.update({
-    id: '/verification',
-    path: '/verification',
-    getParentRoute: () => VenueSettingsRouteRoute,
-  } as any)
-const VenueSettingsSelfBillingAgreementRoute =
-  VenueSettingsSelfBillingAgreementRouteImport.update({
-    id: '/self-billing-agreement',
-    path: '/self-billing-agreement',
-    getParentRoute: () => VenueSettingsRouteRoute,
-  } as any)
-const VenueSettingsPaymentRoute = VenueSettingsPaymentRouteImport.update({
-  id: '/payment',
-  path: '/payment',
+const VenueMyIndexRoute = VenueMyIndexRouteImport.update({
+  id: '/my/',
+  path: '/my/',
+  getParentRoute: () => VenueRouteRoute,
+} as any)
+const VenueSettingsIndexRoute = VenueSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => VenueSettingsRouteRoute,
+} as any)
+const VenueSettingsMembersRoute = VenueSettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => VenueSettingsRouteRoute,
 } as any)
 const VenueSettingsOrganizationRoute =
@@ -129,37 +117,22 @@ const VenueSettingsOrganizationRoute =
     path: '/organization',
     getParentRoute: () => VenueSettingsRouteRoute,
   } as any)
-const VenueSettingsMembersRoute = VenueSettingsMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
+const VenueSettingsPaymentRoute = VenueSettingsPaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
   getParentRoute: () => VenueSettingsRouteRoute,
 } as any)
-const SettingsMembersAcceptInvitationIdRoute =
-  SettingsMembersAcceptInvitationIdRouteImport.update({
-    id: '/settings/members/accept/$invitationId',
-    path: '/settings/members/accept/$invitationId',
-    getParentRoute: () => rootRouteImport,
+const VenueSettingsSelfBillingAgreementRoute =
+  VenueSettingsSelfBillingAgreementRouteImport.update({
+    id: '/self-billing-agreement',
+    path: '/self-billing-agreement',
+    getParentRoute: () => VenueSettingsRouteRoute,
   } as any)
-const VenueFindVenueIdRoute = VenueFindVenueIdRouteImport.update({
-  id: '/find/venue/$id',
-  path: '/find/venue/$id',
-  getParentRoute: () => VenueRouteRoute,
-} as any)
-const VenueFindConcertIdRoute = VenueFindConcertIdRouteImport.update({
-  id: '/find/concert/$id',
-  path: '/find/concert/$id',
-  getParentRoute: () => VenueRouteRoute,
-} as any)
-const VenueFindArtistIdRoute = VenueFindArtistIdRouteImport.update({
-  id: '/find/artist/$id',
-  path: '/find/artist/$id',
-  getParentRoute: () => VenueRouteRoute,
-} as any)
-const VenueApplicationsApplicationIdCheckoutRoute =
-  VenueApplicationsApplicationIdCheckoutRouteImport.update({
-    id: '/applications/$applicationId/checkout',
-    path: '/applications/$applicationId/checkout',
-    getParentRoute: () => VenueRouteRoute,
+const VenueSettingsVerificationRoute =
+  VenueSettingsVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => VenueSettingsRouteRoute,
   } as any)
 const VenueApplicationsApplicationIdAcceptRoute =
   VenueApplicationsApplicationIdAcceptRouteImport.update({
@@ -167,16 +140,43 @@ const VenueApplicationsApplicationIdAcceptRoute =
     path: '/applications/$applicationId/accept',
     getParentRoute: () => VenueRouteRoute,
   } as any)
-const VenueMyOpportunitiesOpportunityIdApplicationsRoute =
-  VenueMyOpportunitiesOpportunityIdApplicationsRouteImport.update({
-    id: '/my/opportunities/$opportunityId/applications',
-    path: '/my/opportunities/$opportunityId/applications',
+const VenueApplicationsApplicationIdCheckoutRoute =
+  VenueApplicationsApplicationIdCheckoutRouteImport.update({
+    id: '/applications/$applicationId/checkout',
+    path: '/applications/$applicationId/checkout',
     getParentRoute: () => VenueRouteRoute,
+  } as any)
+const VenueFindArtistIdRoute = VenueFindArtistIdRouteImport.update({
+  id: '/find/artist/$id',
+  path: '/find/artist/$id',
+  getParentRoute: () => VenueRouteRoute,
+} as any)
+const VenueFindConcertIdRoute = VenueFindConcertIdRouteImport.update({
+  id: '/find/concert/$id',
+  path: '/find/concert/$id',
+  getParentRoute: () => VenueRouteRoute,
+} as any)
+const VenueFindVenueIdRoute = VenueFindVenueIdRouteImport.update({
+  id: '/find/venue/$id',
+  path: '/find/venue/$id',
+  getParentRoute: () => VenueRouteRoute,
+} as any)
+const SettingsMembersAcceptInvitationIdRoute =
+  SettingsMembersAcceptInvitationIdRouteImport.update({
+    id: '/settings/members/accept/$invitationId',
+    path: '/settings/members/accept/$invitationId',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const VenueMyConcertsConcertIdRoute =
   VenueMyConcertsConcertIdRouteImport.update({
     id: '/my/concerts/concert/$id',
     path: '/my/concerts/concert/$id',
+    getParentRoute: () => VenueRouteRoute,
+  } as any)
+const VenueMyOpportunitiesOpportunityIdApplicationsRoute =
+  VenueMyOpportunitiesOpportunityIdApplicationsRouteImport.update({
+    id: '/my/opportunities/$opportunityId/applications',
+    path: '/my/opportunities/$opportunityId/applications',
     getParentRoute: () => VenueRouteRoute,
   } as any)
 
@@ -366,39 +366,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/success': {
-      id: '/success'
-      path: '/success'
-      fullPath: '/success'
-      preLoaderRoute: typeof SuccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stripe-return': {
-      id: '/stripe-return'
-      path: '/stripe-return'
-      fullPath: '/stripe-return'
-      preLoaderRoute: typeof StripeReturnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stripe-refresh': {
-      id: '/stripe-refresh'
-      path: '/stripe-refresh'
-      fullPath: '/stripe-refresh'
-      preLoaderRoute: typeof StripeRefreshRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/_venue': {
+      id: '/_venue'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof VenueRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fail': {
@@ -408,11 +380,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FailRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_venue': {
-      id: '/_venue'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof VenueRouteRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stripe-refresh': {
+      id: '/stripe-refresh'
+      path: '/stripe-refresh'
+      fullPath: '/stripe-refresh'
+      preLoaderRoute: typeof StripeRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stripe-return': {
+      id: '/stripe-return'
+      path: '/stripe-return'
+      fullPath: '/stripe-return'
+      preLoaderRoute: typeof StripeReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/success': {
+      id: '/success'
+      path: '/success'
+      fullPath: '/success'
+      preLoaderRoute: typeof SuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_venue/': {
@@ -421,13 +421,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof VenueIndexRouteImport
       parentRoute: typeof VenueRouteRoute
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_venue/create': {
       id: '/_venue/create'
@@ -443,19 +436,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VenueSettingsRouteRouteImport
       parentRoute: typeof VenueRouteRoute
     }
-    '/_venue/settings/': {
-      id: '/_venue/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof VenueSettingsIndexRouteImport
-      parentRoute: typeof VenueSettingsRouteRoute
-    }
-    '/_venue/my/': {
-      id: '/_venue/my/'
-      path: '/my'
-      fullPath: '/my/'
-      preLoaderRoute: typeof VenueMyIndexRouteImport
-      parentRoute: typeof VenueRouteRoute
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_venue/find/': {
       id: '/_venue/find/'
@@ -464,32 +450,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VenueFindIndexRouteImport
       parentRoute: typeof VenueRouteRoute
     }
-    '/_venue/settings/verification': {
-      id: '/_venue/settings/verification'
-      path: '/verification'
-      fullPath: '/settings/verification'
-      preLoaderRoute: typeof VenueSettingsVerificationRouteImport
-      parentRoute: typeof VenueSettingsRouteRoute
+    '/_venue/my/': {
+      id: '/_venue/my/'
+      path: '/my'
+      fullPath: '/my/'
+      preLoaderRoute: typeof VenueMyIndexRouteImport
+      parentRoute: typeof VenueRouteRoute
     }
-    '/_venue/settings/self-billing-agreement': {
-      id: '/_venue/settings/self-billing-agreement'
-      path: '/self-billing-agreement'
-      fullPath: '/settings/self-billing-agreement'
-      preLoaderRoute: typeof VenueSettingsSelfBillingAgreementRouteImport
-      parentRoute: typeof VenueSettingsRouteRoute
-    }
-    '/_venue/settings/payment': {
-      id: '/_venue/settings/payment'
-      path: '/payment'
-      fullPath: '/settings/payment'
-      preLoaderRoute: typeof VenueSettingsPaymentRouteImport
-      parentRoute: typeof VenueSettingsRouteRoute
-    }
-    '/_venue/settings/organization': {
-      id: '/_venue/settings/organization'
-      path: '/organization'
-      fullPath: '/settings/organization'
-      preLoaderRoute: typeof VenueSettingsOrganizationRouteImport
+    '/_venue/settings/': {
+      id: '/_venue/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof VenueSettingsIndexRouteImport
       parentRoute: typeof VenueSettingsRouteRoute
     }
     '/_venue/settings/members': {
@@ -499,32 +471,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VenueSettingsMembersRouteImport
       parentRoute: typeof VenueSettingsRouteRoute
     }
-    '/settings/members/accept/$invitationId': {
-      id: '/settings/members/accept/$invitationId'
-      path: '/settings/members/accept/$invitationId'
-      fullPath: '/settings/members/accept/$invitationId'
-      preLoaderRoute: typeof SettingsMembersAcceptInvitationIdRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_venue/settings/organization': {
+      id: '/_venue/settings/organization'
+      path: '/organization'
+      fullPath: '/settings/organization'
+      preLoaderRoute: typeof VenueSettingsOrganizationRouteImport
+      parentRoute: typeof VenueSettingsRouteRoute
     }
-    '/_venue/find/venue/$id': {
-      id: '/_venue/find/venue/$id'
-      path: '/find/venue/$id'
-      fullPath: '/find/venue/$id'
-      preLoaderRoute: typeof VenueFindVenueIdRouteImport
-      parentRoute: typeof VenueRouteRoute
+    '/_venue/settings/payment': {
+      id: '/_venue/settings/payment'
+      path: '/payment'
+      fullPath: '/settings/payment'
+      preLoaderRoute: typeof VenueSettingsPaymentRouteImport
+      parentRoute: typeof VenueSettingsRouteRoute
     }
-    '/_venue/find/concert/$id': {
-      id: '/_venue/find/concert/$id'
-      path: '/find/concert/$id'
-      fullPath: '/find/concert/$id'
-      preLoaderRoute: typeof VenueFindConcertIdRouteImport
-      parentRoute: typeof VenueRouteRoute
+    '/_venue/settings/self-billing-agreement': {
+      id: '/_venue/settings/self-billing-agreement'
+      path: '/self-billing-agreement'
+      fullPath: '/settings/self-billing-agreement'
+      preLoaderRoute: typeof VenueSettingsSelfBillingAgreementRouteImport
+      parentRoute: typeof VenueSettingsRouteRoute
     }
-    '/_venue/find/artist/$id': {
-      id: '/_venue/find/artist/$id'
-      path: '/find/artist/$id'
-      fullPath: '/find/artist/$id'
-      preLoaderRoute: typeof VenueFindArtistIdRouteImport
+    '/_venue/settings/verification': {
+      id: '/_venue/settings/verification'
+      path: '/verification'
+      fullPath: '/settings/verification'
+      preLoaderRoute: typeof VenueSettingsVerificationRouteImport
+      parentRoute: typeof VenueSettingsRouteRoute
+    }
+    '/_venue/applications/$applicationId/accept': {
+      id: '/_venue/applications/$applicationId/accept'
+      path: '/applications/$applicationId/accept'
+      fullPath: '/applications/$applicationId/accept'
+      preLoaderRoute: typeof VenueApplicationsApplicationIdAcceptRouteImport
       parentRoute: typeof VenueRouteRoute
     }
     '/_venue/applications/$applicationId/checkout': {
@@ -534,11 +513,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VenueApplicationsApplicationIdCheckoutRouteImport
       parentRoute: typeof VenueRouteRoute
     }
-    '/_venue/applications/$applicationId/accept': {
-      id: '/_venue/applications/$applicationId/accept'
-      path: '/applications/$applicationId/accept'
-      fullPath: '/applications/$applicationId/accept'
-      preLoaderRoute: typeof VenueApplicationsApplicationIdAcceptRouteImport
+    '/_venue/find/artist/$id': {
+      id: '/_venue/find/artist/$id'
+      path: '/find/artist/$id'
+      fullPath: '/find/artist/$id'
+      preLoaderRoute: typeof VenueFindArtistIdRouteImport
+      parentRoute: typeof VenueRouteRoute
+    }
+    '/_venue/find/concert/$id': {
+      id: '/_venue/find/concert/$id'
+      path: '/find/concert/$id'
+      fullPath: '/find/concert/$id'
+      preLoaderRoute: typeof VenueFindConcertIdRouteImport
+      parentRoute: typeof VenueRouteRoute
+    }
+    '/_venue/find/venue/$id': {
+      id: '/_venue/find/venue/$id'
+      path: '/find/venue/$id'
+      fullPath: '/find/venue/$id'
+      preLoaderRoute: typeof VenueFindVenueIdRouteImport
+      parentRoute: typeof VenueRouteRoute
+    }
+    '/settings/members/accept/$invitationId': {
+      id: '/settings/members/accept/$invitationId'
+      path: '/settings/members/accept/$invitationId'
+      fullPath: '/settings/members/accept/$invitationId'
+      preLoaderRoute: typeof SettingsMembersAcceptInvitationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_venue/my/concerts/concert/$id': {
+      id: '/_venue/my/concerts/concert/$id'
+      path: '/my/concerts/concert/$id'
+      fullPath: '/my/concerts/concert/$id'
+      preLoaderRoute: typeof VenueMyConcertsConcertIdRouteImport
       parentRoute: typeof VenueRouteRoute
     }
     '/_venue/my/opportunities/$opportunityId/applications': {
@@ -546,13 +553,6 @@ declare module '@tanstack/react-router' {
       path: '/my/opportunities/$opportunityId/applications'
       fullPath: '/my/opportunities/$opportunityId/applications'
       preLoaderRoute: typeof VenueMyOpportunitiesOpportunityIdApplicationsRouteImport
-      parentRoute: typeof VenueRouteRoute
-    }
-    '/_venue/my/concerts/concert/$id': {
-      id: '/_venue/my/concerts/concert/$id'
-      path: '/my/concerts/concert/$id'
-      fullPath: '/my/concerts/concert/$id'
-      preLoaderRoute: typeof VenueMyConcertsConcertIdRouteImport
       parentRoute: typeof VenueRouteRoute
     }
   }

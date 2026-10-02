@@ -12,7 +12,7 @@ internal static class SelfBillingAgreementMappers
     {
         public SelfBillingAgreementResponse ToResponse()
         {
-            var post = ActionLink.Post(Path);
+            var post = new ActionLink(Path, HttpMethods.Post);
             var agreement = status.Agreement;
 
             if (agreement is null)
@@ -34,7 +34,7 @@ internal static class SelfBillingAgreementMappers
                     Grant: null,
                     Renew: status.CanRenew ? post : null,
                     Pdf: status.IsInForce
-                        ? ActionLink.Get($"{Path}/pdf")
+                        ? new ActionLink($"{Path}/pdf", HttpMethods.Get)
                         : null),
             };
         }

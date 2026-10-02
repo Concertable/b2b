@@ -31,7 +31,6 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         var accepted = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, accepted.Status);
-        Assert.Null(accepted.Actions.Cancel);
         await fixture.PaymentSimulator.SendWebhookAsync();
 
         var concert = await GetConcertAsync(client, applicationId);
@@ -93,8 +92,6 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
@@ -110,8 +107,6 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
@@ -131,11 +126,11 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         return application;
     }
 
-    private static async Task<ConcertBoundaryResponse> GetConcertAsync(
+    private async Task<ConcertBoundaryResponse> GetConcertAsync(
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/concert/application/{applicationId}");
+        var response = await fixture.GetCreatedConcertOperationsAsync(client);
         await response.ShouldBe(HttpStatusCode.OK);
         var concert = await response.Content.ReadAsync<ConcertBoundaryResponse>();
         Assert.NotNull(concert);
@@ -154,12 +149,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         return financial;
     }
 
-    private sealed record ApplicationBoundaryResponse(
-        ApplicationBoundaryStatus Status,
-        ApplicationActionsBoundaryResponse Actions);
-
-    private sealed record ApplicationActionsBoundaryResponse(ActionBoundaryResponse? Cancel);
-    private sealed record ActionBoundaryResponse(string Href);
+    private sealed record ApplicationBoundaryResponse(ApplicationBoundaryStatus Status);
     private sealed record ConcertBoundaryResponse(int Id, DateTime? DatePosted);
 
     private enum ApplicationBoundaryStatus
@@ -168,6 +158,8 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         Rejected,
         Withdrawn,
         Accepted,
+        AwaitingPayment,
+        Confirmed,
         Cancelled
     }
 

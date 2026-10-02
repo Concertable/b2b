@@ -4,34 +4,35 @@ using Concertable.B2B.Tenant.Contracts.Enums;
 
 namespace Concertable.B2B.Infrastructure.Authorization;
 
-/// <summary>
-/// B2B's own role assignment at registration: which Auth interactive clients are B2B manager clients, and
-/// which <see cref="TenantType"/> (if any) each provisions. Auth's <see cref="InteractiveClient"/> is
-/// identity-only and carries no business-party opinion — deciding who becomes a venue/artist/admin manager
-/// is B2B's authorization decision, not Auth's. The single source both <c>CredentialRegisteredHandler</c>
-/// and <c>TenantProvisioningHandler</c> read, so the two classifications can never drift apart. Sibling to
-/// <c>Tenant.Infrastructure.Authorization.PermissionAuthorizationHandler</c> — that one checks a
-/// permission on an already-authenticated request; this one assigns the initial role at registration.
-/// </summary>
 public static class ManagerClients
 {
-    private static readonly FrozenDictionary<InteractiveClient, TenantType?> TenantTypeByClient =
-        new Dictionary<InteractiveClient, TenantType?>
+    private static readonly FrozenSet<InteractiveClient> Manager = new[]
+    {
+        InteractiveClient.VenueBrowser,
+        InteractiveClient.VenueMobile,
+        InteractiveClient.ArtistBrowser,
+        InteractiveClient.ArtistMobile,
+        InteractiveClient.BusinessBrowser,
+        InteractiveClient.BusinessMobile,
+        InteractiveClient.Admin,
+    }.ToFrozenSet();
+
+    private static readonly FrozenDictionary<InteractiveClient, TenantBusinessActivityKind> InitialActivities =
+        new Dictionary<InteractiveClient, TenantBusinessActivityKind>
         {
-            [InteractiveClient.VenueBrowser] = TenantType.Venue,
-            [InteractiveClient.VenueMobile] = TenantType.Venue,
-            [InteractiveClient.ArtistBrowser] = TenantType.Artist,
-            [InteractiveClient.ArtistMobile] = TenantType.Artist,
-            [InteractiveClient.Admin] = null,
+            [InteractiveClient.VenueBrowser] = TenantBusinessActivityKind.VenueOperator,
+            [InteractiveClient.VenueMobile] = TenantBusinessActivityKind.VenueOperator,
+            [InteractiveClient.ArtistBrowser] = TenantBusinessActivityKind.Artist,
+            [InteractiveClient.ArtistMobile] = TenantBusinessActivityKind.Artist,
         }.ToFrozenDictionary();
 
     extension(InteractiveClient client)
     {
-        /// <summary>True for a B2B manager client — venue, artist or platform admin.</summary>
-        public bool IsManagerClient => TenantTypeByClient.ContainsKey(client);
+        public bool IsManagerClient => Manager.Contains(client);
 
-        /// <summary>The tenant type a manager client provisions, or <see langword="null"/> for a manager
-        /// client that provisions none (the platform admin) or a non-manager client.</summary>
-        public TenantType? ManagerTenantType => TenantTypeByClient.GetValueOrDefault(client);
+        public bool ProvisionsBusinessTenant => InitialActivities.ContainsKey(client);
+
+        public TenantBusinessActivityKind? InitialBusinessActivity =>
+            InitialActivities.TryGetValue(client, out var kind) ? kind : null;
     }
 }

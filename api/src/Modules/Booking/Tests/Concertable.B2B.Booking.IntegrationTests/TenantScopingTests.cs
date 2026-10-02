@@ -32,33 +32,26 @@ public sealed class TenantScopingTests : IAsyncLifetime
     [Fact]
     public async Task GetSubjectContractsAsync_TranslatesTheSetContainsToSql()
     {
-        // Arrange — the point of this test is that IReadOnlySet<T>.Contains is a different expression-tree
-        // method from ICollection<T>.Contains, and only the real provider decides whether it emits IN.
-        var booking = await fixture.Bookings
-            .SingleAsync(value => value.Id == fixture.SeedState.ConfirmedBooking.Id);
+        var booking = await this.fixture.Bookings
+            .SingleAsync(value => value.Id == this.fixture.SeedState.ConfirmedBooking.Id);
         var tenantIds = new HashSet<Guid> { booking.VenueTenantId };
 
-        // Act
-        var contracts = await fixture.Services.RunScopedAsync(sp =>
+        var contracts = await this.fixture.Services.RunScopedAsync(sp =>
             sp.GetRequiredService<IBookingModule>().GetSubjectContractsAsync(tenantIds));
 
-        // Assert
-        Assert.All(contracts, contract => Assert.False(string.IsNullOrWhiteSpace(contract.VenueName)));
+        Assert.All(contracts, contract => Assert.NotEqual(default, contract.CreatedAtUtc));
     }
 
     [Fact]
     public async Task HasLiveObligations_TranslatesTheSetContainsToSql()
     {
-        // Arrange
-        var booking = await fixture.Bookings
-            .SingleAsync(value => value.Id == fixture.SeedState.ConfirmedBooking.Id);
+        var booking = await this.fixture.Bookings
+            .SingleAsync(value => value.Id == this.fixture.SeedState.ConfirmedBooking.Id);
         var tenantIds = new HashSet<Guid> { booking.VenueTenantId };
 
-        // Act
-        var live = await fixture.Services.RunScopedAsync(sp =>
+        var live = await this.fixture.Services.RunScopedAsync(sp =>
             sp.GetRequiredService<IBookingModule>().HasLiveObligationsByTenantIdsAsync(tenantIds));
 
-        // Assert — a Confirmed booking with no Concert acknowledgement is a live obligation (F1).
         Assert.True(live);
     }
 }

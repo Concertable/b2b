@@ -11,13 +11,12 @@ internal static class ApplicationMappers
 {
     extension(ApplicationDto dto)
     {
-        public ApplicationResponse ToResponse(TenantType membershipType, BookingSummary? booking) =>
-            membershipType switch
-            {
-                TenantType.Venue => dto.ToVenueResponse(booking),
-                TenantType.Artist => dto.ToArtistResponse(booking),
-                _ => throw new ArgumentOutOfRangeException(nameof(membershipType), membershipType, null)
-            };
+        public ApplicationResponse ToResponse(Guid tenantId, BookingSummary? booking) =>
+            tenantId == dto.VenueTenantId
+                ? dto.ToVenueResponse(booking)
+                : tenantId == dto.ArtistTenantId
+                    ? dto.ToArtistResponse(booking)
+                    : throw new InvalidOperationException("Active tenant is not an application participant.");
 
         public ApplicationResponse<VenueApplicationActions> ToVenueResponse(BookingSummary? booking)
         {
@@ -31,19 +30,19 @@ internal static class ApplicationMappers
                 status,
                 new VenueApplicationActions(
                     Accept: isPending
-                        ? ActionLink.Post($"/api/application/{dto.Id}/accept")
+                        ? new ActionLink($"/api/application/{dto.Id}/accept", HttpMethods.Post)
                         : null,
                     Checkout: isPending && dto.Opportunity.Deal.DealType.RequiresAcceptCheckout()
-                        ? ActionLink.Post($"/api/application/{dto.Id}/checkout")
+                        ? new ActionLink($"/api/application/{dto.Id}/checkout", HttpMethods.Post)
                         : null,
                     Decline: isPending
-                        ? ActionLink.Post($"/api/application/{dto.Id}/reject")
+                        ? new ActionLink($"/api/application/{dto.Id}/reject", HttpMethods.Post)
                         : null,
                     Cancel: isPending && booking is null
-                        ? ActionLink.Post($"/api/application/{dto.Id}/cancel")
+                        ? new ActionLink($"/api/application/{dto.Id}/cancel", HttpMethods.Post)
                         : null,
                     Contract: booking is not null
-                        ? ActionLink.Get($"/api/application/{dto.Id}/contract/pdf")
+                        ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
                         : null));
         }
 
@@ -65,10 +64,10 @@ internal static class ApplicationMappers
                 status,
                 new ArtistApplicationActions(
                     Withdraw: dto.State == ApplicationState.Applied
-                        ? ActionLink.Post($"/api/application/{dto.Id}/withdraw")
+                        ? new ActionLink($"/api/application/{dto.Id}/withdraw", HttpMethods.Post)
                         : null,
                     Contract: booking is not null
-                        ? ActionLink.Get($"/api/application/{dto.Id}/contract/pdf")
+                        ? new ActionLink($"/api/application/{dto.Id}/contract/pdf", HttpMethods.Get)
                         : null));
         }
     }

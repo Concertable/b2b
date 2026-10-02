@@ -3,8 +3,8 @@ using System;
 using Concertable.B2B.Privacy.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -18,42 +18,42 @@ namespace Concertable.B2B.Privacy.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("privacy")
-                .HasAnnotation("ProductVersion", "10.0.3")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Concertable.B2B.Privacy.Domain.Entities.SubjectErasureRequestEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("CompletedAtUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DeferralReason")
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("FailureReason")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<DateTime>("RequestedAtUtc")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("State")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("SubjectEmail")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("SubjectId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
-                    b.Property<string>("WoundDownTenantIds")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("TenantIds")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -66,18 +66,19 @@ namespace Concertable.B2B.Privacy.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ConsumerName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("MessageType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
 
                     b.Property<DateTimeOffset>("ReceivedAt")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("MessageId", "ConsumerName");
 
@@ -90,41 +91,47 @@ namespace Concertable.B2B.Privacy.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.Messaging.Domain.OutboxMessageEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Attempts")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("CorrelationId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
 
                     b.Property<DateTimeOffset?>("DispatchedAtUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Kind")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("LastError")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("MessageType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
 
                     b.Property<DateTimeOffset?>("NextRetryAtUtc")
-                        .HasColumnType("datetimeoffset");
+                        .IsConcurrencyToken()
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("OccurredAtUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Payload")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<int>("Status")
-                        .HasColumnType("int");
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Status", "OccurredAtUtc");
 
                     b.ToTable("Outbox", "messaging", t =>
                         {

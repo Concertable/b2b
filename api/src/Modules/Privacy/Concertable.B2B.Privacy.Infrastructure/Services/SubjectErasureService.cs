@@ -35,15 +35,13 @@ internal sealed class SubjectErasureService : ISubjectErasureService
 
     public async Task<Result<SubjectErasureRequestDto, ErasureTransitionError>> RequestErasureAsync(Guid subjectId, CancellationToken ct = default)
     {
-        var request = await repository.GetBySubjectIdAsync(subjectId, ct);
+        var request = await this.repository.GetBySubjectIdAsync(subjectId, ct);
         if (request is null)
         {
-            request = SubjectErasureRequestEntity.Create(subjectId, timeProvider.GetUtcNow().UtcDateTime);
-            await repository.InsertAsync(request, ct);
+            request = SubjectErasureRequestEntity.Create(subjectId, this.timeProvider.GetUtcNow().UtcDateTime);
+            await this.repository.InsertAsync(request, ct);
         }
 
-        // Erasure is irreversible, so a completed request is the terminal answer to every later DSAR for the
-        // same subject: hand it back untouched rather than re-running the fan-out over an already-scrubbed row.
         if (request.State == ErasureState.Completed)
             return request.ToDto();
 
@@ -54,21 +52,21 @@ internal sealed class SubjectErasureService : ISubjectErasureService
         SubjectErasureRequestEntity request,
         CancellationToken ct)
     {
-        if (await obligationChecker.HasLiveObligationsAsync(request.SubjectId, ct))
+        if (await this.obligationChecker.HasLiveObligationsAsync(request.SubjectId, request.CapturedTenantIds, ct))
         {
             if (request.Fire(ErasureTrigger.Defer).TryGetError(out var deferError))
                 return deferError;
 
             request.RecordDeferral(PendingFinancialObligations);
-            await repository.SaveChangesAsync(ct);
-            logger.SubjectErasureDeferred(request.SubjectId, request.Id);
+            await this.repository.SaveChangesAsync(ct);
+            this.logger.SubjectErasureDeferred(request.SubjectId, request.Id);
             return request.ToDto();
         }
 
         if (request.Fire(ErasureTrigger.Begin).TryGetError(out var beginError))
             return beginError;
 
-        await repository.SaveChangesAsync(ct);
+        await this.repository.SaveChangesAsync(ct);
 
         try
         {
@@ -80,37 +78,41 @@ internal sealed class SubjectErasureService : ISubjectErasureService
                 throw;
 
             request.RecordFailure(exception.Message);
-            await repository.SaveChangesAsync(ct);
-            logger.DeferredErasureFailed(exception, request.SubjectId, request.Id);
+            await this.repository.SaveChangesAsync(ct);
+            this.logger.DeferredErasureFailed(exception, request.SubjectId, request.Id);
             throw;
         }
 
         if (request.Fire(ErasureTrigger.Complete).TryGetError(out var completeError))
             return completeError;
 
-        request.RecordCompletion(timeProvider.GetUtcNow().UtcDateTime);
-        await repository.SaveChangesAsync(ct);
-        logger.SubjectErasureCompleted(request.SubjectId, request.Id);
+        request.RecordCompletion(this.timeProvider.GetUtcNow().UtcDateTime);
+        await this.repository.SaveChangesAsync(ct);
+        this.logger.SubjectErasureCompleted(request.SubjectId, request.Id);
         return request.ToDto();
     }
 
     private async Task AnonymiseAsync(SubjectErasureRequestEntity request, CancellationToken ct)
     {
         var subjectId = request.SubjectId;
-        if (request.SubjectEmail is null && request.WoundDownTenantIds is null)
+        if (request.TenantIds is null)
         {
-            var user = await userModule.GetByIdAsync(subjectId);
-            var woundDown = await tenantModule.SeverMembershipsAsync(subjectId, ct);
-            request.CaptureFanOutState(user.Match<string?>(u => u.Email, () => null), woundDown);
-            await repository.SaveChangesAsync(ct);
+            var user = await this.userModule.GetByIdAsync(subjectId);
+            var memberships = await this.tenantModule.GetMembershipsAsync(subjectId, ct);
+            request.CaptureFanOutState(user.Match<string?>(u => u.Email, () => null), memberships.Select(m => m.TenantId).ToHashSet());
+            await this.repository.SaveChangesAsync(ct);
         }
 
+        var woundDown = await this.tenantModule.SeverMembershipsAsync(subjectId, request.CapturedTenantIds, ct);
+        request.RecordWoundDownTenants(woundDown);
+        await this.repository.SaveChangesAsync(ct);
+
         if (request.SubjectEmail is not null)
-            await tenantModule.PurgePendingInvitationsAsync(request.SubjectEmail, ct);
+            await this.tenantModule.PurgePendingInvitationsAsync(request.SubjectEmail, ct);
 
-        await conversationsModule.SeverAuthoredMessagesAsync(subjectId, ct);
-        await conversationsModule.ScrubParticipantProfilesAsync(request.CapturedWoundDownTenantIds, ct);
+        await this.conversationsModule.SeverAuthoredMessagesAsync(subjectId, ct);
+        await this.conversationsModule.ScrubParticipantProfilesAsync(request.CapturedTenantIds, ct);
 
-        await userModule.EraseAsync(subjectId, ct);
+        await this.userModule.EraseAsync(subjectId, ct);
     }
 }

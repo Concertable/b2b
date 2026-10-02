@@ -1,21 +1,28 @@
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.Privacy.Infrastructure.Data;
 
-/// <summary>The Privacy module's stance: unscoped and admin-operated (a DSAR is driven by a platform operator,
-/// keyed by the subject's Auth <c>sub</c>, not by an ambient tenant), so it derives from <see cref="DbContextBase"/>
-/// directly with no tenant filter.</summary>
-internal sealed class PrivacyDbContext(
-    DbContextOptions<PrivacyDbContext> options,
-    PrivacyConfigurationProvider provider)
-    : DbContextBase(options)
+internal sealed class PrivacyDbContext : DbContextBase
 {
-    public DbSet<SubjectErasureRequestEntity> SubjectErasureRequests => Set<SubjectErasureRequestEntity>();
+    private readonly PrivacyConfigurationProvider provider;
+
+    public PrivacyDbContext(
+        DbContextOptions<PrivacyDbContext> options,
+        IOptions<OutboxOptions> outboxOptions,
+        PrivacyConfigurationProvider provider)
+        : base(options, outboxOptions)
+    {
+        this.provider = provider;
+    }
+
+    public DbSet<SubjectErasureRequestEntity> SubjectErasureRequests => base.Set<SubjectErasureRequestEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.HasDefaultSchema(Schema.Name);
-        provider.Configure(modelBuilder);
+        this.provider.Configure(modelBuilder);
     }
 }

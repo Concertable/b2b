@@ -1,4 +1,4 @@
-using Concertable.B2B.Concert.Infrastructure.Data;
+﻿using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -10,18 +10,21 @@ internal sealed class ConcertTestSeeder : ITestSeeder
 {
     public int Order => 7;
 
-    private readonly ConcertDbContext context;
+    private readonly ConcertPrivilegedDbContext context;
+    private readonly ConcertDbContext migrations;
     private readonly SeedState seed;
 
     public ConcertTestSeeder(
-        ConcertDbContext context,
+        ConcertPrivilegedDbContext context,
+        ConcertDbContext migrations,
         SeedState seed)
     {
         this.context = context;
+        this.migrations = migrations;
         this.seed = seed;
     }
 
-    public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
+    public Task MigrateAsync(CancellationToken ct = default) => migrations.Database.MigrateAsync(ct);
 
     public async Task SeedAsync(CancellationToken ct = default)
     {

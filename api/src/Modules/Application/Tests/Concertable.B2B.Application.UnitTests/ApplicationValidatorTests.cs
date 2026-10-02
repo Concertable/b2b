@@ -77,6 +77,5 @@ public sealed class ApplicationValidatorTests
         }
 
         public Guid? TenantId { get; }
-        public bool IsHost => false;
     }
 }

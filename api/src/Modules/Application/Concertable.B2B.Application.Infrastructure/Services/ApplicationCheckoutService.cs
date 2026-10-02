@@ -23,6 +23,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory;
     private readonly ITenantContext tenantContext;
     private readonly LegalSettings legal;
+    private readonly IUnitOfWork unitOfWork;
 
     public ApplicationCheckoutService(
         IApplicationRepository repository,
@@ -34,7 +35,8 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IEscrowOperationsClient escrowOperationsClient,
         IDealStrategyFactory<ICommitmentReferenceStep> commitmentFactory,
         ITenantContext tenantContext,
-        IOptions<LegalSettings> legal)
+        IOptions<LegalSettings> legal,
+        IUnitOfWork unitOfWork)
     {
         this.repository = repository;
         this.artistModule = artistModule;
@@ -46,6 +48,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.commitmentFactory = commitmentFactory;
         this.tenantContext = tenantContext;
         this.legal = legal.Value;
+        this.unitOfWork = unitOfWork;
     }
 
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateApplyCheckoutAsync(
@@ -109,8 +112,11 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 
         if (deal is FlatFeeDealDto flatFee)
         {
+            var operationId = application.BeginAcceptance();
+            await unitOfWork.SaveChangesAsync();
+
             var authorization = await escrowOperationsClient.AuthorizeAsync(
-                Guid.CreateVersion7(),
+                operationId,
                 commitmentFactory.Create(deal.DealType).Resolve(application),
                 application.VenueTenantId,
                 application.ArtistTenantId,

@@ -17,7 +17,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddPrivacyModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<PrivacyDbContext>((sp, opts) =>
-            opts.UseSqlServer(configuration.GetConnectionString(B2BDb.Name))
+            opts.UseNpgsql(
+                    configuration.GetConnectionString(B2BDb.Name),
+                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
                 .AddInterceptors(
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));

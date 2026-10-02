@@ -28,6 +28,6 @@ internal sealed class BookingEntityConfiguration : IEntityTypeConfiguration<Book
         builder.HasIndex(booking => booking.OperationId).IsUnique();
         builder.HasIndex(booking => booking.CancellationOperationId)
             .IsUnique()
-            .HasFilter("[CancellationOperationId] IS NOT NULL");
+            .HasFilter("\"CancellationOperationId\" IS NOT NULL");
     }
 }

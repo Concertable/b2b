@@ -13,7 +13,7 @@ internal sealed class SubjectMessageReader : ISubjectMessageReader
 
     public async Task<IReadOnlyList<SubjectMessageDto>> GetSubjectMessagesAsync(Guid userId, CancellationToken ct = default)
     {
-        var authored = await messages.ListBySenderUserAsync(userId, ct);
+        var authored = await this.messages.ListBySenderUserAsync(userId, ct);
         return authored.Select(m => m.ToSubjectMessageDto()).ToList();
     }
 }

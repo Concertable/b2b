@@ -13,12 +13,12 @@ internal sealed class CancellationFinancialOperationOutcomeProcessor :
     IIntegrationEventHandler<RefundEscrowDeferredEvent>,
     IIntegrationEventHandler<RefundEscrowRejectedEvent>
 {
-    private readonly BookingDbContext context;
-    private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
+    private readonly BookingPrivilegedDbContext context;
+    private readonly IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
 
     public CancellationFinancialOperationOutcomeProcessor(
-        BookingDbContext context,
-        IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
+        BookingPrivilegedDbContext context,
+        IPrivilegedOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior)
     {
         this.context = context;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;

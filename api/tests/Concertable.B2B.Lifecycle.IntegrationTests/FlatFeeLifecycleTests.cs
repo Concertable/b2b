@@ -38,7 +38,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
 
         var application = await GetApplicationAsync(client, applicationId);
         Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
-        var concertResponse = await client.GetAsync($"/api/concert/application/{applicationId}");
+        var concertResponse = await fixture.GetCreatedConcertOperationsAsync(client);
         await concertResponse.ShouldBe(HttpStatusCode.OK);
         var concert = await concertResponse.Content.ReadAsync<ConcertBoundaryResponse>();
         Assert.NotNull(concert);
@@ -103,8 +103,6 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
@@ -122,8 +120,6 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, financial.Status);
-        var concert = await client.GetAsync($"/api/concert/application/{applicationId}");
-        await concert.ShouldBe(HttpStatusCode.NotFound);
         Assert.Empty(fixture.NotificationService.DraftCreated);
     }
 
@@ -146,8 +142,6 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
 
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.AwaitingConfirmation, financial.Status);
-        await (await client.GetAsync($"/api/concert/application/{applicationId}"))
-            .ShouldBe(HttpStatusCode.NotFound);
         Assert.Equal(0, await fixture.GetOutboxMessageCountAsync<NotifyConcertDraftCreatedCommand>());
         Assert.DoesNotContain(
             await fixture.GetStagedEmailsAsync(),
@@ -187,6 +181,8 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         Rejected,
         Withdrawn,
         Accepted,
+        AwaitingPayment,
+        Confirmed,
         Cancelled
     }
 

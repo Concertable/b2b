@@ -1,8 +1,11 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel.Identity;
+using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace Concertable.B2B.Concert.UnitTests;
@@ -25,8 +28,10 @@ public sealed class DbContextStanceTests
             provider);
         await using var tenantContext = new ConcertDbContext(
             CreateOptions<ConcertDbContext>(),
+            Options.Create(new OutboxOptions()),
             provider,
-            Mock.Of<ITenantContext>());
+            Mock.Of<ITenantContext>(),
+            DesignTimeResourceAccessContext.Instance);
 
         Assert.IsAssignableFrom<IReadDbContext>(readContext);
         Assert.False(typeof(IDbContext).IsAssignableFrom(readContext.GetType()));
@@ -42,8 +47,8 @@ public sealed class DbContextStanceTests
     private static DbContextOptions<TContext> CreateOptions<TContext>()
         where TContext : DbContext =>
         new DbContextOptionsBuilder<TContext>()
-            .UseSqlServer(
-                "Server=localhost;Database=ContextStanceTests;User Id=sa;Password=Password123!;TrustServerCertificate=True",
-                sql => sql.UseNetTopologySuite())
+            .UseNpgsql(
+                "Host=localhost;Database=ContextStanceTests;Username=postgres;Password=postgres",
+                npgsql => npgsql.UseNetTopologySuite())
             .Options;
 }

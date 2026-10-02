@@ -2,9 +2,6 @@ using Concertable.B2B.Deal.Contracts.Enums;
 
 namespace Concertable.B2B.Concert.Contracts;
 
-/// <summary>The subject's portable B2B Concert fragment (GDPR arts. 15/20): the RETAINED statutory financial
-/// records their tenants are party to — read-only, never mutated by erasure (they survive for the HMRC
-/// six-year / contract-limitation windows).</summary>
 public sealed record SubjectConcertRecordsDto
 {
     public IReadOnlyList<SubjectInvoiceDto> Invoices { get; init; } = [];

@@ -28,6 +28,9 @@ internal static class ApplicationTermsFingerprint
     private static string Number(decimal value) =>
         value.ToString("0.############################", CultureInfo.InvariantCulture);
 
-    private static string Instant(DateTime value) =>
-        DateTime.SpecifyKind(value, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture);
+    private static string Instant(DateTime value)
+    {
+        var ticks = value.Ticks - value.Ticks % TimeSpan.TicksPerMicrosecond;
+        return new DateTime(ticks, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture);
+    }
 }

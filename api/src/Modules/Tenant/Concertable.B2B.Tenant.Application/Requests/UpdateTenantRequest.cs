@@ -5,5 +5,7 @@ namespace Concertable.B2B.Tenant.Application.Requests;
 internal sealed record UpdateTenantRequest
 {
     public required string LegalName { get; init; }
+    public required string ContactEmail { get; init; }
+    public required long ExpectedVersion { get; init; }
     public required TaxComplianceDto TaxCompliance { get; init; }
 }
