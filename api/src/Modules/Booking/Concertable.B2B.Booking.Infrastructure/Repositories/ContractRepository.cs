@@ -10,15 +10,15 @@ internal sealed class ContractRepository : Repository<ContractEntity>, IContract
 {
     private readonly BookingDbContext context;
     private readonly IMembershipContext membership;
-    private readonly ITenantCapabilityAuthorization capabilities;
+    private readonly IPermissionAuthorization permissions;
     private readonly TimeProvider clock;
 
     public ContractRepository(BookingDbContext context, IMembershipContext membership,
-        ITenantCapabilityAuthorization capabilities, TimeProvider clock) : base(context)
+        IPermissionAuthorization permissions, TimeProvider clock) : base(context)
     {
         this.context = context;
         this.membership = membership;
-        this.capabilities = capabilities;
+        this.permissions = permissions;
         this.clock = clock;
     }
 
@@ -50,7 +50,7 @@ internal sealed class ContractRepository : Repository<ContractEntity>, IContract
     private async Task<IQueryable<ContractEntity>> WithReadAsync(CancellationToken ct)
     {
         var actor = membership.Membership;
-        if (actor is null || await capabilities.CheckAsync(TenantPermission.TermsRead, ct)
+        if (actor is null || await permissions.CheckAsync(TenantPermission.TermsRead, ct: ct)
             != AuthorizationDecision.Allowed)
             return context.Contracts.Where(_ => false);
 

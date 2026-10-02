@@ -15,15 +15,15 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
 {
     private readonly BookingDbContext context;
     private readonly IMembershipContext membership;
-    private readonly ITenantCapabilityAuthorization capabilities;
+    private readonly IPermissionAuthorization permissions;
     private readonly TimeProvider clock;
 
     public BookingRepository(BookingDbContext context, IMembershipContext membership,
-        ITenantCapabilityAuthorization capabilities, TimeProvider clock) : base(context)
+        IPermissionAuthorization permissions, TimeProvider clock) : base(context)
     {
         this.context = context;
         this.membership = membership;
-        this.capabilities = capabilities;
+        this.permissions = permissions;
         this.clock = clock;
     }
 
@@ -98,7 +98,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
     private async Task<IQueryable<BookingEntity>> WithFacetAsync(ResourceFacet facet, CancellationToken ct)
     {
         var actor = membership.Membership;
-        if (actor is null || await capabilities.CheckAsync(TenantPermission.OperationsView, ct)
+        if (actor is null || await permissions.CheckAsync(TenantPermission.OperationsView, ct: ct)
             != AuthorizationDecision.Allowed)
             return context.Bookings.Where(_ => false);
 

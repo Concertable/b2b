@@ -69,7 +69,7 @@ public sealed class ApplicationServiceCancellationTests
             Mock.Of<ICommandAuthorizationContext>(),
             Mock.Of<Concertable.B2B.Tenant.Contracts.ITenantResolver>(),
             Mock.Of<IResourceAuthorization>(),
-            Mock.Of<ITenantCapabilityAuthorization>(),
+            Mock.Of<IPermissionAuthorization>(),
             Mock.Of<ITransactionRunner>());
 
         var result = await service.GetByOpportunityIdAsync(opportunityId, ct);

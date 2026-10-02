@@ -14,15 +14,15 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
 {
     private readonly ApplicationDbContext context;
     private readonly IMembershipContext membership;
-    private readonly ITenantCapabilityAuthorization capabilities;
+    private readonly IPermissionAuthorization permissions;
     private readonly TimeProvider clock;
 
     public ApplicationRepository(ApplicationDbContext context, IMembershipContext membership,
-        ITenantCapabilityAuthorization capabilities, TimeProvider clock) : base(context)
+        IPermissionAuthorization permissions, TimeProvider clock) : base(context)
     {
         this.context = context;
         this.membership = membership;
-        this.capabilities = capabilities;
+        this.permissions = permissions;
         this.clock = clock;
     }
 
@@ -193,7 +193,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
         TenantPermission permission, ResourceFacet facet, CancellationToken ct)
     {
         var actor = membership.Membership;
-        if (actor is null || await capabilities.CheckAsync(permission, ct) != AuthorizationDecision.Allowed)
+        if (actor is null || await permissions.CheckAsync(permission, ct: ct) != AuthorizationDecision.Allowed)
             return context.Applications.Where(_ => false);
 
         var binding = ResourcePolicyBinding.FromCatalog(permission, ResourceKind.Application, facet);

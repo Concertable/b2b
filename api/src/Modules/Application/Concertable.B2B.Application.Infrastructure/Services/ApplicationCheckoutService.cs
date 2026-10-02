@@ -23,7 +23,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly ICommandAuthorizationContext commandAuthorization;
     private readonly ITenantResolver tenantResolver;
     private readonly ITransactionRunner transactionRunner;
-    private readonly ITenantCapabilityAuthorization capabilities;
+    private readonly IPermissionAuthorization permissions;
     private readonly IResourceAuthorization resources;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
@@ -42,7 +42,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         ICommandAuthorizationContext commandAuthorization,
         ITenantResolver tenantResolver,
         ITransactionRunner transactionRunner,
-        ITenantCapabilityAuthorization capabilities,
+        IPermissionAuthorization permissions,
         IResourceAuthorization resources,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
@@ -60,7 +60,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.commandAuthorization = commandAuthorization;
         this.tenantResolver = tenantResolver;
         this.transactionRunner = transactionRunner;
-        this.capabilities = capabilities;
+        this.permissions = permissions;
         this.resources = resources;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
@@ -76,7 +76,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateApplyCheckoutAsync(
         int opportunityId)
     {
-        if (await capabilities.CheckAsync(TenantPermission.ApplicationsSubmit)
+        if (await permissions.CheckAsync(TenantPermission.ApplicationsSubmit, ResourceAudience.TenantResources)
             != AuthorizationDecision.Allowed)
             return new ApplicationCheckoutError.Ineligible(
                 new ApplicationEligibilityError.MissingArtist());

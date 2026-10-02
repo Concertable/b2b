@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ActorAuthoritySession>();
         services.AddScoped(provider => new TenantCapabilityRegistry(AuthorizationCatalog.Permissions.Values));
         services.AddScoped<ITenantCapabilityAuthorization, TenantCapabilityAuthorization>();
+        services.AddScoped<IPermissionAuthorization, PermissionAuthorization>();
 
         services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();

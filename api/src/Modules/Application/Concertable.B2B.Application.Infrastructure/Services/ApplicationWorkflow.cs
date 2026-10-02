@@ -44,7 +44,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly IMembershipContext membership;
     private readonly ICommandAuthorizationContext commandAuthorization;
     private readonly ITenantResolver tenantResolver;
-    private readonly ITenantCapabilityAuthorization capabilities;
+    private readonly IPermissionAuthorization permissions;
     private readonly IResourceAuthorization resources;
     private readonly ITransactionRunner transactionRunner;
     private readonly CommandTransactionAccessor transactions;
@@ -65,7 +65,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IMembershipContext membership,
         ICommandAuthorizationContext commandAuthorization,
         ITenantResolver tenantResolver,
-        ITenantCapabilityAuthorization capabilities,
+        IPermissionAuthorization permissions,
         IResourceAuthorization resources,
         ITransactionRunner transactionRunner,
         CommandTransactionAccessor transactions)
@@ -85,7 +85,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.membership = membership;
         this.commandAuthorization = commandAuthorization;
         this.tenantResolver = tenantResolver;
-        this.capabilities = capabilities;
+        this.permissions = permissions;
         this.resources = resources;
         this.transactionRunner = transactionRunner;
         this.transactions = transactions;
@@ -172,7 +172,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.ExistingTenantIds.SetEquals(parties)
-            || await capabilities.RequireAsync(TenantPermission.ApplicationsSubmit, ct)
+            || await permissions.RequireAsync(TenantPermission.ApplicationsSubmit, ResourceAudience.TenantResources, ct)
                 != AuthorizationDecision.Allowed)
             return new ApplyApplicationError.NotPermitted();
         var actor = resolution.Actor;
@@ -269,7 +269,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         CancellationToken ct) =>
         privilegedUnitOfWork.ExecuteAsync(async () =>
         {
-            if (await capabilities.CheckAsync(TenantPermission.ApplicationsSubmit, ct)
+            if (await permissions.CheckAsync(TenantPermission.ApplicationsSubmit, ResourceAudience.TenantResources, ct)
                 != AuthorizationDecision.Allowed)
                 return (Result<ApplicationProposal, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
 

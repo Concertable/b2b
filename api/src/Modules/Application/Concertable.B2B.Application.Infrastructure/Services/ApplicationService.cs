@@ -38,7 +38,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly ICommandAuthorizationContext commandAuthorization;
     private readonly ITenantResolver tenantResolver;
     private readonly IResourceAuthorization resources;
-    private readonly ITenantCapabilityAuthorization capabilities;
+    private readonly IPermissionAuthorization permissions;
     private readonly ITransactionRunner transactionRunner;
 
     public ApplicationService(
@@ -60,7 +60,7 @@ internal sealed class ApplicationService : IApplicationService
         ICommandAuthorizationContext commandAuthorization,
         ITenantResolver tenantResolver,
         IResourceAuthorization resources,
-        ITenantCapabilityAuthorization capabilities,
+        IPermissionAuthorization permissions,
         ITransactionRunner transactionRunner)
     {
         this.applicationRepository = applicationRepository;
@@ -81,7 +81,7 @@ internal sealed class ApplicationService : IApplicationService
         this.commandAuthorization = commandAuthorization;
         this.tenantResolver = tenantResolver;
         this.resources = resources;
-        this.capabilities = capabilities;
+        this.permissions = permissions;
         this.transactionRunner = transactionRunner;
     }
 
@@ -456,7 +456,7 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
-        if (await capabilities.CheckAsync(TenantPermission.ApplicationsSubmit)
+        if (await permissions.CheckAsync(TenantPermission.ApplicationsSubmit, ResourceAudience.TenantResources)
             != AuthorizationDecision.Allowed)
             return new ApplicationEligibilityError.MissingArtist();
         var artistOption = await artistModule.GetCurrentProfileAsync();
