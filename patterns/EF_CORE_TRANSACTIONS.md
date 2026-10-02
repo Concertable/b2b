@@ -33,9 +33,9 @@ completion; it is not B2B's default.
 | Several module contexts in one database operation | One B2B unit of work, sequential enlistment and flushing |
 | Calls to a payment gateway or another service | Local state/outbox commit followed by the external operation; the database transaction does not make external effects atomic |
 
-Separate module contexts can still share a scoped collaborator's context. Artist KPI reads use Tenant's
-authority-read context through Application, Booking and Concert. [ArtistDashboardService.GetAsync](../api/src/Modules/Dashboard/Artist/Concertable.B2B.Dashboard.Artist.Infrastructure/ArtistDashboardService.cs)
-awaits those module calls sequentially. The [Dashboard provider tests](../api/src/Modules/Dashboard/Tests/Concertable.B2B.Dashboard.IntegrationTests/ArtistDashboardApiTests.cs)
+Separate module contexts can still share a scoped collaborator's context. Application and Booking KPI
+reads use Tenant's authority-read context. [ArtistDashboardService.GetAsync](../api/src/Modules/Dashboard/Artist/Concertable.B2B.Dashboard.Artist.Infrastructure/ArtistDashboardService.cs)
+awaits the Application, Booking and Concert module calls sequentially. The [Dashboard provider tests](../api/src/Modules/Dashboard/Tests/Concertable.B2B.Dashboard.IntegrationTests/ArtistDashboardApiTests.cs)
 cover the accepted-booking KPI path and the absent-profile result.
 
 ## Name the actual responsibility
