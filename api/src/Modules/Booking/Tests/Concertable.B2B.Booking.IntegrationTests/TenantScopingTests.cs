@@ -60,8 +60,9 @@ public sealed class TenantScopingTests : IAsyncLifetime
     public async Task ConcertCreated_BackgroundDelivery_RecordsHandOffOnce()
     {
         var booking = this.fixture.SeedState.ConfirmedBooking;
-        var created = new ConcertCreatedEvent(123, booking.ApplicationId, booking.OpportunityId,
-            1, 1, booking.VenueTenantId, booking.ArtistTenantId, this.fixture.SeedNow);
+        var concert = this.fixture.SeedState.ConcertFor(booking);
+        var created = new ConcertCreatedEvent(concert.Id, booking.ApplicationId, booking.OpportunityId,
+            concert.ArtistId, concert.VenueId, booking.VenueTenantId, booking.ArtistTenantId, concert.Period.Start);
         var envelope = MessageEnvelope.Create<ConcertCreatedEvent>(this.fixture.SeedNow);
 
         await this.fixture.DispatchIntegrationEventAsync(created, envelope);
