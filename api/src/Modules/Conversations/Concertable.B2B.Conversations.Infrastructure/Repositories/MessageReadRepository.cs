@@ -13,5 +13,5 @@ internal sealed class MessageReadRepository : IMessageReadRepository
     }
 
     public async Task<IReadOnlyList<MessageEntity>> ListBySenderUserAsync(Guid userId, CancellationToken ct = default) =>
-        await this.context.Messages.Where(m => m.SentByUserId != null && m.SentByUserId == userId).ToListAsync(ct);
+        await this.context.Messages.Where(m => userId != Guid.Empty && m.SentByUserId == userId).ToListAsync(ct);
 }

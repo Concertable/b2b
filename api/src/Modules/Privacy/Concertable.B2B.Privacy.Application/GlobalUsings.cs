@@ -1,7 +1,5 @@
 global using Concertable.B2B.Privacy.Application.DTOs;
 global using Concertable.B2B.Privacy.Application.Interfaces;
-global using Concertable.B2B.Privacy.Domain.Entities;
-global using Concertable.B2B.Privacy.Domain.Lifecycle;
 global using Concertable.B2B.User.Contracts;
 global using Concertable.B2B.Tenant.Contracts;
 global using Concertable.B2B.Conversations.Contracts;

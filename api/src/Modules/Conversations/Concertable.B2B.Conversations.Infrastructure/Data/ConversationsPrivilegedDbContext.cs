@@ -19,5 +19,4 @@ internal sealed class ConversationsPrivilegedDbContext(
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
-    public DbSet<ParticipantProfile> ParticipantProfiles => Set<ParticipantProfile>();
 }

@@ -183,7 +183,7 @@ change. Launch-blocking and independent of the money model.
 
 ## 8. GDPR data retention + right to erasure — PARTIAL
 **Legal basis:** UK GDPR arts. 5(1)(e), 17.
-B2B-local subject export and erasure are being qualified. Auth/Payment/Customer data, statutory retention
+B2B-local subject export is being qualified. Erasure remains undelivered. Auth/Payment/Customer data, statutory retention
 scheduling and policy ratification remain outstanding; the launch compliance requirement stays open.
 Current engineering scope and evidence: [B2B subject-rights delivery](../../../../docs/plans/gdpr-subject-rights/GDPR_SUBJECT_RIGHTS_PLAN.md).
 

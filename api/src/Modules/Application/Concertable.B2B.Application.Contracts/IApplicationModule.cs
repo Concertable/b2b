@@ -14,6 +14,4 @@ public interface IApplicationModule
     Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
         Guid artistTenantId,
         CancellationToken ct = default);
-
-    Task<bool> HasLiveObligationsByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }

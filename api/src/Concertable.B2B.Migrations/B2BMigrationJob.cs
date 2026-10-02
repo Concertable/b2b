@@ -6,7 +6,6 @@ using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.B2B.Deal.Infrastructure.Data;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
-using Concertable.B2B.Privacy.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.User.Infrastructure.Data;
 using Concertable.B2B.Venue.Infrastructure.Data;
@@ -32,7 +31,6 @@ internal static class B2BMigrationJob
             () => new BookingDbContextFactory().CreateDbContext(connectionString),
             () => new ConcertDbContextFactory().CreateDbContext(connectionString),
             () => new ConversationsDbContextFactory().CreateDbContext(connectionString),
-            () => new PrivacyDbContextFactory().CreateDbContext(connectionString),
             () => new InboxDbContext(new DbContextOptionsBuilder<InboxDbContext>()
                 .UseNpgsql(
                     connectionString,

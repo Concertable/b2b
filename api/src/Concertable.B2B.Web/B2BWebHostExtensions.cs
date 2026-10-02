@@ -27,7 +27,6 @@ using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.User.Api.Extensions;
 using Concertable.B2B.Privacy.Api.Extensions;
 using Concertable.B2B.User.Infrastructure.Extensions;
-using Concertable.B2B.Privacy.Infrastructure.Extensions;
 using Concertable.B2B.Venue.Api.Extensions;
 using Concertable.B2B.Venue.Contracts.Events;
 using Concertable.B2B.Web.Exceptions;
@@ -209,7 +208,6 @@ public static class B2BWebHostExtensions
                 services.AddUserDevSeeder();
                 services.AddTenantDevSeeder();
                 services.AddAdminDevSeeder();
-                services.AddPrivacyDevSeeder();
                 services.AddArtistDevSeeder();
                 services.AddVenueDevSeeder();
                 services.AddDealDevSeeder();

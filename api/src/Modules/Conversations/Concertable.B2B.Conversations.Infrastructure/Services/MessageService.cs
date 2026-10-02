@@ -153,16 +153,17 @@ internal sealed class MessageService : IMessageService
         return messages.ToDictionary(
             m => m.Id,
             m => m.SenderTenantId == activeTenantId
-                ? MessageSender.Member(m.SentByUserId is { } sender ? emails.GetValueOrDefault(sender, UnknownSender) : UnknownSender)
+                ? MessageSender.Member(emails.GetValueOrDefault(m.SentByUserId, UnknownSender))
                 : profiles[m.SenderTenantId]);
     }
 
     private async Task<IReadOnlyDictionary<Guid, string>> ResolveMemberEmailsAsync(IReadOnlyList<MessageEntity> messages, Guid activeTenantId)
     {
         var memberIds = messages
-            .Where(m => m.SenderTenantId == activeTenantId && m.SentByUserId is not null)
-            .Select(m => m.SentByUserId!.Value)
-            .ToHashSet();
+            .Where(m => m.SenderTenantId == activeTenantId)
+            .Select(m => m.SentByUserId)
+            .Distinct()
+            .ToList();
 
         if (memberIds.Count == 0)
             return new Dictionary<Guid, string>();

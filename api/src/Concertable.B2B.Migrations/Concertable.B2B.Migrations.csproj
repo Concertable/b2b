@@ -22,7 +22,6 @@
     <ProjectReference Include="..\Modules\Booking\Concertable.B2B.Booking.Infrastructure\Concertable.B2B.Booking.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Concert\Concertable.B2B.Concert.Infrastructure\Concertable.B2B.Concert.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Conversations\Concertable.B2B.Conversations.Infrastructure\Concertable.B2B.Conversations.Infrastructure.csproj" />
-    <ProjectReference Include="..\Modules\Privacy\Concertable.B2B.Privacy.Infrastructure\Concertable.B2B.Privacy.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

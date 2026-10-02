@@ -53,7 +53,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     VenueTenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     ArtistTenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     SenderTenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SentByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    SentByUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Action = table.Column<int>(type: "integer", nullable: true),
                     SentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     HiddenAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),

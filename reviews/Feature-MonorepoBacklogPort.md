@@ -4,10 +4,10 @@
 > findings directly and report what changed. Tick each `[x]` as you land it. Pause only for a genuinely
 > irreversible or ambiguous finding: record its durable disposition, take the safe path, and keep going.
 
-**Review status:** `complete`
-**Reviewed up to commit:** `f1040fb2e7503d8c919a4b7b38207f6a3df4fec3`
-**Security-reviewed up to commit:** `f1040fb2e7503d8c919a4b7b38207f6a3df4fec3`
-**Judgment:** `changes-requested`
+**Review status:** `in-progress`
+**Reviewed up to commit:** `938e9d8a25ff3b91723abdbf402057074b596a47`
+**Security-reviewed up to commit:** `938e9d8a25ff3b91723abdbf402057074b596a47`
+**Judgment:** `pending`
 
 ## Review pass — 2026-09-15 — full
 
@@ -248,13 +248,43 @@ Historical F13: conservative source repair removes VenueName and ArtistName from
 
 ### Findings in reconciled candidate
 
-- [ ] **F14 — HIGH — financial obligation guard** — `api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/ObligationChecker.cs:12` treats Draft as settled. A confirmed booking hands off to a draft concert before financial completion; the booking checker then excludes it, allowing erasure while settlement is still due. Fix: keep Draft live and verify the handoff boundary.
-- [ ] **F15 — HIGH — production migrations** — `migrations.psd1:9` adds Privacy to validation but the production migration executable has a separate catalog without it. Add its project reference, factory visibility and migration catalog entry; extend the clean-database/idempotence regression.
-- [ ] **F16 — HIGH — concurrent journal writes** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Services/SubjectErasureService.cs:102` persists captured PII without a concurrency token. A stale scoped attempt can write original email after another scope completed and cleared it. Add persisted compare-and-swap fencing and a separate-DbContext regression proving stale capture fails and completed PII remains null.
+- [x] **F14 — HIGH — financial obligation guard** — `api/src/Modules/Concert/Concertable.B2B.Concert.Infrastructure/Services/ObligationChecker.cs:12` treats Draft as settled. A confirmed booking hands off to a draft concert before financial completion; the booking checker then excludes it, allowing erasure while settlement is still due. Fix: keep Draft live and verify the handoff boundary.
+- [x] **F15 — HIGH — production migrations** — `migrations.psd1:9` adds Privacy to validation but the production migration executable has a separate catalog without it. Add its project reference, factory visibility and migration catalog entry; extend the clean-database/idempotence regression.
+- [x] **F16 — HIGH — concurrent journal writes** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Services/SubjectErasureService.cs:102` persists captured PII without a concurrency token. A stale scoped attempt can write original email after another scope completed and cleared it. Add persisted compare-and-swap fencing and a separate-DbContext regression proving stale capture fails and completed PII remains null.
 
-- [ ] **F17 — HIGH — background handoff** — `api/src/Modules/Booking/Concertable.B2B.Booking.Infrastructure/Events/ConcertCreatedIntegrationEventHandler.cs:23` uses a tenant-filtered repository without an active request tenant, silently missing the booking and leaving confirmed obligations live indefinitely. Use the module privileged context and verify background delivery/replay.
-- [ ] **F18 — MEDIUM — retry fairness** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Repositories/SubjectErasureRepository.cs:24` always selects the oldest 100; persistent deferrals starve every newer request. Persist last-attempt time and order by oldest attempt; verify a 101st request rotates into the next batch.
+- [x] **F17 — HIGH — background handoff** — `api/src/Modules/Booking/Concertable.B2B.Booking.Infrastructure/Events/ConcertCreatedIntegrationEventHandler.cs:23` uses a tenant-filtered repository without an active request tenant, silently missing the booking and leaving confirmed obligations live indefinitely. Use the module privileged context and verify background delivery/replay.
+- [x] **F18 — MEDIUM — retry fairness** — `api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Repositories/SubjectErasureRepository.cs:24` always selects the oldest 100; persistent deferrals starve every newer request. Persist last-attempt time and order by oldest attempt; verify a 101st request rotates into the next batch.
 
 The 2026-10-02 immutable pass is complete with five retained findings, deduplicated across three fresh read-only lenses and parent validation. Security was reviewed at f1040fb2e7503d8c919a4b7b38207f6a3df4fec3. Repairs are local and require a new immutable pass after regression/migration qualification.
 
 The user explicitly confirmed counterparty exclusion. F13 is resolved by removing both VenueName and ArtistName; the wire-format regression forbids both. No policy ratification or broader GDPR-compliance claim is implied.
+
+
+## Incremental review pass — erasure safety repairs — 2026-10-02
+
+**Candidate base:** `f1040fb2e7503d8c919a4b7b38207f6a3df4fec3`
+**Candidate head:** `938e9d8a25ff3b91723abdbf402057074b596a47`
+**Candidate branch:** `Feature/MonorepoBacklogPort`
+**Candidate scope:** `all`
+**Candidate path-set:** `8cda1f06b22e8c3c7a91c9b62320b610d8d4a0ec5cb14399140d20449bcee48f`
+**Candidate bundle:** `C:\Users\TommySeery\source\repos\Concertable\b2b\.git\agent-workflow\runs\pr-disposition-20261002\review\93f8c351b1ff926b403e0457be6a4f3b4c71760ed3d5581e05577d61ea73428f`
+**Candidate bundle identity:** `900790b12aacbfb040090f3c12087f51e4ed4d868580a9e73c4aeef18979ba6e`
+**Candidate patch identity:** `0797801604fb30bf0208bfbbe9b15445d9de753aacf554955b3bfc6210c4cefc`
+**Work-order path:** `reviews/Feature-MonorepoBacklogPort.md`
+**Work-order mode:** `append`
+**Pass judgment:** `changes-requested`
+
+Delta is exactly the 23 descriptor paths after the prior completed f1040fb2 review. Native role remains unavailable; parent fallback and fresh read-only general, security/recovery and persistence/integration evidence run against the same frozen artifacts. Security examines the cumulative trunk range 84b7d89641aad0ca6e0273af3794234a7fd934af..938e9d8a25ff3b91723abdbf402057074b596a47 because destructive PII behavior qualifies despite generic helper path classification. Dotnet tier rules and nearest guidance remain unchanged. Original F14–F18 text/severity/pass identity preserved; status may resolve only after validation. Privacy units 39/39 and PostgreSQL cases 7/7 passed. Remaining provider projects still running; corrected handoff test uses existing background dispatcher.
+
+
+### Final disposition of erasure safety findings
+
+The immutable 938e9d8 safety pass is complete. Fresh general and persistence lenses found no defects in the 23-path repair delta. The fresh security lens retained three additional concerns, confirmed by the parent:
+
+- [x] **F19 — MEDIUM — retry fairness after failed guard query** — SubjectErasureService changed LastAttemptedAtUtc in memory but saved after the obligation query; query failures left the oldest 100 eligible forever. Retired with the erasure service and runner; no retry path lands.
+- [x] **F20 — HIGH — last-owner invariant** — TenantErasureService deleted a sole Owner from a shared tenant while non-owner members survived, bypassing MembershipService's last-owner protection. Retired with the destructive membership facade; ordinary owner protection remains unchanged from main.
+- [x] **F21 — HIGH — membership/obligation fan-out scope** — The service checked obligations before capture and re-read memberships during sever. Invitation acceptance could add a tenant with live obligations between guard and mutation. Journal xmin did not fence membership/financial writes. Retired with the erasure path; coordinated lifecycle fencing is required for any future implementation.
+
+F14–F18 repairs passed 39 unit and seven Privacy provider cases, plus Booking handoff, Concert obligation and production migration provider projects. The final export salvage removes those mutation and persistence prerequisites completely, restores main's Booking/Conversations schemas and migration catalog, and preserves the repaired checkpoint in ef1868da9 history. All newly retained erasure findings are resolved for the landed scope through removal, not a claim that the preserved implementation is safe.
+
+The final export-only candidate remains review-pending. A fresh full owning-base pass will cover the admin route, module readers, subject isolation and financial metadata with independent general and security lenses.

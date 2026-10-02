@@ -1,4 +1,4 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -12,7 +12,6 @@ using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts;
 using Concertable.B2B.Concert.Contracts.Commands;
-using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Concert.Domain.Events;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Data.Seeders;
@@ -103,7 +102,6 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IInvoicePdfRenderer, InvoicePdfRenderer>();
             services.AddScoped<ISelfBillingAgreementService, SelfBillingAgreementService>();
-            services.AddScoped<IObligationChecker, ObligationChecker>();
             services.AddScoped<ISubjectRecordReader, SubjectRecordReader>();
             services.AddClientContext();
             services.AddConcertDealStrategies();

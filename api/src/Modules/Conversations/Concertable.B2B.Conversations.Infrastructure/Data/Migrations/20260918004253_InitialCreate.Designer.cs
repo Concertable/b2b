@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConversationsDbContext))]
-    [Migration("20261002144417_InitialCreate")]
+    [Migration("20260918004253_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -123,7 +123,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid>("SenderTenantId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("SentByUserId")
+                    b.Property<Guid>("SentByUserId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("SentDate")

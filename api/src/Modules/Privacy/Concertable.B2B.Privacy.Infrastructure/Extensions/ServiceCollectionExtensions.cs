@@ -1,12 +1,4 @@
-using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.Privacy.Domain.Lifecycle;
-using Concertable.B2B.Privacy.Infrastructure.Data;
-using Concertable.B2B.Privacy.Infrastructure.Data.Seeders;
-using Concertable.B2B.Privacy.Infrastructure.Repositories;
 using Concertable.B2B.Privacy.Infrastructure.Services;
-using Concertable.DataAccess.Infrastructure.Data;
-using Concertable.Seed.Shared;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,35 +8,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddPrivacyModule(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<PrivacyDbContext>((sp, opts) =>
-            opts.UseNpgsql(
-                    configuration.GetConnectionString(B2BDb.Name),
-                    npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Schema.Name))
-                .AddInterceptors(
-                    sp.GetRequiredService<AuditInterceptor>(),
-                    sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
-
-        services.AddSingleton<PrivacyConfigurationProvider>();
-        services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<PrivacyConfigurationProvider>());
-
-        services.AddScoped<ISubjectErasureRepository, SubjectErasureRepository>();
-        services.AddScoped<ISubjectObligationChecker, SubjectObligationChecker>();
-        services.AddScoped<ISubjectErasureService, SubjectErasureService>();
         services.AddScoped<ISubjectExporter, SubjectExporter>();
-        services.AddScoped<IDeferredErasureRunner, DeferredErasureRunner>();
-
-        return services;
-    }
-
-    public static IServiceCollection AddPrivacyDevSeeder(this IServiceCollection services)
-    {
-        services.AddScoped<IDevSeeder, PrivacyDevSeeder>();
-        return services;
-    }
-
-    public static IServiceCollection AddPrivacyTestSeeder(this IServiceCollection services)
-    {
-        services.AddScoped<ITestSeeder, PrivacyTestSeeder>();
         return services;
     }
 }

@@ -169,7 +169,6 @@
   <Folder Name="/Modules/Privacy/">
     <Project Path="api/src/Modules/Privacy/Concertable.B2B.Privacy.Api/Concertable.B2B.Privacy.Api.csproj" />
     <Project Path="api/src/Modules/Privacy/Concertable.B2B.Privacy.Application/Concertable.B2B.Privacy.Application.csproj" />
-    <Project Path="api/src/Modules/Privacy/Concertable.B2B.Privacy.Domain/Concertable.B2B.Privacy.Domain.csproj" />
     <Project Path="api/src/Modules/Privacy/Concertable.B2B.Privacy.Infrastructure/Concertable.B2B.Privacy.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Modules/Privacy/Tests/">

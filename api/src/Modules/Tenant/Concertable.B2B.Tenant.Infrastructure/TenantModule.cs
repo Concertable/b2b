@@ -5,18 +5,15 @@ internal sealed class TenantModule : ITenantModule
     private readonly ITenantService service;
     private readonly ITenantActivityService activityService;
     private readonly IVerificationService verificationService;
-    private readonly ITenantErasureService erasureService;
 
     public TenantModule(
         ITenantService service,
         ITenantActivityService activityService,
-        IVerificationService verificationService,
-        ITenantErasureService erasureService)
+        IVerificationService verificationService)
     {
         this.service = service;
         this.activityService = activityService;
         this.verificationService = verificationService;
-        this.erasureService = erasureService;
     }
 
     public Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
@@ -80,10 +77,4 @@ internal sealed class TenantModule : ITenantModule
         int take,
         CancellationToken ct = default) =>
         activityService.GetRecentAsync(tenantId, take, ct);
-
-    public Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, IReadOnlySet<Guid> capturedTenantIds, CancellationToken ct = default) =>
-        this.erasureService.SeverMembershipsAsync(userId, capturedTenantIds, ct);
-
-    public Task PurgePendingInvitationsAsync(string email, CancellationToken ct = default) =>
-        this.erasureService.PurgePendingInvitationsAsync(email, ct);
 }

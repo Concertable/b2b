@@ -33,8 +33,6 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     public DateTime EndDate { get; private set; }
     public List<Genre> Genres { get; private set; } = [];
     internal BookingState State { get; private set; } = BookingState.AwaitingConfirmation;
-
-    internal DateTime? HandedOffAtUtc { get; private set; }
     public Guid? CancellationOperationId { get; private set; }
     internal FinancialFailure? FinancialFailure { get; private set; }
     public ContractEntity Contract { get; private set; } = null!;
@@ -46,8 +44,6 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     private BookingEntity() { }
 
     internal static BookingEntity Create(ApplicationAcceptanceSnapshot snapshot) => new(snapshot);
-
-    internal void RecordHandOff(DateTime at) => HandedOffAtUtc ??= at;
 
     internal void MintContract(ContractEntity contract)
     {

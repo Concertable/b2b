@@ -11,7 +11,7 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
     public Guid VenueTenantId { get; private set; }
     public Guid ArtistTenantId { get; private set; }
     public Guid SenderTenantId { get; private set; }
-    public Guid? SentByUserId { get; private set; }
+    public Guid SentByUserId { get; private set; }
     public MessageAction? Action { get; private set; }
     public DateTime SentDate { get; private set; }
     public DateTime? HiddenAt { get; private set; }
@@ -55,6 +55,4 @@ public sealed class MessageEntity : IIdEntity, IVenueArtistTenantScoped
         RestoredAt = at;
         RestoredByUserId = byUserId;
     }
-
-    public void SeverAuthor() => SentByUserId = null;
 }

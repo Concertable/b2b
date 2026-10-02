@@ -57,9 +57,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("integer[]");
 
-                    b.Property<DateTime?>("HandedOffAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("OperationId")
                         .HasColumnType("uuid");
 

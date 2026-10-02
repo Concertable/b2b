@@ -30,8 +30,4 @@ public interface ITenantModule
         Guid tenantId,
         int take,
         CancellationToken ct = default);
-
-    Task<IReadOnlySet<Guid>> SeverMembershipsAsync(Guid userId, IReadOnlySet<Guid> capturedTenantIds, CancellationToken ct = default);
-
-    Task PurgePendingInvitationsAsync(string email, CancellationToken ct = default);
 }

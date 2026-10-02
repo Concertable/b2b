@@ -20,8 +20,6 @@ public interface IBookingModule
         Guid artistTenantId,
         CancellationToken ct = default);
 
-    Task<bool> HasLiveObligationsByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
-
     Task<IReadOnlyList<SubjectContractDto>> GetSubjectContractsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }
 

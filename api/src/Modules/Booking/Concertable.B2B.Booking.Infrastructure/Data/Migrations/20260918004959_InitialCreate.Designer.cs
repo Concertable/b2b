@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(BookingDbContext))]
-    [Migration("20261002144552_InitialCreate")]
+    [Migration("20260918004959_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -59,9 +59,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.PrimitiveCollection<int[]>("Genres")
                         .IsRequired()
                         .HasColumnType("integer[]");
-
-                    b.Property<DateTime?>("HandedOffAtUtc")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("OperationId")
                         .HasColumnType("uuid");

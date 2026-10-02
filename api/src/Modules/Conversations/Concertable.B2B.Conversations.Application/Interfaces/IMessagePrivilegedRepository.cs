@@ -2,7 +2,4 @@ using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Conversations.Application.Interfaces;
 
-internal interface IMessagePrivilegedRepository : IRepository<MessageEntity>
-{
-    Task<IReadOnlyList<MessageEntity>> ListBySenderUserAsync(Guid userId, CancellationToken ct = default);
-}
+internal interface IMessagePrivilegedRepository : IRepository<MessageEntity>;

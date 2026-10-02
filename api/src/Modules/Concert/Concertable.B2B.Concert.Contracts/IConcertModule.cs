@@ -14,7 +14,5 @@ public interface IConcertModule
         IReadOnlyCollection<int> concertIds,
         CancellationToken ct = default);
 
-    Task<bool> HasLiveObligationsByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
-
     Task<SubjectConcertRecordsDto> GetSubjectRecordsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 }

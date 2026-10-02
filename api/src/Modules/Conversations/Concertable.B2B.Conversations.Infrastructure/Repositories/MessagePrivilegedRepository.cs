@@ -1,18 +1,7 @@
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Repositories;
 
-internal sealed class MessagePrivilegedRepository : Repository<MessageEntity, int>, IMessagePrivilegedRepository
-{
-    private readonly ConversationsPrivilegedDbContext context;
-
-    public MessagePrivilegedRepository(ConversationsPrivilegedDbContext context) : base(context)
-    {
-        this.context = context;
-    }
-
-    public async Task<IReadOnlyList<MessageEntity>> ListBySenderUserAsync(Guid userId, CancellationToken ct = default) =>
-        await this.context.Messages.Where(m => m.SentByUserId != null && m.SentByUserId == userId).ToListAsync(ct);
-}
+internal sealed class MessagePrivilegedRepository(ConversationsPrivilegedDbContext context)
+    : Repository<MessageEntity, int>(context), IMessagePrivilegedRepository;

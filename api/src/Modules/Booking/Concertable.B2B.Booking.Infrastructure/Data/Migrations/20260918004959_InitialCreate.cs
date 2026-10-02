@@ -36,7 +36,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Genres = table.Column<int[]>(type: "integer[]", nullable: false),
                     State = table.Column<int>(type: "integer", nullable: false),
-                    HandedOffAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CancellationOperationId = table.Column<Guid>(type: "uuid", nullable: true),
                     FinancialFailureCode = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     FinancialFailureMessage = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)

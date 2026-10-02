@@ -39,12 +39,4 @@ public sealed class UserEntity : IGuidEntity
         Location = location;
         Address = address;
     }
-
-    public void Anonymise(string tombstoneEmail)
-    {
-        Email = tombstoneEmail;
-        Address = null;
-        Location = null;
-        Avatar = null;
-    }
 }

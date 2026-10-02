@@ -4,15 +4,9 @@ namespace Concertable.B2B.Application.Infrastructure;
 internal sealed class ApplicationModule : IApplicationModule
 {
     private readonly IApplicationDashboardService dashboardService;
-    private readonly IObligationChecker obligationChecker;
 
-    public ApplicationModule(
-        IApplicationDashboardService dashboardService,
-        IObligationChecker obligationChecker)
-    {
+    public ApplicationModule(IApplicationDashboardService dashboardService) =>
         this.dashboardService = dashboardService;
-        this.obligationChecker = obligationChecker;
-    }
 
     public Task<int> GetVenuePendingCountAsync(
         Guid venueTenantId,
@@ -34,6 +28,4 @@ internal sealed class ApplicationModule : IApplicationModule
         CancellationToken ct = default) =>
         dashboardService.GetOpportunityIdsForArtistTenantAsync(artistTenantId, ct);
 
-    public Task<bool> HasLiveObligationsByTenantIdsAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct = default) =>
-        this.obligationChecker.HasLiveAsync(tenantIds, ct);
 }

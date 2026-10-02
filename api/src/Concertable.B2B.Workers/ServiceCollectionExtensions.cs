@@ -2,7 +2,6 @@ using Concertable.B2B.Admin.Infrastructure.Extensions;
 using Concertable.B2B.Application.Infrastructure.Extensions;
 using Concertable.B2B.Artist.Infrastructure.Extensions;
 using Concertable.B2B.Booking.Infrastructure.Extensions;
-using Concertable.B2B.Privacy.Infrastructure.Extensions;
 using Concertable.Kernel;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Extensions;
@@ -79,7 +78,6 @@ internal static class ServiceCollectionExtensions
         services.AddApplicationModule(configuration);
         services.AddBookingModule(configuration);
         services.AddConcertModule(configuration);
-        services.AddPrivacyModule(configuration);
         services.AddClientCredentials(opts =>
         {
             opts.Authority = configuration["Auth:Authority"] ?? configuration["services:auth:https:0"]

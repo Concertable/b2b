@@ -18,7 +18,5 @@ public interface IUserModule
     /// (e.g. "is this candidate already a user?") without fetching the full user roster.</summary>
     Task<Option<Guid>> GetIdByEmailAsync(string email);
 
-    Task EraseAsync(Guid subjectId, CancellationToken ct = default);
-
     Task<Option<SubjectProfileDto>> GetSubjectProfileAsync(Guid subjectId, CancellationToken ct = default);
 }

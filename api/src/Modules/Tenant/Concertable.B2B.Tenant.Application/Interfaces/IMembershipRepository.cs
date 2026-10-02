@@ -41,8 +41,4 @@ internal interface IMembershipRepository : IRepository<TenantMembershipEntity, G
 
     /// <summary>Whether the user already belongs to the tenant — guards duplicate invitation-accept.</summary>
     Task<bool> IsMemberAsync(Guid tenantId, Guid userId, CancellationToken ct = default);
-
-    Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByUserAsync(Guid userId, CancellationToken ct = default);
-
-    Task<int> CountMembersAsync(Guid tenantId, CancellationToken ct = default);
 }
