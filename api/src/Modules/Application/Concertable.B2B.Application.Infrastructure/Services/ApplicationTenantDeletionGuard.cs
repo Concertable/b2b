@@ -8,13 +8,13 @@ namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ApplicationTenantDeletionGuard(
     ApplicationPrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : ITenantDeletionGuard
+    UnitOfWorkAccessor unitOfWorkAccessor) : ITenantDeletionGuard
 {
     public async Task<bool> HasLiveObligationsAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant deletion requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Tenant deletion requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         return await context.Applications.AnyAsync(application =>
             (application.VenueTenantId == tenantId || application.ArtistTenantId == tenantId)
             && (application.State == ApplicationState.Applied || application.State == ApplicationState.Accepted),

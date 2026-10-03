@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Infrastructure.Extensions;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.Admin.Api.Extensions;
 using Concertable.B2B.Admin.Infrastructure.Extensions;
@@ -232,6 +233,7 @@ public static class B2BWebHostExtensions
             services.AddVenueApi(builder.Configuration);
             services.AddConcertApi(builder.Configuration);
             services.AddDealApi(builder.Configuration);
+            services.AddResourceAuthorization();
             if (!builder.Environment.IsIntegration())
                 services.AddPaymentClient(builder.Configuration);
             services.AddQueueHostedService();

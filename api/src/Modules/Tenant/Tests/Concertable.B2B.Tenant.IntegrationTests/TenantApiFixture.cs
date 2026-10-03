@@ -1,16 +1,23 @@
 using Concertable.B2B.DataAccess.Infrastructure;
+using System.Security.Claims;
 using System.Runtime.ExceptionServices;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Application.Errors;
+using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Domain.Entities;
 using Concertable.B2B.Tenant.Domain.Enums;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.Messaging.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using Reunion;
+using RequestTenantResolver = Concertable.Kernel.Identity.ITenantResolver;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
@@ -18,12 +25,12 @@ public sealed class TenantApiFixture : ApiFixture
 {
     private const long TenantCreationLockSeed = 638457220;
     private TenantDbContext dbContext = null!;
-    private ICommandExecutor commandExecutor = null!;
+    private ITransactionRunner transactionRunner = null!;
     private TenantProvisioningHandler provisioningHandler = null!;
     internal VerificationReviewRaceInterceptor VerificationReviewRace { get; } = new();
 
     public IQueryable<TenantEntity> Tenants => dbContext.Tenants.AsNoTracking();
-    public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.AsNoTracking();
+    public IQueryable<TenantMembershipEntity> Memberships => dbContext.Memberships.Include(membership => membership.Assignments).AsNoTracking();
     public IQueryable<TenantBusinessActivityEntity> BusinessActivities => dbContext.BusinessActivities.AsNoTracking();
     public IQueryable<TenantInvitationEntity> Invitations => dbContext.Invitations.AsNoTracking();
     public IQueryable<TenantVerificationEntity> Verifications =>
@@ -32,7 +39,45 @@ public sealed class TenantApiFixture : ApiFixture
     public Task<TResult> ExecuteResolutionAsync<TResult>(
         Func<ITenantResolver, CancellationToken, Task<TResult>> resolve,
         CancellationToken ct = default) =>
-        commandExecutor.ExecuteAsync(resolve, ct);
+        transactionRunner.ExecuteAsync(resolve, ct);
+
+    internal async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
+        Guid ownerUserId,
+        Guid otherOwnerUserId,
+        Guid tenantId)
+    {
+        var accessor = Services.GetRequiredService<IHttpContextAccessor>();
+        var previous = accessor.HttpContext;
+        var request = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim("sub", ownerUserId.ToString()),
+                 new Claim(ClaimTypes.NameIdentifier, ownerUserId.ToString())],
+                "Test"))
+        };
+        request.Request.Headers[TenantHeaders.TenantId] = tenantId.ToString();
+        accessor.HttpContext = request;
+        try
+        {
+            return await transactionRunner.ExecuteAsync<IServiceProvider, UnitResult<RemoveMemberError>>(
+                async (services, ct) =>
+                {
+                    await services.GetRequiredService<RequestTenantResolver>().ResolveAsync(ct);
+                    var members = services.GetRequiredService<IMembershipService>();
+                    var first = await members.RemoveMemberAsync(otherOwnerUserId, ct);
+                    if (first.TryGetError(out var firstError))
+                        throw new InvalidOperationException($"First owner removal failed: {firstError}.");
+                    var second = await members.RemoveMemberAsync(ownerUserId, ct);
+                    if (second.TryGetError(out var secondError))
+                        throw new InvalidOperationException($"Second owner removal failed: {secondError}.");
+                    return second;
+                });
+        }
+        finally
+        {
+            accessor.HttpContext = previous;
+        }
+    }
 
     public Task ProvisionAsync(CredentialRegisteredEvent @event, MessageEnvelope? envelope = null) =>
         provisioningHandler.HandleAsync(
@@ -40,39 +85,41 @@ public sealed class TenantApiFixture : ApiFixture
             envelope ?? MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow));
 
     public Task AddOwnerMembershipAsync(Guid tenantId, Guid userId) =>
-        AddMembershipAsync(tenantId, userId, TenantRole.Owner);
+        AddMembershipAsync(tenantId, userId, "Owner");
 
-    public async Task AddMembershipAsync(Guid tenantId, Guid userId, TenantRole role)
+    public async Task AddMembershipAsync(Guid tenantId, Guid userId, string presetKey)
     {
         dbContext.Memberships.Add(
-            TenantMembershipEntity.Create(tenantId, userId, role, invitedBy: null, DateTime.UtcNow));
+            TenantMembershipEntity.Create(tenantId, userId, [RoleId(tenantId, presetKey)], invitedBy: null, DateTime.UtcNow));
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task ChangeMembershipRoleAsync(Guid tenantId, Guid userId, TenantRole role)
+    public async Task ChangeMembershipRolesAsync(Guid tenantId, Guid userId, params string[] presetKeys)
     {
         var membership = await dbContext.Memberships.SingleAsync(
             candidate => candidate.TenantId == tenantId && candidate.UserId == userId);
-        membership.ChangeRole(role);
+        membership.ReplaceRoles([.. presetKeys.Select(key => RoleId(tenantId, key))], Guid.NewGuid(), DateTime.UtcNow);
         await dbContext.SaveChangesAsync();
     }
 
     public async Task<TenantInvitationEntity> AddInvitationAsync(
         Guid tenantId,
         string email,
-        TenantRole role,
+        string presetKey,
         Guid inviterUserId,
         DateTime expiresAt)
     {
         var now = DateTime.UtcNow;
+        var tenant = await dbContext.Tenants.SingleOrDefaultAsync(value => value.Id == tenantId);
         var inviter = await dbContext.Memberships.SingleOrDefaultAsync(
             membership => membership.TenantId == tenantId && membership.UserId == inviterUserId);
         var invitation = TenantInvitationEntity.Create(
             tenantId,
             email.Trim().ToLowerInvariant(),
-            role,
+            [RoleId(tenantId, presetKey)],
             inviter?.Id ?? Guid.NewGuid(),
             inviter?.PermissionVersion ?? 1,
+            tenant?.RolePolicyVersion ?? 1,
             now,
             expiresAt - now);
         invitation.ClearDomainEvents();
@@ -80,6 +127,7 @@ public sealed class TenantApiFixture : ApiFixture
         await dbContext.SaveChangesAsync();
         return invitation;
     }
+    internal static Guid RoleId(Guid tenantId, string presetKey) => SystemPresetIds.For(tenantId, presetKey);
 
     public async Task<TenantVerificationEntity> AddRejectedVerificationAsync(
         Guid tenantId,
@@ -113,7 +161,10 @@ public sealed class TenantApiFixture : ApiFixture
         return verification;
     }
 
-    public async Task<T> RunWithTenantCreationBarrierAsync<T>(Guid userId, Func<Task<T>> action)
+    public async Task<T> RunWithTenantCreationBarrierAsync<T>(
+        Guid userId,
+        Func<Task<T>> action,
+        Action? afterFirstWaiter = null)
     {
         await using var control = new NpgsqlConnection(dbContext.Database.GetConnectionString());
         await control.OpenAsync();
@@ -125,7 +176,12 @@ public sealed class TenantApiFixture : ApiFixture
         var result = action();
         try
         {
-            await WaitForTenantCreationWaitersAsync(control);
+            if (afterFirstWaiter is not null)
+            {
+                await WaitForTenantCreationWaitersAsync(control, 1);
+                afterFirstWaiter();
+            }
+            await WaitForTenantCreationWaitersAsync(control, 2);
             await ExecuteScalarAsync(
                 control,
                 "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
@@ -141,6 +197,45 @@ public sealed class TenantApiFixture : ApiFixture
                     "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
                     userId);
         }
+    }
+
+    public async Task<(TDeletion Deletion, TContender Contender)> RunWithPausedTenantDeletionAsync<TDeletion, TContender>(
+        Guid invitationId,
+        Func<Task<TDeletion>> deletion,
+        Func<Task<TContender>> contender)
+    {
+        var connectionString = dbContext.Database.GetConnectionString();
+        await using var monitor = new NpgsqlConnection(connectionString);
+        await monitor.OpenAsync();
+        await using var control = new NpgsqlConnection(connectionString);
+        await control.OpenAsync();
+        await using var transaction = await control.BeginTransactionAsync();
+        await using (var command = control.CreateCommand())
+        {
+            command.CommandText = """
+                SELECT 1
+                FROM tenant."Invitations"
+                WHERE "Id" = @invitationId
+                FOR SHARE
+                """;
+            command.Parameters.AddWithValue("invitationId", invitationId);
+            await command.ExecuteScalarAsync();
+        }
+
+        Task<TDeletion> deletionResult;
+        Task<TContender> contenderResult;
+        try
+        {
+            deletionResult = deletion();
+            await WaitForLockWaiterAsync(monitor, """%DELETE FROM tenant."Invitations"%""");
+            contenderResult = contender();
+            await WaitForLockWaiterAsync(monitor, """%tenant."Tenants"%FOR UPDATE%""");
+        }
+        finally
+        {
+            await transaction.RollbackAsync();
+        }
+        return (await deletionResult, await contenderResult);
     }
 
     public Task<T> RunWithVerificationReviewBarrierAsync<T>(
@@ -239,7 +334,7 @@ public sealed class TenantApiFixture : ApiFixture
         return outcome!;
     }
 
-    private static async Task WaitForTenantCreationWaitersAsync(NpgsqlConnection connection)
+    private static async Task WaitForTenantCreationWaitersAsync(NpgsqlConnection connection, int count)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         while (true)
@@ -253,7 +348,28 @@ public sealed class TenantApiFixture : ApiFixture
                   AND wait_event = 'advisory'
                   AND query LIKE '%pg_advisory_xact_lock(hashtextextended%'
                 """;
-            if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) >= 2)
+            if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) >= count)
+                return;
+            await Task.Delay(25, timeout.Token);
+        }
+    }
+
+    private static async Task WaitForLockWaiterAsync(NpgsqlConnection connection, string queryPattern)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (true)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                SELECT COUNT(*)
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid <> pg_backend_pid()
+                  AND wait_event_type = 'Lock'
+                  AND query LIKE @queryPattern
+                """;
+            command.Parameters.AddWithValue("queryPattern", queryPattern);
+            if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) > 0)
                 return;
             await Task.Delay(25, timeout.Token);
         }
@@ -278,7 +394,7 @@ public sealed class TenantApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<TenantDbContext>();
-        commandExecutor = scope.ServiceProvider.GetRequiredService<ICommandExecutor>();
+        transactionRunner = scope.ServiceProvider.GetRequiredService<ITransactionRunner>();
         VerificationReviewRace.UseDataSource(scope.ServiceProvider.GetRequiredService<NpgsqlDataSource>());
         provisioningHandler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()

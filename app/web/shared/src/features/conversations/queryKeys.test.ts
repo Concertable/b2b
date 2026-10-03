@@ -6,6 +6,7 @@ const session = {
   tenantId: "tenant-a",
   membershipId: "membership-a",
   permissionVersion: 1,
+  rolePolicyVersion: 1,
 };
 
 describe("conversationKeys", () => {
@@ -13,6 +14,7 @@ describe("conversationKeys", () => {
     { ...session, tenantId: "tenant-b" },
     { ...session, membershipId: "membership-b" },
     { ...session, permissionVersion: 2 },
+    { ...session, rolePolicyVersion: 2 },
   ])("never shares a key across tenant sessions", (other) => {
     expect(conversationKeys.unreadCount(other)).not.toEqual(
       conversationKeys.unreadCount(session),

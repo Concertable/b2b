@@ -326,6 +326,9 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<long>("PermissionVersion")
                         .HasColumnType("bigint");
 
+                    b.Property<long>("RolePolicyVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 

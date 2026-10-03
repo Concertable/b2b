@@ -1,14 +1,13 @@
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal sealed record UserMembership(
-    Guid MembershipId,
-    Guid TenantId,
+    MembershipSnapshot Snapshot,
     string LegalName,
-    TenantRole Role,
-    long PermissionVersion,
+    IReadOnlyList<RoleSummaryDto> Roles,
     IReadOnlyList<TenantBusinessActivityKind> BusinessActivities);
 
 internal interface IMembershipRepository : IRepository<TenantMembershipEntity, Guid>
@@ -17,32 +16,36 @@ internal interface IMembershipRepository : IRepository<TenantMembershipEntity, G
         IReadOnlyCollection<Guid> membershipIds,
         CancellationToken ct = default);
 
-    /// <summary>The caller's membership in a specific tenant — validates an <c>X-Tenant-Id</c> header against
-    /// authority. Null = the caller doesn't belong to that tenant (the request then fails closed).</summary>
+    Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForUpdateAsync(
+        IReadOnlyCollection<Guid> membershipIds,
+        CancellationToken ct = default);
+
+    Task<AuthoritySnapshot?> GetAuthoritySnapshotByUserIdAndTenantIdAsync(
+        Guid userId, Guid tenantId, CancellationToken ct = default);
+
+    Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
+        Guid membershipId, CancellationToken ct = default);
+
     Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default);
 
-    /// <summary>All of the caller's memberships (unordered) — feeds the single-membership default and the
-    /// <c>/me</c> switcher payload.</summary>
     Task<IReadOnlyList<UserMembership>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
 
-    /// <summary>Every membership row of a tenant — the members-management list (mapped to emails via <c>IUserModule</c>).</summary>
-    Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default);
+    Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(
+        Guid tenantId, CancellationToken ct = default);
 
     Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
-        CancellationToken ct = default);
+        IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
 
-    /// <summary>A single tracked membership row to mutate (change role) or remove; null if the user isn't a member.</summary>
-    Task<TenantMembershipEntity?> FindMembershipAsync(Guid tenantId, Guid userId, CancellationToken ct = default);
+    Task<TenantMembershipEntity?> FindMembershipAsync(
+        Guid tenantId, Guid userId, CancellationToken ct = default);
 
     Task<TenantMembershipEntity?> FindMembershipByIdAsync(
-        Guid tenantId,
-        Guid membershipId,
-        CancellationToken ct = default);
+        Guid tenantId, Guid membershipId, CancellationToken ct = default);
 
-    /// <summary>Owners currently in the tenant — the last-Owner invariant reads this before a demote/remove.</summary>
     Task<int> CountOwnersAsync(Guid tenantId, CancellationToken ct = default);
 
-    /// <summary>Whether the user already belongs to the tenant — guards duplicate invitation-accept.</summary>
+    Task<IReadOnlyList<TenantMembershipEntity>> ListAssignedToRoleAsync(
+        Guid tenantId, Guid roleId, CancellationToken ct = default);
+
     Task<bool> IsMemberAsync(Guid tenantId, Guid userId, CancellationToken ct = default);
 }

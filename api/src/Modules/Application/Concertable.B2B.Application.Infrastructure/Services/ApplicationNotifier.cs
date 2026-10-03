@@ -2,7 +2,6 @@ using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Conversations.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
@@ -24,8 +23,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly IOpportunityPrivilegedReadRepository opportunityRepository;
     private readonly IVenuePrivilegedReadRepository venueRepository;
     private readonly ITenantModule tenantModule;
-    private readonly IPermissionCatalog permissionCatalog;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
 
     public ApplicationNotifier(
@@ -36,8 +34,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         IOpportunityPrivilegedReadRepository opportunityRepository,
         IVenuePrivilegedReadRepository venueRepository,
         ITenantModule tenantModule,
-        IPermissionCatalog permissionCatalog,
-        ICommandExecutor commandExecutor,
+        ITransactionRunner transactionRunner,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork)
     {
         this.repository = repository;
@@ -47,8 +44,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         this.opportunityRepository = opportunityRepository;
         this.venueRepository = venueRepository;
         this.tenantModule = tenantModule;
-        this.permissionCatalog = permissionCatalog;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
         this.unitOfWork = unitOfWork;
     }
 
@@ -58,7 +54,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         if (venueTenantId is null)
             return;
 
-        var venueCreatorUserId = await commandExecutor.ExecuteAsync<ApplicationNotifier, Guid?>(
+        var venueCreatorUserId = await transactionRunner.ExecuteAsync<ApplicationNotifier, Guid?>(
             (notifier, ct) => notifier.GetVenueCreatorUserIdAsync(applicationId, ct));
         if (venueCreatorUserId is null)
             return;
@@ -66,16 +62,14 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         await unitOfWork.ExecuteAsync(async () =>
         {
             var eligible = (await tenantModule.GetCurrentMembershipsForNotificationAsync(venueTenantId.Value))
-                .Where(membership => permissionCatalog.Grants(membership.Role, TenantPermission.ApplicationsDecide))
-                .OrderBy(membership => membership.UserId == venueCreatorUserId.Value
-                    ? 0
-                    : membership.Role == TenantRole.Owner ? 1 : 2)
+                .Where(membership => membership.HasPermission(TenantPermission.ApplicationsDecide))
+                .OrderBy(membership => membership.UserId == venueCreatorUserId.Value ? 0 : 1)
                 .ThenBy(membership => membership.UserId);
             foreach (var candidate in eligible)
             {
                 var recipientOption = await tenantModule.ResolveMembershipSnapshotAsync(candidate);
                 if (!recipientOption.TryGetValue(out var recipient)
-                    || !permissionCatalog.Grants(recipient.Role, TenantPermission.ApplicationsDecide))
+                    || !recipient.HasPermission(TenantPermission.ApplicationsDecide))
                     continue;
 
                 await notificationClient.SendAsync(

@@ -8,20 +8,17 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
     private readonly ICurrentUser currentUser;
     private readonly IHttpContextAccessor httpContextAccessor;
     private readonly IMembershipReadRepository memberships;
-    private readonly IPermissionCatalog permissionCatalog;
     private readonly IMembershipContextAccessor accessor;
 
     public MembershipContext(
         ICurrentUser currentUser,
         IHttpContextAccessor httpContextAccessor,
         IMembershipReadRepository memberships,
-        IPermissionCatalog permissionCatalog,
         IMembershipContextAccessor accessor)
     {
         this.currentUser = currentUser;
         this.httpContextAccessor = httpContextAccessor;
         this.memberships = memberships;
-        this.permissionCatalog = permissionCatalog;
         this.accessor = accessor;
     }
 
@@ -30,12 +27,10 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
     public Guid? TenantId => Membership?.TenantId;
 
     public bool HasPermission(TenantPermission permission) =>
-        Membership is { } active && permissionCatalog.Grants(active.Role, permission);
+        Membership is { } active && active.HasPermission(permission);
 
     public ResourceAudience AudienceFor(TenantPermission permission) =>
-        Membership is { } active
-            ? permissionCatalog.AudienceFor(active.Role, permission)
-            : ResourceAudience.None;
+        Membership?.AudienceFor(permission) ?? ResourceAudience.None;
 
     public async Task ResolveAsync(CancellationToken cancellationToken = default)
     {

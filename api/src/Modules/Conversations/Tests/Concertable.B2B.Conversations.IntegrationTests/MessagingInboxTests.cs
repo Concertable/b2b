@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.Seed.Identity;
 using Xunit.Abstractions;
 
@@ -250,6 +249,46 @@ public sealed class MessagingInboxTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AssignedStaff_SendRemainsAvailableWithoutRead()
+    {
+        var owner = fixture.SeedState.VenueManager1;
+        var staff = fixture.SeedState.VenueManager3;
+        var tenantId = TenantSeedIds.For(owner.Id);
+        var membershipId = fixture.SeedState.Memberships.Single(value =>
+            value.TenantId == tenantId && value.UserId == staff.Id).Id;
+        var ownerClient = fixture.CreateClient(owner);
+        var staffClient = fixture.CreateClient(staff);
+        staffClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
+
+        await (await ownerClient.PutAsync(
+                $"/api/organization/members/{staff.Id}/roles",
+                new { roleIds = new[] { SystemPresetIds.For(tenantId, "Staff") } }))
+            .ShouldBe(HttpStatusCode.NoContent);
+
+        var preview = Assert.Single(await GetPreviewsAsync(ownerClient));
+        var conversation = await GetConversationAsync(ownerClient, preview.ConversationId);
+        await (await ownerClient.PostAsync(
+                $"/api/conversations/{preview.ConversationId}/member-assignments",
+                new { membershipId, expectedAccessVersion = conversation.AccessVersion }))
+            .ShouldBe(HttpStatusCode.NoContent);
+        await fixture.RevokeMemberReadGrantAsync(preview.ConversationId, membershipId);
+
+        await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}"))
+            .ShouldBe(HttpStatusCode.NotFound);
+        await (await staffClient.GetAsync($"/api/conversations/{preview.ConversationId}/messages"))
+            .ShouldBe(HttpStatusCode.NotFound);
+        Assert.Empty(await GetPreviewsAsync(staffClient));
+        Assert.Equal(0, await GetUnreadCountAsync(staffClient));
+        var inbound = (await GetMessagesAsync(ownerClient, preview.ConversationId))
+            .Single(message => message.Content == "Test inbox message — artist to venue.");
+        await (await staffClient.PostAsync(
+                $"/api/conversations/{preview.ConversationId}/messages/{inbound.Id}/report",
+                new { category = "illegalContent" }))
+            .ShouldBe(HttpStatusCode.NotFound);
+        await SendAsync(staffClient, preview.ConversationId, Guid.NewGuid(), "Send without Read");
+    }
+
+    [Fact]
     public async Task AssignedStaff_AccessIsMembershipScopedAndVersioned()
     {
         var owner = fixture.SeedState.VenueManager1;
@@ -265,9 +304,16 @@ public sealed class MessagingInboxTests : IAsyncLifetime
         staffClient.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
 
         await (await ownerClient.PutAsync(
-                $"/api/organization/members/{staff.Id}/role",
-                new { role = TenantRole.Staff.ToString() }))
+                $"/api/organization/members/{staff.Id}/roles",
+                new { roleIds = new[] { SystemPresetIds.For(tenantId, "Staff") } }))
             .ShouldBe(HttpStatusCode.NoContent);
+
+        await (await staffClient.PostAsync("/api/conversations", new
+            {
+                requestId = Guid.NewGuid(),
+                participantTenantIds = new[] { tenantId, TenantSeedIds.For(fixture.SeedState.ArtistManager1.Id) }
+            }))
+            .ShouldBe(HttpStatusCode.Forbidden);
 
         var preview = Assert.Single(await GetPreviewsAsync(ownerClient));
         var before = await GetConversationAsync(ownerClient, preview.ConversationId);
@@ -345,7 +391,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
             .ShouldBe(HttpStatusCode.NoContent);
         var invitationResponse = await ownerClient.PostAsync(
             "/api/organization/invitations",
-            new { staff.Email, role = TenantRole.Staff.ToString() });
+            new { staff.Email, roleIds = new[] { SystemPresetIds.For(tenantId, "Staff") } });
         await invitationResponse.ShouldBe(HttpStatusCode.Created);
         var invitation = (await invitationResponse.Content.ReadAsync<Invitation>())!;
         var acceptanceResponse = await fixture.CreateClient(staff)

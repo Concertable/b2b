@@ -41,7 +41,7 @@ internal static class ServiceCollectionExtensions
         {
         services.AddSeedingInfrastructure();
         services.AddSharedInfrastructure(configuration);
-        services.AddCommandTransactions();
+        services.AddUnitOfWork();
         services.AddUris(configuration);
         services.AddSharedBlob(configuration);
         services.AddSharedEmail(configuration);
@@ -57,7 +57,6 @@ internal static class ServiceCollectionExtensions
             runDispatcher: false);
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
-        services.AddScoped<VenueArtistTenantInterceptor>();
         services.AddScoped<IResourceAccessContext, ResourceAccessContext>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
@@ -92,6 +91,7 @@ internal static class ServiceCollectionExtensions
         services.AddPaymentClient(configuration);
         services.AddNotificationClient();
         services.AddConversationsModule(configuration);
+        services.AddResourceAuthorization();
 
         services.AddSingleton(TimeProvider.System);
 

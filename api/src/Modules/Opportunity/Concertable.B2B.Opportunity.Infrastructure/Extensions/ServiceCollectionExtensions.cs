@@ -19,6 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Concertable.Seed.Shared;
+using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Extensions;
 
@@ -56,6 +57,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOpportunityService, OpportunityService>();
             services.AddScoped<IOpportunitySyncer, OpportunitySyncer>();
             services.AddScoped<IOpportunityModule, OpportunityModule>();
+            services.AddScoped<ITenantDeletionGuard, OpportunityTenantDeletionGuard>();
             services.AddScoped<IOpportunityPrivilegedReadRepository, OpportunityPrivilegedReadRepository>();
             services.AddScoped<OpportunityCancellationIntegrationEventHandler>();
             services.AddScoped<IIntegrationEventHandler<BookingCancelledEvent>>(provider =>

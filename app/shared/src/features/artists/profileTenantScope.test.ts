@@ -26,6 +26,7 @@ describe("artist tenant scope", () => {
       "unselected",
       "unselected",
       0,
+      0,
       "artist",
       "my",
       "tenant-a",
