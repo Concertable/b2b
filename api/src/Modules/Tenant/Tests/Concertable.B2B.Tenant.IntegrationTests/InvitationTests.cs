@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Contracts;
+using Microsoft.AspNetCore.Mvc;
 using Xunit.Abstractions;
 
 namespace Concertable.B2B.Tenant.IntegrationTests;
@@ -436,12 +437,18 @@ public sealed class InvitationTests : IAsyncLifetime
         var tenantId = TenantOf(owner.Id);
         var invitee = fixture.SeedState.ArtistManagerNoArtist;
         var ownerClient = fixture.CreateClient(owner);
+        var inviteeClient = fixture.CreateClient(invitee);
         var invitation = await InviteAsync(ownerClient, invitee.Email, "Manager");
-        await (await ownerClient.DeleteAsync("/api/organization")).ShouldBe(HttpStatusCode.NoContent);
 
-        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{invitation.Id}/accept");
+        var (deletion, response) = await fixture.RunWithPausedTenantDeletionAsync(
+            invitation.Id,
+            () => ownerClient.DeleteAsync("/api/organization"),
+            () => inviteeClient.PostAsync($"/api/invitation/{invitation.Id}/accept"));
 
+        await deletion.ShouldBe(HttpStatusCode.NoContent);
         await response.ShouldBe(HttpStatusCode.NotFound);
+        var problem = await response.Content.ReadAsync<ProblemDetails>();
+        Assert.Equal("tenant.accept_invitation_tenant_not_found", problem!.Extensions["code"]?.ToString());
         Assert.DoesNotContain(fixture.Memberships, m => m.TenantId == tenantId && m.UserId == invitee.Id);
     }
 

@@ -199,6 +199,45 @@ public sealed class TenantApiFixture : ApiFixture
         }
     }
 
+    public async Task<(TDeletion Deletion, TContender Contender)> RunWithPausedTenantDeletionAsync<TDeletion, TContender>(
+        Guid invitationId,
+        Func<Task<TDeletion>> deletion,
+        Func<Task<TContender>> contender)
+    {
+        var connectionString = dbContext.Database.GetConnectionString();
+        await using var monitor = new NpgsqlConnection(connectionString);
+        await monitor.OpenAsync();
+        await using var control = new NpgsqlConnection(connectionString);
+        await control.OpenAsync();
+        await using var transaction = await control.BeginTransactionAsync();
+        await using (var command = control.CreateCommand())
+        {
+            command.CommandText = """
+                SELECT 1
+                FROM tenant."Invitations"
+                WHERE "Id" = @invitationId
+                FOR SHARE
+                """;
+            command.Parameters.AddWithValue("invitationId", invitationId);
+            await command.ExecuteScalarAsync();
+        }
+
+        Task<TDeletion> deletionResult;
+        Task<TContender> contenderResult;
+        try
+        {
+            deletionResult = deletion();
+            await WaitForLockWaiterAsync(monitor, """%DELETE FROM tenant."Invitations"%""");
+            contenderResult = contender();
+            await WaitForLockWaiterAsync(monitor, """%tenant."Tenants"%FOR UPDATE%""");
+        }
+        finally
+        {
+            await transaction.RollbackAsync();
+        }
+        return (await deletionResult, await contenderResult);
+    }
+
     public Task<T> RunWithVerificationReviewBarrierAsync<T>(
         Guid tenantId,
         Func<CancellationToken, Task<T>> action) =>
@@ -310,6 +349,27 @@ public sealed class TenantApiFixture : ApiFixture
                   AND query LIKE '%pg_advisory_xact_lock(hashtextextended%'
                 """;
             if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) >= count)
+                return;
+            await Task.Delay(25, timeout.Token);
+        }
+    }
+
+    private static async Task WaitForLockWaiterAsync(NpgsqlConnection connection, string queryPattern)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (true)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                SELECT COUNT(*)
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid <> pg_backend_pid()
+                  AND wait_event_type = 'Lock'
+                  AND query LIKE @queryPattern
+                """;
+            command.Parameters.AddWithValue("queryPattern", queryPattern);
+            if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) > 0)
                 return;
             await Task.Delay(25, timeout.Token);
         }
