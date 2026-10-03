@@ -94,11 +94,11 @@ public sealed class TenantApiFixture : ApiFixture
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task ChangeMembershipRoleAsync(Guid tenantId, Guid userId, string presetKey)
+    public async Task ChangeMembershipRolesAsync(Guid tenantId, Guid userId, params string[] presetKeys)
     {
         var membership = await dbContext.Memberships.SingleAsync(
             candidate => candidate.TenantId == tenantId && candidate.UserId == userId);
-        membership.ReplaceRoles([RoleId(tenantId, presetKey)], Guid.NewGuid(), DateTime.UtcNow);
+        membership.ReplaceRoles([.. presetKeys.Select(key => RoleId(tenantId, key))], Guid.NewGuid(), DateTime.UtcNow);
         await dbContext.SaveChangesAsync();
     }
 

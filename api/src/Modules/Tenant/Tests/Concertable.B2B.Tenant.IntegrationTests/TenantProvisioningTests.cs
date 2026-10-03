@@ -147,7 +147,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
             "Manager",
             inviter.Id,
             DateTime.UtcNow.AddDays(7));
-        await fixture.ChangeMembershipRoleAsync(inviterTenantId, inviter.Id, "Owner");
+        await fixture.ChangeMembershipRolesAsync(inviterTenantId, inviter.Id, "Owner", "Manager");
 
         await fixture.ProvisionAsync(new CredentialRegisteredEvent(
             newUserId,
@@ -172,7 +172,8 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
            UserId) index would throw on a duplicate insert, so a clean run is itself the dedup assertion. */
         await fixture.ProvisionAsync(new CredentialRegisteredEvent(manager.Id, manager.Email, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id));
 
-        var ownerCount = await fixture.Memberships.CountAsync(m => m.UserId == manager.Id && m.Assignments.Any(assignment => assignment.RoleId == TenantApiFixture.RoleId(m.TenantId, "Owner")));
+        var memberships = await fixture.Memberships.Where(m => m.UserId == manager.Id).ToListAsync();
+        var ownerCount = memberships.Count(m => m.Assignments.Any(assignment => assignment.RoleId == TenantApiFixture.RoleId(m.TenantId, "Owner")));
         var tenantCount = await fixture.Tenants.CountAsync(t => t.CreatedByUserId == manager.Id);
 
         Assert.Equal(1, ownerCount);

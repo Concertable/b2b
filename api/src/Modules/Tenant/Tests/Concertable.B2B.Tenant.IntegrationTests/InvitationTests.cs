@@ -417,7 +417,7 @@ public sealed class InvitationTests : IAsyncLifetime
         var coOwnerClient = ClientInTenant(coOwner.Id, coOwner.Email, tenantId);
         await (await coOwnerClient.PutAsJsonAsync(
             $"/api/organization/members/{owner.Id}/roles",
-            new { roleIds = new[] { TenantApiFixture.RoleId(tenantId, "Owner") } }))
+            new { roleIds = new[] { TenantApiFixture.RoleId(tenantId, "Owner"), TenantApiFixture.RoleId(tenantId, "Manager") } }))
             .ShouldBe(HttpStatusCode.NoContent);
 
         var response = await fixture.CreateClient(invitee)
@@ -432,15 +432,17 @@ public sealed class InvitationTests : IAsyncLifetime
     [Fact]
     public async Task Accept_TenantNoLongerExists_IsRejected_WithoutMembership()
     {
-        var invitee = fixture.SeedState.VenueManagerNoVenue;
-        var ghostTenantId = Guid.NewGuid();
-        var orphan = await fixture.AddInvitationAsync(
-            ghostTenantId, invitee.Email, "Manager", fixture.SeedState.VenueManager1.Id, DateTime.UtcNow.AddDays(7));
+        var owner = fixture.SeedState.VenueManagerNoVenue;
+        var tenantId = TenantOf(owner.Id);
+        var invitee = fixture.SeedState.ArtistManagerNoArtist;
+        var ownerClient = fixture.CreateClient(owner);
+        var invitation = await InviteAsync(ownerClient, invitee.Email, "Manager");
+        await (await ownerClient.DeleteAsync("/api/organization")).ShouldBe(HttpStatusCode.NoContent);
 
-        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{orphan.Id}/accept");
+        var response = await fixture.CreateClient(invitee).PostAsync($"/api/invitation/{invitation.Id}/accept");
 
         await response.ShouldBe(HttpStatusCode.NotFound);
-        Assert.DoesNotContain(fixture.Memberships, m => m.TenantId == ghostTenantId && m.UserId == invitee.Id);
+        Assert.DoesNotContain(fixture.Memberships, m => m.TenantId == tenantId && m.UserId == invitee.Id);
     }
 
     #endregion

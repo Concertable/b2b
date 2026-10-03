@@ -28,9 +28,9 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
     [Fact]
     public async Task Resolve_RoleChanged_RejectsOldAuthorityAndAcceptsCurrentSnapshot()
     {
-        var membership = fixture.Memberships.First(value => HasRole(value, "Owner"));
+        var membership = fixture.Memberships.AsEnumerable().First(value => HasRole(value, "Owner"));
         var expected = Snapshot(membership);
-        await fixture.ChangeMembershipRoleAsync(membership.TenantId, membership.UserId, "Manager");
+        await fixture.ChangeMembershipRolesAsync(membership.TenantId, membership.UserId, "Manager");
         var current = Snapshot(fixture.Memberships.Single(value => value.Id == membership.Id));
 
         var stale = await fixture.ExecuteResolutionAsync((resolver, ct) =>
@@ -93,9 +93,9 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
     [Fact]
     public async Task ResolveMany_ActorPermissionVersionChanged_RejectsStaleAuthority()
     {
-        var membership = fixture.Memberships.First(value => HasRole(value, "Owner"));
+        var membership = fixture.Memberships.AsEnumerable().First(value => HasRole(value, "Owner"));
         var expected = Snapshot(membership);
-        await fixture.ChangeMembershipRoleAsync(membership.TenantId, membership.UserId, "Manager");
+        await fixture.ChangeMembershipRolesAsync(membership.TenantId, membership.UserId, "Manager");
 
         var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
             resolver.ResolveManyAsync(expected, [expected.TenantId], ct));
