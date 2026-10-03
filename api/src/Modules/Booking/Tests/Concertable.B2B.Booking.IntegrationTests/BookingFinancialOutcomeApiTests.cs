@@ -1,4 +1,5 @@
 using System.Net;
+using Concertable.B2B.Booking.Api.Responses;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Payment.Contracts;
@@ -27,7 +28,7 @@ public sealed class BookingFinancialOutcomeApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync(
-            $"/api/booking/application/{fixture.SeedState.FlatFeeApp.Id}");
+            $"/api/booking/application/{fixture.SeedState.FlatFeeApp.Id}/summary");
 
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -46,9 +47,9 @@ public sealed class BookingFinancialOutcomeApiTests : IAsyncLifetime
             await fixture.PaymentTransport.WaitForCommandsAsync<CaptureEscrowCommand>(1));
 
         var pendingResponse = await client.GetAsync(
-            $"/api/booking/application/{applicationId}");
+            $"/api/booking/application/{applicationId}/operations");
         await pendingResponse.ShouldBe(HttpStatusCode.OK);
-        var pending = await pendingResponse.Content.ReadAsync<BookingSummary>();
+        var pending = await pendingResponse.Content.ReadAsync<BookingOperationsResponse>();
         Assert.Equal(command.OperationId, pending!.OperationId);
         Assert.Equal(BookingStatus.AwaitingConfirmation, pending.Status);
         Assert.Null(pending.FailureCode);
@@ -57,9 +58,9 @@ public sealed class BookingFinancialOutcomeApiTests : IAsyncLifetime
         await fixture.RejectLatestFinancialOperationAsync();
 
         var rejectedResponse = await client.GetAsync(
-            $"/api/booking/application/{applicationId}");
+            $"/api/booking/application/{applicationId}/operations");
         await rejectedResponse.ShouldBe(HttpStatusCode.OK);
-        var rejected = await rejectedResponse.Content.ReadAsync<BookingSummary>();
+        var rejected = await rejectedResponse.Content.ReadAsync<BookingOperationsResponse>();
         Assert.Equal(command.OperationId, rejected!.OperationId);
         Assert.Equal(BookingStatus.ConfirmationFailed, rejected.Status);
         Assert.Equal("card_declined", rejected.FailureCode);

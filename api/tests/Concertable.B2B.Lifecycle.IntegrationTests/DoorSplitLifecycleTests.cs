@@ -45,7 +45,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         await fixture.PaymentSimulator.SendWebhookAsync();
 
         var application = await GetApplicationAsync(client, applicationId);
-        Assert.Equal(ApplicationBoundaryStatus.Accepted, application.Status);
+        Assert.Equal(ApplicationBoundaryStatus.Confirmed, application.Status);
         var concert = await GetConcertAsync(client, applicationId);
         Assert.Null(concert.DatePosted);
         var financial = await GetFinancialOperationAsync(client, applicationId);
@@ -146,7 +146,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/application/{applicationId}");
+        var response = await client.GetAsync($"/api/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();
         Assert.NotNull(application);
@@ -169,7 +169,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
         int applicationId)
     {
         var response = await client.GetAsync(
-            $"/api/booking/application/{applicationId}");
+            $"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var financial = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(financial);

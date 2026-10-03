@@ -7,13 +7,24 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationService
 {
-    Task<Result<ApplicationDto, ApplicationError>> GetByIdAsync(int id);
-    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetByOpportunityIdAsync(int id);
-    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForArtistAsync();
-    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetRecentDeniedForArtistAsync();
-    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetPendingForCurrentVenueAsync();
-    Task<Result<IReadOnlyList<ApplicationDto>, ApplicationError>> GetCurrentForCurrentArtistAsync();
-    Task<Result<ApplicationDto, ApplyApplicationError>> ApplyAsync(
+    Task<Result<ApplicationSummary, ApplicationError>> GetSummaryAsync(
+        int id,
+        CancellationToken ct = default);
+    Task<Result<ApplicationProposal, ApplicationError>> GetProposalAsync(
+        int id,
+        CancellationToken ct = default);
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetByOpportunityIdAsync(
+        int id,
+        CancellationToken ct = default);
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetPendingForArtistAsync(
+        CancellationToken ct = default);
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetRecentDeniedForArtistAsync(
+        CancellationToken ct = default);
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetPendingForCurrentVenueAsync(
+        CancellationToken ct = default);
+    Task<Result<IReadOnlyList<ApplicationProposal>, ApplicationError>> GetCurrentForCurrentArtistAsync(
+        CancellationToken ct = default);
+    Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyAsync(
         int opportunityId,
         ESignatureRequest eSignature,
         CancellationToken ct = default);

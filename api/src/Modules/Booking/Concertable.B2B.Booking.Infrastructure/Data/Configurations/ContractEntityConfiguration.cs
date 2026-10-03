@@ -21,6 +21,7 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
             .HasForeignKey<ContractEntity>(contract => contract.BookingId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
+        builder.HasIndex(contract => contract.ApplicationId).IsUnique();
         builder.ComplexProperty(contract => contract.Period, period =>
         {
             period.Property(value => value.Start).HasColumnName("Period_Start");
@@ -34,6 +35,10 @@ internal sealed class ContractEntityConfiguration : IEntityTypeConfiguration<Con
         });
         builder.ComplexProperty(contract => contract.ArtistSignature, ConfigureSignature);
         builder.ComplexProperty(contract => contract.VenueSignature, ConfigureSignature);
+        builder.HasMany(contract => contract.AccessGrants)
+            .WithOne()
+            .HasForeignKey(grant => grant.ResourceId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasDiscriminator(contract => contract.DealType)
             .HasValue<FlatFeeContract>(DealType.FlatFee)
             .HasValue<VenueHireContract>(DealType.VenueHire)

@@ -8,5 +8,7 @@ internal static class Schema
     {
         public const string Bookings = "Bookings";
         public const string Contracts = "Contracts";
+        public const string BookingAccessGrants = "BookingAccessGrants";
+        public const string ContractAccessGrants = "ContractAccessGrants";
     }
 }

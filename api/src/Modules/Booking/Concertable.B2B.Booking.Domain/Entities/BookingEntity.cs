@@ -1,6 +1,7 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
@@ -14,7 +15,7 @@ using Reunion;
 namespace Concertable.B2B.Booking.Domain.Entities;
 
 [DisplayName(Booking.Contracts.DisplayNames.Booking)]
-public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
+public sealed class BookingEntity : IIdEntity, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly BookingStateMachine stateMachine = new();
 
@@ -36,6 +37,9 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
     public Guid? CancellationOperationId { get; private set; }
     internal FinancialFailure? FinancialFailure { get; private set; }
     public ContractEntity Contract { get; private set; } = null!;
+
+    private readonly List<BookingAccessGrant> accessGrants = [];
+    public IReadOnlyList<BookingAccessGrant> AccessGrants => accessGrants;
 
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
@@ -70,6 +74,23 @@ public sealed class BookingEntity : IIdEntity, IVenueArtistTenantScoped, IConcur
         Genres = opportunity.Genres.ToList();
         VenueTenantId = opportunity.Venue.TenantId;
         ArtistTenantId = application.Artist.TenantId;
+
+        var acceptance = snapshot.Contract.VenueSignature;
+        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
+        {
+            foreach (var scope in new[] { BookingAccessScope.Summary, BookingAccessScope.Operations })
+            {
+                accessGrants.Add(BookingAccessGrant.Issue(
+                    Id,
+                    tenantId,
+                    membershipId: null,
+                    scope,
+                    issuedByTenantId: VenueTenantId,
+                    issuedByUserId: acceptance.UserId,
+                    ResourceGrantKind.Principal,
+                    acceptance.AtUtc));
+            }
+        }
     }
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation()
