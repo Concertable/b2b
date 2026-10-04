@@ -101,7 +101,7 @@ internal sealed class RoleService : IRoleService
             () => Result.Failure<RoleDto, CreateRoleError>(new CreateRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || await authority.ProveAdministrationAsync(
+        if (tenant is null || await authority.AuthorizeAdministrationAsync(
             tenantId, TenantPermission.MembersManageRoles, true, ct) is null)
             return new CreateRoleError.NotPermitted();
         if (!TryParseGrants(request.Permissions, out var grants)
@@ -131,7 +131,7 @@ internal sealed class RoleService : IRoleService
             () => Result.Failure<RoleDto, UpdateRoleError>(new UpdateRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || await authority.ProveAdministrationAsync(
+        if (tenant is null || await authority.AuthorizeAdministrationAsync(
             tenantId, TenantPermission.MembersManageRoles, true, ct) is null)
             return new UpdateRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
@@ -165,7 +165,7 @@ internal sealed class RoleService : IRoleService
             () => UnitResult.Failure<RetireRoleError>(new RetireRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        var actor = tenant is null ? null : await authority.ProveAdministrationAsync(
+        var actor = tenant is null ? null : await authority.AuthorizeAdministrationAsync(
             tenantId, TenantPermission.MembersManageRoles, true, ct);
         if (tenant is null || actor is null)
             return new RetireRoleError.NotPermitted();

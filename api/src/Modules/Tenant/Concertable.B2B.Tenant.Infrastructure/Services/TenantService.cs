@@ -178,7 +178,7 @@ internal sealed class TenantService : ITenantService
         var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new UpdateTenantError.TenantNotFound(tenantId);
-        if (await authority.ProveAdministrationAsync(
+        if (await authority.AuthorizeAdministrationAsync(
             tenantId, TenantPermission.TenantSettingsEdit, false, ct) is null)
             return new UpdateTenantError.NotPermitted();
         if (tenant.Version != request.ExpectedVersion)
@@ -226,7 +226,7 @@ internal sealed class TenantService : ITenantService
             var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
             if (tenant is null)
                 return new ChangeBusinessActivityError.TenantNotFound(tenantId);
-            if (await authority.ProveAdministrationAsync(
+            if (await authority.AuthorizeAdministrationAsync(
                 tenantId, TenantPermission.TenantSettingsEdit, false, ct) is null)
                 return new ChangeBusinessActivityError.NotPermitted();
             if (tenant.EligibilityVersion != request.ExpectedEligibilityVersion)
@@ -252,7 +252,7 @@ internal sealed class TenantService : ITenantService
         var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new DeleteTenantError.TenantNotFound(tenantId);
-        if (await authority.ProveAdministrationAsync(
+        if (await authority.AuthorizeAdministrationAsync(
             tenantId, TenantPermission.TenantDelete, true, ct) is null)
             return new DeleteTenantError.NotPermitted();
 

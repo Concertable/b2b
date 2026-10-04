@@ -71,7 +71,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
             && await ValidateStateAsync(current, ct);
     }
 
-    internal async Task<MembershipSnapshot?> ProveAdministrationAsync(
+    internal async Task<MembershipSnapshot?> AuthorizeAdministrationAsync(
         Guid tenantId, TenantPermission permission, bool protectedOwner,
         CancellationToken ct = default)
     {
@@ -88,14 +88,14 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
                 tenantId, authority.Actor.MembershipId, ct);
         if (protectedOwner && current.InitialIsProtectedOwner != true)
             return null;
-        current.ProvenPermissions.Add(permission);
+        current.AuthorizedPermissions.Add(permission);
         return authority.Actor;
     }
 
     internal async Task<bool> TrackMembershipAsync(
         TenantMembershipEntity member, CancellationToken ct = default)
     {
-        var current = ProvenState();
+        var current = AuthorizedState();
         if (current is null || member.TenantId != current.Original!.Actor.TenantId)
             return false;
         if (current.Members.TryGetValue(member.Id, out var tracked))
@@ -116,7 +116,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
 
     internal void RecordMembershipVersion(TenantMembershipEntity member, long beforeVersion)
     {
-        var current = ProvenState() ?? throw new InvalidOperationException("No checked administration proof.");
+        var current = AuthorizedState() ?? throw new InvalidOperationException("No checked administration snapshot.");
         if (!current.Members.TryGetValue(member.Id, out var tracked)
             || tracked.Removed
             || tracked.TenantId != member.TenantId
@@ -131,7 +131,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
 
     internal void RecordMembershipRemoval(TenantMembershipEntity member)
     {
-        var current = ProvenState() ?? throw new InvalidOperationException("No checked administration proof.");
+        var current = AuthorizedState() ?? throw new InvalidOperationException("No checked administration snapshot.");
         if (!current.Members.TryGetValue(member.Id, out var tracked)
             || tracked.Removed
             || tracked.TenantId != member.TenantId
@@ -145,9 +145,9 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
 
     internal void RecordPolicyVersion(TenantEntity tenant, long beforeVersion)
     {
-        var current = ProvenState() ?? throw new InvalidOperationException("No checked administration proof.");
+        var current = AuthorizedState() ?? throw new InvalidOperationException("No checked administration snapshot.");
         if (tenant.Id != current.Original!.Actor.TenantId
-            || !current.ProvenPermissions.Contains(TenantPermission.MembersManageRoles)
+            || !current.AuthorizedPermissions.Contains(TenantPermission.MembersManageRoles)
             || current.InitialIsProtectedOwner != true
             || current.ExpectedPolicyVersion != beforeVersion
             || tenant.RolePolicyVersion != beforeVersion + 1
@@ -160,9 +160,9 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         TenantEntity tenant, IReadOnlyCollection<TenantMembershipEntity> members,
         CancellationToken ct = default)
     {
-        var current = ProvenState();
+        var current = AuthorizedState();
         if (current is null || tenant.Id != current.Original!.Actor.TenantId
-            || !current.ProvenPermissions.Contains(TenantPermission.TenantDelete)
+            || !current.AuthorizedPermissions.Contains(TenantPermission.TenantDelete)
             || current.InitialIsProtectedOwner != true
             || current.ExpectedPolicyVersion != tenant.RolePolicyVersion
             || current.TenantDeleted)
@@ -178,16 +178,16 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         return true;
     }
 
-    internal bool ProveInvitationCreation(
+    internal bool AuthorizeInvitationCreation(
         TenantInvitationEntity invitation,
         MembershipSnapshot inviter,
         IReadOnlyCollection<TenantRoleDefinition> selectedRoles,
         CancellationToken ct = default)
     {
-        var current = ProvenState();
+        var current = AuthorizedState();
         if (current?.Original is not { } original
             || !original.Actor.HasSameAuthorityAs(inviter)
-            || !current.ProvenPermissions.Contains(TenantPermission.MembersInvite)
+            || !current.AuthorizedPermissions.Contains(TenantPermission.MembersInvite)
             || invitation.TenantId != inviter.TenantId
             || invitation.InviterMembershipId != inviter.MembershipId
             || !invitation.IsActive(clock.GetUtcNow().UtcDateTime)
@@ -197,14 +197,14 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         var inviterOwner = current.InitialIsProtectedOwner == true;
         if (!TenantRoleAssignmentPolicy.CanAssign(inviter, inviterOwner, selectedRoles))
             return false;
-        current.CreatedInvitations.Add(new InvitationCreationProof(
+        current.CreatedInvitations.Add(new InvitationCreationSnapshot(
             invitation.Id, invitation.TenantId, inviter,
             selectedRoles.Select(role => role.Id).Order().ToArray(),
             invitation.ExpiresAt, original.CatalogRevision));
         return true;
     }
 
-    internal async Task<bool> ProveInvitationAcceptanceAsync(
+    internal async Task<bool> AuthorizeInvitationAcceptanceAsync(
         TenantInvitationEntity invitation,
         MembershipSnapshot inviter,
         IReadOnlyCollection<TenantRoleDefinition> selectedRoles,
@@ -227,7 +227,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         var inviterOwner = await roles.HasProtectedOwnerAsync(inviter.TenantId, inviter.MembershipId, ct);
         if (!TenantRoleAssignmentPolicy.CanAssign(inviter, inviterOwner, selectedRoles))
             return false;
-        current.AcceptedInvitations.Add(new InvitationAcceptanceProof(
+        current.AcceptedInvitations.Add(new InvitationAcceptanceSnapshot(
             invitation.Id, invitation.TenantId, invitation.Version, acceptingUserId,
             inviter, selectedRoles.Select(role => role.Id).Order().ToArray(),
             invitation.ExpiresAt, revision));
@@ -250,15 +250,15 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         authorizationContext.IsActive && authorizationContext.UnitOfWorkId is { } id && state?.UnitOfWorkId == id
             ? state : null;
 
-    private UnitOfWorkState? ProvenState() =>
-        ExistingState() is { Original: not null } current && current.ProvenPermissions.Count > 0
+    private UnitOfWorkState? AuthorizedState() =>
+        ExistingState() is { Original: not null } current && current.AuthorizedPermissions.Count > 0
             ? current : null;
 
     private static bool CanChangeMembership(UnitOfWorkState current) =>
         current.InitialIsProtectedOwner == true
-        && (current.ProvenPermissions.Contains(TenantPermission.MembersManageRoles)
-            || current.ProvenPermissions.Contains(TenantPermission.MembersRemove)
-            || current.ProvenPermissions.Contains(TenantPermission.TenantDelete));
+        && (current.AuthorizedPermissions.Contains(TenantPermission.MembersManageRoles)
+            || current.AuthorizedPermissions.Contains(TenantPermission.MembersRemove)
+            || current.AuthorizedPermissions.Contains(TenantPermission.TenantDelete));
 
     private async Task<bool> ValidateStateAsync(UnitOfWorkState current, CancellationToken ct)
     {
@@ -313,42 +313,42 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
                 && !actor!.HasSameAuthorityAs(original.Actor))
                 return false;
         }
-        foreach (var proof in current.CreatedInvitations)
+        foreach (var snapshot in current.CreatedInvitations)
         {
-            if (proof.CatalogRevision != revision
-                || clock.GetUtcNow().UtcDateTime >= proof.ExpiresAt)
+            if (snapshot.CatalogRevision != revision
+                || clock.GetUtcNow().UtcDateTime >= snapshot.ExpiresAt)
                 return false;
-            var invitation = await invitations.GetByIdAsync(proof.InvitationId, ct);
-            if (invitation is null || invitation.TenantId != proof.TenantId
+            var invitation = await invitations.GetByIdAsync(snapshot.InvitationId, ct);
+            if (invitation is null || invitation.TenantId != snapshot.TenantId
                 || invitation.Version != 1
                 || invitation.Status != InvitationStatus.Pending
-                || invitation.InviterMembershipId != proof.Inviter.MembershipId
-                || !invitation.Assignments.Select(row => row.RoleId).Order().SequenceEqual(proof.RoleIds))
+                || invitation.InviterMembershipId != snapshot.Inviter.MembershipId
+                || !invitation.Assignments.Select(row => row.RoleId).Order().SequenceEqual(snapshot.RoleIds))
                 return false;
-            var inviter = await memberships.GetSnapshotByMembershipIdAsync(proof.Inviter.MembershipId, ct);
-            if (inviter is null || !inviter.HasSameAuthorityAs(proof.Inviter))
+            var inviter = await memberships.GetSnapshotByMembershipIdAsync(snapshot.Inviter.MembershipId, ct);
+            if (inviter is null || !inviter.HasSameAuthorityAs(snapshot.Inviter))
                 return false;
-            var selected = await roles.ResolveActiveAsync(proof.TenantId, proof.RoleIds, ct);
+            var selected = await roles.ResolveActiveAsync(snapshot.TenantId, snapshot.RoleIds, ct);
             if (selected is null || !TenantRoleAssignmentPolicy.CanAssign(inviter,
                 await roles.HasProtectedOwnerAsync(inviter.TenantId, inviter.MembershipId, ct), selected))
                 return false;
         }
-        foreach (var proof in current.AcceptedInvitations)
+        foreach (var snapshot in current.AcceptedInvitations)
         {
-            if (proof.CatalogRevision != revision
-                || clock.GetUtcNow().UtcDateTime >= proof.ExpiresAt)
+            if (snapshot.CatalogRevision != revision
+                || clock.GetUtcNow().UtcDateTime >= snapshot.ExpiresAt)
                 return false;
-            var invitation = await invitations.GetByIdAsync(proof.InvitationId, ct);
-            if (invitation is null || invitation.TenantId != proof.TenantId
-                || invitation.Version != proof.BeforeVersion + 1
+            var invitation = await invitations.GetByIdAsync(snapshot.InvitationId, ct);
+            if (invitation is null || invitation.TenantId != snapshot.TenantId
+                || invitation.Version != snapshot.BeforeVersion + 1
                 || invitation.Status != InvitationStatus.Accepted
-                || invitation.AcceptedByUserId != proof.AcceptingUserId
-                || !invitation.Assignments.Select(row => row.RoleId).Order().SequenceEqual(proof.RoleIds))
+                || invitation.AcceptedByUserId != snapshot.AcceptingUserId
+                || !invitation.Assignments.Select(row => row.RoleId).Order().SequenceEqual(snapshot.RoleIds))
                 return false;
-            var inviter = await memberships.GetSnapshotByMembershipIdAsync(proof.Inviter.MembershipId, ct);
-            if (inviter is null || !inviter.HasSameAuthorityAs(proof.Inviter))
+            var inviter = await memberships.GetSnapshotByMembershipIdAsync(snapshot.Inviter.MembershipId, ct);
+            if (inviter is null || !inviter.HasSameAuthorityAs(snapshot.Inviter))
                 return false;
-            var selected = await roles.ResolveActiveAsync(proof.TenantId, proof.RoleIds, ct);
+            var selected = await roles.ResolveActiveAsync(snapshot.TenantId, snapshot.RoleIds, ct);
             if (selected is null || !TenantRoleAssignmentPolicy.CanAssign(inviter,
                 await roles.HasProtectedOwnerAsync(inviter.TenantId, inviter.MembershipId, ct), selected))
                 return false;
@@ -362,10 +362,10 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         public AuthoritySnapshot? Original { get; set; }
         public long ExpectedPolicyVersion { get; set; }
         public bool? InitialIsProtectedOwner { get; set; }
-        public HashSet<TenantPermission> ProvenPermissions { get; } = [];
+        public HashSet<TenantPermission> AuthorizedPermissions { get; } = [];
         public Dictionary<Guid, MemberTransition> Members { get; } = [];
-        public List<InvitationAcceptanceProof> AcceptedInvitations { get; } = [];
-        public List<InvitationCreationProof> CreatedInvitations { get; } = [];
+        public List<InvitationAcceptanceSnapshot> AcceptedInvitations { get; } = [];
+        public List<InvitationCreationSnapshot> CreatedInvitations { get; } = [];
         public bool TenantDeleted { get; set; }
         public bool MembershipChanged { get; set; }
     }
@@ -378,7 +378,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         public bool Removed { get; set; }
     }
 
-    private sealed record InvitationCreationProof(
+    private sealed record InvitationCreationSnapshot(
         Guid InvitationId,
         Guid TenantId,
         MembershipSnapshot Inviter,
@@ -386,7 +386,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         DateTime ExpiresAt,
         string CatalogRevision);
 
-    private sealed record InvitationAcceptanceProof(
+    private sealed record InvitationAcceptanceSnapshot(
         Guid InvitationId,
         Guid TenantId,
         long BeforeVersion,

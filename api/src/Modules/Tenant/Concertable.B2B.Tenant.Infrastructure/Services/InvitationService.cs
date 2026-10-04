@@ -95,7 +95,7 @@ internal sealed class InvitationService : IInvitationService
         if (tenant is null)
             return new InviteMemberError.TenantNotFound();
 
-        var actor = await authority.ProveAdministrationAsync(
+        var actor = await authority.AuthorizeAdministrationAsync(
             tenantId, TenantPermission.MembersInvite, false, ct);
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
         if (actor is null || selectedRoles is null || !await CanAssignAsync(actor, selectedRoles, ct))
@@ -120,7 +120,7 @@ internal sealed class InvitationService : IInvitationService
         var invitation = TenantInvitationEntity.Create(
             tenantId, email, request.RoleIds, actor.MembershipId,
             actor.PermissionVersion, actor.RolePolicyVersion, now, InvitationTtl);
-        if (!authority.ProveInvitationCreation(invitation, actor, selectedRoles))
+        if (!authority.AuthorizeInvitationCreation(invitation, actor, selectedRoles))
             return new InviteMemberError.NotPermitted();
         await repository.InsertAsync(invitation, ct);
         return new InvitationDto(invitation.Id, invitation.Email,
@@ -144,7 +144,7 @@ internal sealed class InvitationService : IInvitationService
         var invitation = await repository.GetByIdForUpdateAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenantId)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
-        if (await authority.ProveAdministrationAsync(
+        if (await authority.AuthorizeAdministrationAsync(
             tenantId, TenantPermission.MembersInvite, false, ct) is null)
             return new RevokeInvitationError.NotPermitted();
         return invitation.Revoke().MapError(error => error.ToRevokeInvitationError());
@@ -191,7 +191,7 @@ internal sealed class InvitationService : IInvitationService
             || inviter.PermissionVersion != invitation.InviterPermissionVersion
             || inviter.RolePolicyVersion != invitation.InviterRolePolicyVersion
             || !await CanAssignAsync(inviter, selectedRoles, ct)
-            || !await authority.ProveInvitationAcceptanceAsync(
+            || !await authority.AuthorizeInvitationAcceptanceAsync(
                 invitation, inviter, selectedRoles, userId, ct))
             return new AcceptInvitationError.InviterNotAuthorized();
 

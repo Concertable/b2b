@@ -11,10 +11,10 @@ namespace Concertable.B2B.Tenant.UnitTests;
 public sealed class TenantAuthorityResolverTests
 {
     [Fact]
-    public async Task SelfDowngrade_ContinuousVersionTransitionRetainsOriginalProof()
+    public async Task SelfDowngrade_ContinuousVersionTransitionRetainsOriginalAuthority()
     {
         var fixture = new Fixture();
-        Assert.NotNull(await fixture.Authority.ProveAdministrationAsync(
+        Assert.NotNull(await fixture.Authority.AuthorizeAdministrationAsync(
             fixture.Tenant.Id, TenantPermission.MembersManageRoles, true));
         Assert.True(await fixture.Authority.TrackMembershipAsync(fixture.Member));
 
@@ -33,7 +33,7 @@ public sealed class TenantAuthorityResolverTests
     public async Task ResolveMany_AfterCheckedSelfDowngradeUsesOriginalActor()
     {
         var fixture = new Fixture();
-        Assert.NotNull(await fixture.Authority.ProveAdministrationAsync(
+        Assert.NotNull(await fixture.Authority.AuthorizeAdministrationAsync(
             fixture.Tenant.Id, TenantPermission.MembersManageRoles, true));
         Assert.True(await fixture.Authority.TrackMembershipAsync(fixture.Member));
         var before = fixture.Member.PermissionVersion;
@@ -52,7 +52,7 @@ public sealed class TenantAuthorityResolverTests
     public async Task MembershipVersionTransition_RejectsAContinuityGap()
     {
         var fixture = new Fixture();
-        Assert.NotNull(await fixture.Authority.ProveAdministrationAsync(
+        Assert.NotNull(await fixture.Authority.AuthorizeAdministrationAsync(
             fixture.Tenant.Id, TenantPermission.MembersManageRoles, true));
         Assert.True(await fixture.Authority.TrackMembershipAsync(fixture.Member));
 
@@ -64,10 +64,10 @@ public sealed class TenantAuthorityResolverTests
     }
 
     [Fact]
-    public async Task SelfRemoval_CheckedRemovalKeepsTheOriginalProof()
+    public async Task SelfRemoval_CheckedRemovalKeepsTheOriginalAuthority()
     {
         var fixture = new Fixture();
-        Assert.NotNull(await fixture.Authority.ProveAdministrationAsync(
+        Assert.NotNull(await fixture.Authority.AuthorizeAdministrationAsync(
             fixture.Tenant.Id, TenantPermission.MembersRemove, true));
         Assert.True(await fixture.Authority.TrackMembershipAsync(fixture.Member));
 
@@ -83,7 +83,7 @@ public sealed class TenantAuthorityResolverTests
     public async Task ValidateForCommit_MembershipChangeLeavesNoOwner_Rejects(bool remove)
     {
         var fixture = new Fixture();
-        Assert.NotNull(await fixture.Authority.ProveAdministrationAsync(
+        Assert.NotNull(await fixture.Authority.AuthorizeAdministrationAsync(
             fixture.Tenant.Id, TenantPermission.MembersManageRoles, true));
         Assert.True(await fixture.Authority.TrackMembershipAsync(fixture.Member));
         if (remove)

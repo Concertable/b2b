@@ -82,7 +82,7 @@ calling the root service port again would create a separate unit of work.
 `FlushAsync` saves participants until no tracked changes remain, selecting each current business context
 for outbox insertion. Then the coordinator runs the registered authority checks, including checks added
 during flushing. Managed authority must be resolved and no tracked changes may remain before commit.
-Permission denial poisons the unit and cannot be swallowed into a successful commit. Resource proofs
+Permission denial poisons the unit and cannot be swallowed into a successful commit. Resource authorization snapshots
 bind to this unit's `UnitOfWorkId`; keeping the original locks and authority versions is part of the
 operation's consistency requirement. `ReadCommitted` alone is not the authorization fence.
 
