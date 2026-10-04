@@ -1,21 +1,25 @@
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace Concertable.B2B.Authorization.Contracts;
 
 public readonly record struct ResourceAuthorizationDecision
 {
-    private ResourceAuthorizationDecision(ResourceAuthorizationEvidence evidence)
+    private ResourceAuthorizationDecision(Guid? principalTenantId, ImmutableArray<ResourceGrantSnapshot> grants)
     {
-        this.Evidence = evidence;
+        this.IsAllowed = true;
+        this.PrincipalTenantId = principalTenantId;
+        this.Grants = grants;
     }
 
     public static ResourceAuthorizationDecision Denied => default;
 
-    public ResourceAuthorizationEvidence? Evidence { get; }
+    public bool IsAllowed { get; }
 
-    [MemberNotNullWhen(true, nameof(Evidence))]
-    public bool IsAllowed => Evidence is not null;
+    public Guid? PrincipalTenantId { get; }
 
-    public static ResourceAuthorizationDecision From(ResourceAuthorizationEvidence? evidence) =>
-        evidence is null ? Denied : new ResourceAuthorizationDecision(evidence);
+    public ImmutableArray<ResourceGrantSnapshot> Grants { get; }
+
+    public static ResourceAuthorizationDecision Allow(
+        Guid? principalTenantId, ImmutableArray<ResourceGrantSnapshot> grants) =>
+        new(principalTenantId, grants);
 }

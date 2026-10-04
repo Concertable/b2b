@@ -138,23 +138,28 @@ public sealed class ConcertGrantPolicyTests : IAsyncLifetime
         context.ConcertAccessGrants.Add(grant);
         await context.SaveChangesAsync();
 
-        var evidence = new ResourceAuthorizationEvidence(null,
+        var snapshot = new ResourceAuthorizationSnapshot(
+            new AuthorizationRequest(
+                binding.Permission, ResourceAddress.Create(ResourceKind.Concert, concert.Id), ResourceFacet.Operations),
+            binding,
+            new AuthoritySnapshot(actor, AuthorizationCatalog.Revision),
+            null,
             [new ResourceGrantSnapshot("Operations", grant.Id, grant.Version,
                 new DateTimeOffset(grant.ValidFrom, TimeSpan.Zero), null)]);
-        Assert.True(await IsVisibleAsync(context, concert.Id, binding, actor, now, evidence));
+        Assert.True(await IsVisibleAsync(context, concert.Id, binding, actor, now, snapshot));
         Assert.False(await IsVisibleAsync(
             context, concert.Id, binding, actor with { PermissionVersion = actor.PermissionVersion + 1 },
-            now, evidence));
+            now, snapshot));
         Assert.False(await IsVisibleAsync(
-            context, concert.Id, binding, actor with { TenantId = Guid.NewGuid() }, now, evidence));
+            context, concert.Id, binding, actor with { TenantId = Guid.NewGuid() }, now, snapshot));
         Assert.False(await IsVisibleAsync(
             context, concert.Id, binding,
             actor with { Permissions = actor.Permissions.SetItem(
-                TenantPermission.OperationsView, ResourceAudience.None) }, now, evidence));
+                TenantPermission.OperationsView, ResourceAudience.None) }, now, snapshot));
 
         grant.Revoke(now.UtcDateTime);
         await context.SaveChangesAsync();
-        Assert.False(await IsVisibleAsync(context, concert.Id, binding, actor, now, evidence));
+        Assert.False(await IsVisibleAsync(context, concert.Id, binding, actor, now, snapshot));
 
         context.ConcertAccessGrants.Add(ConcertAccessGrant.Issue(
             concert.Id, tenantId, actor.MembershipId, ConcertAccessScope.Operations,
@@ -196,8 +201,8 @@ public sealed class ConcertGrantPolicyTests : IAsyncLifetime
 
     private static Task<bool> IsVisibleAsync(
         ConcertPrivilegedDbContext context, int id, ResourcePolicyBinding binding,
-        MembershipSnapshot actor, DateTimeOffset now, ResourceAuthorizationEvidence evidence) =>
+        MembershipSnapshot actor, DateTimeOffset now, ResourceAuthorizationSnapshot snapshot) =>
         context.Concerts.AsNoTracking()
-            .Where(ConcertGrantPolicy.Concerts(context, binding, actor, now, evidence))
+            .Where(ConcertGrantPolicy.Concerts(context, binding, actor, now, snapshot))
             .AnyAsync(concert => concert.Id == id);
 }

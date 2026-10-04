@@ -13,7 +13,7 @@ internal static class ConcertGrantPolicy
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
         DateTimeOffset now,
-        ResourceAuthorizationEvidence? pinned = null,
+        ResourceAuthorizationSnapshot? pinned = null,
         bool requireCurrentMembership = true)
     {
         if (binding.Resource != ResourceKind.Concert
@@ -65,7 +65,7 @@ internal static class ConcertGrantPolicy
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
         DateTimeOffset now,
-        ResourceAuthorizationEvidence? pinned = null,
+        ResourceAuthorizationSnapshot? pinned = null,
         bool requireCurrentMembership = true)
     {
         if (binding.Resource != ResourceKind.Invoice

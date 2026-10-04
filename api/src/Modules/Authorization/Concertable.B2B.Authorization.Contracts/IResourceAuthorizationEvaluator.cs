@@ -19,7 +19,7 @@ public interface IResourceAuthorizationEvaluator
         CancellationToken ct = default);
 
     Task<bool> ValidateForCommitAsync(
-        ResourceAuthorizationProof proof,
+        ResourceAuthorizationSnapshot snapshot,
         DateTimeOffset now,
         CancellationToken ct = default);
 }

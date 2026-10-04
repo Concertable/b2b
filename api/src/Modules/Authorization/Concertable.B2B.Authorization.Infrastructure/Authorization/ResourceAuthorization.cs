@@ -24,7 +24,7 @@ internal sealed class ResourceAuthorization(
         var now = clock.GetUtcNow();
         var decision = await registry.Evaluator(request.Resource.Kind).CheckAsync(
             request, binding!, authority.Actor, now, ct);
-        return decision.IsAllowed && HasValidEvidence(binding!, decision.Evidence, authority.Actor, now)
+        return decision.IsAllowed && HasValidGrants(binding!, decision, authority.Actor, now)
             ? AuthorizationDecision.Allowed
             : AuthorizationDecision.Denied;
     }
@@ -46,28 +46,29 @@ internal sealed class ResourceAuthorization(
         var now = clock.GetUtcNow();
         var decision = await evaluator.RequireAsync(
             request, binding!, authority.Actor, now, ct);
-        if (!decision.IsAllowed || !HasValidEvidence(binding!, decision.Evidence, authority.Actor, now))
+        if (!decision.IsAllowed || !HasValidGrants(binding!, decision, authority.Actor, now))
             return actor.Fail(AuthorizationDecision.Denied).Decision;
 
-        var proof = new ResourceAuthorizationProof(request, binding!, authority, decision.Evidence);
-        authorizationContext.RegisterValidator(token => evaluator.ValidateForCommitAsync(proof, clock.GetUtcNow(), token));
+        var snapshot = new ResourceAuthorizationSnapshot(
+            request, binding!, authority, decision.PrincipalTenantId, decision.Grants);
+        authorizationContext.RegisterValidator(token => evaluator.ValidateForCommitAsync(snapshot, clock.GetUtcNow(), token));
         return AuthorizationDecision.Allowed;
     }
 
-    private static bool HasValidEvidence(
+    private static bool HasValidGrants(
         ResourcePolicyBinding binding,
-        ResourceAuthorizationEvidence evidence,
+        ResourceAuthorizationDecision decision,
         MembershipSnapshot actor,
         DateTimeOffset now)
     {
         var principalPolicy = binding.Policy is "venue_principal" or "artist_principal"
             or "either_principal" or "principal_administration";
-        if (principalPolicy && evidence.PrincipalTenantId != actor.TenantId)
+        if (principalPolicy && decision.PrincipalTenantId != actor.TenantId)
             return false;
 
-        if (evidence.Grants.IsDefault
-            || evidence.Grants.Select(grant => grant.GrantId).Distinct().Count() != evidence.Grants.Length
-            || evidence.Grants.Any(grant => grant.GrantId == Guid.Empty
+        if (decision.Grants.IsDefault
+            || decision.Grants.Select(grant => grant.GrantId).Distinct().Count() != decision.Grants.Length
+            || decision.Grants.Any(grant => grant.GrantId == Guid.Empty
                 || grant.Version <= 0
                 || string.IsNullOrWhiteSpace(grant.Scope)
                 || grant.ValidFrom > now
@@ -76,11 +77,11 @@ internal sealed class ResourceAuthorization(
             return false;
 
         if (binding.RequiredScopes.Any(scope =>
-            evidence.Grants.Count(grant => grant.Scope == scope) != 1))
+            decision.Grants.Count(grant => grant.Scope == scope) != 1))
             return false;
 
         return binding.Resource != ResourceKind.Conversation
             || binding.Policy != "principal_administration"
-            || evidence.Grants.Count(grant => grant.Scope == "Read") == 1;
+            || decision.Grants.Count(grant => grant.Scope == "Read") == 1;
     }
 }

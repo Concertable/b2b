@@ -13,10 +13,10 @@ internal sealed class ContractResourceAuthorizationEvaluator(
 {
     public ResourceKind Kind => ResourceKind.Contract;
 
-    public async Task<ResourceAuthorizationDecision> CheckAsync(
+    public Task<ResourceAuthorizationDecision> CheckAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct));
+        EvaluateAsync(request.Resource.Id, binding, actor, now, ct);
 
     public async Task<ResourceAuthorizationDecision> RequireAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
@@ -29,49 +29,49 @@ internal sealed class ContractResourceAuthorizationEvaluator(
             $"""SELECT 1 FROM booking."Contracts" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""SELECT 1 FROM booking."ContractAccessGrants" WHERE "ResourceId" = {request.Resource.Id} ORDER BY "Id" FOR UPDATE""", ct);
-        return ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct));
+        return await EvaluateAsync(request.Resource.Id, binding, actor, now, ct);
     }
 
     public async Task<bool> ValidateForCommitAsync(
-        ResourceAuthorizationProof proof, DateTimeOffset now, CancellationToken ct = default)
+        ResourceAuthorizationSnapshot snapshot, DateTimeOffset now, CancellationToken ct = default)
     {
-        if (proof.Request.Resource.Kind != Kind || proof.Binding.Resource != Kind)
+        if (snapshot.Request.Resource.Kind != Kind || snapshot.Binding.Resource != Kind)
             return false;
 
-        var current = await ReadEvidenceAsync(
-            proof.Request.Resource.Id, proof.Binding, proof.Authority.Actor, now, ct, proof.Evidence);
-        return current is not null
-            && current.PrincipalTenantId == proof.Evidence.PrincipalTenantId
-            && current.Grants.Length == proof.Evidence.Grants.Length
-            && current.Grants.All(grant => proof.Evidence.Grants.Contains(grant));
+        var current = await EvaluateAsync(
+            snapshot.Request.Resource.Id, snapshot.Binding, snapshot.Authority.Actor, now, ct, snapshot);
+        return current.IsAllowed
+            && current.PrincipalTenantId == snapshot.PrincipalTenantId
+            && current.Grants.Length == snapshot.Grants.Length
+            && current.Grants.All(grant => snapshot.Grants.Contains(grant));
     }
 
-    private async Task<ResourceAuthorizationEvidence?> ReadEvidenceAsync(
+    private async Task<ResourceAuthorizationDecision> EvaluateAsync(
         int contractId, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct,
-        ResourceAuthorizationEvidence? pinned = null)
+        ResourceAuthorizationSnapshot? pinned = null)
     {
         if (binding.Resource != Kind || actor.AudienceFor(binding.Permission) == ResourceAudience.None)
-            return null;
+            return ResourceAuthorizationDecision.Denied;
 
         if (!await BookingGrantPolicy.EligibleContractResources(
                 context.Contracts.AsNoTracking(), binding.Policy)
             .AnyAsync(contract => contract.Id == contractId, ct))
-            return null;
+            return ResourceAuthorizationDecision.Denied;
 
         if (pinned is not null && pinned.Grants.Length != binding.RequiredScopes.Length)
-            return null;
+            return ResourceAuthorizationDecision.Denied;
 
         var grants = ImmutableArray.CreateBuilder<ResourceGrantSnapshot>();
         foreach (var requiredScope in binding.RequiredScopes)
         {
             if (!Enum.TryParse<ContractAccessScope>(requiredScope, false, out var scope)
                 || !Enum.IsDefined(scope))
-                return null;
+                return ResourceAuthorizationDecision.Denied;
 
             var pinnedGrant = pinned?.Grants.SingleOrDefault(candidate => candidate.Scope == requiredScope);
             if (pinned is not null && pinnedGrant is null)
-                return null;
+                return ResourceAuthorizationDecision.Denied;
 
             var selectedId = pinnedGrant?.GrantId;
             var grant = await BookingGrantPolicy.EligibleContracts(
@@ -88,7 +88,7 @@ internal sealed class ContractResourceAuthorizationEvaluator(
                 })
                 .FirstOrDefaultAsync(ct);
             if (grant is null)
-                return null;
+                return ResourceAuthorizationDecision.Denied;
 
             grants.Add(new ResourceGrantSnapshot(
                 requiredScope, grant.Id, grant.Version,
@@ -96,6 +96,6 @@ internal sealed class ContractResourceAuthorizationEvaluator(
                 grant.ValidUntil is { } until ? new DateTimeOffset(until, TimeSpan.Zero) : null));
         }
 
-        return new ResourceAuthorizationEvidence(null, grants.ToImmutable());
+        return ResourceAuthorizationDecision.Allow(null, grants.ToImmutable());
     }
 }

@@ -13,10 +13,10 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
 {
     public ResourceKind Kind => ResourceKind.Invoice;
 
-    public async Task<ResourceAuthorizationDecision> CheckAsync(
+    public Task<ResourceAuthorizationDecision> CheckAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, true, ct));
+        EvaluateAsync(request.Resource.Id, binding, actor, now, null, true, ct);
 
     public async Task<ResourceAuthorizationDecision> RequireAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
@@ -29,45 +29,45 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
             $"""SELECT 1 FROM concert."Invoices" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""SELECT 1 FROM concert."InvoiceAccessGrants" WHERE "ResourceId" = {request.Resource.Id} ORDER BY "Id" FOR UPDATE""", ct);
-        return ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, true, ct));
+        return await EvaluateAsync(request.Resource.Id, binding, actor, now, null, true, ct);
     }
 
     public async Task<bool> ValidateForCommitAsync(
-        ResourceAuthorizationProof proof, DateTimeOffset now, CancellationToken ct = default)
+        ResourceAuthorizationSnapshot snapshot, DateTimeOffset now, CancellationToken ct = default)
     {
-        if (proof.Request.Resource.Kind != Kind || proof.Binding.Resource != Kind)
+        if (snapshot.Request.Resource.Kind != Kind || snapshot.Binding.Resource != Kind)
             return false;
 
-        var current = await ReadEvidenceAsync(
-            proof.Request.Resource.Id, proof.Binding, proof.Authority.Actor,
-            now, proof.Evidence, false, ct);
-        return current is not null
-            && current.PrincipalTenantId == proof.Evidence.PrincipalTenantId
-            && current.Grants.SequenceEqual(proof.Evidence.Grants);
+        var current = await EvaluateAsync(
+            snapshot.Request.Resource.Id, snapshot.Binding, snapshot.Authority.Actor,
+            now, snapshot, false, ct);
+        return current.IsAllowed
+            && current.PrincipalTenantId == snapshot.PrincipalTenantId
+            && current.Grants.SequenceEqual(snapshot.Grants);
     }
 
-    private async Task<ResourceAuthorizationEvidence?> ReadEvidenceAsync(
+    private async Task<ResourceAuthorizationDecision> EvaluateAsync(
         int id, ResourcePolicyBinding binding, MembershipSnapshot actor, DateTimeOffset now,
-        ResourceAuthorizationEvidence? pinned, bool requireCurrentMembership, CancellationToken ct)
+        ResourceAuthorizationSnapshot? pinned, bool requireCurrentMembership, CancellationToken ct)
     {
         if (binding.Resource != Kind)
-            return null;
+            return ResourceAuthorizationDecision.Denied;
 
         var policy = ConcertGrantPolicy.Invoices(
             context, binding, actor, now, pinned, requireCurrentMembership);
         if (!await context.Invoices.AsNoTracking().Where(policy).AnyAsync(invoice => invoice.Id == id, ct))
-            return null;
+            return ResourceAuthorizationDecision.Denied;
 
         var grants = ImmutableArray.CreateBuilder<ResourceGrantSnapshot>();
         foreach (var name in binding.RequiredScopes)
         {
             if (!Enum.TryParse<InvoiceAccessScope>(name, false, out var scope)
                 || !Enum.IsDefined(scope))
-                return null;
+                return ResourceAuthorizationDecision.Denied;
 
             var original = pinned?.Grants.SingleOrDefault(grant => grant.Scope == name);
             if (pinned is not null && original is null)
-                return null;
+                return ResourceAuthorizationDecision.Denied;
 
             var grant = await ConcertGrantPolicy.InvoiceGrants(
                     context, actor, binding.Permission, scope, now, original)
@@ -82,7 +82,7 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
                 })
                 .FirstOrDefaultAsync(ct);
             if (grant is null)
-                return null;
+                return ResourceAuthorizationDecision.Denied;
 
             grants.Add(new ResourceGrantSnapshot(
                 name, grant.Id, grant.Version,
@@ -90,6 +90,6 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
                 grant.ValidUntil is { } until ? new DateTimeOffset(until, TimeSpan.Zero) : null));
         }
 
-        return new ResourceAuthorizationEvidence(null, grants.ToImmutable());
+        return ResourceAuthorizationDecision.Allow(null, grants.ToImmutable());
     }
 }

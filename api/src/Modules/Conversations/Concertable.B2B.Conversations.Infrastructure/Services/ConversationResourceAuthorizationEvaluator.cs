@@ -13,13 +13,13 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
 {
     public ResourceKind Kind => ResourceKind.Conversation;
 
-    public async Task<ResourceAuthorizationDecision> CheckAsync(
+    public Task<ResourceAuthorizationDecision> CheckAsync(
         AuthorizationRequest request,
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
         DateTimeOffset now,
         CancellationToken ct = default) =>
-        ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, ct));
+        EvaluateAsync(request.Resource.Id, binding, actor, now, null, ct);
 
     public async Task<ResourceAuthorizationDecision> RequireAsync(
         AuthorizationRequest request,
@@ -42,47 +42,47 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
             ORDER BY "Id"
             FOR UPDATE
             """, ct);
-        return ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, ct));
+        return await EvaluateAsync(request.Resource.Id, binding, actor, now, null, ct);
     }
 
     public async Task<bool> ValidateForCommitAsync(
-        ResourceAuthorizationProof proof,
+        ResourceAuthorizationSnapshot snapshot,
         DateTimeOffset now,
         CancellationToken ct = default)
     {
-        if (proof.Request.Resource.Kind != Kind || proof.Binding.Resource != Kind)
+        if (snapshot.Request.Resource.Kind != Kind || snapshot.Binding.Resource != Kind)
             return false;
 
-        var current = await ReadEvidenceAsync(
-            proof.Request.Resource.Id,
-            proof.Binding,
-            proof.Authority.Actor,
+        var current = await EvaluateAsync(
+            snapshot.Request.Resource.Id,
+            snapshot.Binding,
+            snapshot.Authority.Actor,
             now,
-            proof.Evidence,
+            snapshot,
             ct);
-        return current is not null
-            && current.PrincipalTenantId == proof.Evidence.PrincipalTenantId
-            && current.Grants.Length == proof.Evidence.Grants.Length
-            && current.Grants.SequenceEqual(proof.Evidence.Grants);
+        return current.IsAllowed
+            && current.PrincipalTenantId == snapshot.PrincipalTenantId
+            && current.Grants.Length == snapshot.Grants.Length
+            && current.Grants.SequenceEqual(snapshot.Grants);
     }
 
-    private async Task<ResourceAuthorizationEvidence?> ReadEvidenceAsync(
+    private async Task<ResourceAuthorizationDecision> EvaluateAsync(
         int conversationId,
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
         DateTimeOffset now,
-        ResourceAuthorizationEvidence? pinned,
+        ResourceAuthorizationSnapshot? pinned,
         CancellationToken ct)
     {
         if (binding.Resource != Kind || actor.AudienceFor(binding.Permission) == ResourceAudience.None)
-            return null;
+            return ResourceAuthorizationDecision.Denied;
         if (!await context.Conversations.AsNoTracking()
                 .AnyAsync(conversation => conversation.Id == conversationId, ct))
-            return null;
+            return ResourceAuthorizationDecision.Denied;
 
         var principal = binding.Policy == "principal_administration";
         if (!principal && binding.Policy != "conversation_grant")
-            return null;
+            return ResourceAuthorizationDecision.Denied;
 
         var scopes = principal
             ? ImmutableArray.Create(nameof(ConversationAccessScope.Read))
@@ -92,7 +92,7 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
         {
             if (!Enum.TryParse<ConversationAccessScope>(requiredScope, false, out var scope)
                 || !Enum.IsDefined(scope))
-                return null;
+                return ResourceAuthorizationDecision.Denied;
 
             var eligible = principal
                 ? ConversationGrantPolicy.Principal(context.ConversationAccessGrants.AsNoTracking(), actor, now.UtcDateTime)
@@ -103,7 +103,7 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
             {
                 var original = pinned.Grants.SingleOrDefault(grant => grant.Scope == requiredScope);
                 if (original is null)
-                    return null;
+                    return ResourceAuthorizationDecision.Denied;
                 eligible = eligible.Where(grant => grant.Id == original.GrantId);
             }
 
@@ -117,7 +117,7 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
                 })
                 .FirstOrDefaultAsync(ct);
             if (grant is null)
-                return null;
+                return ResourceAuthorizationDecision.Denied;
 
             grants.Add(new ResourceGrantSnapshot(
                 requiredScope,
@@ -127,7 +127,7 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
                 grant.ValidUntil is { } until ? new DateTimeOffset(until, TimeSpan.Zero) : null));
         }
 
-        return new ResourceAuthorizationEvidence(
+        return ResourceAuthorizationDecision.Allow(
             principal ? actor.TenantId : null,
             grants.ToImmutable());
     }
