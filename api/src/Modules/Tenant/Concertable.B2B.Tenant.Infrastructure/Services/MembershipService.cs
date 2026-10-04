@@ -63,7 +63,7 @@ internal sealed class MembershipService : IMembershipService
             var result = new List<MemberDto>(memberships.Count);
             foreach (var member in memberships)
                 result.Add(new MemberDto(member.UserId, emails[member.UserId],
-                    summaries.GetValueOrDefault(member.Id) ?? Array.Empty<RoleSummaryDto>()));
+                    summaries.GetValueOrDefault(member.Id) ?? Array.Empty<RoleSummary>()));
             return Result.Success<IReadOnlyList<MemberDto>, ListMembersError>(result);
         }, ct);
 

@@ -7,7 +7,7 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 internal sealed record UserMembership(
     MembershipSnapshot Snapshot,
     string LegalName,
-    IReadOnlyList<RoleSummaryDto> Roles,
+    IReadOnlyList<RoleSummary> Roles,
     IReadOnlyList<TenantBusinessActivityKind> BusinessActivities);
 
 internal interface IMembershipRepository : IRepository<TenantMembershipEntity, Guid>

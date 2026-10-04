@@ -5,6 +5,6 @@ namespace Concertable.B2B.Tenant.Application.DTOs;
 internal sealed record InvitationDto(
     Guid Id,
     string Email,
-    IReadOnlyList<RoleSummaryDto> Roles,
+    IReadOnlyList<RoleSummary> Roles,
     DateTime CreatedAt,
     DateTime ExpiresAt);

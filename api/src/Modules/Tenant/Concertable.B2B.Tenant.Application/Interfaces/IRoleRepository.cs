@@ -12,12 +12,12 @@ internal interface IRoleRepository
         Guid tenantId, IReadOnlyCollection<Guid> roleIds, CancellationToken ct = default);
     Task<bool> NameExistsAsync(Guid tenantId, string name, Guid? excludedId, CancellationToken ct = default);
     Task<bool> HasProtectedOwnerAsync(Guid tenantId, Guid membershipId, CancellationToken ct = default);
-    Task<IReadOnlyList<RoleSummaryDto>> GetSummariesForMembershipAsync(
+    Task<IReadOnlyList<RoleSummary>> GetSummariesForMembershipAsync(
         Guid tenantId, Guid membershipId, CancellationToken ct = default);
-    Task<IReadOnlyList<RoleSummaryDto>> GetSummariesForInvitationAsync(
+    Task<IReadOnlyList<RoleSummary>> GetSummariesForInvitationAsync(
         Guid tenantId, Guid invitationId, CancellationToken ct = default);
-    Task<IReadOnlyDictionary<Guid, IReadOnlyList<RoleSummaryDto>>> GetSummariesForMembershipsAsync(
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<RoleSummary>>> GetSummariesForMembershipsAsync(
         Guid tenantId, IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default);
-    Task<IReadOnlyDictionary<Guid, IReadOnlyList<RoleSummaryDto>>> GetSummariesForInvitationsAsync(
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<RoleSummary>>> GetSummariesForInvitationsAsync(
         Guid tenantId, IReadOnlyCollection<Guid> invitationIds, CancellationToken ct = default);
 }

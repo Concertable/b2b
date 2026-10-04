@@ -217,7 +217,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
                 snapshot,
                 tenant.LegalName,
                 [.. member.Assignments.Select(row => roles[row.RoleId])
-                    .Select(role => new RoleSummaryDto(role.Id, role.Name, role.IsProtectedOwner))],
+                    .Select(role => new RoleSummary(role.Id, role.Name, role.IsProtectedOwner))],
                 [.. tenant.BusinessActivities.Where(activity => activity.IsActive).Select(activity => activity.Kind)]);
         }).ToList();
     }

@@ -506,7 +506,7 @@ public sealed class TenantServiceTests
                 new MembershipSnapshot(
                     Guid.NewGuid(), tenantId, userId, 1, 1,
                     AuthorizationCatalog.Presets["Door"].Permissions.ToImmutableDictionary()),
-                "Bare Ltd", [new RoleSummaryDto(Guid.NewGuid(), "Door", false)], [])]);
+                "Bare Ltd", [new RoleSummary(Guid.NewGuid(), "Door", false)], [])]);
 
         var memberships = await service.GetMembershipsAsync(userId);
 

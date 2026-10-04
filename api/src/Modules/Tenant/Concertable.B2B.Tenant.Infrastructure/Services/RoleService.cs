@@ -82,7 +82,7 @@ internal sealed class RoleService : IRoleService
                 .OrderBy(item => item.Category).ThenBy(item => item.Label)
                 .Select(item => new PermissionMetadataDto(
                     item.Permission.Value, item.Label, item.Category,
-                    [.. item.ResourceBindings.Select(binding => new ResourceBindingDto(
+                    [.. item.ResourceBindings.Select(binding => new ResourceBinding(
                         binding.Resource, binding.Facet, binding.Policy, binding.RequiresScopes))],
                     [.. item.AssignableAudiences.Select(audience => audience.ToString())],
                     item.OwnerOnly))

@@ -52,7 +52,7 @@ internal sealed class RoleRepository(TenantDbContext context) : IRoleRepository
                 && role.IsProtectedOwner
                 && role.RetiredAt == null), ct);
 
-    public async Task<IReadOnlyList<RoleSummaryDto>> GetSummariesForMembershipAsync(
+    public async Task<IReadOnlyList<RoleSummary>> GetSummariesForMembershipAsync(
         Guid tenantId, Guid membershipId, CancellationToken ct = default)
     {
         var roles = await context.RoleDefinitions.AsNoTracking()
@@ -63,7 +63,7 @@ internal sealed class RoleRepository(TenantDbContext context) : IRoleRepository
         return Summaries(roles);
     }
 
-    public async Task<IReadOnlyList<RoleSummaryDto>> GetSummariesForInvitationAsync(
+    public async Task<IReadOnlyList<RoleSummary>> GetSummariesForInvitationAsync(
         Guid tenantId, Guid invitationId, CancellationToken ct = default)
     {
         var roles = await context.RoleDefinitions.AsNoTracking()
@@ -74,7 +74,7 @@ internal sealed class RoleRepository(TenantDbContext context) : IRoleRepository
         return Summaries(roles);
     }
 
-    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<RoleSummaryDto>>> GetSummariesForMembershipsAsync(
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<RoleSummary>>> GetSummariesForMembershipsAsync(
         Guid tenantId, IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
     {
         var rows = await (from assignment in context.MembershipRoleAssignments.AsNoTracking()
@@ -85,12 +85,12 @@ internal sealed class RoleRepository(TenantDbContext context) : IRoleRepository
             select new { assignment.MembershipId, role.Id, role.Name, role.IsProtectedOwner }).ToListAsync(ct);
         return rows.GroupBy(row => row.MembershipId)
             .ToDictionary(group => group.Key,
-                group => (IReadOnlyList<RoleSummaryDto>)group
-                    .Select(row => new RoleSummaryDto(row.Id, row.Name, row.IsProtectedOwner))
+                group => (IReadOnlyList<RoleSummary>)group
+                    .Select(row => new RoleSummary(row.Id, row.Name, row.IsProtectedOwner))
                     .OrderBy(role => role.Name, StringComparer.Ordinal).ToArray());
     }
 
-    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<RoleSummaryDto>>> GetSummariesForInvitationsAsync(
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<RoleSummary>>> GetSummariesForInvitationsAsync(
         Guid tenantId, IReadOnlyCollection<Guid> invitationIds, CancellationToken ct = default)
     {
         var rows = await (from assignment in context.InvitationRoleAssignments.AsNoTracking()
@@ -101,13 +101,13 @@ internal sealed class RoleRepository(TenantDbContext context) : IRoleRepository
             select new { assignment.InvitationId, role.Id, role.Name, role.IsProtectedOwner }).ToListAsync(ct);
         return rows.GroupBy(row => row.InvitationId)
             .ToDictionary(group => group.Key,
-                group => (IReadOnlyList<RoleSummaryDto>)group
-                    .Select(row => new RoleSummaryDto(row.Id, row.Name, row.IsProtectedOwner))
+                group => (IReadOnlyList<RoleSummary>)group
+                    .Select(row => new RoleSummary(row.Id, row.Name, row.IsProtectedOwner))
                     .OrderBy(role => role.Name, StringComparer.Ordinal).ToArray());
     }
 
-    private static IReadOnlyList<RoleSummaryDto> Summaries(
+    private static IReadOnlyList<RoleSummary> Summaries(
         IEnumerable<TenantRoleDefinition> roles) =>
-        roles.Select(role => new RoleSummaryDto(role.Id, role.Name, role.IsProtectedOwner))
+        roles.Select(role => new RoleSummary(role.Id, role.Name, role.IsProtectedOwner))
             .OrderBy(role => role.Name, StringComparer.Ordinal).ToArray();
 }

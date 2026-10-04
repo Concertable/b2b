@@ -73,7 +73,7 @@ internal sealed class InvitationService : IInvitationService
             var result = new List<InvitationDto>(invitations.Count);
             foreach (var invitation in invitations)
                 result.Add(new InvitationDto(invitation.Id, invitation.Email,
-                    summaries.GetValueOrDefault(invitation.Id) ?? Array.Empty<RoleSummaryDto>(),
+                    summaries.GetValueOrDefault(invitation.Id) ?? Array.Empty<RoleSummary>(),
                     invitation.CreatedAt, invitation.ExpiresAt));
             return Result.Success<IReadOnlyList<InvitationDto>, ListInvitationsError>(result);
         }, ct);
@@ -229,9 +229,9 @@ internal sealed class InvitationService : IInvitationService
             await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct),
             selectedRoles);
 
-    private static IReadOnlyList<RoleSummaryDto> Summaries(
+    private static IReadOnlyList<RoleSummary> Summaries(
         IEnumerable<TenantRoleDefinition> selectedRoles) =>
-        [.. selectedRoles.Select(role => new RoleSummaryDto(
+        [.. selectedRoles.Select(role => new RoleSummary(
             role.Id, role.Name, role.IsProtectedOwner))];
 
 }

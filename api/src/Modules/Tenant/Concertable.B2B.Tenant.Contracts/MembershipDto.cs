@@ -4,7 +4,7 @@ public sealed record MembershipDto(
     Guid MembershipId,
     Guid TenantId,
     string LegalName,
-    IReadOnlyList<RoleSummaryDto> Roles,
+    IReadOnlyList<RoleSummary> Roles,
     long PermissionVersion,
     long RolePolicyVersion,
     IReadOnlyList<TenantBusinessActivityKind> BusinessActivities,
