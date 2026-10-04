@@ -53,7 +53,7 @@ internal sealed class ConcertResourceAuthorizationEvaluator(
         if (binding.Resource != Kind)
             return ResourceAuthorizationDecision.Denied;
 
-        var policy = ConcertGrantPolicy.Concerts(
+        var policy = ConcertAuthorizationPolicy.Concerts(
             context, binding, actor, now, pinned, requireCurrentMembership);
         if (!await context.Concerts.AsNoTracking().Where(policy).AnyAsync(concert => concert.Id == id, ct))
             return ResourceAuthorizationDecision.Denied;
@@ -69,7 +69,7 @@ internal sealed class ConcertResourceAuthorizationEvaluator(
             if (pinned is not null && original is null)
                 return ResourceAuthorizationDecision.Denied;
 
-            var grant = await ConcertGrantPolicy.ConcertGrants(
+            var grant = await ConcertAuthorizationPolicy.ConcertGrants(
                     context, actor, binding.Permission, scope, now, original)
                 .Where(candidate => candidate.ResourceId == id)
                 .OrderBy(candidate => candidate.Id)
@@ -91,7 +91,7 @@ internal sealed class ConcertResourceAuthorizationEvaluator(
         }
 
         return ResourceAuthorizationDecision.Allow(
-            ConcertGrantPolicy.PrincipalTenantId(binding.Policy, actor),
+            ConcertAuthorizationPolicy.PrincipalTenantId(binding.Policy, actor),
             grants.ToImmutable());
     }
 }

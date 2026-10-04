@@ -13,11 +13,11 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Concert.IntegrationTests.Concert;
 
 [Collection("Integration")]
-public sealed class ConcertGrantPolicyTests : IAsyncLifetime
+public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
 {
     private readonly ConcertApiFixture fixture;
 
-    public ConcertGrantPolicyTests(ConcertApiFixture fixture, ITestOutputHelper output)
+    public ConcertAuthorizationPolicyTests(ConcertApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -61,7 +61,7 @@ public sealed class ConcertGrantPolicyTests : IAsyncLifetime
         Assert.True((await evaluator.CheckAsync(request, operations, actor, now)).IsAllowed);
         Assert.NotNull(await reads.GetOperationsByIdAsync(concert.Id, operations, actor, now));
         Assert.Equal(1, await context.Concerts.AsNoTracking()
-            .Where(ConcertGrantPolicy.Concerts(context, operations, actor, now))
+            .Where(ConcertAuthorizationPolicy.Concerts(context, operations, actor, now))
             .CountAsync(candidate => candidate.Id == concert.Id));
         Assert.Null(await reads.GetSummaryByIdAsync(concert.Id, summary, actor, now));
         Assert.Null(await reads.GetFinanceByIdAsync(
@@ -167,7 +167,7 @@ public sealed class ConcertGrantPolicyTests : IAsyncLifetime
             now.UtcDateTime.AddHours(-2), now.UtcDateTime.AddHours(-1)));
         await context.SaveChangesAsync();
         Assert.False(await context.Concerts.AsNoTracking()
-            .Where(ConcertGrantPolicy.Concerts(context, binding, actor, now))
+            .Where(ConcertAuthorizationPolicy.Concerts(context, binding, actor, now))
             .AnyAsync(candidate => candidate.Id == concert.Id));
 
     }
@@ -203,6 +203,6 @@ public sealed class ConcertGrantPolicyTests : IAsyncLifetime
         ConcertPrivilegedDbContext context, int id, ResourcePolicyBinding binding,
         MembershipSnapshot actor, DateTimeOffset now, ResourceAuthorizationSnapshot snapshot) =>
         context.Concerts.AsNoTracking()
-            .Where(ConcertGrantPolicy.Concerts(context, binding, actor, now, snapshot))
+            .Where(ConcertAuthorizationPolicy.Concerts(context, binding, actor, now, snapshot))
             .AnyAsync(concert => concert.Id == id);
 }

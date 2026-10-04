@@ -104,7 +104,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
 
         var binding = ResourcePolicyBinding.FromCatalog(
             TenantPermission.OperationsView, ResourceKind.Booking, facet);
-        return BookingGrantPolicy.VisibleBookings(
+        return BookingAuthorizationPolicy.VisibleBookings(
             context.Bookings.IgnoreQueryFilters([TenantFilters.Key]),
             context.BookingAccessGrants.IgnoreQueryFilters([TenantFilters.Key]),
             context.MembershipAuthority.AsNoTracking(), actor, binding, clock.GetUtcNow().UtcDateTime);

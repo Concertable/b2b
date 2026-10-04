@@ -56,7 +56,7 @@ internal sealed class ContractRepository : Repository<ContractEntity>, IContract
 
         var binding = ResourcePolicyBinding.FromCatalog(
             TenantPermission.TermsRead, ResourceKind.Contract, ResourceFacet.Read);
-        return BookingGrantPolicy.VisibleContracts(
+        return BookingAuthorizationPolicy.VisibleContracts(
             context.Contracts.IgnoreQueryFilters([TenantFilters.Key]),
             context.ContractAccessGrants.IgnoreQueryFilters([TenantFilters.Key]),
             context.MembershipAuthority.AsNoTracking(), actor, binding, clock.GetUtcNow().UtcDateTime);

@@ -25,6 +25,6 @@ internal sealed class InvoicePrivilegedReadRepository(ConcertPrivilegedDbContext
     private IQueryable<InvoiceEntity> Root(
         ResourcePolicyBinding binding, MembershipSnapshot actor, DateTimeOffset now) =>
         context.Invoices.AsNoTracking().Where(
-            ConcertGrantPolicy.Invoices(context, binding, actor, now))
+            ConcertAuthorizationPolicy.Invoices(context, binding, actor, now))
             .Where(invoice => binding.Facet == ResourceFacet.Read);
 }

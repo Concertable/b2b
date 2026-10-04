@@ -54,7 +54,7 @@ internal sealed class ContractResourceAuthorizationEvaluator(
         if (binding.Resource != Kind || actor.AudienceFor(binding.Permission) == ResourceAudience.None)
             return ResourceAuthorizationDecision.Denied;
 
-        if (!await BookingGrantPolicy.EligibleContractResources(
+        if (!await BookingAuthorizationPolicy.EligibleContractResources(
                 context.Contracts.AsNoTracking(), binding.Policy)
             .AnyAsync(contract => contract.Id == contractId, ct))
             return ResourceAuthorizationDecision.Denied;
@@ -74,7 +74,7 @@ internal sealed class ContractResourceAuthorizationEvaluator(
                 return ResourceAuthorizationDecision.Denied;
 
             var selectedId = pinnedGrant?.GrantId;
-            var grant = await BookingGrantPolicy.EligibleContracts(
+            var grant = await BookingAuthorizationPolicy.EligibleContracts(
                     context.ContractAccessGrants.AsNoTracking(), actor, binding.Permission, scope, now.UtcDateTime)
                 .Where(candidate => candidate.ResourceId == contractId
                     && (selectedId == null || candidate.Id == selectedId))

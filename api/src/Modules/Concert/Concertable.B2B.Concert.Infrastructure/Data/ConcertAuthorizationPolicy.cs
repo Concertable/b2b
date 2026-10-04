@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 
-internal static class ConcertGrantPolicy
+internal static class ConcertAuthorizationPolicy
 {
     public static Expression<Func<ConcertEntity, bool>> Concerts(
         ConcertPrivilegedDbContext context,

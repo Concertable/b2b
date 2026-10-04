@@ -53,7 +53,7 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
         if (binding.Resource != Kind)
             return ResourceAuthorizationDecision.Denied;
 
-        var policy = ConcertGrantPolicy.Invoices(
+        var policy = ConcertAuthorizationPolicy.Invoices(
             context, binding, actor, now, pinned, requireCurrentMembership);
         if (!await context.Invoices.AsNoTracking().Where(policy).AnyAsync(invoice => invoice.Id == id, ct))
             return ResourceAuthorizationDecision.Denied;
@@ -69,7 +69,7 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
             if (pinned is not null && original is null)
                 return ResourceAuthorizationDecision.Denied;
 
-            var grant = await ConcertGrantPolicy.InvoiceGrants(
+            var grant = await ConcertAuthorizationPolicy.InvoiceGrants(
                     context, actor, binding.Permission, scope, now, original)
                 .Where(candidate => candidate.ResourceId == id)
                 .OrderBy(candidate => candidate.Id)

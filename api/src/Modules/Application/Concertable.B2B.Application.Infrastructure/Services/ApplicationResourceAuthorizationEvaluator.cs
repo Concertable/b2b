@@ -83,7 +83,7 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
         if (binding.Resource != Kind || actor.AudienceFor(binding.Permission) == ResourceAudience.None)
             return ResourceAuthorizationDecision.Denied;
 
-        var application = await ApplicationGrantPolicy.EligibleApplications(
+        var application = await ApplicationAuthorizationPolicy.EligibleApplications(
                 context.Applications.AsNoTracking(), actor.TenantId, binding.Policy)
             .Where(candidate => candidate.Id == applicationId)
             .Select(candidate => new { candidate.VenueTenantId, candidate.ArtistTenantId })
@@ -108,7 +108,7 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
                 return ResourceAuthorizationDecision.Denied;
 
             var selectedId = pinnedGrant?.GrantId;
-            var grant = await ApplicationGrantPolicy.Eligible(
+            var grant = await ApplicationAuthorizationPolicy.Eligible(
                     context.ApplicationAccessGrants.AsNoTracking(), actor, binding.Permission, scope, now.UtcDateTime)
                 .Where(candidate => candidate.ResourceId == applicationId
                     && (selectedId == null || candidate.Id == selectedId))

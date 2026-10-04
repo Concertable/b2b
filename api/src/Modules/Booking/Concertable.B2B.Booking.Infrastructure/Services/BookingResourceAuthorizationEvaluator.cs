@@ -55,7 +55,7 @@ internal sealed class BookingResourceAuthorizationEvaluator(
         if (binding.Resource != Kind || actor.AudienceFor(binding.Permission) == ResourceAudience.None)
             return ResourceAuthorizationDecision.Denied;
 
-        var booking = await BookingGrantPolicy.EligibleBookingResources(
+        var booking = await BookingAuthorizationPolicy.EligibleBookingResources(
                 context.Bookings.AsNoTracking(), actor.TenantId, binding.Policy)
             .Where(candidate => candidate.Id == bookingId)
             .Select(candidate => new { candidate.VenueTenantId, candidate.ArtistTenantId })
@@ -80,7 +80,7 @@ internal sealed class BookingResourceAuthorizationEvaluator(
                 return ResourceAuthorizationDecision.Denied;
 
             var selectedId = pinnedGrant?.GrantId;
-            var grant = await BookingGrantPolicy.EligibleBookings(
+            var grant = await BookingAuthorizationPolicy.EligibleBookings(
                     context.BookingAccessGrants.AsNoTracking(), actor, binding.Permission, scope, now.UtcDateTime)
                 .Where(candidate => candidate.ResourceId == bookingId
                     && (selectedId == null || candidate.Id == selectedId))

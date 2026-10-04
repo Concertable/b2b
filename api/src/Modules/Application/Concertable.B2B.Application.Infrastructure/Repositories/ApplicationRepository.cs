@@ -197,7 +197,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
             return context.Applications.Where(_ => false);
 
         var binding = ResourcePolicyBinding.FromCatalog(permission, ResourceKind.Application, facet);
-        return ApplicationGrantPolicy.Visible(
+        return ApplicationAuthorizationPolicy.Visible(
             context.Applications.IgnoreQueryFilters([TenantFilters.Key]),
             context.ApplicationAccessGrants.IgnoreQueryFilters([TenantFilters.Key]),
             context.MembershipAuthority.AsNoTracking(), actor, binding, clock.GetUtcNow().UtcDateTime);

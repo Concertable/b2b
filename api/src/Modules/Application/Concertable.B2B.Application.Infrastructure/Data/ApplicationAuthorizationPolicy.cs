@@ -5,7 +5,7 @@ using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Application.Infrastructure.Data;
 
-internal static class ApplicationGrantPolicy
+internal static class ApplicationAuthorizationPolicy
 {
     public static IQueryable<ApplicationEntity> EligibleApplications(
         IQueryable<ApplicationEntity> applications,

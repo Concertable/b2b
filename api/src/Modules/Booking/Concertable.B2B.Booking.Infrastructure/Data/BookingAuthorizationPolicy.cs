@@ -5,7 +5,7 @@ using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.Booking.Infrastructure.Data;
 
-internal static class BookingGrantPolicy
+internal static class BookingAuthorizationPolicy
 {
     public static IQueryable<BookingEntity> EligibleBookingResources(
         IQueryable<BookingEntity> bookings,
