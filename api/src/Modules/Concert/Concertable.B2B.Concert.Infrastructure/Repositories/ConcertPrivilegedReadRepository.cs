@@ -155,6 +155,6 @@ internal sealed class ConcertPrivilegedReadRepository(
         DateTimeOffset now, ResourceFacet facet) =>
         binding.Facet == facet
             ? context.Concerts.AsNoTracking().Where(
-                ConcertAuthorizationPolicy.Concerts(context, binding, actor, now))
+                ConcertGrantPolicy.Concerts(context, binding, actor, now))
             : context.Concerts.AsNoTracking().Where(concert => false);
 }

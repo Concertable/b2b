@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 
-internal static class ConcertAuthorizationPolicy
+internal static class ConcertGrantPolicy
 {
     public static Expression<Func<ConcertEntity, bool>> Concerts(
         ConcertPrivilegedDbContext context,
@@ -181,11 +181,11 @@ internal static class ConcertAuthorizationPolicy
         Expression<Func<T, bool>> left,
         Expression<Func<T, bool>> right)
     {
-        var body = new ReplaceParameter(right.Parameters[0], left.Parameters[0]).Visit(right.Body)!;
+        var body = new ParameterReplacer(right.Parameters[0], left.Parameters[0]).Visit(right.Body)!;
         return Expression.Lambda<Func<T, bool>>(Expression.AndAlso(left.Body, body), left.Parameters);
     }
 
-    private sealed class ReplaceParameter(ParameterExpression source, ParameterExpression target)
+    private sealed class ParameterReplacer(ParameterExpression source, ParameterExpression target)
         : ExpressionVisitor
     {
         protected override Expression VisitParameter(ParameterExpression node) =>
