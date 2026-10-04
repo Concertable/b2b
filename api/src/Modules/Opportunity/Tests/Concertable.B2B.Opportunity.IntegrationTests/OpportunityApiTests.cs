@@ -228,9 +228,9 @@ public sealed class OpportunityApiTests : IAsyncLifetime
         var activeTenantId = fixture.SeedState.ActiveVenueHireOpportunity.TenantId;
         var otherTenantId = fixture.SeedState.Tenants.Single(tenant =>
             tenant.CreatedByUserId == fixture.SeedState.VenueManagerNoVenue.Id).Id;
-        var executor = fixture.Services.GetRequiredService<ITransactionRunner>();
+        var transactionRunner = fixture.Services.GetRequiredService<ITransactionRunner>();
 
-        var (hasActive, hasOther) = await executor.ExecuteAsync<IEnumerable<ITenantDeletionGuard>, (bool, bool)>(
+        var (hasActive, hasOther) = await transactionRunner.RunAsync<IEnumerable<ITenantDeletionGuard>, (bool, bool)>(
             async (guards, ct) =>
             {
                 var guard = Assert.Single(guards.OfType<OpportunityTenantDeletionGuard>());

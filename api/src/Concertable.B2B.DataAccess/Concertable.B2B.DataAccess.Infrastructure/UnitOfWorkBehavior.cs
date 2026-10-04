@@ -24,7 +24,7 @@ public abstract class UnitOfWorkBehavior<TContext> : IUnitOfWorkBehavior<TContex
     public Task<TResult> ExecuteAsync<TResult>(
         Func<Task<TResult>> action,
         CancellationToken cancellationToken = default) =>
-        this.unitOfWorkRunner.ExecuteAsync(this.context, action, cancellationToken);
+        this.unitOfWorkRunner.RunAsync(this.context, action, cancellationToken);
 
     public Task ExecuteAsync(
         Func<Task> action,

@@ -9,21 +9,21 @@ internal sealed class TransactionRunner(
     NpgsqlDataSource dataSource,
     ITransactionCommitter committer) : ITransactionRunner
 {
-    public async Task<TResult> ExecuteAsync<TService, TResult>(
+    public async Task<TResult> RunAsync<TService, TResult>(
         Func<TService, CancellationToken, Task<TResult>> operation,
         CancellationToken ct = default)
         where TService : notnull
-        => await ExecuteCoreAsync(operation, null, null, ct);
+        => await RunCoreAsync(operation, null, null, ct);
 
-    public async Task<TResult> ExecuteAsync<TService, TResult>(
+    public async Task<TResult> RunAsync<TService, TResult>(
         Func<TService, CancellationToken, Task<TResult>> operation,
         Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
         Func<TResult> authorityFailure,
         CancellationToken ct = default)
         where TService : notnull
-        => await ExecuteCoreAsync(operation, validateAuthority, authorityFailure, ct);
+        => await RunCoreAsync(operation, validateAuthority, authorityFailure, ct);
 
-    private async Task<TResult> ExecuteCoreAsync<TService, TResult>(
+    private async Task<TResult> RunCoreAsync<TService, TResult>(
         Func<TService, CancellationToken, Task<TResult>> operation,
         Func<TService, TResult, CancellationToken, Task<bool>>? validateAuthority,
         Func<TResult>? authorityFailure,

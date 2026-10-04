@@ -235,14 +235,14 @@ internal sealed class ApplicationService : IApplicationService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
+            return await transactionRunner.RunAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
                 (service, token) => service.WithdrawCommandAsync(applicationId, actor, token),
                 ct);
         }
         catch (DbUpdateException exception)
             when (exception.IsApplicationConcurrencyConflict(applicationId))
         {
-            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
+            return await transactionRunner.RunAsync<ApplicationService, UnitResult<WithdrawApplicationError>>(
                 (service, token) => service.ClassifyWithdrawConflictAsync(applicationId, token),
                 ct);
         }
@@ -257,14 +257,14 @@ internal sealed class ApplicationService : IApplicationService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
+            return await transactionRunner.RunAsync<ApplicationService, UnitResult<RejectApplicationError>>(
                 (service, token) => service.RejectCommandAsync(applicationId, actor, token),
                 ct);
         }
         catch (DbUpdateException exception)
             when (exception.IsApplicationConcurrencyConflict(applicationId))
         {
-            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<RejectApplicationError>>(
+            return await transactionRunner.RunAsync<ApplicationService, UnitResult<RejectApplicationError>>(
                 (service, token) => service.ClassifyRejectConflictAsync(applicationId, token),
                 ct);
         }
@@ -279,14 +279,14 @@ internal sealed class ApplicationService : IApplicationService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
+            return await transactionRunner.RunAsync<ApplicationService, UnitResult<CancelApplicationError>>(
                 (service, token) => service.CancelCommandAsync(applicationId, actor, token),
                 ct);
         }
         catch (DbUpdateException exception)
             when (exception.IsApplicationConcurrencyConflict(applicationId))
         {
-            return await transactionRunner.ExecuteAsync<ApplicationService, UnitResult<CancelApplicationError>>(
+            return await transactionRunner.RunAsync<ApplicationService, UnitResult<CancelApplicationError>>(
                 (service, token) => service.ClassifyCancelConflictAsync(applicationId, token),
                 ct);
         }

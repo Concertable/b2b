@@ -39,7 +39,7 @@ public sealed class TenantApiFixture : ApiFixture
     public Task<TResult> ExecuteResolutionAsync<TResult>(
         Func<ITenantResolver, CancellationToken, Task<TResult>> resolve,
         CancellationToken ct = default) =>
-        transactionRunner.ExecuteAsync(resolve, ct);
+        transactionRunner.RunAsync(resolve, ct);
 
     internal async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
         Guid ownerUserId,
@@ -59,7 +59,7 @@ public sealed class TenantApiFixture : ApiFixture
         accessor.HttpContext = request;
         try
         {
-            return await transactionRunner.ExecuteAsync<IServiceProvider, UnitResult<RemoveMemberError>>(
+            return await transactionRunner.RunAsync<IServiceProvider, UnitResult<RemoveMemberError>>(
                 async (services, ct) =>
                 {
                     await services.GetRequiredService<RequestTenantResolver>().ResolveAsync(ct);

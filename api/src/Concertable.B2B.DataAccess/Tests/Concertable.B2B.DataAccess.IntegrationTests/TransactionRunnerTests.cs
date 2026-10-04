@@ -26,13 +26,13 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExecuteAsync_IgnoredAuthorityDenial_RollsBack()
+    public async Task RunAsync_IgnoredAuthorityDenial_RollsBack()
     {
         await this.fixture.PrepareCommitProbeAsync();
-        var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
+        var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeWriter, Result<int, string>>(
+        var result = await transactionRunner.RunAsync<CommitProbeWriter, Result<int, string>>(
             async (writer, ct) =>
             {
                 await writer.StageAsync(id, ct);
@@ -47,13 +47,13 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExecuteAsync_FlushRegisteredValidator_RollsBack()
+    public async Task RunAsync_FlushRegisteredValidator_RollsBack()
     {
         await this.fixture.PrepareCommitProbeAsync();
-        var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
+        var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeWriter, Result<int, string>>(
+        var result = await transactionRunner.RunAsync<CommitProbeWriter, Result<int, string>>(
             async (writer, ct) =>
             {
                 await writer.StageAsync(id, ct);
@@ -69,13 +69,13 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExecuteAsync_ExistingFailureRemainsTheOperationFailure()
+    public async Task RunAsync_ExistingFailureRemainsTheOperationFailure()
     {
         await this.fixture.PrepareCommitProbeAsync();
-        var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
+        var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeWriter, Result<int, string>>(
+        var result = await transactionRunner.RunAsync<CommitProbeWriter, Result<int, string>>(
             async (writer, ct) =>
             {
                 await writer.StageAsync(id, ct);
@@ -100,7 +100,7 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
         var authorization = services.GetRequiredService<IAuthorizationContext>();
         var id = Guid.NewGuid();
 
-        var result = await runner.ExecuteAsync(context, () =>
+        var result = await runner.RunAsync(context, () =>
         {
             context.Probes.Add(new CommitProbe(id));
             authorization.RegisterFailure<Result<int, string>>(
@@ -115,13 +115,13 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExecuteAsync_FlushPoison_RollsBack()
+    public async Task RunAsync_FlushPoison_RollsBack()
     {
         await this.fixture.PrepareCommitProbeAsync();
-        var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
+        var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeWriter, Result<int, string>>(
+        var result = await transactionRunner.RunAsync<CommitProbeWriter, Result<int, string>>(
             async (writer, ct) =>
             {
                 await writer.StageAsync(id, ct);
@@ -147,7 +147,7 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
         var flushHook = services.GetRequiredService<CommitProbeFlushHook>();
         var id = Guid.NewGuid();
 
-        var result = await runner.ExecuteAsync(context, () =>
+        var result = await runner.RunAsync(context, () =>
         {
             context.Probes.Add(new CommitProbe(id));
             authorization.RegisterFailure<Result<int, string>>(
@@ -163,13 +163,13 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithoutAuthorizationState_Commits()
+    public async Task RunAsync_WithoutAuthorizationState_Commits()
     {
         await this.fixture.PrepareCommitProbeAsync();
-        var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
+        var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await executor.ExecuteAsync<CommitProbeWriter, int>(
+        var result = await transactionRunner.RunAsync<CommitProbeWriter, int>(
             async (writer, ct) =>
             {
                 await writer.StageAsync(id, ct);
@@ -181,16 +181,16 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task ExecuteAsync_LostCommitAcknowledgement_DoesNotReplayCommittedCommand()
+    public async Task RunAsync_LostCommitAcknowledgement_DoesNotReplayCommittedCommand()
     {
         await this.fixture.PrepareCommitProbeAsync();
-        var executor = this.fixture.Services.GetRequiredService<ITransactionRunner>();
+        var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var probeId = Guid.NewGuid();
         var attempts = 0;
         this.fixture.Committer.FailNextCommit();
 
         var exception = await Assert.ThrowsAsync<Npgsql.NpgsqlException>(() =>
-            executor.ExecuteAsync<CommitProbeWriter, int>(async (writer, ct) =>
+            transactionRunner.RunAsync<CommitProbeWriter, int>(async (writer, ct) =>
             {
                 attempts++;
                 await writer.StageAsync(probeId, ct);

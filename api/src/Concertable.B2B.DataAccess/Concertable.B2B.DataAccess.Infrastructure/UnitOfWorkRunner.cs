@@ -23,7 +23,7 @@ public sealed class UnitOfWorkRunner
         this.committer = committer;
     }
 
-    public async Task<TResult> ExecuteAsync<TContext, TResult>(
+    public async Task<TResult> RunAsync<TContext, TResult>(
         TContext context,
         Func<Task<TResult>> action,
         CancellationToken ct = default)

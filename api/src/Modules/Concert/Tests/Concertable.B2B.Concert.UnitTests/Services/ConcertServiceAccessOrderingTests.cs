@@ -140,7 +140,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var authorization = new Mock<IResourceAuthorization>();
         var authorizationContext = new Mock<IAuthorizationContext>();
         var steps = new List<string>();
-        var executor = new ImmediateTransactionRunner();
+        var transactionRunner = new ImmediateTransactionRunner();
         authorization
             .Setup(value => value.RequireAsync(
                 It.Is<AuthorizationRequest>(request =>
@@ -200,10 +200,10 @@ public sealed class ConcertServiceAccessOrderingTests
             Mock.Of<ITenantContext>(),
             membership.Object,
             membershipResolver.Object,
-            executor,
+            transactionRunner,
             Mock.Of<IResourceAccessContext>(value => value.UtcNow == DateTime.UnixEpoch),
             Mock.Of<ILogger<ConcertService>>());
-        executor.Service = service;
+        transactionRunner.Service = service;
         return new Fixture(service, repository, authorization, authorizationContext, steps);
     }
 
@@ -218,13 +218,13 @@ public sealed class ConcertServiceAccessOrderingTests
     {
         public ConcertService Service { get; set; } = null!;
 
-        public Task<TResult> ExecuteAsync<TService, TResult>(
+        public Task<TResult> RunAsync<TService, TResult>(
             Func<TService, CancellationToken, Task<TResult>> command,
             CancellationToken ct = default)
             where TService : notnull =>
             command((TService)(object)Service, ct);
 
-        public Task<TResult> ExecuteAsync<TService, TResult>(
+        public Task<TResult> RunAsync<TService, TResult>(
             Func<TService, CancellationToken, Task<TResult>> command,
             Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
             Func<TResult> authorityFailure,

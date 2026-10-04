@@ -197,7 +197,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         if (membership.Membership is not { } actor)
             return Task.FromResult<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>(
                 new ApplicationCheckoutError.ApplicationNotFound());
-        return transactionRunner.ExecuteAsync<ApplicationCheckoutService,
+        return transactionRunner.RunAsync<ApplicationCheckoutService,
             Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>(
             (service, ct) => service.PrepareAcceptCheckoutCoreAsync(applicationId, actor, ct));
     }

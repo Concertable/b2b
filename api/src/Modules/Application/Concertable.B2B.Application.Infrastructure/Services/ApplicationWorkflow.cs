@@ -113,7 +113,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         }
         catch (DbUpdateException exception) when (exception.IsDuplicateKey())
         {
-            return await transactionRunner.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
+            return await transactionRunner.RunAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
                 (workflow, token) => workflow.ClassifyApplyConflictAsync(opportunityId, actor, token),
                 ct);
         }
@@ -126,7 +126,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IPAddress ipAddress,
         string? userAgent,
         CancellationToken ct) =>
-        transactionRunner.ExecuteAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
+        transactionRunner.RunAsync<ApplicationWorkflow, Result<ApplicationProposal, ApplyApplicationError>>(
             (workflow, token) => workflow.ApplyCommandAsync(
                 opportunityId,
                 eSignature,
@@ -322,7 +322,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ESignatureRequest eSignature,
         MembershipSnapshot actor,
         CancellationToken ct) =>
-        transactionRunner.ExecuteAsync<ApplicationWorkflow, UnitResult<AcceptApplicationError>>(
+        transactionRunner.RunAsync<ApplicationWorkflow, UnitResult<AcceptApplicationError>>(
             (workflow, token) => workflow.AcceptCommandAsync(
                 applicationId,
                 eSignature,

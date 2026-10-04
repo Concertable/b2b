@@ -87,7 +87,7 @@ internal sealed class ConversationService : IConversationService
         if (unitOfWorkAccessor.Current is not null)
             return unitOfWork.ExecuteAsync(() => CreateCoreAsync(request, actor, ct), ct);
 
-        return transactionRunner.ExecuteAsync<ConversationService, Result<ConversationDto, CreateConversationError>>(
+        return transactionRunner.RunAsync<ConversationService, Result<ConversationDto, CreateConversationError>>(
             (service, token) => service.CreateCommandAsync(request, actor, token),
             ct);
     }
@@ -195,7 +195,7 @@ internal sealed class ConversationService : IConversationService
         if (unitOfWorkAccessor.Current is not null)
             return unitOfWork.ExecuteAsync(
                 () => SendCoreAsync(conversationId, request, action, actor, ct), ct);
-        return transactionRunner.ExecuteAsync<ConversationService, Result<MessageDto, SendMessageError>>(
+        return transactionRunner.RunAsync<ConversationService, Result<MessageDto, SendMessageError>>(
             (service, token) => service.SendCommandAsync(conversationId, request, action, actor, token),
             ct);
     }
@@ -272,7 +272,7 @@ internal sealed class ConversationService : IConversationService
             return Task.FromResult<UnitResult<ConversationAccessError>>(
                 new ConversationAccessError.NotPermitted());
         }
-        return transactionRunner.ExecuteAsync<ConversationService, UnitResult<ConversationAccessError>>(
+        return transactionRunner.RunAsync<ConversationService, UnitResult<ConversationAccessError>>(
             (service, token) => service.AdvanceReadPositionCommandAsync(conversationId, request, actor, token),
             ct);
     }
@@ -344,7 +344,7 @@ internal sealed class ConversationService : IConversationService
             return Task.FromResult<UnitResult<AssignConversationMemberError>>(
                 new AssignConversationMemberError.NotPermitted());
         }
-        return transactionRunner.ExecuteAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
+        return transactionRunner.RunAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
             (service, token) => service.ChangeAssignmentCommandAsync(
                 conversationId, membershipId, expectedAccessVersion, assign, actor, token),
             ct);

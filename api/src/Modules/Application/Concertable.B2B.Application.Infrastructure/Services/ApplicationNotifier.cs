@@ -54,7 +54,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         if (venueTenantId is null)
             return;
 
-        var venueCreatorUserId = await transactionRunner.ExecuteAsync<ApplicationNotifier, Guid?>(
+        var venueCreatorUserId = await transactionRunner.RunAsync<ApplicationNotifier, Guid?>(
             (notifier, ct) => notifier.GetVenueCreatorUserIdAsync(applicationId, ct));
         if (venueCreatorUserId is null)
             return;

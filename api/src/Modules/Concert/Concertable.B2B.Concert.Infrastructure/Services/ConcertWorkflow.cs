@@ -59,13 +59,13 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
+            return await transactionRunner.RunAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
                 (workflow, token) => workflow.CancelCommandAsync(concertId, actor, token),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(concertId))
         {
-            return await transactionRunner.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
+            return await transactionRunner.RunAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
                 (workflow, token) => workflow.ClassifyCancelConflictAsync(concertId, actor, token),
                 ct);
         }
@@ -75,7 +75,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         int concertId,
         CancellationToken ct = default)
     {
-        var prepared = await transactionRunner.ExecuteAsync<ISettlementService, Result<SettlementPreparation, FinishConcertError>>(
+        var prepared = await transactionRunner.RunAsync<ISettlementService, Result<SettlementPreparation, FinishConcertError>>(
             (service, token) => service.ReserveAsync(concertId, token),
             ct);
         if (prepared.TryGetError(out var error))
@@ -93,7 +93,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         if (executed.TryGetError(out var executionError))
             return executionError;
 
-        return await transactionRunner.ExecuteAsync<ISettlementService, Result<SettlementOutcome, FinishConcertError>>(
+        return await transactionRunner.RunAsync<ISettlementService, Result<SettlementOutcome, FinishConcertError>>(
             (service, token) => service.CompleteAsync(ready.ConcertId, ready.OperationId, token),
             ct);
     }

@@ -104,13 +104,13 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
         try
         {
-            return await transactionRunner.ExecuteAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
+            return await transactionRunner.RunAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
                 (workflow, token) => workflow.CancelCommandAsync(bookingId, actor, token),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsBookingConcurrencyConflict(bookingId))
         {
-            return await transactionRunner.ExecuteAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
+            return await transactionRunner.RunAsync<BookingWorkflow, UnitResult<CancelBookingError>>(
                 (workflow, token) => workflow.ClassifyCancelConflictAsync(bookingId, actor, token),
                 ct);
         }

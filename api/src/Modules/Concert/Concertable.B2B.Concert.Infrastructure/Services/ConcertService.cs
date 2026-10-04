@@ -282,7 +282,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertUpdateResponse, UpdateConcertError>>(
+            return await transactionRunner.RunAsync<ConcertService, Result<ConcertUpdateResponse, UpdateConcertError>>(
                 (service, token) => service.UpdateCommandAsync(id, request, actor, token),
                 ct);
         }
@@ -302,13 +302,13 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<PostConcertError>>(
+            return await transactionRunner.RunAsync<ConcertService, UnitResult<PostConcertError>>(
                 (service, token) => service.PostCommandAsync(id, request, actor, token),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(id))
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<PostConcertError>>(
+            return await transactionRunner.RunAsync<ConcertService, UnitResult<PostConcertError>>(
                 (service, token) => service.ClassifyPostConflictAsync(id, actor, token),
                 ct);
         }
@@ -324,7 +324,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<DeclareDoorRevenueError>>(
+            return await transactionRunner.RunAsync<ConcertService, UnitResult<DeclareDoorRevenueError>>(
                 (service, token) => service.DeclareDoorRevenueCommandAsync(id, doorRevenue, actor, token),
                 ct);
         }
@@ -511,7 +511,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
+            return await transactionRunner.RunAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
                 (service, token) => service.ShareSummaryCommandAsync(id, request, actor, token),
                 ct);
         }
@@ -521,7 +521,7 @@ internal sealed class ConcertService : IConcertService
         }
         catch (DbUpdateException exception) when (exception.IsDuplicateKey())
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
+            return await transactionRunner.RunAsync<ConcertService, Result<ConcertSummaryShare, ShareConcertSummaryError>>(
                 (service, token) => service.RecoverSummaryShareDuplicateAsync(id, request, actor, token),
                 ct);
         }
@@ -688,7 +688,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<RevokeConcertSummaryShareError>>(
+            return await transactionRunner.RunAsync<ConcertService, UnitResult<RevokeConcertSummaryShareError>>(
                 (service, token) => service.RevokeSummaryShareCommandAsync(
                     id, grantId, expectedAccessVersion, actor, token),
                 ct);
@@ -748,7 +748,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
+            return await transactionRunner.RunAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
                 (service, token) => service.AssignMemberCommandAsync(id, request, actor, token),
                 ct);
         }
@@ -815,7 +815,7 @@ internal sealed class ConcertService : IConcertService
 
         try
         {
-            return await transactionRunner.ExecuteAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
+            return await transactionRunner.RunAsync<ConcertService, UnitResult<AssignConcertMemberError>>(
                 (service, token) => service.RemoveMemberAssignmentCommandAsync(
                     id, membershipId, expectedAccessVersion, actor, token),
                 ct);

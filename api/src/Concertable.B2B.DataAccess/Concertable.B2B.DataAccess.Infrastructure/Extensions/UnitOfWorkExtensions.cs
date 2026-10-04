@@ -20,10 +20,7 @@ public static class UnitOfWorkExtensions
         services.AddScoped<UnitOfWorkAccessor>();
         services.AddScoped<IAuthorizationContext, AuthorizationContext>();
         services.AddSingleton<ITransactionCommitter, TransactionCommitter>();
-        services.AddSingleton<ITransactionRunner>(provider => new TransactionRunner(
-            provider.GetRequiredService<IServiceScopeFactory>(),
-            provider.GetRequiredService<NpgsqlDataSource>(),
-            provider.GetRequiredService<ITransactionCommitter>()));
+        services.AddSingleton<ITransactionRunner, TransactionRunner>();
         services.AddScoped(provider => new UnitOfWorkRunner(
             provider.GetRequiredService<NpgsqlDataSource>(),
             provider.GetRequiredService<UnitOfWorkAccessor>(),

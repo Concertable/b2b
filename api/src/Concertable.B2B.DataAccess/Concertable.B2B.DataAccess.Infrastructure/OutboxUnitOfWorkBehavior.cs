@@ -45,7 +45,7 @@ public abstract class OutboxUnitOfWorkBehavior<TContext> : IOutboxUnitOfWorkBeha
             }
         }
 
-        return await this.unitOfWorkRunner.ExecuteAsync(
+        return await this.unitOfWorkRunner.RunAsync(
             this.context,
             () => this.RunAsync(action, saveChanges: false, cancellationToken),
             cancellationToken);

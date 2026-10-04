@@ -228,13 +228,13 @@ public sealed class ConcertWorkflowTests
     {
         public ConcertWorkflow Workflow { get; set; } = null!;
 
-        public Task<TResult> ExecuteAsync<TService, TResult>(
+        public Task<TResult> RunAsync<TService, TResult>(
             Func<TService, CancellationToken, Task<TResult>> command,
             CancellationToken ct = default)
             where TService : notnull =>
             command(Resolve<TService>(), ct);
 
-        public async Task<TResult> ExecuteAsync<TService, TResult>(
+        public async Task<TResult> RunAsync<TService, TResult>(
             Func<TService, CancellationToken, Task<TResult>> command,
             Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
             Func<TResult> authorityFailure,
