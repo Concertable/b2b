@@ -227,7 +227,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         var inviterOwner = await roles.HasProtectedOwnerAsync(inviter.TenantId, inviter.MembershipId, ct);
         if (!TenantRoleAssignmentPolicy.CanAssign(inviter, inviterOwner, selectedRoles))
             return false;
-        current.InvitationProofs.Add(new InvitationProof(
+        current.AcceptedInvitations.Add(new InvitationAcceptanceProof(
             invitation.Id, invitation.TenantId, invitation.Version, acceptingUserId,
             inviter, selectedRoles.Select(role => role.Id).Order().ToArray(),
             invitation.ExpiresAt, revision));
@@ -333,7 +333,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
                 await roles.HasProtectedOwnerAsync(inviter.TenantId, inviter.MembershipId, ct), selected))
                 return false;
         }
-        foreach (var proof in current.InvitationProofs)
+        foreach (var proof in current.AcceptedInvitations)
         {
             if (proof.CatalogRevision != revision
                 || clock.GetUtcNow().UtcDateTime >= proof.ExpiresAt)
@@ -364,7 +364,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         public bool? InitialIsProtectedOwner { get; set; }
         public HashSet<TenantPermission> ProvenPermissions { get; } = [];
         public Dictionary<Guid, MemberTransition> Members { get; } = [];
-        public List<InvitationProof> InvitationProofs { get; } = [];
+        public List<InvitationAcceptanceProof> AcceptedInvitations { get; } = [];
         public List<InvitationCreationProof> CreatedInvitations { get; } = [];
         public bool TenantDeleted { get; set; }
         public bool MembershipChanged { get; set; }
@@ -386,7 +386,7 @@ internal sealed class TenantAuthorityResolver : IAuthorityResolver
         DateTime ExpiresAt,
         string CatalogRevision);
 
-    private sealed record InvitationProof(
+    private sealed record InvitationAcceptanceProof(
         Guid InvitationId,
         Guid TenantId,
         long BeforeVersion,
