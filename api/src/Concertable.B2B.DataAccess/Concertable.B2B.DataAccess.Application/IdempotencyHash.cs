@@ -5,16 +5,16 @@ using System.Globalization;
 
 namespace Concertable.B2B.DataAccess.Application;
 
-public sealed record CommandPayloadHash
+public readonly record struct IdempotencyHash
 {
-    private CommandPayloadHash(string value)
+    private IdempotencyHash(string value)
     {
         this.Value = value;
     }
 
     public string Value { get; }
 
-    public static CommandPayloadHash Create(params ReadOnlySpan<object?> parts)
+    public static IdempotencyHash Create(params ReadOnlySpan<object?> parts)
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         Span<byte> length = stackalloc byte[sizeof(int)];
@@ -39,16 +39,16 @@ public sealed record CommandPayloadHash
             hash.AppendData(bytes);
         }
 
-        return new CommandPayloadHash(Convert.ToHexStringLower(hash.GetHashAndReset()));
+        return new IdempotencyHash(Convert.ToHexStringLower(hash.GetHashAndReset()));
     }
 
-    public static CommandPayloadHash From(string value)
+    public static IdempotencyHash From(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
         if (value.Length != 64 || value.Any(static character =>
                 character is not (>= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F')))
-            throw new ArgumentException("A payload hash must contain exactly 64 hexadecimal characters.", nameof(value));
+            throw new ArgumentException("An idempotency hash must contain exactly 64 hexadecimal characters.", nameof(value));
 
-        return new CommandPayloadHash(value.ToLowerInvariant());
+        return new IdempotencyHash(value.ToLowerInvariant());
     }
 }

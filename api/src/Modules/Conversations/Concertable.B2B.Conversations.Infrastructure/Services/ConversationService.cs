@@ -122,7 +122,7 @@ internal sealed class ConversationService : IConversationService
             != AuthorizationDecision.Allowed)
             return new CreateConversationError.NotPermitted();
 
-        var payloadHash = CommandPayloadHash.Create(string.Join(",", participants));
+        var idempotencyHash = IdempotencyHash.Create(string.Join(",", participants));
         var receipt = await privilegedRepository.GetCreationReceiptForUpdateAsync(
             resolution.Actor.TenantId,
             resolution.Actor.MembershipId,
@@ -130,7 +130,7 @@ internal sealed class ConversationService : IConversationService
             ct);
         if (receipt is not null)
         {
-            if (!receipt.Matches(payloadHash))
+            if (!receipt.Matches(idempotencyHash))
                 return new CreateConversationError.RequestConflict();
             var replay = await privilegedRepository.GetWithGrantsByIdAsync(receipt.ConversationId, ct)
                 ?? throw new InvalidOperationException("A conversation creation receipt referenced a missing conversation.");
@@ -146,7 +146,7 @@ internal sealed class ConversationService : IConversationService
             resolution.Actor.TenantId,
             resolution.Actor.MembershipId,
             request.RequestId,
-            payloadHash,
+            idempotencyHash,
             at));
         await privilegedRepository.SaveChangesAsync(ct);
         return await ToDtoAsync(conversation, ct);
@@ -233,17 +233,17 @@ internal sealed class ConversationService : IConversationService
         var conversation = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(conversationId, ct);
         if (conversation is null)
             return new SendMessageError.NotFound(conversationId);
-        var payloadHash = CommandPayloadHash.Create(request.Content, action);
+        var idempotencyHash = IdempotencyHash.Create(request.Content, action);
         var replay = await privilegedRepository.GetMessageReceiptForUpdateAsync(
             conversationId, actor.MembershipId, request.RequestId, ct);
         if (replay is not null)
-            return replay.PayloadHash == payloadHash ? replay.ToMessageDto() : new SendMessageError.RequestConflict();
+            return replay.IdempotencyHash == idempotencyHash ? replay.ToMessageDto() : new SendMessageError.RequestConflict();
 
         var message = MessageEntity.Create(
             conversationId,
             conversation.AllocateMessageSequence(),
             request.RequestId,
-            payloadHash,
+            idempotencyHash,
             actor.TenantId,
             actor.MembershipId,
             actor.UserId,

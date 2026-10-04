@@ -559,7 +559,7 @@ internal sealed class ConcertService : IConcertService
 
         var concert = await privilegedRepository.GetWithGrantsByIdForUpdateAsync(id, ct)
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
-        var payloadHash = CommandPayloadHash.Create(
+        var idempotencyHash = IdempotencyHash.Create(
             id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
         var receipt = await receiptRepository.GetByRequestForUpdateAsync(
             resolution.Actor.TenantId,
@@ -567,7 +567,7 @@ internal sealed class ConcertService : IConcertService
             request.RequestId,
             ct);
         if (receipt is not null)
-            return ReplaySummaryShare(concert, receipt, payloadHash);
+            return ReplaySummaryShare(concert, receipt, idempotencyHash);
         if (concert.AccessVersion != request.ExpectedAccessVersion)
             return new ShareConcertSummaryError.Superseded(id);
 
@@ -609,7 +609,7 @@ internal sealed class ConcertService : IConcertService
                 resolution.Actor.TenantId,
                 ConcertCommandReceipt.ShareSummaryOperation,
                 request.RequestId,
-                payloadHash,
+                idempotencyHash,
                 grant.Id.ToString(),
                 decidedAt));
         await privilegedRepository.SaveChangesAsync(ct);
@@ -619,9 +619,9 @@ internal sealed class ConcertService : IConcertService
     private static Result<ConcertSummaryShare, ShareConcertSummaryError> ReplaySummaryShare(
         ConcertEntity concert,
         ConcertCommandReceipt receipt,
-        CommandPayloadHash payloadHash)
+        IdempotencyHash idempotencyHash)
     {
-        if (!receipt.Matches(payloadHash))
+        if (!receipt.Matches(idempotencyHash))
             return new ShareConcertSummaryError.RequestConflict();
         if (!Guid.TryParse(receipt.Outcome, out var grantId))
             throw new InvalidOperationException(
@@ -661,21 +661,21 @@ internal sealed class ConcertService : IConcertService
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);
-        var payloadHash = CommandPayloadHash.Create(
+        var idempotencyHash = IdempotencyHash.Create(
             id,
             request.RecipientTenantId,
             request.RecipientMembershipId,
             request.ValidUntil);
-        return RecoverSummaryShareDuplicate(concert, receipt, payloadHash);
+        return RecoverSummaryShareDuplicate(concert, receipt, idempotencyHash);
     }
 
     internal static Result<ConcertSummaryShare, ShareConcertSummaryError> RecoverSummaryShareDuplicate(
         ConcertEntity concert,
         ConcertCommandReceipt? receipt,
-        CommandPayloadHash payloadHash) =>
+        IdempotencyHash idempotencyHash) =>
         receipt is null
             ? new ShareConcertSummaryError.AlreadyShared()
-            : ReplaySummaryShare(concert, receipt, payloadHash);
+            : ReplaySummaryShare(concert, receipt, idempotencyHash);
 
     public async Task<UnitResult<RevokeConcertSummaryShareError>> RevokeSummaryShareAsync(
         int id,

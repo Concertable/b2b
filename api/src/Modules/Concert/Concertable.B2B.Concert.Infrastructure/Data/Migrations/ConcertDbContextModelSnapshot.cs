@@ -112,6 +112,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("IdempotencyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<Guid>("IssuedByTenantId")
                         .HasColumnType("uuid");
 
@@ -124,11 +129,6 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
-
-                    b.Property<string>("PayloadHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTime>("RecordedAtUtc")
                         .HasColumnType("timestamp with time zone");

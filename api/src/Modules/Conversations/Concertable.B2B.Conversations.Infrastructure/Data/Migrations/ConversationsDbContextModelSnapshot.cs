@@ -161,7 +161,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid>("CreatorTenantId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("PayloadHash")
+                    b.Property<string>("IdempotencyHash")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
@@ -256,7 +256,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid?>("HiddenByUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("PayloadHash")
+                    b.Property<string>("IdempotencyHash")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");

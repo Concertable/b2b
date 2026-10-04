@@ -3,13 +3,13 @@ using Concertable.B2B.DataAccess.Application;
 
 namespace Concertable.B2B.DataAccess.UnitTests;
 
-public sealed class CommandPayloadHashTests
+public sealed class IdempotencyHashTests
 {
     [Fact]
     public void Create_SeparatorInsideParts_DoesNotCollide()
     {
-        var first = CommandPayloadHash.Create("a\u001fb", "c");
-        var second = CommandPayloadHash.Create("a", "b\u001fc");
+        var first = IdempotencyHash.Create("a\u001fb", "c");
+        var second = IdempotencyHash.Create("a", "b\u001fc");
 
         Assert.NotEqual(first, second);
     }
@@ -17,8 +17,8 @@ public sealed class CommandPayloadHashTests
     [Fact]
     public void Create_NullAndLiteralSentinel_DoNotCollide()
     {
-        var nullPart = CommandPayloadHash.Create((object?)null);
-        var literal = CommandPayloadHash.Create("\u0000");
+        var nullPart = IdempotencyHash.Create((object?)null);
+        var literal = IdempotencyHash.Create("\u0000");
 
         Assert.NotEqual(nullPart, literal);
     }
@@ -30,9 +30,9 @@ public sealed class CommandPayloadHashTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-GB");
-            var british = CommandPayloadHash.Create(1234.56m);
+            var british = IdempotencyHash.Create(1234.56m);
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
-            var french = CommandPayloadHash.Create(1234.56m);
+            var french = IdempotencyHash.Create(1234.56m);
 
             Assert.Equal(british, french);
         }
@@ -49,14 +49,14 @@ public sealed class CommandPayloadHashTests
         var local = utc.ToLocalTime();
 
         Assert.Equal(
-            CommandPayloadHash.Create(utc),
-            CommandPayloadHash.Create(local));
+            IdempotencyHash.Create(utc),
+            IdempotencyHash.Create(local));
     }
 
     [Fact]
     public void Create_EmptyParts_UsesUnchangedSha256Bytes()
     {
-        var hash = CommandPayloadHash.Create();
+        var hash = IdempotencyHash.Create();
 
         Assert.Equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hash.Value);
     }
@@ -64,9 +64,9 @@ public sealed class CommandPayloadHashTests
     [Fact]
     public void From_UppercasePersistedHash_CanonicalizesAndEqualsCreatedHash()
     {
-        var created = CommandPayloadHash.Create("payload");
+        var created = IdempotencyHash.Create("payload");
 
-        var restored = CommandPayloadHash.From(created.Value.ToUpperInvariant());
+        var restored = IdempotencyHash.From(created.Value.ToUpperInvariant());
 
         Assert.Equal(created.Value, restored.Value);
         Assert.Equal(created, restored);
@@ -79,12 +79,12 @@ public sealed class CommandPayloadHashTests
     [InlineData("é000000000000000000000000000000000000000000000000000000000000000")]
     public void From_InvalidRepresentation_ThrowsArgumentException(string value)
     {
-        Assert.Throws<ArgumentException>(() => CommandPayloadHash.From(value));
+        Assert.Throws<ArgumentException>(() => IdempotencyHash.From(value));
     }
 
     [Fact]
     public void From_NullRepresentation_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => CommandPayloadHash.From(null!));
+        Assert.Throws<ArgumentNullException>(() => IdempotencyHash.From(null!));
     }
 }

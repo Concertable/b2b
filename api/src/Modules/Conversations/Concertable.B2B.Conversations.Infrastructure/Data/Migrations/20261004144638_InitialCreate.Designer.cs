@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConversationsDbContext))]
-    [Migration("20260930221813_InitialCreate")]
+    [Migration("20261004144638_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -164,7 +164,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid>("CreatorTenantId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("PayloadHash")
+                    b.Property<string>("IdempotencyHash")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
@@ -259,7 +259,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid?>("HiddenByUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("PayloadHash")
+                    b.Property<string>("IdempotencyHash")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
