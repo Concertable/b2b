@@ -27,7 +27,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ConcertService : IConcertService
 {
     private readonly IConcertRepository concertRepository;
-    private readonly IConcertPrivateReadRepository privateReads;
+    private readonly IConcertPrivilegedReadRepository privilegedReadRepository;
     private readonly IResourceAuthorization authorization;
     private readonly IAuthorizationContext authorizationContext;
     private readonly IConcertPrivilegedRepository privilegedRepository;
@@ -53,7 +53,7 @@ internal sealed class ConcertService : IConcertService
 
     public ConcertService(
         IConcertRepository concertRepository,
-        IConcertPrivateReadRepository privateReads,
+        IConcertPrivilegedReadRepository privilegedReadRepository,
         IResourceAuthorization authorization,
         IAuthorizationContext authorizationContext,
         IConcertPrivilegedRepository privilegedRepository,
@@ -78,7 +78,7 @@ internal sealed class ConcertService : IConcertService
         ILogger<ConcertService> logger)
     {
         this.concertRepository = concertRepository;
-        this.privateReads = privateReads;
+        this.privilegedReadRepository = privilegedReadRepository;
         this.authorization = authorization;
         this.authorizationContext = authorizationContext;
         this.privilegedRepository = privilegedRepository;
@@ -179,7 +179,7 @@ internal sealed class ConcertService : IConcertService
             return new ConcertError.MissingVenue();
 
         return new Success<IReadOnlyList<ManagerConcertCard>>(
-            await privateReads.GetUpcomingCardsForVenueTenantIdAsync(
+            await privilegedReadRepository.GetUpcomingCardsForVenueTenantIdAsync(
                 tenantId, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Operations),
                 actor, timeProvider.GetUtcNow()));
     }
@@ -192,7 +192,7 @@ internal sealed class ConcertService : IConcertService
             return new ConcertError.MissingVenue();
 
         return new Success<IReadOnlyList<ConcertDraftReference>>(
-            await privateReads.GetDraftReferencesForVenueTenantIdAsync(
+            await privilegedReadRepository.GetDraftReferencesForVenueTenantIdAsync(
                 tenantId, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Operations),
                 actor, timeProvider.GetUtcNow(), ct));
     }
@@ -204,7 +204,7 @@ internal sealed class ConcertService : IConcertService
             return new ConcertError.MissingArtist();
 
         return new Success<IReadOnlyList<ManagerConcertCard>>(
-            await privateReads.GetUpcomingCardsForArtistTenantIdAsync(
+            await privilegedReadRepository.GetUpcomingCardsForArtistTenantIdAsync(
                 tenantId, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Operations),
                 actor, timeProvider.GetUtcNow()));
     }
@@ -233,7 +233,7 @@ internal sealed class ConcertService : IConcertService
         if (membership.Membership is not { } actor)
             return new ConcertError.NotFound(id);
 
-        return await privateReads.GetSummaryByIdAsync(
+        return await privilegedReadRepository.GetSummaryByIdAsync(
                 id, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Summary),
                 actor, timeProvider.GetUtcNow(), ct)
             .ToOption()
@@ -247,7 +247,7 @@ internal sealed class ConcertService : IConcertService
         if (membership.Membership is not { } actor)
             return new ConcertError.NotFound(id);
 
-        return await privateReads.GetOperationsByIdAsync(
+        return await privilegedReadRepository.GetOperationsByIdAsync(
                 id, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Operations),
                 actor, timeProvider.GetUtcNow(), ct)
             .ToOption()
@@ -262,7 +262,7 @@ internal sealed class ConcertService : IConcertService
         if (membership.Membership is not { } actor)
             return new ConcertError.NotFound(id);
 
-        return await privateReads.GetFinanceByIdAsync(
+        return await privilegedReadRepository.GetFinanceByIdAsync(
                 id, ConcertBinding(TenantPermission.SettlementView, ResourceFacet.Finance),
                 ResourcePolicyBinding.FromCatalog(
                     TenantPermission.SettlementView, ResourceKind.Invoice, ResourceFacet.Read),
@@ -870,7 +870,7 @@ internal sealed class ConcertService : IConcertService
         int id,
         CancellationToken ct = default) =>
         membership.Membership is { } actor
-            ? privateReads.GetUnpostedByArtistIdAsync(
+            ? privilegedReadRepository.GetUnpostedByArtistIdAsync(
                 id, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Summary),
                 actor, timeProvider.GetUtcNow(), ct)
             : Task.FromResult<IReadOnlyList<ConcertSummary>>([]);
@@ -879,7 +879,7 @@ internal sealed class ConcertService : IConcertService
         int id,
         CancellationToken ct = default) =>
         membership.Membership is { } actor
-            ? privateReads.GetUnpostedByVenueIdAsync(
+            ? privilegedReadRepository.GetUnpostedByVenueIdAsync(
                 id, ConcertBinding(TenantPermission.OperationsView, ResourceFacet.Summary),
                 actor, timeProvider.GetUtcNow(), ct)
             : Task.FromResult<IReadOnlyList<ConcertSummary>>([]);
@@ -918,7 +918,7 @@ internal sealed class ConcertService : IConcertService
         return finance with
         {
             CanDeclareDoorRevenue = canDeclareDoorRevenue
-                && await privateReads.CanDeclareDoorRevenueByIdAsync(
+                && await privilegedReadRepository.CanDeclareDoorRevenueByIdAsync(
                     finance.Id,
                     ConcertBinding(TenantPermission.SettlementView, ResourceFacet.Finance),
                     actor, timeProvider.GetUtcNow(), ct),

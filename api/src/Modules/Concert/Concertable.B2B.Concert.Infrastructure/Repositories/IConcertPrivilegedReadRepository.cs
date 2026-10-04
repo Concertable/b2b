@@ -3,7 +3,7 @@ using Concertable.B2B.Concert.Application.DTOs;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal interface IConcertPrivateReadRepository
+internal interface IConcertPrivilegedReadRepository
 {
     Task<ConcertSummary?> GetSummaryByIdAsync(
         int id, ResourcePolicyBinding binding, MembershipSnapshot actor,

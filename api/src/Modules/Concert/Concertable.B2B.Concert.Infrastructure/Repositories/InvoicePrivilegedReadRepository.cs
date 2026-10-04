@@ -7,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 
-internal sealed class InvoicePrivateReadRepository(ConcertPrivilegedDbContext context)
+internal sealed class InvoicePrivilegedReadRepository(ConcertPrivilegedDbContext context)
+    : IInvoicePrivilegedReadRepository
 {
     public Task<InvoiceEntity?> GetByIdAsync(
         int id, ResourcePolicyBinding binding, MembershipSnapshot actor,

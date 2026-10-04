@@ -68,7 +68,7 @@ public sealed class ConcertServiceCreateTests
             .Returns((Func<Task> action, CancellationToken _) => action());
         service = new ConcertService(
             Mock.Of<IConcertRepository>(),
-            Mock.Of<IConcertPrivateReadRepository>(),
+            Mock.Of<IConcertPrivilegedReadRepository>(),
             Mock.Of<IResourceAuthorization>(),
             Mock.Of<IAuthorizationContext>(),
             repository.Object,

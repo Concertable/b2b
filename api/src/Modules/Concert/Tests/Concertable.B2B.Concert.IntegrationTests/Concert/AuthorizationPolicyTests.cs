@@ -37,7 +37,7 @@ public sealed class AuthorizationPolicyTests : IAsyncLifetime
         using var scope = fixture.Services.CreateScope();
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<ConcertPrivilegedDbContext>();
-        var reads = services.GetRequiredService<ConcertPrivateReadRepository>();
+        var reads = services.GetRequiredService<IConcertPrivilegedReadRepository>();
         var evaluator = services.GetServices<IResourceAuthorizationEvaluator>()
             .Single(candidate => candidate.Kind == ResourceKind.Concert);
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
@@ -80,8 +80,8 @@ public sealed class AuthorizationPolicyTests : IAsyncLifetime
         using var scope = fixture.Services.CreateScope();
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<ConcertPrivilegedDbContext>();
-        var concertReads = services.GetRequiredService<ConcertPrivateReadRepository>();
-        var invoiceReads = services.GetRequiredService<InvoicePrivateReadRepository>();
+        var concertReads = services.GetRequiredService<IConcertPrivilegedReadRepository>();
+        var invoiceReads = services.GetRequiredService<IInvoicePrivilegedReadRepository>();
         var invoice = await context.Invoices.AsNoTracking()
             .SingleAsync(candidate => candidate.ConcertId == concert.Id);
         var tenantId = TenantOf(fixture.SeedState.VenueManager2.Id);

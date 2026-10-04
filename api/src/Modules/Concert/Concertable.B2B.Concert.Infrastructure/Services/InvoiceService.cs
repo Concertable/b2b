@@ -9,7 +9,7 @@ using Concertable.B2B.Concert.Infrastructure.Repositories;
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class InvoiceService(
-    InvoicePrivateReadRepository repository,
+    IInvoicePrivilegedReadRepository repository,
     IInvoicePdfRenderer invoicePdfRenderer,
     IMembershipContext membership,
     IResourceAuthorization resources,

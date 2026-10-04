@@ -180,7 +180,7 @@ public sealed class ConcertServiceAccessOrderingTests
 
         var service = new ConcertService(
             Mock.Of<IConcertRepository>(),
-            Mock.Of<IConcertPrivateReadRepository>(),
+            Mock.Of<IConcertPrivilegedReadRepository>(),
             authorization.Object,
             authorizationContext.Object,
             repository.Object,

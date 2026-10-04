@@ -85,10 +85,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IConcertPrivilegedRepository, ConcertPrivilegedRepository>();
             services.AddScoped<IResourceAuthorizationEvaluator, ConcertResourceAuthorizationEvaluator>();
             services.AddScoped<IResourceAuthorizationEvaluator, InvoiceResourceAuthorizationEvaluator>();
-            services.AddScoped<ConcertPrivateReadRepository>();
-            services.AddScoped<IConcertPrivateReadRepository>(provider =>
-                provider.GetRequiredService<ConcertPrivateReadRepository>());
-            services.AddScoped<InvoicePrivateReadRepository>();
+            services.AddScoped<IConcertPrivilegedReadRepository, ConcertPrivilegedReadRepository>();
+            services.AddScoped<IInvoicePrivilegedReadRepository, InvoicePrivilegedReadRepository>();
             services.AddScoped<IInvoicePrivilegedRepository, InvoicePrivilegedRepository>();
             services.AddScoped<IInvoiceSequenceRepository, InvoiceSequenceRepository>();
 
