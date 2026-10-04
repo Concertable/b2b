@@ -14,15 +14,15 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
 {
     public ResourceKind Kind => ResourceKind.Application;
 
-    public Task<ResourceAuthorizationEvidence?> CheckAsync(
+    public async Task<ResourceAuthorizationDecision> CheckAsync(
         AuthorizationRequest request,
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
         DateTimeOffset now,
         CancellationToken ct = default) =>
-        ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct);
+        ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct));
 
-    public async Task<ResourceAuthorizationEvidence?> RequireAsync(
+    public async Task<ResourceAuthorizationDecision> RequireAsync(
         AuthorizationRequest request,
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
@@ -53,7 +53,7 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
             await context.Database.ExecuteSqlInterpolatedAsync(
                 $"""SELECT 1 FROM application."ApplicationAccessGrants" WHERE "ResourceId" = {id} ORDER BY "Id" FOR UPDATE""", ct);
         }
-        return await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct);
+        return ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct));
     }
 
     public async Task<bool> ValidateForCommitAsync(
@@ -96,7 +96,7 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
         if (pinned is not null && pinned.Grants.Length != binding.RequiredScopes.Length)
             return null;
 
-        var evidence = ImmutableArray.CreateBuilder<ResourceGrantEvidence>();
+        var grants = ImmutableArray.CreateBuilder<ResourceGrantSnapshot>();
         foreach (var requiredScope in binding.RequiredScopes)
         {
             if (!Enum.TryParse<ApplicationAccessScope>(requiredScope, false, out var scope)
@@ -124,12 +124,12 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
             if (grant is null)
                 return null;
 
-            evidence.Add(new ResourceGrantEvidence(
+            grants.Add(new ResourceGrantSnapshot(
                 requiredScope, grant.Id, grant.Version,
                 new DateTimeOffset(grant.ValidFrom, TimeSpan.Zero),
                 grant.ValidUntil is { } until ? new DateTimeOffset(until, TimeSpan.Zero) : null));
         }
 
-        return new ResourceAuthorizationEvidence(principal, evidence.ToImmutable());
+        return new ResourceAuthorizationEvidence(principal, grants.ToImmutable());
     }
 }

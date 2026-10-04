@@ -109,7 +109,7 @@ internal static class ConcertAuthorizationPolicy
         TenantPermission permission,
         ConcertAccessScope scope,
         DateTimeOffset now,
-        ResourceGrantEvidence? pinned = null)
+        ResourceGrantSnapshot? pinned = null)
     {
         var audience = actor.AudienceFor(permission);
         var at = now.UtcDateTime;
@@ -144,7 +144,7 @@ internal static class ConcertAuthorizationPolicy
         TenantPermission permission,
         InvoiceAccessScope scope,
         DateTimeOffset now,
-        ResourceGrantEvidence? pinned = null)
+        ResourceGrantSnapshot? pinned = null)
     {
         var audience = actor.AudienceFor(permission);
         var at = now.UtcDateTime;

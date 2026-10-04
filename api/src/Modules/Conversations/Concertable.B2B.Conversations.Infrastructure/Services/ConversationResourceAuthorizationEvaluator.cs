@@ -13,15 +13,15 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
 {
     public ResourceKind Kind => ResourceKind.Conversation;
 
-    public Task<ResourceAuthorizationEvidence?> CheckAsync(
+    public async Task<ResourceAuthorizationDecision> CheckAsync(
         AuthorizationRequest request,
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
         DateTimeOffset now,
         CancellationToken ct = default) =>
-        ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, ct);
+        ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, ct));
 
-    public async Task<ResourceAuthorizationEvidence?> RequireAsync(
+    public async Task<ResourceAuthorizationDecision> RequireAsync(
         AuthorizationRequest request,
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
@@ -42,7 +42,7 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
             ORDER BY "Id"
             FOR UPDATE
             """, ct);
-        return await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, ct);
+        return ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, ct));
     }
 
     public async Task<bool> ValidateForCommitAsync(
@@ -87,7 +87,7 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
         var scopes = principal
             ? ImmutableArray.Create(nameof(ConversationAccessScope.Read))
             : binding.RequiredScopes;
-        var evidence = ImmutableArray.CreateBuilder<ResourceGrantEvidence>();
+        var grants = ImmutableArray.CreateBuilder<ResourceGrantSnapshot>();
         foreach (var requiredScope in scopes)
         {
             if (!Enum.TryParse<ConversationAccessScope>(requiredScope, false, out var scope)
@@ -119,7 +119,7 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
             if (grant is null)
                 return null;
 
-            evidence.Add(new ResourceGrantEvidence(
+            grants.Add(new ResourceGrantSnapshot(
                 requiredScope,
                 grant.Id,
                 grant.Version,
@@ -129,6 +129,6 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
 
         return new ResourceAuthorizationEvidence(
             principal ? actor.TenantId : null,
-            evidence.ToImmutable());
+            grants.ToImmutable());
     }
 }

@@ -14,12 +14,12 @@ internal sealed class BookingResourceAuthorizationEvaluator(
 {
     public ResourceKind Kind => ResourceKind.Booking;
 
-    public Task<ResourceAuthorizationEvidence?> CheckAsync(
+    public async Task<ResourceAuthorizationDecision> CheckAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct);
+        ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct));
 
-    public async Task<ResourceAuthorizationEvidence?> RequireAsync(
+    public async Task<ResourceAuthorizationDecision> RequireAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default)
     {
@@ -30,7 +30,7 @@ internal sealed class BookingResourceAuthorizationEvaluator(
             $"""SELECT 1 FROM booking."Bookings" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""SELECT 1 FROM booking."BookingAccessGrants" WHERE "ResourceId" = {request.Resource.Id} ORDER BY "Id" FOR UPDATE""", ct);
-        return await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct);
+        return ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, ct));
     }
 
     public async Task<bool> ValidateForCommitAsync(
@@ -68,7 +68,7 @@ internal sealed class BookingResourceAuthorizationEvaluator(
         if (pinned is not null && pinned.Grants.Length != binding.RequiredScopes.Length)
             return null;
 
-        var evidence = ImmutableArray.CreateBuilder<ResourceGrantEvidence>();
+        var grants = ImmutableArray.CreateBuilder<ResourceGrantSnapshot>();
         foreach (var requiredScope in binding.RequiredScopes)
         {
             if (!Enum.TryParse<BookingAccessScope>(requiredScope, false, out var scope)
@@ -96,12 +96,12 @@ internal sealed class BookingResourceAuthorizationEvaluator(
             if (grant is null)
                 return null;
 
-            evidence.Add(new ResourceGrantEvidence(
+            grants.Add(new ResourceGrantSnapshot(
                 requiredScope, grant.Id, grant.Version,
                 new DateTimeOffset(grant.ValidFrom, TimeSpan.Zero),
                 grant.ValidUntil is { } until ? new DateTimeOffset(until, TimeSpan.Zero) : null));
         }
 
-        return new ResourceAuthorizationEvidence(principal, evidence.ToImmutable());
+        return new ResourceAuthorizationEvidence(principal, grants.ToImmutable());
     }
 }

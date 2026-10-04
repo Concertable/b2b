@@ -173,15 +173,15 @@ public sealed class ResourceAuthorizationTests
     {
         public ResourceKind Kind => kind;
 
-        public Task<ResourceAuthorizationEvidence?> CheckAsync(
+        public Task<ResourceAuthorizationDecision> CheckAsync(
             AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
             DateTimeOffset now, CancellationToken ct = default) =>
-            Task.FromResult<ResourceAuthorizationEvidence?>(new(null,
+            Task.FromResult(ResourceAuthorizationDecision.From(new ResourceAuthorizationEvidence(null,
                 includeScope
-                    ? [new ResourceGrantEvidence("Summary", Guid.NewGuid(), 1, now.AddMinutes(-1), now.AddMinutes(1))]
-                    : []));
+                    ? [new ResourceGrantSnapshot("Summary", Guid.NewGuid(), 1, now.AddMinutes(-1), now.AddMinutes(1))]
+                    : [])));
 
-        public Task<ResourceAuthorizationEvidence?> RequireAsync(
+        public Task<ResourceAuthorizationDecision> RequireAsync(
             AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
             DateTimeOffset now, CancellationToken ct = default) => CheckAsync(request, binding, actor, now, ct);
 

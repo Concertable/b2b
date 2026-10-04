@@ -4,14 +4,14 @@ public interface IResourceAuthorizationEvaluator
 {
     ResourceKind Kind { get; }
 
-    Task<ResourceAuthorizationEvidence?> CheckAsync(
+    Task<ResourceAuthorizationDecision> CheckAsync(
         AuthorizationRequest request,
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,
         DateTimeOffset now,
         CancellationToken ct = default);
 
-    Task<ResourceAuthorizationEvidence?> RequireAsync(
+    Task<ResourceAuthorizationDecision> RequireAsync(
         AuthorizationRequest request,
         ResourcePolicyBinding binding,
         MembershipSnapshot actor,

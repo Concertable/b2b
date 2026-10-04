@@ -22,11 +22,11 @@ internal sealed class ResourceAuthorization(
             return AuthorizationDecision.Denied;
 
         var now = clock.GetUtcNow();
-        var evidence = await registry.Evaluator(request.Resource.Kind).CheckAsync(
+        var decision = await registry.Evaluator(request.Resource.Kind).CheckAsync(
             request, binding!, authority.Actor, now, ct);
-        return evidence is null || !HasValidEvidence(binding!, evidence, authority.Actor, now)
-            ? AuthorizationDecision.Denied
-            : AuthorizationDecision.Allowed;
+        return decision.IsAllowed && HasValidEvidence(binding!, decision.Evidence, authority.Actor, now)
+            ? AuthorizationDecision.Allowed
+            : AuthorizationDecision.Denied;
     }
 
     public async Task<AuthorizationDecision> RequireAsync(AuthorizationRequest request, CancellationToken ct = default)
@@ -44,12 +44,12 @@ internal sealed class ResourceAuthorization(
 
         var evaluator = registry.Evaluator(request.Resource.Kind);
         var now = clock.GetUtcNow();
-        var evidence = await evaluator.RequireAsync(
+        var decision = await evaluator.RequireAsync(
             request, binding!, authority.Actor, now, ct);
-        if (evidence is null || !HasValidEvidence(binding!, evidence, authority.Actor, now))
+        if (!decision.IsAllowed || !HasValidEvidence(binding!, decision.Evidence, authority.Actor, now))
             return actor.Fail(AuthorizationDecision.Denied).Decision;
 
-        var proof = new ResourceAuthorizationProof(request, binding!, authority, evidence);
+        var proof = new ResourceAuthorizationProof(request, binding!, authority, decision.Evidence);
         authorizationContext.RegisterValidator(token => evaluator.ValidateForCommitAsync(proof, clock.GetUtcNow(), token));
         return AuthorizationDecision.Allowed;
     }

@@ -58,7 +58,7 @@ public sealed class AuthorizationPolicyTests : IAsyncLifetime
             TenantPermission.OperationsView, ResourceAddress.Create(ResourceKind.Concert, concert.Id),
             ResourceFacet.Operations);
 
-        Assert.NotNull(await evaluator.CheckAsync(request, operations, actor, now));
+        Assert.True((await evaluator.CheckAsync(request, operations, actor, now)).IsAllowed);
         Assert.NotNull(await reads.GetOperationsByIdAsync(concert.Id, operations, actor, now));
         Assert.Equal(1, await context.Concerts.AsNoTracking()
             .Where(ConcertAuthorizationPolicy.Concerts(context, operations, actor, now))
@@ -139,7 +139,7 @@ public sealed class AuthorizationPolicyTests : IAsyncLifetime
         await context.SaveChangesAsync();
 
         var evidence = new ResourceAuthorizationEvidence(null,
-            [new ResourceGrantEvidence("Operations", grant.Id, grant.Version,
+            [new ResourceGrantSnapshot("Operations", grant.Id, grant.Version,
                 new DateTimeOffset(grant.ValidFrom, TimeSpan.Zero), null)]);
         Assert.True(await IsVisibleAsync(context, concert.Id, binding, actor, now, evidence));
         Assert.False(await IsVisibleAsync(

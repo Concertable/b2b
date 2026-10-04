@@ -13,12 +13,12 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
 {
     public ResourceKind Kind => ResourceKind.Invoice;
 
-    public Task<ResourceAuthorizationEvidence?> CheckAsync(
+    public async Task<ResourceAuthorizationDecision> CheckAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, true, ct);
+        ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, true, ct));
 
-    public async Task<ResourceAuthorizationEvidence?> RequireAsync(
+    public async Task<ResourceAuthorizationDecision> RequireAsync(
         AuthorizationRequest request, ResourcePolicyBinding binding, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default)
     {
@@ -29,7 +29,7 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
             $"""SELECT 1 FROM concert."Invoices" WHERE "Id" = {request.Resource.Id} FOR UPDATE""", ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""SELECT 1 FROM concert."InvoiceAccessGrants" WHERE "ResourceId" = {request.Resource.Id} ORDER BY "Id" FOR UPDATE""", ct);
-        return await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, true, ct);
+        return ResourceAuthorizationDecision.From(await ReadEvidenceAsync(request.Resource.Id, binding, actor, now, null, true, ct));
     }
 
     public async Task<bool> ValidateForCommitAsync(
@@ -58,7 +58,7 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
         if (!await context.Invoices.AsNoTracking().Where(policy).AnyAsync(invoice => invoice.Id == id, ct))
             return null;
 
-        var evidence = ImmutableArray.CreateBuilder<ResourceGrantEvidence>();
+        var grants = ImmutableArray.CreateBuilder<ResourceGrantSnapshot>();
         foreach (var name in binding.RequiredScopes)
         {
             if (!Enum.TryParse<InvoiceAccessScope>(name, false, out var scope)
@@ -84,12 +84,12 @@ internal sealed class InvoiceResourceAuthorizationEvaluator(
             if (grant is null)
                 return null;
 
-            evidence.Add(new ResourceGrantEvidence(
+            grants.Add(new ResourceGrantSnapshot(
                 name, grant.Id, grant.Version,
                 new DateTimeOffset(grant.ValidFrom, TimeSpan.Zero),
                 grant.ValidUntil is { } until ? new DateTimeOffset(until, TimeSpan.Zero) : null));
         }
 
-        return new ResourceAuthorizationEvidence(null, evidence.ToImmutable());
+        return new ResourceAuthorizationEvidence(null, grants.ToImmutable());
     }
 }
