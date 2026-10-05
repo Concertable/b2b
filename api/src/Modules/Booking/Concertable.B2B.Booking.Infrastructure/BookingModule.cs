@@ -34,6 +34,10 @@ internal sealed class BookingModule : IBookingModule
             .Select(booking => booking.ToSummary())
             .ToList();
 
+    public Task<IReadOnlyDictionary<int, int>> GetContractIdsByApplicationIdsAsync(
+        IReadOnlyCollection<int> applicationIds, CancellationToken ct = default) =>
+        contractService.GetIdsByApplicationIdsAsync(applicationIds, ct);
+
     public async Task<Option<int>> GetContractIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>

@@ -8,16 +8,16 @@ internal interface IUnitOfWorkBehavior
 
 internal sealed class UnitOfWorkBehavior(
     OpportunityDbContext context,
-    CommandTransactionFactory transactions,
-    CommandTransactionAccessor accessor)
-    : CommandUnitOfWorkBehavior<OpportunityDbContext>(context, transactions, accessor), IUnitOfWorkBehavior;
+    UnitOfWorkRunner unitOfWorkRunner,
+    UnitOfWorkAccessor accessor)
+    : Concertable.B2B.DataAccess.Infrastructure.UnitOfWorkBehavior<OpportunityDbContext>(context, unitOfWorkRunner, accessor), IUnitOfWorkBehavior;
 
 internal interface IPrivilegedUnitOfWorkBehavior
     : Concertable.DataAccess.Application.IUnitOfWorkBehavior<OpportunityPrivilegedDbContext>;
 
 internal sealed class PrivilegedUnitOfWorkBehavior(
     OpportunityPrivilegedDbContext context,
-    CommandTransactionFactory transactions,
-    CommandTransactionAccessor accessor)
-    : CommandUnitOfWorkBehavior<OpportunityPrivilegedDbContext>(context, transactions, accessor),
+    UnitOfWorkRunner unitOfWorkRunner,
+    UnitOfWorkAccessor accessor)
+    : Concertable.B2B.DataAccess.Infrastructure.UnitOfWorkBehavior<OpportunityPrivilegedDbContext>(context, unitOfWorkRunner, accessor),
         IPrivilegedUnitOfWorkBehavior;

@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+using Concertable.B2B.Authorization.Contracts;
+using System.Data.Common;
 using Concertable.B2B.Infrastructure.Extensions;
 using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -82,6 +83,10 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IConcertPrivilegedRepository, ConcertPrivilegedRepository>();
+            services.AddScoped<IResourceAuthorizationEvaluator, ConcertResourceAuthorizationEvaluator>();
+            services.AddScoped<IResourceAuthorizationEvaluator, InvoiceResourceAuthorizationEvaluator>();
+            services.AddScoped<IConcertPrivilegedReadRepository, ConcertPrivilegedReadRepository>();
+            services.AddScoped<IInvoicePrivilegedReadRepository, InvoicePrivilegedReadRepository>();
             services.AddScoped<IInvoicePrivilegedRepository, InvoicePrivilegedRepository>();
             services.AddScoped<IInvoiceSequenceRepository, InvoiceSequenceRepository>();
 
@@ -108,7 +113,6 @@ public static class ServiceCollectionExtensions
 
             // Business-rule validators (interfaces in Concert.Application, impls in Concert.Infrastructure.Validators)
             services.AddSingleton<IConcertValidator, ConcertValidator>();
-            services.AddScoped<IConcertAvailability, ConcertAvailability>();
 
             services.TryAddSingleton(typeof(IScoped<>), typeof(Scoped<>));
             services.AddScoped<ICompletionRunner, CompletionRunner>();
@@ -120,7 +124,6 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IArtistReadModelRepository, ArtistReadModelRepository>();
             services.AddScoped<IVenueReadModelRepository, VenueReadModelRepository>();
             services.AddScoped<IConcertDashboardRepository, ConcertDashboardRepository>();
-            services.AddScoped<IInvoiceRepository, InvoiceRepository>();
             services.AddScoped<ISelfBillingAgreementRepository, SelfBillingAgreementRepository>();
 
             // Query specifications

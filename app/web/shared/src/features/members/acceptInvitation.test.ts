@@ -9,8 +9,9 @@ describe("invitation acceptance", () => {
       tenantId: "accepted-tenant",
       legalName: "Accepted Venue",
       businessActivities: ["venueOperator"],
-      role: "staff",
+      roles: [{ id: "staff-id", name: "Staff", isProtectedOwner: false }],
       permissionVersion: 1,
+      rolePolicyVersion: 1,
       permissions: ["operations.view"],
     };
     let completeSelection: (() => void) | undefined;

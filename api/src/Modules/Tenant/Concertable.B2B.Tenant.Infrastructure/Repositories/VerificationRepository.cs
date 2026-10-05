@@ -10,14 +10,14 @@ namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 internal sealed class VerificationRepository : Repository<TenantVerificationEntity>, IVerificationRepository
 {
     private readonly TenantDbContext context;
-    private readonly CommandTransactionAccessor transactions;
+    private readonly UnitOfWorkAccessor unitOfWorkAccessor;
 
     public VerificationRepository(
         TenantDbContext context,
-        CommandTransactionAccessor transactions) : base(context)
+        UnitOfWorkAccessor unitOfWorkAccessor) : base(context)
     {
         this.context = context;
-        this.transactions = transactions;
+        this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
     public Task<TenantVerificationEntity?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
@@ -28,9 +28,9 @@ internal sealed class VerificationRepository : Repository<TenantVerificationEnti
         Guid tenantId,
         CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Verification review requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Verification review requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1

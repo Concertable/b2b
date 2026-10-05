@@ -1,10 +1,6 @@
 import { z } from "zod";
-import {
-  INVITE_MEMBER_ROLES,
-  type InviteMemberRequest,
-} from "../types";
+import { memberRolesRequestSchema } from "./memberRolesRequestSchema";
 
-export const inviteMemberRequestSchema = z.object({
+export const inviteMemberRequestSchema = memberRolesRequestSchema.extend({
   email: z.string().trim().toLowerCase().email("Enter a valid email address"),
-  role: z.enum(INVITE_MEMBER_ROLES),
-}) satisfies z.ZodType<InviteMemberRequest>;
+});

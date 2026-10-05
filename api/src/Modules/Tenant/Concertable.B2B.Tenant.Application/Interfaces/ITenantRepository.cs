@@ -10,6 +10,8 @@ internal interface ITenantRepository : IRepository<TenantEntity, Guid>
 
     Task<TenantEntity?> GetByIdForAdministrationAsync(Guid tenantId, CancellationToken ct = default);
 
+    Task<string?> GetAuthorizationCatalogRevisionAsync(CancellationToken ct = default);
+
     Task<bool> ExistsForBookingAsync(Guid tenantId, CancellationToken ct = default);
 
     Task<TenantEntity?> GetByCreatedByUserIdForCreationAsync(Guid userId, CancellationToken ct = default);

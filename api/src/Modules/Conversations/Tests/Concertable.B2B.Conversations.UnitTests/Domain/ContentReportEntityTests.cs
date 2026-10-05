@@ -16,7 +16,7 @@ public sealed class ContentReportEntityTests
             ConversationId,
             1,
             Guid.NewGuid(),
-            CommandPayloadHash.Create("payload"),
+            IdempotencyHash.Create("payload"),
             ArtistTenantId,
             Guid.NewGuid(),
             Guid.NewGuid(),

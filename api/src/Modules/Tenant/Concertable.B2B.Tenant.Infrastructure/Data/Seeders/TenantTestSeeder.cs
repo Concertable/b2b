@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -21,12 +22,20 @@ internal sealed class TenantTestSeeder : ITestSeeder
 
     public Task MigrateAsync(CancellationToken ct = default) => context.Database.MigrateAsync(ct);
 
-    public async Task SeedAsync(CancellationToken ct = default) =>
+    public async Task SeedAsync(CancellationToken ct = default)
+    {
+        await context.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO tenant."AuthorizationCatalogState" ("Id", "Revision")
+            VALUES (1, {AuthorizationCatalog.Revision})
+            ON CONFLICT ("Id") DO UPDATE SET "Revision" = EXCLUDED."Revision"
+            """, ct);
         await context.Tenants.SeedIfEmptyAsync(async () =>
         {
             context.Tenants.AddRange(seed.Tenants);
+            context.RoleDefinitions.AddRange(seed.Tenants.SelectMany(tenant => TenantRoleProvisioning.CreatePresets(tenant.Id)));
             context.Memberships.AddRange(seed.Memberships);
             context.Verifications.AddRange(seed.Verifications);
             await context.SaveChangesAsync(ct);
         });
+    }
 }

@@ -14,35 +14,32 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class ConcertWorkflow : IConcertWorkflow
 {
     private readonly IConcertPrivilegedRepository privilegedRepository;
-    private readonly ICommandExecutor commandExecutor;
+    private readonly ITransactionRunner transactionRunner;
     private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
     private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IMembershipContext membership;
-    private readonly IMembershipResolver membershipResolver;
-    private readonly IPermissionCatalog permissionCatalog;
-    private readonly TimeProvider timeProvider;
+    private readonly IResourceAuthorization resources;
+    private readonly IAuthorizationContext authorizationContext;
 
     public ConcertWorkflow(
         IConcertPrivilegedRepository privilegedRepository,
-        ICommandExecutor commandExecutor,
+        ITransactionRunner transactionRunner,
         IDealStrategyFactory<ICancelStep> cancelFactory,
         IDealStrategyFactory<ICompleteStep> completeFactory,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IMembershipContext membership,
-        IMembershipResolver membershipResolver,
-        IPermissionCatalog permissionCatalog,
-        TimeProvider timeProvider)
+        IResourceAuthorization resources,
+        IAuthorizationContext authorizationContext)
     {
         this.privilegedRepository = privilegedRepository;
-        this.commandExecutor = commandExecutor;
+        this.transactionRunner = transactionRunner;
         this.cancelFactory = cancelFactory;
         this.completeFactory = completeFactory;
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.membership = membership;
-        this.membershipResolver = membershipResolver;
-        this.permissionCatalog = permissionCatalog;
-        this.timeProvider = timeProvider;
+        this.resources = resources;
+        this.authorizationContext = authorizationContext;
     }
 
     public async Task<UnitResult<CancelConcertError>> CancelAsync(
@@ -50,19 +47,25 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         CancellationToken ct = default)
     {
         if (membership.Membership is not { } actor)
+        {
+            if (authorizationContext.IsActive)
+            {
+                authorizationContext.RegisterFailure<UnitResult<CancelConcertError>>(
+                    () => new CancelConcertError.NotPermitted());
+                authorizationContext.MarkAuthorityFailed();
+            }
             return new CancelConcertError.NotPermitted();
+        }
 
         try
         {
-            return await commandExecutor.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
+            return await transactionRunner.RunAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
                 (workflow, token) => workflow.CancelCommandAsync(concertId, actor, token),
-                (workflow, _, token) => workflow.ValidateCancelAuthorityAsync(concertId, actor, token),
-                () => new CancelConcertError.NotPermitted(),
                 ct);
         }
         catch (DbUpdateException exception) when (exception.IsConcertConcurrencyConflict(concertId))
         {
-            return await commandExecutor.ExecuteAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
+            return await transactionRunner.RunAsync<ConcertWorkflow, UnitResult<CancelConcertError>>(
                 (workflow, token) => workflow.ClassifyCancelConflictAsync(concertId, actor, token),
                 ct);
         }
@@ -72,7 +75,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         int concertId,
         CancellationToken ct = default)
     {
-        var prepared = await commandExecutor.ExecuteAsync<ISettlementService, Result<SettlementPreparation, FinishConcertError>>(
+        var prepared = await transactionRunner.RunAsync<ISettlementService, Result<SettlementPreparation, FinishConcertError>>(
             (service, token) => service.ReserveAsync(concertId, token),
             ct);
         if (prepared.TryGetError(out var error))
@@ -90,7 +93,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         if (executed.TryGetError(out var executionError))
             return executionError;
 
-        return await commandExecutor.ExecuteAsync<ISettlementService, Result<SettlementOutcome, FinishConcertError>>(
+        return await transactionRunner.RunAsync<ISettlementService, Result<SettlementOutcome, FinishConcertError>>(
             (service, token) => service.CompleteAsync(ready.ConcertId, ready.OperationId, token),
             ct);
     }
@@ -101,7 +104,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         CancellationToken ct)
         => await privilegedOutboxUnitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            if (!await ValidateCancelAuthorityAsync(concertId, expectedActor, ct))
+            if (!await RequireCancellationAsync(concertId, expectedActor, ct))
                 return (UnitResult<CancelConcertError>)new CancelConcertError.NotPermitted();
 
             if (await privilegedRepository.GetStateByIdAsync(concertId, ct)
@@ -124,16 +127,12 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        if (!actorOption.TryGetValue(out var actor)
-            || !permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsManage))
+        if (!await RequireCancellationAsync(concertId, expectedActor, ct))
             return new CancelConcertError.NotPermitted();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(concertId, ct);
         if (concert is null)
             return new CancelConcertError.ConcertNotFound(concertId);
-        if (!await CanCancelAsync(concertId, actor, ct))
-            return new CancelConcertError.NotPermitted();
         if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)
             return new Success();
         if (concert.ValidateBeginCancellation().TryGetError(out var transitionError))
@@ -144,25 +143,24 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         return new Success();
     }
 
-    private async Task<bool> ValidateCancelAuthorityAsync(
+    private async Task<bool> RequireCancellationAsync(
         int concertId,
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
-        return actorOption.TryGetValue(out var actor)
-            && permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsManage)
-            && await CanCancelAsync(concertId, actor, ct);
-    }
+        authorizationContext.RegisterFailure<UnitResult<CancelConcertError>>(
+            () => new CancelConcertError.NotPermitted());
+        if (concertId <= 0 || membership.Membership is not { } actor
+            || actor.MembershipId != expectedActor.MembershipId
+            || actor.TenantId != expectedActor.TenantId)
+        {
+            authorizationContext.MarkAuthorityFailed();
+            return false;
+        }
 
-    private Task<bool> CanCancelAsync(
-        int concertId,
-        MembershipSnapshot actor,
-        CancellationToken ct) =>
-        privilegedRepository.CanManageAsync(
-            concertId,
-            actor,
-            permissionCatalog.AudienceFor(actor.Role, TenantPermission.ConcertsManage),
-            timeProvider.GetUtcNow().UtcDateTime,
-            ct);
+        return await resources.RequireAsync(new AuthorizationRequest(
+            TenantPermission.ConcertsManage,
+            ResourceAddress.Create(ResourceKind.Concert, concertId),
+            ResourceFacet.Operations), ct) == AuthorizationDecision.Allowed;
+    }
 }

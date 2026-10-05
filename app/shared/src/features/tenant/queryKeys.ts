@@ -11,13 +11,14 @@ export const privateQueryKey = (
     session.tenantId,
     session.membershipId,
     session.permissionVersion,
+    session.rolePolicyVersion,
     ...parts,
   ] as const;
 
 export const currentPrivateQueryKey = (...parts: ReadonlyArray<unknown>) => {
   const session = tenantSession.current();
   return session === undefined
-    ? (["tenant", "unselected", "unselected", 0, ...parts] as const)
+    ? (["tenant", "unselected", "unselected", 0, 0, ...parts] as const)
     : privateQueryKey(session, ...parts);
 };
 

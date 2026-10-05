@@ -14,4 +14,8 @@ internal sealed record ApplicationProposal(
     ApplicationState State)
 {
     public BookingStatus? BookingStatus { get; init; }
+    public ApplicationActionAvailability Actions { get; init; } = new(false, false, false, false, false, false);
 }
+
+internal sealed record ApplicationActionAvailability(
+    bool Accept, bool Checkout, bool Decline, bool Cancel, bool Withdraw, bool Contract);

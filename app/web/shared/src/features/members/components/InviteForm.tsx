@@ -1,94 +1,57 @@
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { TENANT_ROLE_LABELS } from "@b2b/features/tenant";
 import { Button } from "@concertable/web/components/ui/button";
 import { Input } from "@concertable/web/components/ui/input";
 import { Label } from "@concertable/web/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@concertable/web/components/ui/select";
 import { useInviteMember } from "../hooks/useInviteMember";
 import { inviteMemberRequestSchema } from "../schemas/inviteMemberRequestSchema";
 import type { InviteMemberRequest } from "../types";
+import { RoleSelector } from "./RoleSelector";
 
 export function InviteForm() {
-  const { submit, isPending, roleOptions } = useInviteMember();
+  const { submit, isPending, roles, rolesLoading } = useInviteMember();
   const {
-    control,
-    register,
-    handleSubmit,
-    reset,
+    control, register, handleSubmit, reset,
     formState: { errors, isValid },
   } = useForm<InviteMemberRequest>({
     resolver: zodResolver(inviteMemberRequestSchema),
-    defaultValues: { email: "", role: "manager" },
+    defaultValues: { email: "", roleIds: [] },
     mode: "onChange",
   });
 
-  const onValid = (request: InviteMemberRequest) => {
-    submit(request, () => reset());
-  };
-
   return (
     <form
-      onSubmit={handleSubmit(onValid)}
+      onSubmit={handleSubmit((request) => submit(request, () => reset()))}
       className="space-y-4"
       data-testid="invite-form"
     >
       <h3 className="font-medium">Invite a member</h3>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-        <div className="flex-1 space-y-1">
-          <Label htmlFor="invite-email">Email</Label>
-          <Input
-            id="invite-email"
-            type="email"
-            aria-invalid={errors.email !== undefined}
-            data-testid="invite-email"
-            {...register("email")}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="invite-role">Role</Label>
-          <Controller
-            control={control}
-            name="role"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger
-                  id="invite-role"
-                  className="w-36"
-                  data-testid="invite-role"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleOptions.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {TENANT_ROLE_LABELS[role]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-        <Button
-          type="submit"
-          disabled={isPending || !isValid}
-          data-testid="invite-submit"
-        >
-          {isPending ? "Sending..." : "Send invite"}
-        </Button>
+      <div className="space-y-1">
+        <Label htmlFor="invite-email">Email</Label>
+        <Input id="invite-email" type="email" aria-invalid={errors.email !== undefined} data-testid="invite-email" {...register("email")} />
+        {errors.email && <p className="text-destructive text-xs" data-testid="invite-error">{errors.email.message}</p>}
       </div>
-      {errors.email && (
-        <p className="text-destructive text-xs" data-testid="invite-error">
-          {errors.email.message}
-        </p>
-      )}
+      <div className="space-y-1">
+        <p className="text-sm font-medium">Roles</p>
+        <Controller
+          control={control}
+          name="roleIds"
+          render={({ field }) => (
+            <RoleSelector
+              roles={roles.filter((role) => role.isInvitationAssignable)}
+              selected={field.value}
+              onChange={field.onChange}
+              disabled={rolesLoading || isPending}
+              idPrefix="invite-role"
+            />
+          )}
+        />
+        {errors.roleIds && <p className="text-destructive text-xs">{errors.roleIds.message}</p>}
+        {!rolesLoading && roles.length === 0 && <p className="text-muted-foreground text-xs">No roles are available to assign.</p>}
+      </div>
+      <Button type="submit" disabled={isPending || rolesLoading || !isValid} data-testid="invite-submit">
+        {isPending ? "Sending..." : "Send invite"}
+      </Button>
     </form>
   );
 }

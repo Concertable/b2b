@@ -53,13 +53,13 @@ public sealed class TenantErrorTests
             ErrorKind.Forbidden
         },
         {
-            new ChangeMemberRoleError.MemberNotFound(Id),
+            new ChangeMemberRolesError.MemberNotFound(Id),
             "tenant.change_role_member_not_found",
             $"User {Id} is not a member of this organization.",
             ErrorKind.NotFound
         },
         {
-            new ChangeMemberRoleError.LastOwner(),
+            new ChangeMemberRolesError.LastOwner(),
             "tenant.change_role_last_owner",
             "The last owner of an organization cannot be demoted.",
             ErrorKind.Conflict

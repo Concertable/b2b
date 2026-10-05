@@ -7,13 +7,13 @@ namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class BookingTenantDeletionGuard(
     BookingPrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : ITenantDeletionGuard
+    UnitOfWorkAccessor unitOfWorkAccessor) : ITenantDeletionGuard
 {
     public async Task<bool> HasLiveObligationsAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant deletion requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Tenant deletion requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         return await context.Bookings.AnyAsync(booking =>
                    booking.VenueTenantId == tenantId || booking.ArtistTenantId == tenantId,
                    ct)

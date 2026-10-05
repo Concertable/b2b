@@ -7,23 +7,23 @@ namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 internal sealed class InvitationRepository : Repository<TenantInvitationEntity>, IInvitationRepository
 {
     private readonly TenantDbContext context;
-    private readonly CommandTransactionAccessor transactions;
+    private readonly UnitOfWorkAccessor unitOfWorkAccessor;
 
     public InvitationRepository(
         TenantDbContext context,
-        CommandTransactionAccessor transactions) : base(context)
+        UnitOfWorkAccessor unitOfWorkAccessor) : base(context)
     {
         this.context = context;
-        this.transactions = transactions;
+        this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
     public async Task<TenantInvitationEntity?> GetByIdForUpdateAsync(
         Guid invitationId,
         CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Invitation updates require an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Invitation updates require an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
@@ -34,6 +34,13 @@ internal sealed class InvitationRepository : Repository<TenantInvitationEntity>,
             ct);
         return await context.Invitations.SingleOrDefaultAsync(invitation => invitation.Id == invitationId, ct);
     }
+
+    public async Task<IReadOnlyList<TenantInvitationEntity>> ListPendingAssignedToRoleAsync(
+        Guid tenantId, Guid roleId, CancellationToken ct = default) =>
+        await context.Invitations.Where(invitation =>
+            invitation.TenantId == tenantId
+            && invitation.Status == InvitationStatus.Pending
+            && invitation.Assignments.Any(row => row.RoleId == roleId)).ToListAsync(ct);
 
     public async Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
         await context.Invitations.Where(i => i.TenantId == tenantId).ToListAsync(ct);

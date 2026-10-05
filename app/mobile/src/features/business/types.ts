@@ -1,3 +1,5 @@
+import type { RoleSummary } from "@concertable/b2b/features/tenant";
+
 export interface OrganizationDetails {
   readonly id: string;
   readonly legalName: string;
@@ -10,7 +12,7 @@ export interface OrganizationDetails {
 export interface OrganizationMember {
   readonly userId: string;
   readonly email: string;
-  readonly role: string;
+  readonly roles: ReadonlyArray<RoleSummary>;
 }
 
 export interface ConversationPreview {

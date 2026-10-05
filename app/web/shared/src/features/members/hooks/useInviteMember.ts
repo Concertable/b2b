@@ -1,11 +1,11 @@
 import { toast } from "sonner";
 import type { InviteMemberRequest } from "../types";
-import { INVITE_MEMBER_ROLES } from "../types";
 import { useInviteMutation } from "./useInviteMutation";
+import { useRolesQuery } from "./useRolesQuery";
 
 export function useInviteMember() {
   const { mutate, isPending } = useInviteMutation();
-
+  const { data: roles, isLoading: rolesLoading } = useRolesQuery();
   const submit = (request: InviteMemberRequest, onDone: () => void) =>
     mutate(request, {
       onSuccess: () => {
@@ -13,10 +13,5 @@ export function useInviteMember() {
         onDone();
       },
     });
-
-  return {
-    submit,
-    isPending,
-    roleOptions: INVITE_MEMBER_ROLES,
-  };
+  return { submit, isPending, roles: roles ?? [], rolesLoading };
 }

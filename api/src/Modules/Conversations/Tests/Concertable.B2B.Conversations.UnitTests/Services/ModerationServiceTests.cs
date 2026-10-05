@@ -20,7 +20,7 @@ public sealed class ModerationServiceTests
             ConversationId,
             1,
             Guid.NewGuid(),
-            CommandPayloadHash.Create("payload"),
+            IdempotencyHash.Create("payload"),
             Guid.NewGuid(),
             Guid.NewGuid(),
             Guid.NewGuid(),

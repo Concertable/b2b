@@ -5,15 +5,30 @@ using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Repositories;
 
-internal sealed class ApplicationPrivilegedRepository(ApplicationPrivilegedDbContext context)
+internal sealed class ApplicationPrivilegedRepository(
+    ApplicationPrivilegedDbContext context, UnitOfWorkAccessor unitOfWorkAccessor)
     : IApplicationPrivilegedRepository
 {
+    private const int OpportunityLockNamespace = 10241001;
+
     public async Task AddAsync(ApplicationEntity application, CancellationToken ct = default) =>
         await context.Applications.AddAsync(application, ct);
+
+    public async Task LockOpportunityAsync(int opportunityId, CancellationToken ct = default)
+    {
+        if (opportunityId <= 0)
+            throw new ArgumentOutOfRangeException(nameof(opportunityId));
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("An opportunity lock requires a unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({OpportunityLockNamespace}, {opportunityId})", ct);
+    }
 
     public Task<bool> ExistsByOpportunityIdAndArtistTenantIdAsync(
         int opportunityId,
@@ -24,6 +39,26 @@ internal sealed class ApplicationPrivilegedRepository(ApplicationPrivilegedDbCon
                 application.OpportunityId == opportunityId
                 && application.ArtistTenantId == artistTenantId,
             ct);
+
+    public async Task<IReadOnlyList<Guid>> GetNotificationTenantIdsAsync(
+        int applicationId, bool includeSiblings, CancellationToken ct = default)
+    {
+        var application = await context.Applications.AsNoTracking()
+            .Where(candidate => candidate.Id == applicationId)
+            .Select(candidate => new { candidate.OpportunityId, candidate.VenueTenantId, candidate.ArtistTenantId })
+            .SingleOrDefaultAsync(ct);
+        if (application is null)
+            return [];
+
+        if (!includeSiblings)
+            return [application.VenueTenantId, application.ArtistTenantId];
+
+        var artists = await context.Applications.AsNoTracking()
+            .Where(candidate => candidate.OpportunityId == application.OpportunityId)
+            .Select(candidate => candidate.ArtistTenantId)
+            .ToListAsync(ct);
+        return [application.VenueTenantId, .. artists];
+    }
 
     public async Task<ApplicationEntity?> GetByIdForUpdateAsync(
         int applicationId,
@@ -143,50 +178,6 @@ internal sealed class ApplicationPrivilegedRepository(ApplicationPrivilegedDbCon
             availability =>
                 availability.VenueId == venueId
                 && availability.StartDate.Date == date.Date,
-            ct);
-
-    public Task<bool> CanSubmitAsync(
-        int applicationId,
-        MembershipSnapshot actor,
-        ResourceAudience audience,
-        DateTime at,
-        CancellationToken ct = default) =>
-        context.Applications.AsNoTracking().AnyAsync(application =>
-            application.Id == applicationId
-            && application.ArtistTenantId == actor.TenantId
-            && context.ApplicationAccessGrants.Any(grant =>
-                grant.ResourceId == application.Id
-                && grant.Scope == ApplicationAccessScope.Proposal
-                && grant.TenantId == actor.TenantId
-                && grant.RevokedAt == null
-                && grant.ValidFrom <= at
-                && (grant.ValidUntil == null || at < grant.ValidUntil)
-                && (audience == ResourceAudience.TenantResources
-                        && (grant.MembershipId == null || grant.MembershipId == actor.MembershipId)
-                    || audience == ResourceAudience.AssignedResources
-                        && grant.MembershipId == actor.MembershipId)),
-            ct);
-
-    public Task<bool> CanDecideAsync(
-        int applicationId,
-        MembershipSnapshot actor,
-        ResourceAudience audience,
-        DateTime at,
-        CancellationToken ct = default) =>
-        context.Applications.AsNoTracking().AnyAsync(application =>
-            application.Id == applicationId
-            && application.VenueTenantId == actor.TenantId
-            && context.ApplicationAccessGrants.Any(grant =>
-                grant.ResourceId == application.Id
-                && grant.Scope == ApplicationAccessScope.Proposal
-                && grant.TenantId == actor.TenantId
-                && grant.RevokedAt == null
-                && grant.ValidFrom <= at
-                && (grant.ValidUntil == null || at < grant.ValidUntil)
-                && (audience == ResourceAudience.TenantResources
-                        && (grant.MembershipId == null || grant.MembershipId == actor.MembershipId)
-                    || audience == ResourceAudience.AssignedResources
-                        && grant.MembershipId == actor.MembershipId)),
             ct);
 
     private Task LockAsync(int applicationId, CancellationToken ct) =>
