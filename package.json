@@ -26,8 +26,8 @@
     "dev:mobile": "npm -w @concertable/mobile-b2b run start"
   },
   "overrides": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-native-css-interop": {
       "tailwindcss": "^3"
     }
