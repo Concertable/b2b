@@ -1,3 +1,4 @@
+using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Booking.Contracts;
@@ -79,7 +80,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var repository = new Mock<IConcertPrivilegedRepository>();
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var membership = new Mock<IMembershipContext>();
-        var facts = new Mock<ITenantCommandFacts>();
+        var resolution = new Mock<ITenantResolver>();
         var permissions = new Mock<IPermissionCatalog>();
         var executor = new ImmediateCommandExecutor();
         repository
@@ -99,13 +100,13 @@ public sealed class ConcertServiceAccessOrderingTests
                 It.IsAny<CancellationToken>()))
             .Returns((Func<Task<UnitResult<TError>>> action, CancellationToken _) => action());
         membership.SetupGet(value => value.Membership).Returns(actor);
-        facts
+        resolution
             .Setup(value => value.ResolveAsync(
                 actor,
                 It.IsAny<Guid>(),
                 It.IsAny<Guid?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TenantCommandFacts(actor, true, actor));
+            .ReturnsAsync((Option<TenantResolution>)new TenantResolution(actor, true, actor));
         permissions
             .Setup(value => value.Grants(actor.Role, TenantPermission.ResourcesShare))
             .Returns(true);
@@ -128,10 +129,10 @@ public sealed class ConcertServiceAccessOrderingTests
             Mock.Of<IPrivilegedUnitOfWork>(),
             TimeProvider.System,
             Mock.Of<IConcertCommandReceiptRepository>(),
-            facts.Object,
+            resolution.Object,
             Mock.Of<ITenantContext>(),
             membership.Object,
-            Mock.Of<IMembershipAuthorityFence>(),
+            Mock.Of<IMembershipResolver>(),
             permissions.Object,
             executor,
             Mock.Of<IResourceAccessContext>(value => value.UtcNow == DateTime.UnixEpoch),

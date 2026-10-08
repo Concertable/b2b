@@ -1,61 +1,68 @@
+using Microsoft.EntityFrameworkCore;
+using Concertable.DataAccess.Application;
+using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Application.DTOs;
 using Concertable.B2B.Booking.Application.Errors;
 using Concertable.B2B.Booking.Application.Mappers;
 using Concertable.B2B.Booking.Application.Models;
-using Concertable.B2B.Booking.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Booking.Infrastructure.Services;
 
 internal sealed class BookingService : IBookingService
 {
     private readonly IBookingRepository bookingRepository;
-    private readonly BookingPrivilegedDbContext privilegedContext;
     private readonly IBookingWorkflow workflow;
     private readonly TimeProvider timeProvider;
-    private readonly CommandTransactionAccessor commandAccessor;
+    private readonly IUnitOfWork unitOfWork;
+    private readonly ITenantContext tenantContext;
 
     public BookingService(
         IBookingRepository bookingRepository,
-        BookingPrivilegedDbContext privilegedContext,
         IBookingWorkflow workflow,
         TimeProvider timeProvider,
-        CommandTransactionAccessor commandAccessor)
+        IUnitOfWork unitOfWork,
+        ITenantContext tenantContext)
     {
         this.bookingRepository = bookingRepository;
-        this.privilegedContext = privilegedContext;
         this.workflow = workflow;
         this.timeProvider = timeProvider;
-        this.commandAccessor = commandAccessor;
+        this.unitOfWork = unitOfWork;
+        this.tenantContext = tenantContext;
     }
 
     public async Task<BookingDto?> GetByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        (await bookingRepository.GetByApplicationIdAsync(applicationId, ct))?.ToDto();
+        (await bookingRepository.GetSummaryByApplicationIdAsync(applicationId, ct))?.ToDto();
 
-    public async Task<int?> GetIdByApplicationIdAsync(
+    public Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
-        CancellationToken ct = default)
-    {
-        if (commandAccessor.Current is { } command)
-            await command.EnlistAsync(privilegedContext, ct);
-
-        return await privilegedContext.Bookings
-            .Where(booking => booking.ApplicationId == applicationId)
-            .Select(booking => (int?)booking.Id)
-            .SingleOrDefaultAsync(ct);
-    }
+        CancellationToken ct = default) =>
+        bookingRepository.GetIdByApplicationIdAsync(applicationId, ct);
 
     public async Task<BookingSummaryDto?> GetSummaryByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default)
     {
-        var booking = await bookingRepository.GetByApplicationIdAsync(applicationId, ct);
+        var booking = await bookingRepository.GetSummaryByApplicationIdAsync(applicationId, ct);
         return booking is null
             ? null
             : new BookingSummaryDto(
+                booking.Id,
+                booking.ApplicationId,
+                booking.State);
+    }
+
+    public async Task<BookingOperations?> GetOperationsByApplicationIdAsync(
+        int applicationId,
+        CancellationToken ct = default)
+    {
+        var booking = await bookingRepository.GetOperationsByApplicationIdAsync(applicationId, ct);
+        return booking is null
+            ? null
+            : new BookingOperations(
                 booking.Id,
                 booking.ApplicationId,
                 booking.State,
@@ -71,10 +78,7 @@ internal sealed class BookingService : IBookingService
             .Select(booking => new BookingSummaryDto(
                 booking.Id,
                 booking.ApplicationId,
-                booking.State,
-                booking.OperationId,
-                booking.FinancialFailure?.Code,
-                booking.FinancialFailure?.Message))
+                booking.State))
             .ToList();
 
     public Task<int> GetArtistAwaitingCheckoutCountAsync(
@@ -101,4 +105,5 @@ internal sealed class BookingService : IBookingService
         FinancialOperationFailed operation,
         CancellationToken ct = default) =>
         workflow.RecordFailedAsync(bookingId, operation, ct);
+
 }

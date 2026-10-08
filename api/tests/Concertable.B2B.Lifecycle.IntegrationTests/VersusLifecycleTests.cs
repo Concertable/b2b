@@ -138,7 +138,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
         int applicationId)
     {
         var response = await client.GetAsync(
-            $"/api/booking/application/{applicationId}");
+            $"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var financial = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(financial);

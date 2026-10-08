@@ -90,10 +90,10 @@ internal sealed class VerificationService : IVerificationService
         return existing.ToDto();
     }
 
-    public async Task<IPagination<PendingVerificationDto>> GetPendingAsync(
+    public Task<IPagination<PendingVerificationDto>> GetPendingAsync(
         IPageParams pageParams,
         CancellationToken ct = default) =>
-        (await repository.GetPendingAsync(pageParams)).Map(ToDto);
+        repository.GetPendingAsync(pageParams);
 
     public Task<UnitResult<VerificationReviewError>> ApproveAsync(Guid tenantId, CancellationToken ct = default) =>
         ReviewAsync(
@@ -158,14 +158,6 @@ internal sealed class VerificationService : IVerificationService
         await repository.SaveChangesAsync(ct);
         return verification;
     }
-
-    private static PendingVerificationDto ToDto(PendingVerificationProjection pending) => new()
-    {
-        TenantId = pending.TenantId,
-        LegalName = pending.LegalName,
-        ContactEmail = pending.ContactEmail,
-        SubmittedAt = pending.SubmittedAt,
-    };
 
     private async Task<IReadOnlyList<VerificationDocumentEntity>> UploadEvidenceAsync(
         Guid tenantId,

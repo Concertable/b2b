@@ -29,7 +29,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         await AcceptFlatFeeAsync(client, applicationId);
 
         var before = await GetApplicationAsync(client, applicationId);
-        Assert.Equal(ApplicationBoundaryStatus.Accepted, before.Status);
+        Assert.Equal(ApplicationBoundaryStatus.AwaitingPayment, before.Status);
         Assert.Null(before.Actions.Cancel);
         Assert.Null(before.Actions.Withdraw);
         Assert.Null(before.Actions.Decline);
@@ -167,7 +167,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
         HttpClient client,
         int applicationId)
     {
-        var response = await client.GetAsync($"/api/application/{applicationId}");
+        var response = await client.GetAsync($"/api/application/{applicationId}/proposal");
         await response.ShouldBe(HttpStatusCode.OK);
         var application = await response.Content.ReadAsync<ApplicationBoundaryResponse>();
         Assert.NotNull(application);
@@ -176,7 +176,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
 
     private static async Task<BookingSummary> GetBookingAsync(HttpClient client, int applicationId)
     {
-        var response = await client.GetAsync($"/api/booking/application/{applicationId}");
+        var response = await client.GetAsync($"/api/booking/application/{applicationId}/summary");
         await response.ShouldBe(HttpStatusCode.OK);
         var booking = await response.Content.ReadAsync<BookingSummary>();
         Assert.NotNull(booking);

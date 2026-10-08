@@ -20,8 +20,8 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
     private const string DefaultFailureMessage = "Payment verification failed.";
 
     private readonly IPaymentVerificationRecorder paymentVerificationRecorder;
+    private readonly IApplicationPrivilegedRepository applicationRepository;
     private readonly IBus bus;
-    private readonly IApplicationReadDbContext readDbContext;
     private readonly IPaymentSessionOperationsClient paymentSessions;
     private readonly ApplicationPrivilegedDbContext context;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
@@ -29,16 +29,16 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
 
     public VerifyPaymentFailedProcessor(
         IPaymentVerificationRecorder paymentVerificationRecorder,
+        IApplicationPrivilegedRepository applicationRepository,
         IBus bus,
-        IApplicationReadDbContext readDbContext,
         IPaymentSessionOperationsClient paymentSessions,
         ApplicationPrivilegedDbContext context,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
         ILogger<VerifyPaymentFailedProcessor> logger)
     {
         this.paymentVerificationRecorder = paymentVerificationRecorder;
+        this.applicationRepository = applicationRepository;
         this.bus = bus;
-        this.readDbContext = readDbContext;
         this.paymentSessions = paymentSessions;
         this.context = context;
         this.unitOfWork = unitOfWork;
@@ -57,10 +57,7 @@ internal sealed class VerifyPaymentFailedProcessor : IIntegrationEventHandler<Pa
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentFailedProcessor), ct))
             return;
 
-        var venueTenantId = await readDbContext.Applications
-            .Where(application => application.Id == applicationId)
-            .Select(application => (Guid?)application.VenueTenantId)
-            .SingleOrDefaultAsync(ct);
+        var venueTenantId = await applicationRepository.GetVenueTenantIdAsync(applicationId, ct);
         var owned = false;
         if (venueTenantId is not null)
         {
