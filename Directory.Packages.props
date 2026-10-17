@@ -15,7 +15,7 @@
 
   <!-- Patch the shared imaging package's transitive dependency without changing its public API. -->
   <ItemGroup>
-    <PackageVersion Include="SixLabors.ImageSharp" Version="3.2.0" />
+    <PackageVersion Include="SixLabors.ImageSharp" Version="4.1.3" />
   </ItemGroup>
 
   <ItemGroup>
