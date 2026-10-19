@@ -21,6 +21,7 @@
     "dotnet@tj-agents": true,
     "engineering@tj-agents": true,
     "machine@tj-agents": true,
+    "personal@tj-agents": true,
     "react@tj-agents": true
   },
   "permissions": {

@@ -23,6 +23,9 @@ enabled = true
 [plugins."machine@tj-agents"]
 enabled = true
 
+[plugins."personal@tj-agents"]
+enabled = true
+
 [plugins."react@tj-agents"]
 enabled = true
 
