@@ -1,5 +1,6 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Domain.ValueObjects;
@@ -11,7 +12,7 @@ using Reunion;
 namespace Concertable.B2B.Application.Domain.Entities;
 
 [DisplayName(DisplayNames.Application)]
-public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, IConcurrencyVersioned, IEventRaiser
+public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEventRaiser
 {
     private static readonly ApplicationStateMachine stateMachine = new();
 
@@ -27,6 +28,9 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
     public DealType DealType { get; private set; }
     public Guid? AcceptanceOperationId { get; private set; }
 
+    private readonly List<ApplicationAccessGrant> accessGrants = [];
+    public IReadOnlyList<ApplicationAccessGrant> AccessGrants => accessGrants;
+
     internal ContractSignature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
 
@@ -37,7 +41,8 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         int opportunityId,
         DealType dealType,
         Guid venueTenantId,
-        Guid artistTenantId)
+        Guid artistTenantId,
+        DateTime createdAtUtc)
     {
         if (venueTenantId == Guid.Empty || artistTenantId == Guid.Empty)
             throw new InvalidOperationException("An application requires resolved venue and artist tenants.");
@@ -47,6 +52,30 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         DealType = dealType;
         VenueTenantId = venueTenantId;
         ArtistTenantId = artistTenantId;
+
+        InitializePrincipalAccess(createdAtUtc);
+    }
+
+    internal void InitializePrincipalAccess(DateTime createdAtUtc)
+    {
+        if (accessGrants.Count != 0)
+            throw new InvalidOperationException("Application access has already been initialized.");
+
+        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
+        {
+            foreach (var scope in new[] { ApplicationAccessScope.Summary, ApplicationAccessScope.Proposal })
+            {
+                accessGrants.Add(ApplicationAccessGrant.Issue(
+                    Id,
+                    tenantId,
+                    membershipId: null,
+                    scope,
+                    issuedByTenantId: ArtistTenantId,
+                    issuedByUserId: null,
+                    ResourceGrantKind.Principal,
+                    createdAtUtc));
+            }
+        }
     }
 
     public Guid BeginAcceptance() => AcceptanceOperationId ??= Guid.NewGuid();
@@ -161,6 +190,7 @@ public sealed class ApplicationEntity : IIdEntity, IVenueArtistTenantScoped, ICo
         int opportunityId,
         DealType dealType,
         Guid venueTenantId,
-        Guid artistTenantId) =>
-        new(artistId, opportunityId, dealType, venueTenantId, artistTenantId);
+        Guid artistTenantId,
+        DateTime createdAtUtc) =>
+        new(artistId, opportunityId, dealType, venueTenantId, artistTenantId, createdAtUtc);
 }

@@ -7,6 +7,9 @@ internal abstract partial record ApplyApplicationError : IError
 {
     public ErrorDefinition Definition => this switch
     {
+        NotPermitted =>
+            ErrorDefinition.Forbidden<NotPermitted>(
+                "You are not permitted to apply to this concert opportunity."),
         MissingArtist =>
             ErrorDefinition.Forbidden<MissingArtist>(
                 "You must create an artist account before applying for a concert opportunity."),
@@ -36,6 +39,9 @@ internal abstract partial record ApplyApplicationError : IError
             ErrorDefinition.PaymentRequired<PaymentCommitmentMissing>(
                 "A confirmed payment method is required before applying to hire this venue.")
     };
+
+    [ErrorCode("application.apply.not_permitted")]
+    public partial record NotPermitted;
 
     [ErrorCode("application.apply.missing_artist")]
     public partial record MissingArtist;

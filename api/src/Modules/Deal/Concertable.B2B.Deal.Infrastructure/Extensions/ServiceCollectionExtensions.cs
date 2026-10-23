@@ -7,6 +7,7 @@ using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Deal.Application.Interfaces;
 using Concertable.B2B.Deal.Application.Mappers;
 using Concertable.B2B.Deal.Application.Services;
+using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Deal.Infrastructure.Data;
 using Concertable.B2B.Deal.Infrastructure.Data.Seeders;
@@ -45,6 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDealRepository, DealRepository>();
         services.AddScoped<IDealService, DealService>();
         services.AddScoped<IDealModule, DealModule>();
+        services.AddScoped<IDealPrivilegedReadRepository, DealPrivilegedReadRepository>();
 
         services.AddDealStrategies();
 

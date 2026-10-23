@@ -11,5 +11,6 @@ internal sealed class ApplicationConfigurationProvider : IEntityTypeConfiguratio
         modelBuilder.ApplyConfiguration(new ApplicationEntityConfiguration());
         modelBuilder.ApplyConfiguration(new ConcertAvailabilityEntityConfiguration());
         modelBuilder.ApplyConfiguration(new VerifyPaymentEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new ApplicationAccessGrantConfiguration());
     }
 }

@@ -1,6 +1,5 @@
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Kernel;
 using Concertable.Kernel.DependencyInjection;

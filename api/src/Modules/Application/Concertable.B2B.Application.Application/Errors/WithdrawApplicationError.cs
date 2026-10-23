@@ -11,6 +11,8 @@ internal abstract partial record WithdrawApplicationError : IError
     {
         ApplicationNotFound(var applicationId) =>
             ErrorDefinition.NotFound<ApplicationNotFound>($"Application {applicationId} was not found."),
+        NotPermitted => ErrorDefinition.Forbidden<NotPermitted>(
+            "You are not permitted to withdraw this application."),
         InvalidTransition(var error) =>
             ErrorDefinition.Conflict<InvalidTransition>($"Cannot withdraw an application from {error.Current}."),
         Superseded(var applicationId) => ErrorDefinition.Conflict<Superseded>(
@@ -19,6 +21,9 @@ internal abstract partial record WithdrawApplicationError : IError
 
     [ErrorCode("application.withdraw.not_found")]
     public partial record ApplicationNotFound(int ApplicationId);
+
+    [ErrorCode("application.withdraw.not_permitted")]
+    public partial record NotPermitted;
 
     [ErrorCode("application.withdraw.invalid_state")]
     public partial record InvalidTransition(TransitionError<ApplicationState, ApplicationTrigger> Error);

@@ -56,7 +56,7 @@ internal sealed class VerificationRepository : Repository<TenantVerificationEnti
         Context.Query<TenantVerificationEntity>()
             .AnyAsync(v => v.TenantId == tenantId && v.Status == TenantVerificationStatus.Approved, ct);
 
-    public Task<IPagination<PendingVerificationProjection>> GetPendingAsync(IPageParams pageParams) =>
+    public Task<IPagination<PendingVerificationDto>> GetPendingAsync(IPageParams pageParams) =>
         Context.Query<TenantVerificationEntity>()
             .Where(v => v.Status == TenantVerificationStatus.Pending)
             .OrderBy(v => v.SubmittedAt)
@@ -64,7 +64,7 @@ internal sealed class VerificationRepository : Repository<TenantVerificationEnti
                 Context.Query<TenantEntity>(),
                 v => v.TenantId,
                 t => t.Id,
-                (v, t) => new PendingVerificationProjection
+                (v, t) => new PendingVerificationDto
                 {
                     TenantId = v.TenantId,
                     LegalName = t.LegalName,

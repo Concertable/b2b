@@ -602,8 +602,6 @@ public sealed class SeedState
             concert.OpportunityId,
             concert.ArtistId,
             concert.VenueId,
-            concert.VenueTenantId,
-            concert.ArtistTenantId,
             concert.Period.Start)).ToList();
     }
 

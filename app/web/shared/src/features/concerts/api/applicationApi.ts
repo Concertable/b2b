@@ -42,7 +42,7 @@ const applicationApi = {
 
   getProposal: async (applicationId: number): Promise<ApplicationProposal> => {
     const { data } = await apiClient.get<ApplicationProposal>(
-      `/application/${applicationId}`,
+      `/application/${applicationId}/proposal`,
     );
     return data;
   },

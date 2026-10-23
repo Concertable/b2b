@@ -39,10 +39,10 @@ public sealed class ConcertWorkflowTests
         immediateBehavior = new ImmediateBehavior();
         var membership = new Mock<IMembershipContext>();
         membership.SetupGet(context => context.Membership).Returns(actor);
-        var authorityFence = new Mock<IMembershipAuthorityFence>();
-        authorityFence
-            .Setup(fence => fence.RequireCurrentAsync(actor, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(actor);
+        var membershipResolver = new Mock<IMembershipResolver>();
+        membershipResolver
+            .Setup(resolver => resolver.ResolveSnapshotAsync(actor, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Option<MembershipSnapshot>)actor);
         var permissionCatalog = new Mock<IPermissionCatalog>();
         permissionCatalog
             .Setup(catalog => catalog.Grants(actor.Role, TenantPermission.ConcertsManage))
@@ -66,7 +66,7 @@ public sealed class ConcertWorkflowTests
             completeFactory.Object,
             immediateBehavior,
             membership.Object,
-            authorityFence.Object,
+            membershipResolver.Object,
             permissionCatalog.Object,
             TimeProvider.System);
         commandExecutor.Workflow = workflow;

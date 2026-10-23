@@ -11,7 +11,14 @@ internal sealed class StandardApplyStep : IApplyStep
         DealType dealType,
         Guid venueTenantId,
         Guid artistTenantId,
+        DateTime createdAtUtc,
         CancellationToken ct = default) =>
         Task.FromResult<Result<ApplicationEntity, ApplyApplicationError>>(
-            ApplicationEntity.Create(artistId, opportunityId, dealType, venueTenantId, artistTenantId));
+            ApplicationEntity.Create(
+                artistId,
+                opportunityId,
+                dealType,
+                venueTenantId,
+                artistTenantId,
+                createdAtUtc));
 }
