@@ -12,7 +12,7 @@ The [nightclub/DJ benchmark](https://github.com/Concertable/docs/blob/main/produ
 
 ## Authority is the request-scoped active tenant, never a token claim
 
-Tokens are identity-only (`sub` + `email`); authority is the active tenant (`X-Tenant-Id` → membership `TenantRole`) resolved per request via `ITenantContext`. Never add a role/authority claim to a B2B token. The tenant *is* the legal/VAT/Stripe entity (`TenantEntity.TaxCompliance`).
+Tokens are identity-only (`sub` + `email`); authority is the active tenant membership (`X-Tenant-Id`) resolved per request into `IAuthorizationContext`. Never add a role/authority claim to a B2B token. The tenant *is* the legal/VAT/Stripe entity (`TenantEntity.TaxCompliance`).
 
 The active tenant is therefore the **default scope of every application service**, and names must not restate a default. A controller neither accepts nor resolves a tenant id, and a repository never independently interprets the active request. Name the ordinary scoped use case for its domain intent (`GetDetailsAsync`, `CreateAsync`); name an *alternative* capability explicitly (`GetDetailsByIdAsync`). Repository queries state the actual key (`GetDetailsByTenantIdAsync(Guid tenantId, …)`). Don't add `ActiveTenant` to ordinary method names, and don't add profile-ID resolvers that turn the active tenant into an Artist or Venue id — tenant-owned queries use `TenantId` directly, backed by a module-local projection when they cross a module boundary. `CurrentUser`, `ForUser`, `Me` and `Self` stay reserved for data belonging to the authenticated human.
 

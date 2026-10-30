@@ -67,29 +67,19 @@ zero selected tests.
 
 ---
 
-### Authorization code is homed by accident-of-ownership, not by a real module
+### `ManagerClients` still sits outside the Authorization module
 
-`PermissionAuthorizationHandler` / `PermissionRequirement` / `IMembershipContext` (request-time policy
-checks) live inside `Concertable.B2B.Tenant.Infrastructure`/`.Contracts` purely because Tenant happens to
-own the membership data they read — so *every* B2B module with a protected endpoint depends on
-`Tenant.Contracts` for an orthogonal concern, the wrong dependency direction. `ManagerClients`
-(registration-time role assignment, added by the auth-identity-model plan — a different lifecycle moment,
-same underlying concern) now sits in `Concertable.B2B.Infrastructure/Authorization/` as a second instance
-of the same accidental placement: the smallest correct move for *that* PR, not a resolution of the module
-question.
-
-**Not this item's fault, but this item's opportunity:** a genuine `Concertable.B2B.Authorization` module —
-`.Contracts` (`PermissionRequirement`, a membership/role-fact facade interface Tenant *implements*);
-`.Infrastructure` (`PermissionAuthorizationHandler`, `ManagerClients`); no `.Domain`/`.Api`, no persisted
-aggregate of its own — would invert today's direction so every module depends on Authorization directly
-instead of on Tenant. Materially bigger than any single feature PR: it rewires every B2B module's policy
-registration. Tracked as `b2b-authorization/authorization-module` — see
+`Concertable.B2B.Authorization` now owns request-time authorization: `IAuthorizationContext`,
+`MembershipSnapshot`, the `IMembershipReadRepository` port Tenant implements, the generated catalog and
+`PermissionAuthorizationHandler` ([ARCHITECTURE.md § Authorization](./ARCHITECTURE.md#authorization)).
+`ManagerClients` (registration-time client → manager and initial business activity) still sits in
+`Concertable.B2B.Infrastructure/Authorization/`, and services that lock counterparties through Tenant's
+`ITargetTenantResolver` check the returned actor snapshot's permissions there, so `Tenant.Contracts`
+still carries part of the authorization surface. Tracked as `b2b-authorization/authorization-module` — see
 [`plans/b2b-authorization/B2B_AUTHORIZATION_ROADMAP.md`](../../plans/b2b-authorization/B2B_AUTHORIZATION_ROADMAP.md).
 
-**Resolves when:** `Concertable.B2B.Authorization` exists as above, `PermissionAuthorizationHandler` and
-`ManagerClients` both live in it, no B2B module outside Authorization/Tenant itself references
-`Tenant.Contracts` for a permission or role-fact check, and every module's policy registration goes through
-Authorization.
+**Resolves when:** `ManagerClients` lives in the Authorization module and no B2B module outside
+Authorization/Tenant references `Tenant.Contracts` for a permission or role check.
 
 ---
 
@@ -361,7 +351,7 @@ report-content work it was applied in exactly one place (`VenueController.Approv
 
 As an *authorization axis* this is correct and sufficient — it answers "is this caller a platform
 operator?", which is precisely what those endpoints ask, and it is deliberately not tenant RBAC
-(a `TenantRole` is scoped to one tenant and must never let a venue Owner moderate someone else's
+(a tenant role is scoped to one tenant and must never let a venue Owner moderate someone else's
 thread; an integration test asserts a tenant Owner gets 403 on every moderation endpoint). As an
 *operations surface* it is not sufficient:
 
