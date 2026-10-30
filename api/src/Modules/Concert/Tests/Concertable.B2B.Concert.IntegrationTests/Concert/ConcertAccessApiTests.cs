@@ -447,19 +447,19 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
 
     private async Task<AssignmentRace> ArrangeAssignedStaffAsync()
     {
-        var venueTenantId = fixture.SeedState.VenueManager1.TenantId;
-        var confirmedState = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).State;
-        var concert = fixture.SeedState.Concerts.First(value =>
-            value.VenueTenantId == venueTenantId && value.State == confirmedState);
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var owner = CreateOwningVenueClient(concert.VenueId);
         var staffUser = fixture.SeedState.VenueManager3;
-        var membershipId = fixture.SeedState.Memberships.Single(value =>
-            value.TenantId == concert.VenueTenantId && value.UserId == staffUser.Id).Id;
 
-        var demotion = await owner.PutAsJsonAsync(
-            $"/api/organization/members/{staffUser.Id}/roles",
-            new { roleIds = new[] { SystemPresetIds.For(concert.VenueTenantId, "Staff") } });
-        await demotion.ShouldBe(HttpStatusCode.NoContent);
+        var invitation = await owner.PostAsync(
+            "/api/organization/invitations",
+            new { staffUser.Email, roleIds = new[] { SystemPresetIds.For(concert.VenueTenantId, "Staff") } });
+        await invitation.ShouldBe(HttpStatusCode.Created);
+        var invitationId = (await invitation.Content.ReadAsync<Invitation>())!.Id;
+        var acceptance = await fixture.CreateClient(staffUser).PostAsync($"/api/invitation/{invitationId}/accept");
+        await acceptance.ShouldBe(HttpStatusCode.OK);
+        var membershipId = (await acceptance.Content.ReadAsync<Membership>())!.MembershipId;
+
         var assignment = await owner.PostAsync(
             $"/api/concert/{concert.Id}/member-assignments",
             new { membershipId, expectedAccessVersion = concert.AccessVersion });
@@ -492,6 +492,10 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     private static bool IsConcertUpdate(DbCommand command, int concertId) =>
         command.CommandText.Contains("UPDATE concert.\"Concerts\"", StringComparison.Ordinal)
         && command.HasParameter(concertId);
+
+    private sealed record Invitation(Guid Id);
+
+    private sealed record Membership(Guid MembershipId);
 
     private sealed record AssignmentRace(
         ConcertEntity Concert,
