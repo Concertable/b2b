@@ -9,6 +9,8 @@ public static class RateLimitPolicies
     public const string Checkout = "checkout";
     public const string ProfileImage = "profile-image";
 
+    public const string Sensitive = "sensitive";
+
     public static readonly IReadOnlyList<string> All =
-        [PublicRead, Upload, Apply, Messaging, Checkout, ProfileImage];
+        [PublicRead, Upload, Apply, Messaging, Checkout, ProfileImage, Sensitive];
 }
