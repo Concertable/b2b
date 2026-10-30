@@ -38,14 +38,14 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
         params TScope[] scopes)
         where TGrant : ResourceAccessGrant<TScope>
     {
-        var audience = actor.AudienceFor(permission);
-        return IsLiveFor<TGrant>(() => actor.TenantId, () => actor.MembershipId, () => audience, () => at, scopes);
+        var coverage = actor.CoverageFor(permission);
+        return IsLiveFor<TGrant>(() => actor.TenantId, () => actor.MembershipId, () => coverage, () => at, scopes);
     }
 
     public static Expression<Func<TGrant, bool>> IsLiveFor<TGrant>(
         Expression<Func<Guid?>> tenantId,
         Expression<Func<Guid?>> membershipId,
-        Expression<Func<ResourceAudience>> audience,
+        Expression<Func<ResourceCoverage>> coverage,
         Expression<Func<DateTime>> at,
         params TScope[] scopes)
         where TGrant : ResourceAccessGrant<TScope>
@@ -53,22 +53,22 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
         if (scopes.Length == 0)
             throw new ArgumentException("At least one scope is required.", nameof(scopes));
 
-        Expression<Func<TGrant, Guid?, Guid?, ResourceAudience, DateTime, bool>> live =
-            (grant, grantee, member, coverage, now) =>
+        Expression<Func<TGrant, Guid?, Guid?, ResourceCoverage, DateTime, bool>> live =
+            (grant, grantee, member, held, now) =>
                 grant.TenantId == grantee
                 && grant.RevokedAt == null
                 && grant.ValidFrom <= now
                 && (grant.ValidUntil == null || now < grant.ValidUntil)
-                && (coverage == ResourceAudience.TenantResources
+                && (held == ResourceCoverage.TenantResources
                         && (grant.MembershipId == null || grant.MembershipId == member)
-                    || coverage == ResourceAudience.AssignedResources
+                    || held == ResourceCoverage.AssignedResources
                         && grant.MembershipId == member);
         var grant = live.Parameters[0];
         var body = new ParameterBinder(new Dictionary<ParameterExpression, Expression>
         {
             [live.Parameters[1]] = tenantId.Body,
             [live.Parameters[2]] = membershipId.Body,
-            [live.Parameters[3]] = audience.Body,
+            [live.Parameters[3]] = coverage.Body,
             [live.Parameters[4]] = at.Body,
         }).Visit(live.Body)!;
         var scope = Expression.Property(grant, nameof(Scope));

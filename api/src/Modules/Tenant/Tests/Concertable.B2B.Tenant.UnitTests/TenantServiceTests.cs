@@ -22,7 +22,7 @@ public sealed class TenantServiceTests
     private readonly Mock<IMembershipRepository> membershipRepository;
     private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
-    private readonly Mock<IMembershipContext> membershipContext;
+    private readonly Mock<IAuthorizationContext> authorizationContext;
     private readonly Mock<IMembershipReadRepository> membershipReads;
     private readonly Mock<IRoleRepository> roles;
     private readonly TenantService service;
@@ -33,11 +33,11 @@ public sealed class TenantServiceTests
         this.membershipRepository = new Mock<IMembershipRepository>();
         this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
-        this.membershipContext = new Mock<IMembershipContext>();
+        this.authorizationContext = new Mock<IAuthorizationContext>();
         this.membershipReads = new Mock<IMembershipReadRepository>();
         var actorId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        this.membershipContext.SetupGet(context => context.Membership).Returns(() =>
+        this.authorizationContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
                 userId, 1, 1, AuthorizationCatalog.Presets["Owner"].Permissions.ToImmutableDictionary()));
         this.membershipReads.Setup(reads => reads.LockIfUnchangedAsync(
@@ -53,11 +53,11 @@ public sealed class TenantServiceTests
         this.membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
-                Task.FromResult<IReadOnlyList<MembershipSnapshot>>([membershipContext.Object.Membership!]));
+                Task.FromResult<IReadOnlyList<MembershipSnapshot>>([authorizationContext.Object.Membership!]));
         this.roles.Setup(value => value.HasProtectedOwnerAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        var authorizer = new TenantAuthorizer(membershipContext.Object, membershipReads.Object, roles.Object);
+        var authorizer = new TenantAuthorizer(authorizationContext.Object, membershipReads.Object, roles.Object);
         this.service = new TenantService(
             repository.Object,
             membershipRepository.Object,

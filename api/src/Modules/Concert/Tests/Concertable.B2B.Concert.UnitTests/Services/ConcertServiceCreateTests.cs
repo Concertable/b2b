@@ -1,4 +1,3 @@
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -83,9 +82,9 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<IPrivilegedUnitOfWork>(),
             TimeProvider.System,
             Mock.Of<IConcertCommandReceiptRepository>(),
-            Mock.Of<ITenantResolver>(),
+            Mock.Of<ITargetTenantResolver>(),
             Mock.Of<ITenantContext>(),
-            Mock.Of<IMembershipContext>(),
+            Mock.Of<IAuthorizationContext>(),
             Mock.Of<ITransactionRunner>(),
             Mock.Of<IResourceAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());

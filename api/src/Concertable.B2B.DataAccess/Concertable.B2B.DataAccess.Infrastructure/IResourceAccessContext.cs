@@ -8,5 +8,5 @@ public interface IResourceAccessContext
 
     DateTime UtcNow { get; }
 
-    ResourceAudience AudienceFor(TenantPermission permission);
+    ResourceCoverage CoverageFor(TenantPermission permission);
 }

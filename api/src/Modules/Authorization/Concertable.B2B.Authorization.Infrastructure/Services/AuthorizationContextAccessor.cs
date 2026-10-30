@@ -4,18 +4,18 @@ namespace Concertable.B2B.Authorization.Infrastructure.Services;
 
 internal sealed record MembershipResolution(MembershipSnapshot? Membership);
 
-internal interface IMembershipContextAccessor
+internal interface IAuthorizationContextAccessor
 {
     MembershipResolution? Resolution { get; set; }
 }
 
-internal sealed class MembershipContextAccessor : IMembershipContextAccessor
+internal sealed class AuthorizationContextAccessor : IAuthorizationContextAccessor
 {
     private const string ItemKey = "Concertable.Authorization.Resolution";
 
     private readonly IHttpContextAccessor httpContextAccessor;
 
-    public MembershipContextAccessor(IHttpContextAccessor httpContextAccessor)
+    public AuthorizationContextAccessor(IHttpContextAccessor httpContextAccessor)
     {
         this.httpContextAccessor = httpContextAccessor;
     }

@@ -37,7 +37,7 @@ public sealed class TenantApiFixture : ApiFixture
         dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
 
     public Task<TResult> ExecuteResolutionAsync<TResult>(
-        Func<ITenantResolver, CancellationToken, Task<TResult>> resolve,
+        Func<ITargetTenantResolver, CancellationToken, Task<TResult>> resolve,
         CancellationToken ct = default) =>
         transactionRunner.RunAsync(resolve, ct);
 
@@ -101,7 +101,8 @@ public sealed class TenantApiFixture : ApiFixture
     {
         var membership = await dbContext.Memberships.SingleAsync(
             candidate => candidate.TenantId == tenantId && candidate.UserId == userId);
-        membership.ReplaceRoles([.. presetKeys.Select(key => RoleId(tenantId, key))], Guid.NewGuid(), DateTime.UtcNow);
+        Assert.True(membership.ChangeRoles(
+            presetKeys.Select(key => RoleId(tenantId, key)).ToHashSet(), Guid.NewGuid(), DateTime.UtcNow).IsSuccess);
         await dbContext.SaveChangesAsync();
     }
 

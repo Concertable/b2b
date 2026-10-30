@@ -24,6 +24,6 @@ public static class TenantRoleAssignmentPolicy
                 TenantPermission.TryParse(grant.PermissionKey, out var permission)
                 && permission != TenantPermission.MembersInvite
                 && !AuthorizationCatalog.Permissions[permission].OwnerOnly
-                && actor.AudienceFor(permission) >= grant.Audience));
+                && actor.CoverageFor(permission) >= grant.Audience));
     }
 }

@@ -19,5 +19,5 @@ public interface IHasResourceAccessContext
     long? ActivePermissionVersion { get; }
     long? ActiveRolePolicyVersion { get; }
 
-    ResourceAudience AudienceFor(TenantPermission permission);
+    ResourceCoverage CoverageFor(TenantPermission permission);
 }

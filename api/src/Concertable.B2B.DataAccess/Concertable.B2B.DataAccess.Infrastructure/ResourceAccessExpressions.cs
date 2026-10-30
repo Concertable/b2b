@@ -6,9 +6,9 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 
 public static class ResourceAccessExpressions
 {
-    public static Expression<Func<TGrant, bool>> LiveForAudience<TGrant, TScope>(
+    public static Expression<Func<TGrant, bool>> LiveForCoverage<TGrant, TScope>(
         IHasResourceAccessContext context,
-        Expression<Func<ResourceAudience>> audience,
+        Expression<Func<ResourceCoverage>> coverage,
         params TScope[] scopes)
         where TGrant : ResourceAccessGrant<TScope>
         where TScope : struct, Enum
@@ -25,7 +25,7 @@ public static class ResourceAccessExpressions
         return currentMember.And(ResourceAccessGrant<TScope>.IsLiveFor<TGrant>(
             () => context.ActiveTenantId,
             () => context.ActiveMembershipId,
-            audience,
+            coverage,
             () => context.ResourceAccess.UtcNow,
             scopes));
     }

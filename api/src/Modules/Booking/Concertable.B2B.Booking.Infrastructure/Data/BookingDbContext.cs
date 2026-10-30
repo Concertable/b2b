@@ -20,22 +20,22 @@ internal sealed class BookingDbContext(
     public DbSet<BookingAccessGrant> BookingAccessGrants => Set<BookingAccessGrant>();
     public DbSet<ContractAccessGrant> ContractAccessGrants => Set<ContractAccessGrant>();
 
-    public ResourceAudience OperationsAudience => AudienceFor(TenantPermission.OperationsView);
-    public ResourceAudience TermsAudience => AudienceFor(TenantPermission.TermsRead);
+    public ResourceCoverage OperationsCoverage => CoverageFor(TenantPermission.OperationsView);
+    public ResourceCoverage TermsCoverage => CoverageFor(TenantPermission.TermsRead);
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<BookingAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForAudience<BookingAccessGrant, BookingAccessScope>(
+            ResourceAccessExpressions.LiveForCoverage<BookingAccessGrant, BookingAccessScope>(
                 this,
-                () => OperationsAudience,
+                () => OperationsCoverage,
                 BookingAccessScope.Summary,
                 BookingAccessScope.Operations));
 
         modelBuilder.Entity<ContractAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForAudience<ContractAccessGrant, ContractAccessScope>(
+            ResourceAccessExpressions.LiveForCoverage<ContractAccessGrant, ContractAccessScope>(
                 this,
-                () => TermsAudience,
+                () => TermsCoverage,
                 ContractAccessScope.Read));
 
         modelBuilder.Entity<BookingEntity>().HasQueryFilter(TenantFilters.Key, booking =>

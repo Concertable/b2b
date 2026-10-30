@@ -1,4 +1,3 @@
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -43,9 +42,9 @@ internal sealed class ConcertService : IConcertService
     private readonly IPrivilegedUnitOfWork privilegedUnitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly IConcertCommandReceiptRepository receiptRepository;
-    private readonly ITenantResolver tenantResolver;
+    private readonly ITargetTenantResolver targetTenantResolver;
     private readonly ITenantContext tenantContext;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly ITransactionRunner transactionRunner;
     private readonly IResourceAccessContext resourceAccess;
     private readonly ILogger<ConcertService> logger;
@@ -67,9 +66,9 @@ internal sealed class ConcertService : IConcertService
         IPrivilegedUnitOfWork privilegedUnitOfWork,
         TimeProvider timeProvider,
         IConcertCommandReceiptRepository receiptRepository,
-        ITenantResolver tenantResolver,
+        ITargetTenantResolver targetTenantResolver,
         ITenantContext tenantContext,
-        IMembershipContext membership,
+        IAuthorizationContext membership,
         ITransactionRunner transactionRunner,
         IResourceAccessContext resourceAccess,
         ILogger<ConcertService> logger)
@@ -90,7 +89,7 @@ internal sealed class ConcertService : IConcertService
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.timeProvider = timeProvider;
         this.receiptRepository = receiptRepository;
-        this.tenantResolver = tenantResolver;
+        this.targetTenantResolver = targetTenantResolver;
         this.tenantContext = tenantContext;
         this.membership = membership;
         this.transactionRunner = transactionRunner;
@@ -500,7 +499,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await tenantResolver.ResolveAsync(
+        var resolutionOption = await targetTenantResolver.ResolveAsync(
             expectedActor, request.RecipientTenantId, request.RecipientMembershipId, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
@@ -594,7 +593,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await tenantResolver.ResolveAsync(
+        var resolutionOption = await targetTenantResolver.ResolveAsync(
             expectedActor, request.RecipientTenantId, request.RecipientMembershipId, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
@@ -668,7 +667,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await tenantResolver.ResolveAsync(expectedActor, expectedActor.TenantId, ct: ct);
+        var resolutionOption = await targetTenantResolver.ResolveAsync(expectedActor, expectedActor.TenantId, ct: ct);
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new RevokeConcertSummaryShareError.NotPermitted();
@@ -722,7 +721,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await tenantResolver.ResolveAsync(
+        var resolutionOption = await targetTenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, request.MembershipId, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
@@ -789,7 +788,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await tenantResolver.ResolveAsync(
+        var resolutionOption = await targetTenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))

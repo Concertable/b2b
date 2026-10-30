@@ -20,7 +20,7 @@ public abstract class ResourceScopedDbContext : TenantScopedDbContext, IHasResou
     public long? ActivePermissionVersion => ResourceAccess.Membership?.PermissionVersion;
     public long? ActiveRolePolicyVersion => ResourceAccess.Membership?.RolePolicyVersion;
 
-    public ResourceAudience AudienceFor(TenantPermission permission) => ResourceAccess.AudienceFor(permission);
+    public ResourceCoverage CoverageFor(TenantPermission permission) => ResourceAccess.CoverageFor(permission);
 
     protected ResourceScopedDbContext(
         DbContextOptions options,

@@ -15,7 +15,7 @@ internal interface IBookingAuthorizer
 internal sealed class BookingAuthorizer(
     BookingPrivilegedDbContext context,
     UnitOfWorkAccessor unitOfWorkAccessor,
-    IMembershipContext membership,
+    IAuthorizationContext membership,
     IMembershipReadRepository memberships,
     TimeProvider clock) : IBookingAuthorizer
 {

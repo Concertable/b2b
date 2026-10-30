@@ -15,7 +15,7 @@ internal interface IConcertAuthorizer
 internal sealed class ConcertAuthorizer(
     ConcertPrivilegedDbContext context,
     UnitOfWorkAccessor unitOfWorkAccessor,
-    IMembershipContext membership,
+    IAuthorizationContext membership,
     IMembershipReadRepository memberships,
     TimeProvider clock) : IConcertAuthorizer
 {

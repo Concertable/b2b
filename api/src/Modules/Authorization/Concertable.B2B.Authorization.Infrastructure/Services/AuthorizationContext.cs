@@ -3,18 +3,18 @@ using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Authorization.Infrastructure.Services;
 
-internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMembershipContext
+internal sealed class AuthorizationContext : ITenantContext, ITenantResolver, IAuthorizationContext
 {
     private readonly ICurrentUser currentUser;
     private readonly IHttpContextAccessor httpContextAccessor;
     private readonly IMembershipReadRepository memberships;
-    private readonly IMembershipContextAccessor accessor;
+    private readonly IAuthorizationContextAccessor accessor;
 
-    public MembershipContext(
+    public AuthorizationContext(
         ICurrentUser currentUser,
         IHttpContextAccessor httpContextAccessor,
         IMembershipReadRepository memberships,
-        IMembershipContextAccessor accessor)
+        IAuthorizationContextAccessor accessor)
     {
         this.currentUser = currentUser;
         this.httpContextAccessor = httpContextAccessor;
@@ -29,8 +29,8 @@ internal sealed class MembershipContext : ITenantContext, ITenantResolver, IMemb
     public bool HasPermission(TenantPermission permission) =>
         Membership is { } active && active.HasPermission(permission);
 
-    public ResourceAudience AudienceFor(TenantPermission permission) =>
-        Membership?.AudienceFor(permission) ?? ResourceAudience.None;
+    public ResourceCoverage CoverageFor(TenantPermission permission) =>
+        Membership?.CoverageFor(permission) ?? ResourceCoverage.None;
 
     public async Task ResolveAsync(CancellationToken cancellationToken = default)
     {

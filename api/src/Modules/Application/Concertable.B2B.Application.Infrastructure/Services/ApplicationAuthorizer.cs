@@ -15,7 +15,7 @@ internal interface IApplicationAuthorizer
 internal sealed class ApplicationAuthorizer(
     ApplicationPrivilegedDbContext context,
     UnitOfWorkAccessor unitOfWorkAccessor,
-    IMembershipContext membership,
+    IAuthorizationContext membership,
     IMembershipReadRepository memberships,
     TimeProvider clock) : IApplicationAuthorizer
 {

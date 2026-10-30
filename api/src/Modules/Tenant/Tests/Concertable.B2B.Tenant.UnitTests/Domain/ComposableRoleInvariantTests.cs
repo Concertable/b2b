@@ -10,35 +10,35 @@ public sealed class ComposableRoleInvariantTests
     public void RejectedRoleUpdatePreservesMetadataPermissionsAndVersion()
     {
         var role = TenantRoleDefinition.CreateCustom(Guid.NewGuid(), "Door crew", true,
-            new Dictionary<TenantPermission, ResourceAudience>
+            new Dictionary<TenantPermission, ResourceCoverage>
             {
-                [TenantPermission.MessagesRead] = ResourceAudience.AssignedResources,
+                [TenantPermission.MessagesRead] = ResourceCoverage.AssignedResources,
             });
         var existingPermission = Assert.Single(role.Permissions);
         var version = role.Version;
 
         Assert.Throws<ArgumentException>(() => role.Update("Elevated crew", false,
-            new Dictionary<TenantPermission, ResourceAudience>
+            new Dictionary<TenantPermission, ResourceCoverage>
             {
-                [TenantPermission.MessagesRead] = ResourceAudience.TenantResources,
-                [TenantPermission.MembersManageRoles] = ResourceAudience.TenantResources,
+                [TenantPermission.MessagesRead] = ResourceCoverage.TenantResources,
+                [TenantPermission.MembersManageRoles] = ResourceCoverage.TenantResources,
             }));
 
         Assert.Equal("Door crew", role.Name);
         Assert.True(role.IsInvitationAssignable);
         Assert.Equal(version, role.Version);
         Assert.Same(existingPermission, Assert.Single(role.Permissions));
-        Assert.Equal(ResourceAudience.AssignedResources, existingPermission.Audience);
+        Assert.Equal(ResourceCoverage.AssignedResources, existingPermission.Audience);
     }
 
     [Fact]
-    public void CustomRoleRejectsUnsupportedAudience()
+    public void CustomRoleRejectsUnsupportedCoverage()
     {
         Assert.Throws<ArgumentException>(() => TenantRoleDefinition.CreateCustom(
             Guid.NewGuid(), "Door revenue", false,
-            new Dictionary<TenantPermission, ResourceAudience>
+            new Dictionary<TenantPermission, ResourceCoverage>
             {
-                [TenantPermission.ConcertsDeclareDoorRevenue] = ResourceAudience.AssignedResources,
+                [TenantPermission.ConcertsDeclareDoorRevenue] = ResourceCoverage.AssignedResources,
             }));
     }
 
@@ -57,7 +57,7 @@ public sealed class ComposableRoleInvariantTests
             [owner, previous], initialIssuer, createdAt);
         var ownerAssignment = Assert.Single(membership.Assignments, row => row.RoleId == owner);
 
-        membership.ReplaceRoles([owner, replacement], nextIssuer, changedAt);
+        Assert.True(membership.ChangeRoles(new HashSet<Guid> { owner, replacement }, nextIssuer, changedAt).IsSuccess);
 
         Assert.Equal(2, membership.PermissionVersion);
         Assert.Same(ownerAssignment, Assert.Single(membership.Assignments, row => row.RoleId == owner));
@@ -66,7 +66,7 @@ public sealed class ComposableRoleInvariantTests
         var added = Assert.Single(membership.Assignments, row => row.RoleId == replacement);
         Assert.Equal(nextIssuer, added.IssuedByMembershipId);
         Assert.Equal(changedAt, added.CreatedAt);
-        membership.ReplaceRoles([replacement, owner], nextIssuer, changedAt);
+        Assert.True(membership.ChangeRoles(new HashSet<Guid> { replacement, owner }, nextIssuer, changedAt).IsSuccess);
         Assert.Equal(2, membership.PermissionVersion);
     }
 
@@ -77,13 +77,13 @@ public sealed class ComposableRoleInvariantTests
         var tenantId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var first = new MembershipSnapshot(membershipId, tenantId, userId, 2, 3,
-            ImmutableDictionary<TenantPermission, ResourceAudience>.Empty
-                .Add(TenantPermission.MessagesRead, ResourceAudience.AssignedResources)
-                .Add(TenantPermission.OperationsView, ResourceAudience.TenantResources));
+            ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty
+                .Add(TenantPermission.MessagesRead, ResourceCoverage.AssignedResources)
+                .Add(TenantPermission.OperationsView, ResourceCoverage.TenantResources));
         var second = new MembershipSnapshot(membershipId, tenantId, userId, 2, 3,
-            ImmutableDictionary<TenantPermission, ResourceAudience>.Empty
-                .Add(TenantPermission.OperationsView, ResourceAudience.TenantResources)
-                .Add(TenantPermission.MessagesRead, ResourceAudience.AssignedResources));
+            ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty
+                .Add(TenantPermission.OperationsView, ResourceCoverage.TenantResources)
+                .Add(TenantPermission.MessagesRead, ResourceCoverage.AssignedResources));
 
         Assert.True(first.HasSameAuthorityAs(second));
     }

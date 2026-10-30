@@ -13,7 +13,7 @@ internal interface IConversationAuthorizer
 internal sealed class ConversationAuthorizer(
     ConversationsPrivilegedDbContext context,
     UnitOfWorkAccessor unitOfWorkAccessor,
-    IMembershipContext membership,
+    IAuthorizationContext membership,
     IMembershipReadRepository memberships,
     TimeProvider clock) : IConversationAuthorizer
 {

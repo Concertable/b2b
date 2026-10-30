@@ -1,8 +1,8 @@
 ﻿namespace Concertable.B2B.Authorization.Contracts;
 
-public enum ResourceAudience
+public enum ResourceCoverage
 {
-    // Ordering is significant; broader audiences must have larger values.
+    // Ordering is significant; broader coverage must have a larger value.
     None = 0,
     AssignedResources = 1,
     TenantResources = 2,

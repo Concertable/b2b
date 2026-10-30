@@ -7,25 +7,25 @@ using Moq;
 
 namespace Concertable.B2B.Authorization.UnitTests;
 
-public sealed class MembershipContextTests
+public sealed class AuthorizationContextTests
 {
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<IHttpContextAccessor> httpContextAccessor;
     private readonly Mock<IMembershipReadRepository> memberships;
     private readonly DefaultHttpContext httpContext;
-    private readonly MembershipContext context;
+    private readonly AuthorizationContext context;
 
-    public MembershipContextTests()
+    public AuthorizationContextTests()
     {
         currentUser = new Mock<ICurrentUser>();
         httpContextAccessor = new Mock<IHttpContextAccessor>();
         memberships = new Mock<IMembershipReadRepository>();
         httpContext = new DefaultHttpContext();
-        context = new MembershipContext(
+        context = new AuthorizationContext(
             currentUser.Object,
             httpContextAccessor.Object,
             memberships.Object,
-            new MembershipContextAccessor(httpContextAccessor.Object));
+            new AuthorizationContextAccessor(httpContextAccessor.Object));
     }
 
     private void WithHttpRequest() =>
@@ -36,14 +36,14 @@ public sealed class MembershipContextTests
 
     private static MembershipSnapshot Membership(
         Guid tenantId,
-        IReadOnlyDictionary<TenantPermission, ResourceAudience>? permissions = null) =>
+        IReadOnlyDictionary<TenantPermission, ResourceCoverage>? permissions = null) =>
         new(
             Guid.NewGuid(),
             tenantId,
             Guid.NewGuid(),
             3,
             4,
-            (permissions ?? ImmutableDictionary<TenantPermission, ResourceAudience>.Empty).ToImmutableDictionary());
+            (permissions ?? ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty).ToImmutableDictionary());
 
     [Fact]
     public async Task ResolveAsync_SingleMembershipNoHeader_DefaultsToIt()
@@ -58,8 +58,8 @@ public sealed class MembershipContextTests
         await context.ResolveAsync();
 
         Assert.Equal(tenantId, ((ITenantContext)context).TenantId);
-        Assert.Equal(3, ((IMembershipContext)context).Membership?.PermissionVersion);
-        Assert.Equal(4, ((IMembershipContext)context).Membership?.RolePolicyVersion);
+        Assert.Equal(3, ((IAuthorizationContext)context).Membership?.PermissionVersion);
+        Assert.Equal(4, ((IAuthorizationContext)context).Membership?.RolePolicyVersion);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class MembershipContextTests
         await context.ResolveAsync();
 
         Assert.Null(((ITenantContext)context).TenantId);
-        Assert.Null(((IMembershipContext)context).Membership);
+        Assert.Null(((IAuthorizationContext)context).Membership);
     }
 
     [Fact]
@@ -140,8 +140,8 @@ public sealed class MembershipContextTests
 
         await context.ResolveAsync();
 
-        Assert.Null(((IMembershipContext)context).Membership);
-        Assert.False(((IMembershipContext)context).HasPermission(TenantPermission.OperationsView));
+        Assert.Null(((IAuthorizationContext)context).Membership);
+        Assert.False(((IAuthorizationContext)context).HasPermission(TenantPermission.OperationsView));
     }
 
     [Fact]
@@ -164,15 +164,15 @@ public sealed class MembershipContextTests
         WithHttpRequest();
         currentUser.SetupGet(value => value.Id).Returns(userId);
         memberships.Setup(value => value.GetSnapshotsByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([Membership(tenantId, new Dictionary<TenantPermission, ResourceAudience>
+            .ReturnsAsync([Membership(tenantId, new Dictionary<TenantPermission, ResourceCoverage>
             {
-                [permission] = ResourceAudience.TenantResources,
+                [permission] = ResourceCoverage.TenantResources,
             })]);
 
         await context.ResolveAsync();
 
-        Assert.True(((IMembershipContext)context).HasPermission(permission));
-        Assert.Equal(ResourceAudience.TenantResources, ((IMembershipContext)context).AudienceFor(permission));
-        Assert.False(((IMembershipContext)context).HasPermission(TenantPermission.ProfileEdit));
+        Assert.True(((IAuthorizationContext)context).HasPermission(permission));
+        Assert.Equal(ResourceCoverage.TenantResources, ((IAuthorizationContext)context).CoverageFor(permission));
+        Assert.False(((IAuthorizationContext)context).HasPermission(TenantPermission.ProfileEdit));
     }
 }

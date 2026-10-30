@@ -10,5 +10,5 @@ public sealed class DesignTimeResourceAccessContext : IResourceAccessContext
 
     public DateTime UtcNow => DateTime.UnixEpoch;
 
-    public ResourceAudience AudienceFor(TenantPermission permission) => ResourceAudience.None;
+    public ResourceCoverage CoverageFor(TenantPermission permission) => ResourceCoverage.None;
 }

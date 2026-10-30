@@ -24,19 +24,19 @@ internal sealed class ConversationsDbContext(
     public DbSet<ConversationReadPosition> ConversationReadPositions => Set<ConversationReadPosition>();
     public DbSet<TenantDisplay> TenantDisplays => Set<TenantDisplay>();
 
-    public ResourceAudience ReadAudience => AudienceFor(TenantPermission.MessagesRead);
-    public ResourceAudience SendAudience => AudienceFor(TenantPermission.MessagesSend);
+    public ResourceCoverage ReadCoverage => CoverageFor(TenantPermission.MessagesRead);
+    public ResourceCoverage SendCoverage => CoverageFor(TenantPermission.MessagesSend);
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ConversationAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForAudience<ConversationAccessGrant, ConversationAccessScope>(
+            ResourceAccessExpressions.LiveForCoverage<ConversationAccessGrant, ConversationAccessScope>(
                     this,
-                    () => ReadAudience,
+                    () => ReadCoverage,
                     ConversationAccessScope.Read)
-                .Or(ResourceAccessExpressions.LiveForAudience<ConversationAccessGrant, ConversationAccessScope>(
+                .Or(ResourceAccessExpressions.LiveForCoverage<ConversationAccessGrant, ConversationAccessScope>(
                     this,
-                    () => SendAudience,
+                    () => SendCoverage,
                     ConversationAccessScope.SendMessages)));
 
         modelBuilder.Entity<ConversationEntity>().HasQueryFilter(TenantFilters.Key, conversation =>

@@ -1,4 +1,3 @@
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using System.Collections.Immutable;
 
 using Concertable.B2B.Authorization.Contracts;
@@ -29,8 +28,8 @@ public sealed class ConcertServiceAccessOrderingTests
         Guid.NewGuid(),
         1,
         1,
-        ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
-            TenantPermission.ResourcesShare, ResourceAudience.TenantResources));
+        ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
+            TenantPermission.ResourcesShare, ResourceCoverage.TenantResources));
 
     [Fact]
     public async Task RevokeSummaryShare_WithoutConcertAuthority_DoesNotLoadGrants()
@@ -88,8 +87,8 @@ public sealed class ConcertServiceAccessOrderingTests
     {
         var editOnly = actor with
         {
-            Permissions = ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
-                TenantPermission.ConcertsOpsEdit, ResourceAudience.TenantResources),
+            Permissions = ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
+                TenantPermission.ConcertsOpsEdit, ResourceCoverage.TenantResources),
         };
         var fixture = CreateFixture<PostConcertError>(editOnly);
 
@@ -136,8 +135,8 @@ public sealed class ConcertServiceAccessOrderingTests
         var currentActor = principal ?? actor;
         var repository = new Mock<IConcertPrivilegedRepository>();
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
-        var membership = new Mock<IMembershipContext>();
-        var resolution = new Mock<ITenantResolver>();
+        var membership = new Mock<IAuthorizationContext>();
+        var resolution = new Mock<ITargetTenantResolver>();
         var authorizer = new Mock<IConcertAuthorizer>();
         var steps = new List<string>();
         var transactionRunner = new ImmediateTransactionRunner();

@@ -1,10 +1,10 @@
 ﻿namespace Concertable.B2B.Authorization.Contracts;
 
-public interface IMembershipContext
+public interface IAuthorizationContext
 {
     MembershipSnapshot? Membership { get; }
 
     bool HasPermission(TenantPermission permission);
 
-    ResourceAudience AudienceFor(TenantPermission permission);
+    ResourceCoverage CoverageFor(TenantPermission permission);
 }

@@ -18,7 +18,6 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Tenant.Contracts;
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.Kernel.Identity;
@@ -41,9 +40,9 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly IMembershipReadRepository memberships;
-    private readonly ITenantResolver tenantResolver;
+    private readonly ITargetTenantResolver targetTenantResolver;
     private readonly IApplicationAuthorizer authorizer;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
@@ -61,9 +60,9 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
-        IMembershipContext membership,
+        IAuthorizationContext membership,
         IMembershipReadRepository memberships,
-        ITenantResolver tenantResolver,
+        ITargetTenantResolver targetTenantResolver,
         IApplicationAuthorizer authorizer,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor)
@@ -82,7 +81,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
         this.memberships = memberships;
-        this.tenantResolver = tenantResolver;
+        this.targetTenantResolver = targetTenantResolver;
         this.authorizer = authorizer;
         this.transactionRunner = transactionRunner;
         this.unitOfWorkAccessor = unitOfWorkAccessor;
@@ -164,10 +163,10 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (proposedOpportunity is null)
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
         var parties = new[] { expectedActor.TenantId, proposedOpportunity.VenueTenantId };
-        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!existingParties.SetEquals(parties)
             || await memberships.LockIfUnchangedAsync(expectedActor, ct) is not { } actor
-            || !actor.AudienceFor(TenantPermission.ApplicationsSubmit).Covers(ResourceAudience.TenantResources))
+            || !actor.CoverageFor(TenantPermission.ApplicationsSubmit).Covers(ResourceCoverage.TenantResources))
             return new ApplyApplicationError.NotPermitted();
         await privilegedRepository.LockOpportunityAsync(opportunityId, ct);
         if (await privilegedRepository.AnyAcceptedByOpportunityIdAsync(opportunityId, ct))
@@ -260,7 +259,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         CancellationToken ct) =>
         privilegedUnitOfWork.ExecuteAsync(async () =>
         {
-            if (!expectedActor.AudienceFor(TenantPermission.ApplicationsSubmit).Covers(ResourceAudience.TenantResources))
+            if (!expectedActor.CoverageFor(TenantPermission.ApplicationsSubmit).Covers(ResourceCoverage.TenantResources))
                 return (Result<ApplicationProposal, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
 
             if (await privilegedRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(
@@ -340,7 +339,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (opportunityId is null || parties.Count == 0)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
-        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!existingParties.SetEquals(parties)
             || await memberships.LockIfUnchangedAsync(expectedActor, ct) is not { } actor)
             return new AcceptApplicationError.NotPermitted();

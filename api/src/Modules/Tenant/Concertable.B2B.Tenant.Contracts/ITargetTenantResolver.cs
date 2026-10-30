@@ -2,7 +2,7 @@ using Concertable.B2B.Authorization.Contracts;
 
 namespace Concertable.B2B.Tenant.Contracts;
 
-public interface ITenantResolver
+public interface ITargetTenantResolver
 {
     Task<Option<TenantResolution>> ResolveAsync(
         MembershipSnapshot expectedActor,

@@ -43,7 +43,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         var tenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
         var actor = await ActorAsync(
             context, tenantId, fixture.SeedState.VenueManager2.Id,
-            TenantPermission.OperationsView, ResourceAudience.AssignedResources);
+            TenantPermission.OperationsView, ResourceCoverage.AssignedResources);
         var now = services.GetRequiredService<TimeProvider>().GetUtcNow();
         var grant = ConcertAccessGrant.Issue(
             concert.Id, tenantId, actor.MembershipId, ConcertAccessScope.Operations,
@@ -78,7 +78,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         var tenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
         var actor = await ActorAsync(
             context, tenantId, fixture.SeedState.VenueManager2.Id,
-            TenantPermission.SettlementView, ResourceAudience.TenantResources);
+            TenantPermission.SettlementView, ResourceCoverage.TenantResources);
         var now = services.GetRequiredService<TimeProvider>().GetUtcNow();
         var finance = TenantPermission.SettlementView;
         var read = TenantPermission.SettlementView;
@@ -117,7 +117,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         var tenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
         var actor = await ActorAsync(
             context, tenantId, fixture.SeedState.VenueManager2.Id,
-            TenantPermission.OperationsView, ResourceAudience.AssignedResources);
+            TenantPermission.OperationsView, ResourceCoverage.AssignedResources);
         var now = services.GetRequiredService<TimeProvider>().GetUtcNow();
         var grant = ConcertAccessGrant.Issue(
             concert.Id, tenantId, actor.MembershipId, ConcertAccessScope.Operations,
@@ -133,7 +133,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         Assert.False(await IsVisibleAsync(
             context, concert.Id,
             actor with { Permissions = actor.Permissions.SetItem(
-                TenantPermission.OperationsView, ResourceAudience.None) }, now));
+                TenantPermission.OperationsView, ResourceCoverage.None) }, now));
 
         grant.Revoke(now.UtcDateTime);
         await context.SaveChangesAsync();
@@ -150,7 +150,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
 
     private async Task<MembershipSnapshot> ActorAsync(
         ConcertPrivilegedDbContext context, Guid tenantId, Guid userId,
-        TenantPermission permission, ResourceAudience audience)
+        TenantPermission permission, ResourceCoverage coverage)
     {
         var membership = fixture.SeedState.Memberships.Single(candidate =>
             candidate.TenantId == tenantId && candidate.UserId == userId);
@@ -159,7 +159,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         return new MembershipSnapshot(
             authority.MembershipId, authority.TenantId, authority.UserId,
             authority.PermissionVersion, authority.RolePolicyVersion,
-            ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(permission, audience));
+            ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(permission, coverage));
     }
 
     private Guid TenantOf(Guid userId) =>

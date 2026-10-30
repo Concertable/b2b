@@ -8,7 +8,7 @@ namespace Concertable.B2B.Tenant.UnitTests;
 
 public sealed class TenantAuthorizerTests
 {
-    private readonly Mock<IMembershipContext> membership = new();
+    private readonly Mock<IAuthorizationContext> membership = new();
     private readonly Mock<IMembershipReadRepository> memberships = new();
     private readonly Mock<IRoleRepository> roles = new();
     private readonly MembershipSnapshot owner = new(

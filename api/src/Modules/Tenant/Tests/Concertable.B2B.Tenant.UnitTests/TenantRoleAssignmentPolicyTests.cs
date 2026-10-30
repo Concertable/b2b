@@ -43,9 +43,9 @@ public sealed class TenantRoleAssignmentPolicyTests
         var tenantId = Guid.NewGuid();
         var actor = Snapshot(tenantId, "Manager");
         var role = TenantRoleDefinition.CreateCustom(tenantId, "Inviter", true,
-            new Dictionary<TenantPermission, ResourceAudience>
+            new Dictionary<TenantPermission, ResourceCoverage>
             {
-                [TenantPermission.MembersInvite] = ResourceAudience.TenantResources,
+                [TenantPermission.MembersInvite] = ResourceCoverage.TenantResources,
             });
 
         Assert.False(TenantRoleAssignmentPolicy.CanAssign(actor, false, [role]));

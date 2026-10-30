@@ -36,13 +36,13 @@ public sealed class ConcertWorkflowTests
         Guid.NewGuid(),
         1,
         1,
-        ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
-            TenantPermission.ConcertsManage, ResourceAudience.TenantResources));
+        ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
+            TenantPermission.ConcertsManage, ResourceCoverage.TenantResources));
 
     public ConcertWorkflowTests()
     {
         immediateBehavior = new ImmediateBehavior();
-        var membership = new Mock<IMembershipContext>();
+        var membership = new Mock<IAuthorizationContext>();
         membership.SetupGet(context => context.Membership).Returns(actor);
         authorizer.Setup(value => value.AuthorizeAsync(
                 It.IsAny<int>(), It.IsAny<TenantPermission>(), It.IsAny<ConcertAccessScope?>(),

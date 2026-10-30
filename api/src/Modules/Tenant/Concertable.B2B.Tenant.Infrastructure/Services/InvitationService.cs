@@ -21,7 +21,7 @@ internal sealed class InvitationService : IInvitationService
     private readonly TimeProvider timeProvider;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly IRoleRepository roles;
-    private readonly IMembershipContext membershipContext;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly IMembershipReadRepository memberships;
     private readonly TenantAuthorizer authorizer;
 
@@ -35,7 +35,7 @@ internal sealed class InvitationService : IInvitationService
         TimeProvider timeProvider,
         IOutboxUnitOfWorkBehavior unitOfWork,
         IRoleRepository roles,
-        IMembershipContext membershipContext,
+        IAuthorizationContext authorizationContext,
         IMembershipReadRepository memberships,
         TenantAuthorizer authorizer)
     {
@@ -48,7 +48,7 @@ internal sealed class InvitationService : IInvitationService
         this.timeProvider = timeProvider;
         this.unitOfWork = unitOfWork;
         this.roles = roles;
-        this.membershipContext = membershipContext;
+        this.authorizationContext = authorizationContext;
         this.memberships = memberships;
         this.authorizer = authorizer;
     }
@@ -200,7 +200,7 @@ internal sealed class InvitationService : IInvitationService
     }
     private async Task<MembershipSnapshot?> GetCurrentActorAsync(Guid tenantId, CancellationToken ct)
     {
-        var expected = membershipContext.Membership;
+        var expected = authorizationContext.Membership;
         if (expected is null || expected.TenantId != tenantId)
             return null;
         return await memberships.LockIfUnchangedAsync(expected, ct);

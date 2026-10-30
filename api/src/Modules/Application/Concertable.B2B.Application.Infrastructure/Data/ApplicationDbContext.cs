@@ -20,19 +20,19 @@ internal sealed class ApplicationDbContext(
     public DbSet<ConcertAvailabilityEntity> ConcertAvailabilities => Set<ConcertAvailabilityEntity>();
     public DbSet<ApplicationAccessGrant> ApplicationAccessGrants => Set<ApplicationAccessGrant>();
 
-    public ResourceAudience OperationsAudience => AudienceFor(TenantPermission.OperationsView);
-    public ResourceAudience TermsAudience => AudienceFor(TenantPermission.TermsRead);
+    public ResourceCoverage OperationsCoverage => CoverageFor(TenantPermission.OperationsView);
+    public ResourceCoverage TermsCoverage => CoverageFor(TenantPermission.TermsRead);
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ApplicationAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForAudience<ApplicationAccessGrant, ApplicationAccessScope>(
+            ResourceAccessExpressions.LiveForCoverage<ApplicationAccessGrant, ApplicationAccessScope>(
                     this,
-                    () => OperationsAudience,
+                    () => OperationsCoverage,
                     ApplicationAccessScope.Summary)
-                .Or(ResourceAccessExpressions.LiveForAudience<ApplicationAccessGrant, ApplicationAccessScope>(
+                .Or(ResourceAccessExpressions.LiveForCoverage<ApplicationAccessGrant, ApplicationAccessScope>(
                     this,
-                    () => TermsAudience,
+                    () => TermsCoverage,
                     ApplicationAccessScope.Proposal)));
 
         modelBuilder.Entity<ApplicationEntity>().HasQueryFilter(TenantFilters.Key, application =>

@@ -19,7 +19,7 @@ public sealed class InvitationServiceTests
     private readonly Mock<IMembershipRepository> membershipRepository;
     private readonly Mock<IInvitationRepository> repository;
     private readonly Mock<ITenantContext> tenantContext;
-    private readonly Mock<IMembershipContext> membershipContext;
+    private readonly Mock<IAuthorizationContext> authorizationContext;
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<IRoleRepository> roles;
     private readonly Mock<IMembershipReadRepository> membershipReads;
@@ -31,7 +31,7 @@ public sealed class InvitationServiceTests
         membershipRepository = new Mock<IMembershipRepository>();
         repository = new Mock<IInvitationRepository>();
         tenantContext = new Mock<ITenantContext>();
-        membershipContext = new Mock<IMembershipContext>();
+        authorizationContext = new Mock<IAuthorizationContext>();
         currentUser = new Mock<ICurrentUser>();
         roles = new Mock<IRoleRepository>();
         membershipReads = new Mock<IMembershipReadRepository>();
@@ -48,10 +48,10 @@ public sealed class InvitationServiceTests
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
                 Task.FromResult<IReadOnlyList<MembershipSnapshot>>(
-                    membershipContext.Object.Membership is { } actor
+                    authorizationContext.Object.Membership is { } actor
                         ? new[] { actor }
                         : Array.Empty<MembershipSnapshot>()));
-        var authorizer = new TenantAuthorizer(membershipContext.Object, membershipReads.Object, roles.Object);
+        var authorizer = new TenantAuthorizer(authorizationContext.Object, membershipReads.Object, roles.Object);
         service = new InvitationService(
             tenantRepository.Object,
             membershipRepository.Object,
@@ -62,7 +62,7 @@ public sealed class InvitationServiceTests
             TimeProvider.System,
             new ImmediateUnitOfWorkBehavior(),
             roles.Object,
-            membershipContext.Object,
+            authorizationContext.Object,
             membershipReads.Object,
             authorizer);
     }
@@ -109,7 +109,7 @@ public sealed class InvitationServiceTests
         var actor = Snapshot(TenantMembershipEntity.Create(tenantId, Guid.NewGuid(), [actorRole.Id], null, DateTime.UtcNow), "Manager");
         var tenant = TenantEntity.Create("Acme Ltd", "contact@acme.test", Guid.NewGuid(), DateTime.UtcNow, tenantId);
         tenantContext.SetupGet(value => value.TenantId).Returns(tenantId);
-        membershipContext.SetupGet(value => value.Membership).Returns(actor);
+        authorizationContext.SetupGet(value => value.Membership).Returns(actor);
         tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
         roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([targetRole]);

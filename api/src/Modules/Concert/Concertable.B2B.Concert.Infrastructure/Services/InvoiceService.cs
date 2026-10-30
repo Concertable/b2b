@@ -11,7 +11,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class InvoiceService(
     IInvoicePrivilegedReadRepository repository,
     IInvoicePdfRenderer invoicePdfRenderer,
-    IMembershipContext membership,
+    IAuthorizationContext membership,
     TimeProvider timeProvider) : IInvoiceService
 {
     public async Task<Result<InvoiceDto, InvoiceError>> GetByConcertIdAsync(int concertId) =>

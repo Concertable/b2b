@@ -65,8 +65,8 @@ public sealed class ApplicationServiceCancellationTests
             resolver.Object,
             TimeProvider.System,
             Mock.Of<IPrivilegedUnitOfWorkBehavior>(),
-            Mock.Of<IMembershipContext>(),
-            Mock.Of<Concertable.B2B.Tenant.Contracts.ITenantResolver>(),
+            Mock.Of<IAuthorizationContext>(),
+            Mock.Of<Concertable.B2B.Tenant.Contracts.ITargetTenantResolver>(),
             Mock.Of<IApplicationAuthorizer>(),
             Mock.Of<ITransactionRunner>());
 

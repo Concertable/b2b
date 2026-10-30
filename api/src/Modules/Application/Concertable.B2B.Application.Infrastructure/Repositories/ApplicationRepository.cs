@@ -13,10 +13,10 @@ namespace Concertable.B2B.Application.Infrastructure.Repositories;
 internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IApplicationRepository
 {
     private readonly ApplicationDbContext context;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly TimeProvider clock;
 
-    public ApplicationRepository(ApplicationDbContext context, IMembershipContext membership, TimeProvider clock)
+    public ApplicationRepository(ApplicationDbContext context, IAuthorizationContext membership, TimeProvider clock)
         : base(context)
     {
         this.context = context;

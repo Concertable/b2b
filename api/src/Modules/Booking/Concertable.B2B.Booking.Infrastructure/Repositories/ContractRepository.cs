@@ -10,10 +10,10 @@ namespace Concertable.B2B.Booking.Infrastructure.Repositories;
 internal sealed class ContractRepository : Repository<ContractEntity>, IContractRepository
 {
     private readonly BookingDbContext context;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly TimeProvider clock;
 
-    public ContractRepository(BookingDbContext context, IMembershipContext membership, TimeProvider clock)
+    public ContractRepository(BookingDbContext context, IAuthorizationContext membership, TimeProvider clock)
         : base(context)
     {
         this.context = context;

@@ -19,7 +19,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
     private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly IConcertAuthorizer authorizer;
 
     public ConcertWorkflow(
@@ -28,7 +28,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IDealStrategyFactory<ICancelStep> cancelFactory,
         IDealStrategyFactory<ICompleteStep> completeFactory,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
-        IMembershipContext membership,
+        IAuthorizationContext membership,
         IConcertAuthorizer authorizer)
     {
         this.privilegedRepository = privilegedRepository;

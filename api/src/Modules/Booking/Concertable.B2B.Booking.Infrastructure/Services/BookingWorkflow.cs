@@ -19,7 +19,6 @@ using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Tenant.Contracts;
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -43,8 +42,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly IDealStrategyFactory<IContractFactory> contractFactory;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
-    private readonly IMembershipContext membership;
-    private readonly ITenantResolver tenantResolver;
+    private readonly IAuthorizationContext membership;
+    private readonly ITargetTenantResolver targetTenantResolver;
     private readonly IBookingAuthorizer authorizer;
     private readonly ITransactionRunner transactionRunner;
 
@@ -63,8 +62,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         IDealStrategyFactory<IContractFactory> contractFactory,
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
-        IMembershipContext membership,
-        ITenantResolver tenantResolver,
+        IAuthorizationContext membership,
+        ITargetTenantResolver targetTenantResolver,
         IBookingAuthorizer authorizer,
         ITransactionRunner transactionRunner)
     {
@@ -83,7 +82,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.membership = membership;
-        this.tenantResolver = tenantResolver;
+        this.targetTenantResolver = targetTenantResolver;
         this.authorizer = authorizer;
         this.transactionRunner = transactionRunner;
     }
@@ -163,7 +162,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         var parties = await privilegedRepository.GetPartyTenantIdsAsync(bookingId, ct);
         if (parties.Count == 0)
             return new CancelBookingError.BookingNotFound(bookingId);
-        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!existingParties.SetEquals(parties)
             || (await authorizer.AuthorizeAsync(
                 bookingId, TenantPermission.BookingsCancel, BookingAccessScope.Operations, ct)).IsFailure)

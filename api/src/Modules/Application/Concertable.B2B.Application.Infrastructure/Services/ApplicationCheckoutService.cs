@@ -2,7 +2,6 @@ using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Application.Responses;
 using Concertable.B2B.Application.Application.Strategies;
@@ -20,9 +19,9 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 {
     private readonly IApplicationRepository repository;
     private readonly IApplicationPrivilegedRepository privilegedRepository;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly IMembershipReadRepository memberships;
-    private readonly ITenantResolver tenantResolver;
+    private readonly ITargetTenantResolver targetTenantResolver;
     private readonly ITransactionRunner transactionRunner;
     private readonly IApplicationAuthorizer authorizer;
     private readonly IArtistModule artistModule;
@@ -38,9 +37,9 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     public ApplicationCheckoutService(
         IApplicationRepository repository,
         IApplicationPrivilegedRepository privilegedRepository,
-        IMembershipContext membership,
+        IAuthorizationContext membership,
         IMembershipReadRepository memberships,
-        ITenantResolver tenantResolver,
+        ITargetTenantResolver targetTenantResolver,
         ITransactionRunner transactionRunner,
         IApplicationAuthorizer authorizer,
         IArtistModule artistModule,
@@ -57,7 +56,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.privilegedRepository = privilegedRepository;
         this.membership = membership;
         this.memberships = memberships;
-        this.tenantResolver = tenantResolver;
+        this.targetTenantResolver = targetTenantResolver;
         this.transactionRunner = transactionRunner;
         this.authorizer = authorizer;
         this.artistModule = artistModule;
@@ -75,7 +74,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         int opportunityId)
     {
         if (membership.Membership is not { } actor
-            || !actor.AudienceFor(TenantPermission.ApplicationsSubmit).Covers(ResourceAudience.TenantResources))
+            || !actor.CoverageFor(TenantPermission.ApplicationsSubmit).Covers(ResourceCoverage.TenantResources))
             return new ApplicationCheckoutError.Ineligible(
                 new ApplicationEligibilityError.MissingArtist());
         var opportunityOption = await opportunityModule.GetOpenAsync(opportunityId);
@@ -204,7 +203,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (opportunityId is null || parties.Count == 0)
             return new ApplicationCheckoutError.ApplicationNotFound();
-        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!existingParties.SetEquals(parties)
             || await memberships.LockIfUnchangedAsync(expectedActor, ct) is not { } actor)
             return new ApplicationCheckoutError.ApplicationNotFound();

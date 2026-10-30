@@ -181,11 +181,11 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
                 .Where(row => roles.TryGetValue(row.RoleId, out var role) && role.TenantId == member.TenantId)
                 .SelectMany(row => roles[row.RoleId].Permissions)
                 .Where(row => TenantPermission.TryParse(row.PermissionKey, out _)
-                    && row.Audience is ResourceAudience.AssignedResources or ResourceAudience.TenantResources)
+                    && row.Audience is ResourceCoverage.AssignedResources or ResourceCoverage.TenantResources)
                 .GroupBy(row => row.PermissionKey, StringComparer.Ordinal)
                 .ToImmutableDictionary(
                     group => TenantPermission.TryParse(group.Key, out var key) ? key : default,
-                    group => (ResourceAudience)group.Max(row => (int)row.Audience));
+                    group => (ResourceCoverage)group.Max(row => (int)row.Audience));
             return new MembershipSnapshot(
                 member.Id, member.TenantId, member.UserId, member.PermissionVersion,
                 tenants[member.TenantId].RolePolicyVersion, effective);

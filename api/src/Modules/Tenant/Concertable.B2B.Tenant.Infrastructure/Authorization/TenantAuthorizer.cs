@@ -1,7 +1,7 @@
 namespace Concertable.B2B.Tenant.Infrastructure.Authorization;
 
 internal sealed class TenantAuthorizer(
-    IMembershipContext membership,
+    IAuthorizationContext membership,
     IMembershipReadRepository memberships,
     IRoleRepository roles)
 {

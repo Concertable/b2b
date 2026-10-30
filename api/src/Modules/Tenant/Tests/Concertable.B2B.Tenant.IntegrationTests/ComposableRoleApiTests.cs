@@ -41,7 +41,7 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CustomOperationsAndFinanceComposeWithPerPermissionAudienceUnion()
+    public async Task CustomOperationsAndFinanceComposeWithPerPermissionCoverageUnion()
     {
         var owner = fixture.SeedState.VenueManager1;
         var member = fixture.SeedState.VenueManagerNoVenue;
@@ -59,21 +59,21 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
         var tenant = fixture.Tenants.Single(value => value.Id == tenantId);
         var expectedPermissions = AuthorizationCatalog.Presets["Finance"].Permissions
             .ToImmutableDictionary()
-            .SetItem(TenantPermission.ConcertsOpsEdit, ResourceAudience.AssignedResources);
+            .SetItem(TenantPermission.ConcertsOpsEdit, ResourceCoverage.AssignedResources);
         var expected = new MembershipSnapshot(membership.Id, tenantId, member.Id,
             membership.PermissionVersion, tenant.RolePolicyVersion, expectedPermissions);
         var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
             resolver.ResolveAsync(expected, tenantId, ct: ct));
 
         Assert.True(resolved.TryGetValue(out var resolution));
-        Assert.Equal(ResourceAudience.TenantResources,
-            resolution.Actor.AudienceFor(TenantPermission.OperationsView));
-        Assert.Equal(ResourceAudience.AssignedResources,
-            resolution.Actor.AudienceFor(TenantPermission.ConcertsOpsEdit));
-        Assert.Equal(ResourceAudience.TenantResources,
-            resolution.Actor.AudienceFor(TenantPermission.PayoutsManage));
-        Assert.Equal(ResourceAudience.None,
-            resolution.Actor.AudienceFor(TenantPermission.ConcertsManage));
+        Assert.Equal(ResourceCoverage.TenantResources,
+            resolution.Actor.CoverageFor(TenantPermission.OperationsView));
+        Assert.Equal(ResourceCoverage.AssignedResources,
+            resolution.Actor.CoverageFor(TenantPermission.ConcertsOpsEdit));
+        Assert.Equal(ResourceCoverage.TenantResources,
+            resolution.Actor.CoverageFor(TenantPermission.PayoutsManage));
+        Assert.Equal(ResourceCoverage.None,
+            resolution.Actor.CoverageFor(TenantPermission.ConcertsManage));
     }
 
     [Fact]

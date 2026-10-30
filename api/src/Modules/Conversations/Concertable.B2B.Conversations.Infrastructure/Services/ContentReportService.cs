@@ -11,7 +11,7 @@ internal sealed class ContentReportService : IContentReportService
 {
     private readonly IMessageRepository messageRepository;
     private readonly IConversationPrivilegedRepository conversations;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly IContentReportRepository reportRepository;
     private readonly IContentReportNotifier notifier;
     private readonly ICurrentUser currentUser;
@@ -22,7 +22,7 @@ internal sealed class ContentReportService : IContentReportService
     public ContentReportService(
         IMessageRepository messageRepository,
         IConversationPrivilegedRepository conversations,
-        IMembershipContext membership,
+        IAuthorizationContext membership,
         IContentReportRepository reportRepository,
         IContentReportNotifier notifier,
         ICurrentUser currentUser,

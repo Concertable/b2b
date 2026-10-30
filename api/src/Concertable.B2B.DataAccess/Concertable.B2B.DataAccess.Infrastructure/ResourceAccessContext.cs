@@ -4,18 +4,18 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 
 public sealed class ResourceAccessContext : IResourceAccessContext
 {
-    private readonly IMembershipContext membershipContext;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly TimeProvider timeProvider;
 
-    public ResourceAccessContext(IMembershipContext membershipContext, TimeProvider timeProvider)
+    public ResourceAccessContext(IAuthorizationContext authorizationContext, TimeProvider timeProvider)
     {
-        this.membershipContext = membershipContext;
+        this.authorizationContext = authorizationContext;
         this.timeProvider = timeProvider;
     }
 
-    public MembershipSnapshot? Membership => membershipContext.Membership;
+    public MembershipSnapshot? Membership => authorizationContext.Membership;
 
     public DateTime UtcNow => timeProvider.GetUtcNow().UtcDateTime;
 
-    public ResourceAudience AudienceFor(TenantPermission permission) => membershipContext.AudienceFor(permission);
+    public ResourceCoverage CoverageFor(TenantPermission permission) => authorizationContext.CoverageFor(permission);
 }

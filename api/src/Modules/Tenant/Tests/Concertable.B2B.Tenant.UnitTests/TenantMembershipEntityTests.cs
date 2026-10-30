@@ -1,4 +1,5 @@
 using Concertable.B2B.Tenant.Domain.Entities;
+using Concertable.B2B.Tenant.Domain.Errors;
 
 namespace Concertable.B2B.Tenant.UnitTests;
 
@@ -36,14 +37,42 @@ public sealed class TenantMembershipEntityTests
     }
 
     [Fact]
-    public void ReplaceRoles_ChangedAssignments_IncrementsPermissionVersion()
+    public void ChangeRoles_ChangedAssignments_IncrementsPermissionVersion()
     {
         var tenantId = Guid.NewGuid();
         var membership = TenantMembershipEntity.Create(tenantId, Guid.NewGuid(), [Guid.NewGuid()], null, DateTime.UtcNow);
 
-        membership.ReplaceRoles([Guid.NewGuid(), Guid.NewGuid()], Guid.NewGuid(), DateTime.UtcNow);
+        var result = membership.ChangeRoles(
+            new HashSet<Guid> { Guid.NewGuid(), Guid.NewGuid() }, Guid.NewGuid(), DateTime.UtcNow);
 
+        Assert.True(result.IsSuccess);
         Assert.Equal(2, membership.PermissionVersion);
         Assert.Equal(2, membership.Assignments.Count);
+    }
+
+    [Fact]
+    public void ChangeRoles_NoRoles_IsRejectedAndLeavesTheAssignmentsUnchanged()
+    {
+        var roleId = Guid.NewGuid();
+        var membership = TenantMembershipEntity.Create(Guid.NewGuid(), Guid.NewGuid(), [roleId], null, DateTime.UtcNow);
+
+        var result = membership.ChangeRoles(new HashSet<Guid>(), Guid.NewGuid(), DateTime.UtcNow);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<MembershipRoleError.NoRoles>(error);
+        Assert.Equal(1, membership.PermissionVersion);
+        Assert.Equal(roleId, Assert.Single(membership.Assignments).RoleId);
+    }
+
+    [Fact]
+    public void ChangeRoles_SameRoles_SucceedsWithoutANewVersion()
+    {
+        var roleId = Guid.NewGuid();
+        var membership = TenantMembershipEntity.Create(Guid.NewGuid(), Guid.NewGuid(), [roleId], null, DateTime.UtcNow);
+
+        var result = membership.ChangeRoles(new HashSet<Guid> { roleId }, Guid.NewGuid(), DateTime.UtcNow);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, membership.PermissionVersion);
     }
 }

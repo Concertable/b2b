@@ -86,11 +86,11 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
             var invitedRoles = roles.Where(role => invitedRoleIds.Contains(role.Id)).ToArray();
             var permissions = inviterRoles.SelectMany(role => role.Permissions)
                 .Where(row => TenantPermission.TryParse(row.PermissionKey, out _)
-                    && row.Audience is ResourceAudience.AssignedResources or ResourceAudience.TenantResources)
+                    && row.Audience is ResourceCoverage.AssignedResources or ResourceCoverage.TenantResources)
                 .GroupBy(row => row.PermissionKey, StringComparer.Ordinal)
                 .ToImmutableDictionary(
                     group => TenantPermission.TryParse(group.Key, out var key) ? key : default,
-                    group => (ResourceAudience)group.Max(row => (int)row.Audience));
+                    group => (ResourceCoverage)group.Max(row => (int)row.Audience));
             var snapshot = inviter is null ? null : new MembershipSnapshot(
                 inviter.Id, inviter.TenantId, inviter.UserId, inviter.PermissionVersion,
                 tenant.RolePolicyVersion, permissions);

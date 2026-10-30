@@ -4,12 +4,12 @@ using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Resolvers;
 
-internal sealed class TenantResolver : ITenantResolver
+internal sealed class TargetTenantResolver : ITargetTenantResolver
 {
     private readonly ITenantRepository tenantRepository;
     private readonly IMembershipRepository membershipRepository;
 
-    public TenantResolver(ITenantRepository tenantRepository, IMembershipRepository membershipRepository)
+    public TargetTenantResolver(ITenantRepository tenantRepository, IMembershipRepository membershipRepository)
     {
         this.tenantRepository = tenantRepository;
         this.membershipRepository = membershipRepository;

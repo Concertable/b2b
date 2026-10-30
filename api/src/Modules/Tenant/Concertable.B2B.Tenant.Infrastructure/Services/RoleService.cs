@@ -13,7 +13,7 @@ internal sealed class RoleService : IRoleService
     private readonly ITenantRepository tenants;
     private readonly IMembershipRepository memberships;
     private readonly ITenantContext tenantContext;
-    private readonly IMembershipContext membershipContext;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly IMembershipReadRepository membershipReads;
     private readonly IInvitationRepository invitations;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
@@ -25,7 +25,7 @@ internal sealed class RoleService : IRoleService
         ITenantRepository tenants,
         IMembershipRepository memberships,
         ITenantContext tenantContext,
-        IMembershipContext membershipContext,
+        IAuthorizationContext authorizationContext,
         IMembershipReadRepository membershipReads,
         IInvitationRepository invitations,
         IOutboxUnitOfWorkBehavior unitOfWork,
@@ -36,7 +36,7 @@ internal sealed class RoleService : IRoleService
         this.tenants = tenants;
         this.memberships = memberships;
         this.tenantContext = tenantContext;
-        this.membershipContext = membershipContext;
+        this.authorizationContext = authorizationContext;
         this.membershipReads = membershipReads;
         this.invitations = invitations;
         this.unitOfWork = unitOfWork;
@@ -81,7 +81,7 @@ internal sealed class RoleService : IRoleService
                     item.Permission.Value, item.Label, item.Category,
                     [.. item.ResourceBindings.Select(binding => new ResourceBinding(
                         binding.Resource.WireName, binding.Scope, binding.Policy.WireName, binding.RequiresScopes))],
-                    [.. item.AssignableAudiences.Select(audience => audience.ToString())],
+                    [.. item.AssignableCoverages.Select(coverage => coverage.ToString())],
                     item.OwnerOnly))
                 .ToArray();
             return Result.Success<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(metadata);
@@ -184,8 +184,9 @@ internal sealed class RoleService : IRoleService
         foreach (var member in affected)
         {
             var roleIds = member.Assignments.Where(row => row.RoleId != roleId)
-                .Select(row => row.RoleId).Append(replacement!.Id).Distinct().ToArray();
-            member.ReplaceRoles(roleIds, actor.MembershipId, now);
+                .Select(row => row.RoleId).Append(replacement!.Id).ToHashSet();
+            if (member.ChangeRoles(roleIds, actor.MembershipId, now).TryGetError(out var error))
+                return error.ToRetireRoleError();
         }
         var pendingInvitations = await invitations.ListPendingAssignedToRoleAsync(
             tenantId, roleId, ct);
@@ -199,7 +200,7 @@ internal sealed class RoleService : IRoleService
     private async Task<MembershipSnapshot?> GetCurrentActorAsync(
         Guid tenantId, CancellationToken ct)
     {
-        var expected = membershipContext.Membership;
+        var expected = authorizationContext.Membership;
         if (expected is null || expected.TenantId != tenantId)
             return null;
         return await membershipReads.LockIfUnchangedAsync(expected, ct);
@@ -210,18 +211,18 @@ internal sealed class RoleService : IRoleService
 
     private static bool TryParseGrants(
         IReadOnlyList<RolePermissionDto> items,
-        out IReadOnlyDictionary<TenantPermission, ResourceAudience> grants)
+        out IReadOnlyDictionary<TenantPermission, ResourceCoverage> grants)
     {
-        var parsed = new Dictionary<TenantPermission, ResourceAudience>();
+        var parsed = new Dictionary<TenantPermission, ResourceCoverage>();
         foreach (var item in items)
         {
             if (!TenantPermission.TryParse(item.Permission, out var permission)
-                || !Enum.TryParse<ResourceAudience>(item.Audience, false, out var audience)
-                || audience == ResourceAudience.None
+                || !Enum.TryParse<ResourceCoverage>(item.Audience, false, out var coverage)
+                || coverage == ResourceCoverage.None
                 || !AuthorizationCatalog.Permissions.TryGetValue(permission, out var descriptor)
                 || descriptor.OwnerOnly
-                || !descriptor.AssignableAudiences.Contains(audience)
-                || !parsed.TryAdd(permission, audience))
+                || !descriptor.AssignableCoverages.Contains(coverage)
+                || !parsed.TryAdd(permission, coverage))
             {
                 grants = parsed;
                 return false;

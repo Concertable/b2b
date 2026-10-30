@@ -14,10 +14,10 @@ namespace Concertable.B2B.Booking.Infrastructure.Repositories;
 internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRepository
 {
     private readonly BookingDbContext context;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly TimeProvider clock;
 
-    public BookingRepository(BookingDbContext context, IMembershipContext membership, TimeProvider clock)
+    public BookingRepository(BookingDbContext context, IAuthorizationContext membership, TimeProvider clock)
         : base(context)
     {
         this.context = context;

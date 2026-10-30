@@ -12,7 +12,7 @@ internal sealed class MembershipService : IMembershipService
     private readonly ITenantRepository tenantRepository;
     private readonly ITenantContext tenantContext;
     private readonly IRoleRepository roles;
-    private readonly IMembershipContext membershipContext;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly IMembershipReadRepository memberships;
     private readonly IUserModule userModule;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
@@ -24,7 +24,7 @@ internal sealed class MembershipService : IMembershipService
         ITenantRepository tenantRepository,
         ITenantContext tenantContext,
         IRoleRepository roles,
-        IMembershipContext membershipContext,
+        IAuthorizationContext authorizationContext,
         IMembershipReadRepository memberships,
         IUserModule userModule,
         IOutboxUnitOfWorkBehavior unitOfWork,
@@ -35,7 +35,7 @@ internal sealed class MembershipService : IMembershipService
         this.tenantRepository = tenantRepository;
         this.tenantContext = tenantContext;
         this.roles = roles;
-        this.membershipContext = membershipContext;
+        this.authorizationContext = authorizationContext;
         this.memberships = memberships;
         this.userModule = userModule;
         this.unitOfWork = unitOfWork;
@@ -99,8 +99,9 @@ internal sealed class MembershipService : IMembershipService
             && await repository.CountOwnersAsync(tenantId, ct) <= 1)
             return new ChangeMemberRolesError.LastOwner();
 
-        member.ReplaceRoles(request.RoleIds, actor.MembershipId, timeProvider.GetUtcNow().UtcDateTime);
-        return new Success();
+        return member.ChangeRoles(
+                request.RoleIds.ToHashSet(), actor.MembershipId, timeProvider.GetUtcNow().UtcDateTime)
+            .MapError(error => error.ToChangeMemberRolesError());
     }
 
     public Task<UnitResult<RemoveMemberError>> RemoveMemberAsync(
@@ -138,7 +139,7 @@ internal sealed class MembershipService : IMembershipService
     private async Task<MembershipSnapshot?> GetCurrentActorAsync(
         Guid tenantId, CancellationToken ct)
     {
-        var expected = membershipContext.Membership;
+        var expected = authorizationContext.Membership;
         if (expected is null || expected.TenantId != tenantId)
             return null;
         return await memberships.LockIfUnchangedAsync(expected, ct);

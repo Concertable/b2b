@@ -1,4 +1,3 @@
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Requests;
@@ -19,9 +18,9 @@ internal sealed class ConversationService : IConversationService
     private readonly IConversationReadPositionRepository readPositionRepository;
     private readonly IMessageRepository messageRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
-    private readonly ITenantResolver tenantResolver;
+    private readonly ITargetTenantResolver targetTenantResolver;
     private readonly IConversationAuthorizer authorizer;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
     private readonly IMembershipReadRepository memberships;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
@@ -34,9 +33,9 @@ internal sealed class ConversationService : IConversationService
         IConversationReadPositionRepository readPositionRepository,
         IMessageRepository messageRepository,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
-        ITenantResolver tenantResolver,
+        ITargetTenantResolver targetTenantResolver,
         IConversationAuthorizer authorizer,
-        IMembershipContext membership,
+        IAuthorizationContext membership,
         IMembershipReadRepository memberships,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor,
@@ -48,7 +47,7 @@ internal sealed class ConversationService : IConversationService
         this.readPositionRepository = readPositionRepository;
         this.messageRepository = messageRepository;
         this.unitOfWork = unitOfWork;
-        this.tenantResolver = tenantResolver;
+        this.targetTenantResolver = targetTenantResolver;
         this.authorizer = authorizer;
         this.membership = membership;
         this.memberships = memberships;
@@ -94,12 +93,12 @@ internal sealed class ConversationService : IConversationService
             || !participants.Contains(expectedActor.TenantId))
             return new CreateConversationError.InvalidParticipants();
 
-        var existingParticipants = await tenantResolver.ResolveManyAsync(expectedActor, participants, ct);
+        var existingParticipants = await targetTenantResolver.ResolveManyAsync(expectedActor, participants, ct);
         if (await memberships.LockIfUnchangedAsync(expectedActor, ct) is not { } actor)
             return new CreateConversationError.NotPermitted();
         if (!existingParticipants.SetEquals(participants))
             return new CreateConversationError.InvalidParticipants();
-        if (!actor.AudienceFor(TenantPermission.MessagesSend).Covers(ResourceAudience.TenantResources))
+        if (!actor.CoverageFor(TenantPermission.MessagesSend).Covers(ResourceCoverage.TenantResources))
             return new CreateConversationError.NotPermitted();
 
         var idempotencyHash = IdempotencyHash.Create(string.Join(",", participants));
@@ -315,7 +314,7 @@ internal sealed class ConversationService : IConversationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await tenantResolver.ResolveAsync(
+        var resolutionOption = await targetTenantResolver.ResolveAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))

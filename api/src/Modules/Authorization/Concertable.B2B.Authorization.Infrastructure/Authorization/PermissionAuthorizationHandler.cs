@@ -6,9 +6,9 @@ namespace Concertable.B2B.Authorization.Infrastructure.Authorization;
 internal sealed class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
     private readonly ITenantResolver resolver;
-    private readonly IMembershipContext membership;
+    private readonly IAuthorizationContext membership;
 
-    public PermissionAuthorizationHandler(ITenantResolver resolver, IMembershipContext membership)
+    public PermissionAuthorizationHandler(ITenantResolver resolver, IAuthorizationContext membership)
     {
         this.resolver = resolver;
         this.membership = membership;

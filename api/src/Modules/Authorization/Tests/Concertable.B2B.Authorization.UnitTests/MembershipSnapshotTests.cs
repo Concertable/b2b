@@ -9,40 +9,40 @@ public sealed class MembershipSnapshotTests
         Guid.Parse("11111111-1111-1111-1111-111111111111"),
         Guid.Parse("22222222-2222-2222-2222-222222222222"),
         Guid.Parse("33333333-3333-3333-3333-333333333333"), 3, 5,
-        ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
-            TenantPermission.OperationsView, ResourceAudience.TenantResources));
+        ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
+            TenantPermission.OperationsView, ResourceCoverage.TenantResources));
 
     [Theory]
-    [InlineData(ResourceAudience.AssignedResources)]
-    [InlineData(ResourceAudience.TenantResources)]
-    public void HasPermission_ResourceReadPermission_AllowsEitherGrantedAudience(ResourceAudience audience)
+    [InlineData(ResourceCoverage.AssignedResources)]
+    [InlineData(ResourceCoverage.TenantResources)]
+    public void HasPermission_ResourceReadPermission_AllowsEitherGrantedCoverage(ResourceCoverage coverage)
     {
-        var reader = actor with { Permissions = actor.Permissions.Add(TenantPermission.TermsRead, audience) };
+        var reader = actor with { Permissions = actor.Permissions.Add(TenantPermission.TermsRead, coverage) };
 
         Assert.True(reader.HasPermission(TenantPermission.TermsRead));
     }
 
     [Theory]
-    [InlineData(ResourceAudience.AssignedResources, false)]
-    [InlineData(ResourceAudience.TenantResources, true)]
-    [InlineData(ResourceAudience.None, false)]
-    public void AudienceFor_CreationPermission_RequiresTenantAudience(ResourceAudience audience, bool expected)
+    [InlineData(ResourceCoverage.AssignedResources, false)]
+    [InlineData(ResourceCoverage.TenantResources, true)]
+    [InlineData(ResourceCoverage.None, false)]
+    public void CoverageFor_CreationPermission_RequiresTenantCoverage(ResourceCoverage coverage, bool expected)
     {
         var creator = actor with
         {
-            Permissions = actor.Permissions.Add(TenantPermission.ApplicationsSubmit, audience),
+            Permissions = actor.Permissions.Add(TenantPermission.ApplicationsSubmit, coverage),
         };
 
-        Assert.Equal(expected, creator.AudienceFor(TenantPermission.ApplicationsSubmit)
-            .Covers(ResourceAudience.TenantResources));
+        Assert.Equal(expected, creator.CoverageFor(TenantPermission.ApplicationsSubmit)
+            .Covers(ResourceCoverage.TenantResources));
     }
 
     [Theory]
-    [InlineData(ResourceAudience.None)]
-    [InlineData((ResourceAudience)99)]
-    public void Covers_InvalidRequiredAudience_IsNeverSatisfied(ResourceAudience required)
+    [InlineData(ResourceCoverage.None)]
+    [InlineData((ResourceCoverage)99)]
+    public void Covers_InvalidRequiredCoverage_IsNeverSatisfied(ResourceCoverage required)
     {
-        Assert.False(actor.AudienceFor(TenantPermission.OperationsView).Covers(required));
+        Assert.False(actor.CoverageFor(TenantPermission.OperationsView).Covers(required));
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class MembershipSnapshotTests
         {
             PermissionVersion = actor.PermissionVersion + 1,
             Permissions = actor.Permissions.Add(
-                TenantPermission.ApplicationsSubmit, ResourceAudience.TenantResources),
+                TenantPermission.ApplicationsSubmit, ResourceCoverage.TenantResources),
         };
 
         Assert.False(actor.HasSameAuthorityAs(changed));

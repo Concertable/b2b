@@ -47,9 +47,9 @@ public sealed class ContentReportServiceTests
 
         var actor = new MembershipSnapshot(
             Guid.NewGuid(), VenueTenantId, ReportingUserId, 1, 1,
-            ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
-                TenantPermission.MessagesRead, ResourceAudience.TenantResources));
-        var membership = new Mock<IMembershipContext>();
+            ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
+                TenantPermission.MessagesRead, ResourceCoverage.TenantResources));
+        var membership = new Mock<IAuthorizationContext>();
         membership.SetupGet(context => context.Membership).Returns(actor);
 
         var conversations = new Mock<IConversationPrivilegedRepository>();

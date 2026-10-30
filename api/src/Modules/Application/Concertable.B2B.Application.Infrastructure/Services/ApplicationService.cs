@@ -13,7 +13,6 @@ using Concertable.B2B.Artist.Contracts;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Tenant.Contracts;
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
@@ -34,8 +33,8 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationResolver resolver;
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
-    private readonly IMembershipContext membership;
-    private readonly ITenantResolver tenantResolver;
+    private readonly IAuthorizationContext membership;
+    private readonly ITargetTenantResolver targetTenantResolver;
     private readonly IApplicationAuthorizer authorizer;
     private readonly ITransactionRunner transactionRunner;
 
@@ -54,8 +53,8 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationResolver resolver,
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
-        IMembershipContext membership,
-        ITenantResolver tenantResolver,
+        IAuthorizationContext membership,
+        ITargetTenantResolver targetTenantResolver,
         IApplicationAuthorizer authorizer,
         ITransactionRunner transactionRunner)
     {
@@ -74,7 +73,7 @@ internal sealed class ApplicationService : IApplicationService
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
-        this.tenantResolver = tenantResolver;
+        this.targetTenantResolver = targetTenantResolver;
         this.authorizer = authorizer;
         this.transactionRunner = transactionRunner;
     }
@@ -325,7 +324,7 @@ internal sealed class ApplicationService : IApplicationService
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
-        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!existingParties.SetEquals(parties)
             || (await authorizer.AuthorizeAsync(
                 applicationId, TenantPermission.ApplicationsSubmit, ApplicationAccessScope.Proposal, ct)).IsFailure)
@@ -366,7 +365,7 @@ internal sealed class ApplicationService : IApplicationService
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
-        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!existingParties.SetEquals(parties)
             || (await authorizer.AuthorizeAsync(
                 applicationId, TenantPermission.ApplicationsDecide, ApplicationAccessScope.Proposal, ct)).IsFailure)
@@ -407,7 +406,7 @@ internal sealed class ApplicationService : IApplicationService
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
-        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!existingParties.SetEquals(parties)
             || (await authorizer.AuthorizeAsync(
                 applicationId, TenantPermission.ApplicationsDecide, ApplicationAccessScope.Proposal, ct)).IsFailure)
@@ -430,7 +429,7 @@ internal sealed class ApplicationService : IApplicationService
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
         if (membership.Membership is not { } actor
-            || !actor.AudienceFor(TenantPermission.ApplicationsSubmit).Covers(ResourceAudience.TenantResources))
+            || !actor.CoverageFor(TenantPermission.ApplicationsSubmit).Covers(ResourceCoverage.TenantResources))
             return new ApplicationEligibilityError.MissingArtist();
         var artistOption = await artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))

@@ -34,26 +34,26 @@ internal sealed class ConcertDbContext(
     public DbSet<InvoiceAccessGrant> InvoiceAccessGrants => Set<InvoiceAccessGrant>();
     public DbSet<ConcertCommandReceipt> ConcertCommandReceipts => Set<ConcertCommandReceipt>();
 
-    public ResourceAudience OperationsAudience => AudienceFor(TenantPermission.OperationsView);
-    public ResourceAudience FinanceAudience => AudienceFor(TenantPermission.SettlementView);
+    public ResourceCoverage OperationsCoverage => CoverageFor(TenantPermission.OperationsView);
+    public ResourceCoverage FinanceCoverage => CoverageFor(TenantPermission.SettlementView);
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ConcertAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForAudience<ConcertAccessGrant, ConcertAccessScope>(
+            ResourceAccessExpressions.LiveForCoverage<ConcertAccessGrant, ConcertAccessScope>(
                     this,
-                    () => OperationsAudience,
+                    () => OperationsCoverage,
                     ConcertAccessScope.Summary,
                     ConcertAccessScope.Operations)
-                .Or(ResourceAccessExpressions.LiveForAudience<ConcertAccessGrant, ConcertAccessScope>(
+                .Or(ResourceAccessExpressions.LiveForCoverage<ConcertAccessGrant, ConcertAccessScope>(
                     this,
-                    () => FinanceAudience,
+                    () => FinanceCoverage,
                     ConcertAccessScope.Finance)));
 
         modelBuilder.Entity<InvoiceAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForAudience<InvoiceAccessGrant, InvoiceAccessScope>(
+            ResourceAccessExpressions.LiveForCoverage<InvoiceAccessGrant, InvoiceAccessScope>(
                 this,
-                () => FinanceAudience,
+                () => FinanceCoverage,
                 InvoiceAccessScope.Read));
 
         modelBuilder.Entity<ConcertEntity>().HasQueryFilter(TenantFilters.Key, concert =>
