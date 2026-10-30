@@ -80,8 +80,8 @@ internal sealed class ConversationResourceAuthorizationEvaluator(
                 .AnyAsync(conversation => conversation.Id == conversationId, ct))
             return ResourceAuthorizationDecision.Denied;
 
-        var principal = binding.Policy == "principal_administration";
-        if (!principal && binding.Policy != "conversation_grant")
+        var principal = binding.Policy == ResourcePolicy.PrincipalAdministration;
+        if (!principal && binding.Policy != ResourcePolicy.ConversationGrant)
             return ResourceAuthorizationDecision.Denied;
 
         var scopes = principal

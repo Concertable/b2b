@@ -5,4 +5,12 @@ public sealed record ResourceGrantSnapshot(
     Guid GrantId,
     long Version,
     DateTimeOffset ValidFrom,
-    DateTimeOffset? ValidUntil);
+    DateTimeOffset? ValidUntil)
+{
+    public bool IsLiveAt(DateTimeOffset now) =>
+        GrantId != Guid.Empty
+        && Version > 0
+        && !string.IsNullOrWhiteSpace(Scope)
+        && ValidFrom <= now
+        && (ValidUntil is not { } until || (until > now && until > ValidFrom));
+}

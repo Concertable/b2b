@@ -90,7 +90,7 @@ internal sealed class MessageRepository : IMessageRepository
     {
         var binding = ResourcePolicyBinding.FromCatalog(
             TenantPermission.MessagesRead, ResourceKind.Conversation, ResourceFacet.Read);
-        if (binding.Policy != "conversation_grant" || binding.RequiredScopes.IsDefaultOrEmpty)
+        if (binding.Policy != ResourcePolicy.ConversationGrant || binding.RequiredScopes.IsDefaultOrEmpty)
             throw new InvalidOperationException("Conversation Read binding is unsupported.");
         var now = clock.GetUtcNow().UtcDateTime;
         var visible = context.Messages.Where(NotHidden);

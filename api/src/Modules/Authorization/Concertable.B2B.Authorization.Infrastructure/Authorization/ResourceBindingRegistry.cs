@@ -16,20 +16,15 @@ internal sealed class ResourceBindingRegistry
             [ResourceKind.Conversation] = new HashSet<string>(["Read", "SendMessages"], StringComparer.Ordinal),
         };
 
-    private static readonly IReadOnlyDictionary<ResourceKind, IReadOnlySet<string>> Policies =
-        new Dictionary<ResourceKind, IReadOnlySet<string>>
+    private static readonly IReadOnlyDictionary<ResourceKind, IReadOnlySet<ResourcePolicy>> Policies =
+        new Dictionary<ResourceKind, IReadOnlySet<ResourcePolicy>>
         {
-            [ResourceKind.Application] = new HashSet<string>(
-                ["application_grant", "venue_principal", "artist_principal"], StringComparer.Ordinal),
-            [ResourceKind.Booking] = new HashSet<string>(
-                ["booking_grant", "either_principal"], StringComparer.Ordinal),
-            [ResourceKind.Contract] = new HashSet<string>(["contract_grant"], StringComparer.Ordinal),
-            [ResourceKind.Concert] = new HashSet<string>(
-                ["concert_grant", "venue_principal", "either_principal", "principal_administration"],
-                StringComparer.Ordinal),
-            [ResourceKind.Invoice] = new HashSet<string>(["invoice_grant"], StringComparer.Ordinal),
-            [ResourceKind.Conversation] = new HashSet<string>(
-                ["conversation_grant", "principal_administration"], StringComparer.Ordinal),
+            [ResourceKind.Application] = new HashSet<ResourcePolicy>([ResourcePolicy.ApplicationGrant, ResourcePolicy.VenuePrincipal, ResourcePolicy.ArtistPrincipal]),
+            [ResourceKind.Booking] = new HashSet<ResourcePolicy>([ResourcePolicy.BookingGrant, ResourcePolicy.EitherPrincipal]),
+            [ResourceKind.Contract] = new HashSet<ResourcePolicy>([ResourcePolicy.ContractGrant]),
+            [ResourceKind.Concert] = new HashSet<ResourcePolicy>([ResourcePolicy.ConcertGrant, ResourcePolicy.VenuePrincipal, ResourcePolicy.EitherPrincipal, ResourcePolicy.PrincipalAdministration]),
+            [ResourceKind.Invoice] = new HashSet<ResourcePolicy>([ResourcePolicy.InvoiceGrant]),
+            [ResourceKind.Conversation] = new HashSet<ResourcePolicy>([ResourcePolicy.ConversationGrant, ResourcePolicy.PrincipalAdministration]),
         };
 
     private readonly IReadOnlyDictionary<(TenantPermission, ResourceKind), ImmutableArray<ResourcePolicyBinding>> bindings;
@@ -51,7 +46,7 @@ internal sealed class ResourceBindingRegistry
                 if (!Enum.TryParse<ResourceKind>(source.Resource, true, out var kind)
                     || !Enum.IsDefined(kind)
                     || !this.evaluators.ContainsKey(kind)
-                    || !Policies.GetValueOrDefault(kind, new HashSet<string>()).Contains(source.Policy)
+                    || !Policies.GetValueOrDefault(kind, new HashSet<ResourcePolicy>()).Contains(source.Policy)
                     || (source.Facet is not null
                         && (!Enum.TryParse<ResourceFacet>(source.Facet, false, out var facet)
                             || !Enum.IsDefined(facet)))

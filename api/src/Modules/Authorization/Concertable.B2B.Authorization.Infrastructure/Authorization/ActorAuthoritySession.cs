@@ -20,9 +20,7 @@ internal sealed class ActorAuthoritySession(
             return new(AuthorizationDecision.Denied, null);
 
         var option = await resolver.ResolveAsync(requestActor, ct);
-        if (!option.TryGetValue(out var authority)
-            || !authority.Actor.HasSameAuthorityAs(requestActor)
-            || authority.CatalogRevision != AuthorizationCatalog.Revision)
+        if (!option.TryGetValue(out var authority) || !authority.IsCurrentFor(requestActor))
             return new(AuthorizationDecision.AuthorityChanged, null);
 
         return new(AuthorizationDecision.Allowed, authority);
@@ -45,9 +43,7 @@ internal sealed class ActorAuthoritySession(
         if (retained is null)
         {
             var option = await resolver.ResolveForUnitOfWorkAsync(requestActor, ct);
-            if (!option.TryGetValue(out var authority)
-                || !authority.Actor.HasSameAuthorityAs(requestActor)
-                || authority.CatalogRevision != AuthorizationCatalog.Revision)
+            if (!option.TryGetValue(out var authority) || !authority.IsCurrentFor(requestActor))
                 return Fail(AuthorizationDecision.AuthorityChanged);
 
             retained = authority;

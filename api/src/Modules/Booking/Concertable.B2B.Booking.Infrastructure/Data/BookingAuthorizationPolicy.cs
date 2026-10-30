@@ -10,17 +10,17 @@ internal static class BookingAuthorizationPolicy
     public static IQueryable<BookingEntity> EligibleBookingResources(
         IQueryable<BookingEntity> bookings,
         Guid tenantId,
-        string policy) => policy switch
+        ResourcePolicy policy) => policy switch
     {
-        "booking_grant" => bookings,
-        "either_principal" => bookings.Where(booking =>
+        ResourcePolicy.BookingGrant => bookings,
+        ResourcePolicy.EitherPrincipal => bookings.Where(booking =>
             booking.VenueTenantId == tenantId || booking.ArtistTenantId == tenantId),
         _ => bookings.Where(_ => false),
     };
 
     public static IQueryable<ContractEntity> EligibleContractResources(
         IQueryable<ContractEntity> contracts,
-        string policy) => policy == "contract_grant"
+        ResourcePolicy policy) => policy == ResourcePolicy.ContractGrant
         ? contracts
         : contracts.Where(_ => false);
     public static IQueryable<BookingEntity> VisibleBookings(

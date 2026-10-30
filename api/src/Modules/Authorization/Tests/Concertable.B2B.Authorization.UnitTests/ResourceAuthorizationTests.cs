@@ -26,8 +26,8 @@ public sealed class ResourceAuthorizationTests
     {
         var registry = new ResourceBindingRegistry(
             [Descriptor(
-                new PermissionResourceBinding("booking", "Summary", "booking_grant", ["Summary"]),
-                new PermissionResourceBinding("booking", "Operations", "booking_grant", ["Operations"]))],
+                new PermissionResourceBinding("booking", "Summary", ResourcePolicy.BookingGrant, ["Summary"]),
+                new PermissionResourceBinding("booking", "Operations", ResourcePolicy.BookingGrant, ["Operations"]))],
             [new Evaluator(ResourceKind.Booking)]);
 
         Assert.False(registry.TryResolve(new AuthorizationRequest(
@@ -42,9 +42,9 @@ public sealed class ResourceAuthorizationTests
     public void Registry_FailsCompositionForMissingEvaluatorOrWrongPolicy()
     {
         Assert.Throws<InvalidOperationException>(() => new ResourceBindingRegistry(
-            [Descriptor(new PermissionResourceBinding("application", "Summary", "application_grant", ["Summary"]))], []));
+            [Descriptor(new PermissionResourceBinding("application", "Summary", ResourcePolicy.ApplicationGrant, ["Summary"]))], []));
         Assert.Throws<InvalidOperationException>(() => new ResourceBindingRegistry(
-            [Descriptor(new PermissionResourceBinding("application", "Summary", "invoice_grant", ["Summary"]))],
+            [Descriptor(new PermissionResourceBinding("application", "Summary", ResourcePolicy.InvoiceGrant, ["Summary"]))],
             [new Evaluator(ResourceKind.Application)]));
     }
 
@@ -56,7 +56,7 @@ public sealed class ResourceAuthorizationTests
         var service = new ResourceAuthorization(
             new ActorAuthoritySession(new MembershipContext(), resolver, context), context,
             new ResourceBindingRegistry(
-                [Descriptor(new PermissionResourceBinding("application", "Summary", "application_grant", ["Summary"]))],
+                [Descriptor(new PermissionResourceBinding("application", "Summary", ResourcePolicy.ApplicationGrant, ["Summary"]))],
                 [new Evaluator(ResourceKind.Application)]),
             TimeProvider.System);
         var request = new AuthorizationRequest(TenantPermission.OperationsView,
@@ -78,7 +78,7 @@ public sealed class ResourceAuthorizationTests
         var service = new ResourceAuthorization(
             new ActorAuthoritySession(new MembershipContext(), new AuthorityResolver(), context), context,
             new ResourceBindingRegistry(
-                [Descriptor(new PermissionResourceBinding("application", "Summary", "application_grant", ["Summary"]))],
+                [Descriptor(new PermissionResourceBinding("application", "Summary", ResourcePolicy.ApplicationGrant, ["Summary"]))],
                 [new Evaluator(ResourceKind.Application, includeScope: false)]),
             TimeProvider.System);
 
@@ -92,7 +92,7 @@ public sealed class ResourceAuthorizationTests
     [Fact]
     public async Task TenantCapability_RequiresTenantAudienceAndSharesFrozenCommandAuthority()
     {
-        var tenantBinding = new PermissionResourceBinding("tenant", null, "membership", []);
+        var tenantBinding = new PermissionResourceBinding("tenant", null, ResourcePolicy.Membership, []);
         var tenantDescriptor = new PermissionDescriptor(
             TenantPermission.MessagesSend, "Send messages", "Conversations", [tenantBinding],
             [ResourceAudience.AssignedResources, ResourceAudience.TenantResources], false);
@@ -105,7 +105,7 @@ public sealed class ResourceAuthorizationTests
         var session = new ActorAuthoritySession(new MembershipContext(actor), resolver, context);
         var resources = new ResourceAuthorization(session, context,
             new ResourceBindingRegistry(
-                [Descriptor(new PermissionResourceBinding("application", "Summary", "application_grant", ["Summary"]))],
+                [Descriptor(new PermissionResourceBinding("application", "Summary", ResourcePolicy.ApplicationGrant, ["Summary"]))],
                 [new Evaluator(ResourceKind.Application)]),
             TimeProvider.System);
         var tenant = new TenantCapabilityAuthorization(session, new TenantCapabilityRegistry([tenantDescriptor]));

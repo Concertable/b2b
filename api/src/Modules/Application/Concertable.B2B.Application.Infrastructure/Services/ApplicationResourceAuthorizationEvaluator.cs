@@ -91,7 +91,7 @@ internal sealed class ApplicationResourceAuthorizationEvaluator(
         if (application is null)
             return ResourceAuthorizationDecision.Denied;
 
-        Guid? principal = binding.Policy == "application_grant" ? null : actor.TenantId;
+        Guid? principal = binding.Policy == ResourcePolicy.ApplicationGrant ? null : actor.TenantId;
 
         if (pinned is not null && pinned.Grants.Length != binding.RequiredScopes.Length)
             return ResourceAuthorizationDecision.Denied;

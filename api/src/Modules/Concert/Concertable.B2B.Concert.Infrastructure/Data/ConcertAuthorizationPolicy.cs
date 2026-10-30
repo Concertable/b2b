@@ -24,10 +24,10 @@ internal static class ConcertAuthorizationPolicy
 
         Expression<Func<ConcertEntity, bool>> policy = binding.Policy switch
         {
-            "concert_grant" => concert => true,
-            "venue_principal" => concert => concert.VenueTenantId == actor.TenantId,
-            "artist_principal" => concert => concert.ArtistTenantId == actor.TenantId,
-            "either_principal" or "principal_administration" =>
+            ResourcePolicy.ConcertGrant => concert => true,
+            ResourcePolicy.VenuePrincipal => concert => concert.VenueTenantId == actor.TenantId,
+            ResourcePolicy.ArtistPrincipal => concert => concert.ArtistTenantId == actor.TenantId,
+            ResourcePolicy.EitherPrincipal or ResourcePolicy.PrincipalAdministration =>
                 concert => concert.VenueTenantId == actor.TenantId
                     || concert.ArtistTenantId == actor.TenantId,
             _ => concert => false,
@@ -69,7 +69,7 @@ internal static class ConcertAuthorizationPolicy
         bool requireCurrentMembership = true)
     {
         if (binding.Resource != ResourceKind.Invoice
-            || binding.Policy != "invoice_grant"
+            || binding.Policy != ResourcePolicy.InvoiceGrant
             || actor.AudienceFor(binding.Permission) == ResourceAudience.None
             || pinned is not null && (pinned.PrincipalTenantId is not null
                 || pinned.Grants.Length != binding.RequiredScopes.Length))
@@ -173,9 +173,8 @@ internal static class ConcertAuthorizationPolicy
         return grants;
     }
 
-    public static Guid? PrincipalTenantId(string policy, MembershipSnapshot actor) =>
-        policy is "venue_principal" or "artist_principal" or "either_principal"
-            or "principal_administration" ? actor.TenantId : null;
+    public static Guid? PrincipalTenantId(ResourcePolicy policy, MembershipSnapshot actor) =>
+        policy.IsPrincipal ? actor.TenantId : null;
 
     private static Expression<Func<T, bool>> And<T>(
         Expression<Func<T, bool>> left,

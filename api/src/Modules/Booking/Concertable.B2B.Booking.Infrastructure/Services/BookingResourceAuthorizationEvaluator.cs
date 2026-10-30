@@ -63,7 +63,7 @@ internal sealed class BookingResourceAuthorizationEvaluator(
         if (booking is null)
             return ResourceAuthorizationDecision.Denied;
 
-        Guid? principal = binding.Policy == "booking_grant" ? null : actor.TenantId;
+        Guid? principal = binding.Policy == ResourcePolicy.BookingGrant ? null : actor.TenantId;
 
         if (pinned is not null && pinned.Grants.Length != binding.RequiredScopes.Length)
             return ResourceAuthorizationDecision.Denied;

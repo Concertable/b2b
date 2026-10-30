@@ -14,7 +14,7 @@ internal sealed class TenantCapabilityAuthorization(
         var resolution = await actor.CheckAsync(ct);
         return resolution.Decision != AuthorizationDecision.Allowed
             ? resolution.Decision
-            : resolution.Authority!.Actor.AudienceFor(permission) == ResourceAudience.TenantResources
+            : resolution.Authority!.Actor.AudienceFor(permission).Covers(ResourceAudience.TenantResources)
                 ? AuthorizationDecision.Allowed
                 : AuthorizationDecision.Denied;
     }
@@ -26,7 +26,7 @@ internal sealed class TenantCapabilityAuthorization(
             return resolution.Decision;
 
         if (!registry.Contains(permission)
-            || resolution.Authority!.Actor.AudienceFor(permission) != ResourceAudience.TenantResources)
+            || !resolution.Authority!.Actor.AudienceFor(permission).Covers(ResourceAudience.TenantResources))
             return actor.Fail(AuthorizationDecision.Denied).Decision;
 
         return AuthorizationDecision.Allowed;

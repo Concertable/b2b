@@ -15,9 +15,7 @@ internal sealed class PermissionAuthorization : IPermissionAuthorization
         ResourceAudience? requiredAudience = null,
         CancellationToken ct = default)
     {
-        if (!TenantPermission.All.Contains(permission)
-            || requiredAudience is not null and not ResourceAudience.AssignedResources
-                and not ResourceAudience.TenantResources)
+        if (!TenantPermission.All.Contains(permission) || requiredAudience is { } required && !required.IsGranted)
             return AuthorizationDecision.Denied;
 
         var resolution = await this.actor.CheckAsync(ct);
@@ -25,10 +23,7 @@ internal sealed class PermissionAuthorization : IPermissionAuthorization
             return resolution.Decision;
 
         var audience = resolution.Authority!.Actor.AudienceFor(permission);
-        return audience is ResourceAudience.AssignedResources or ResourceAudience.TenantResources
-            && (requiredAudience is null
-                || requiredAudience == ResourceAudience.AssignedResources
-                || audience == ResourceAudience.TenantResources)
+        return audience.Covers(requiredAudience ?? ResourceAudience.AssignedResources)
             ? AuthorizationDecision.Allowed
             : AuthorizationDecision.Denied;
     }
@@ -42,14 +37,8 @@ internal sealed class PermissionAuthorization : IPermissionAuthorization
         if (resolution.Decision != AuthorizationDecision.Allowed)
             return resolution.Decision;
 
-        var audience = resolution.Authority!.Actor.AudienceFor(permission);
         if (!TenantPermission.All.Contains(permission)
-            || requiredAudience is not ResourceAudience.AssignedResources
-                and not ResourceAudience.TenantResources
-            || audience is not ResourceAudience.AssignedResources
-                and not ResourceAudience.TenantResources
-            || requiredAudience == ResourceAudience.TenantResources
-                && audience != ResourceAudience.TenantResources)
+            || !resolution.Authority!.Actor.AudienceFor(permission).Covers(requiredAudience))
             return this.actor.Fail(AuthorizationDecision.Denied).Decision;
 
         return AuthorizationDecision.Allowed;

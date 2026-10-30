@@ -17,7 +17,7 @@ internal sealed class TenantCapabilityRegistry
             foreach (var binding in descriptor.ResourceBindings.Where(binding => binding.Resource == "tenant"))
             {
                 if (binding.Facet is not null
-                    || binding.Policy != "membership"
+                    || binding.Policy != ResourcePolicy.Membership
                     || binding.RequiresScopes is null
                     || binding.RequiresScopes.Count != 0
                     || !supported.Add(descriptor.Permission))

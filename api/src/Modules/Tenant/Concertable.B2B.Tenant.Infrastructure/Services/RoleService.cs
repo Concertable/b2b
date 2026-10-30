@@ -83,7 +83,7 @@ internal sealed class RoleService : IRoleService
                 .Select(item => new PermissionMetadataDto(
                     item.Permission.Value, item.Label, item.Category,
                     [.. item.ResourceBindings.Select(binding => new ResourceBinding(
-                        binding.Resource, binding.Facet, binding.Policy, binding.RequiresScopes))],
+                        binding.Resource, binding.Facet, binding.Policy.WireName, binding.RequiresScopes))],
                     [.. item.AssignableAudiences.Select(audience => audience.ToString())],
                     item.OwnerOnly))
                 .ToArray();

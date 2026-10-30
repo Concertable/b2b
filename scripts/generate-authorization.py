@@ -28,6 +28,10 @@ def quoted(value):
     return json.dumps(value, ensure_ascii=False)
 
 
+def pascal(value):
+    return "".join(part.capitalize() for part in value.split("_"))
+
+
 def load():
     entries = []
     for module in MODULES:
@@ -110,7 +114,7 @@ def generated(entries):
     permission_code = "\n".join(lines)
     catalog = ["#nullable enable", "using System.Collections.Frozen;", "", "namespace Concertable.B2B.Authorization.Contracts;",
                "", "public sealed record PermissionResourceBinding(",
-               "    string Resource,", "    string? Facet,", "    string Policy,",
+               "    string Resource,", "    string? Facet,", "    ResourcePolicy Policy,",
                "    IReadOnlyList<string> RequiresScopes);",
                "", "public sealed record PermissionDescriptor(",
                "    TenantPermission Permission,", "    string Label,", "    string Category,",
@@ -131,7 +135,7 @@ def generated(entries):
             scopes = ", ".join(quoted(value) for value in binding["requiresScopes"])
             facet = "null" if binding["facet"] is None else quoted(binding["facet"])
             bindings.append(
-                f'new({quoted(binding["resource"])}, {facet}, {quoted(binding["policy"])}, [{scopes}])')
+                f'new({quoted(binding["resource"])}, {facet}, ResourcePolicy.{pascal(binding["policy"])}, [{scopes}])')
         binding_values = ", ".join(bindings)
         catalog.append(
             f'            [TenantPermission.{sym}] = new(TenantPermission.{sym}, {quoted(item["label"])}, '

@@ -10,11 +10,11 @@ internal static class ApplicationAuthorizationPolicy
     public static IQueryable<ApplicationEntity> EligibleApplications(
         IQueryable<ApplicationEntity> applications,
         Guid tenantId,
-        string policy) => policy switch
+        ResourcePolicy policy) => policy switch
     {
-        "application_grant" => applications,
-        "venue_principal" => applications.Where(application => application.VenueTenantId == tenantId),
-        "artist_principal" => applications.Where(application => application.ArtistTenantId == tenantId),
+        ResourcePolicy.ApplicationGrant => applications,
+        ResourcePolicy.VenuePrincipal => applications.Where(application => application.VenueTenantId == tenantId),
+        ResourcePolicy.ArtistPrincipal => applications.Where(application => application.ArtistTenantId == tenantId),
         _ => applications.Where(_ => false),
     };
     public static IQueryable<ApplicationEntity> Visible(
