@@ -71,7 +71,9 @@ public sealed class SubjectContractReaderTests : IAsyncLifetime
         var booking = BookingEntity.Create(snapshot);
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
-        booking.MintContract(FlatFeeContract.Create(booking.Id, snapshot, terms, createdAtUtc));
+        var contract = FlatFeeContract.Create(booking.Id, snapshot, terms, createdAtUtc);
+        booking.MintContract(contract);
+        context.Contracts.Add(contract);
         await context.SaveChangesAsync();
         return booking.Id;
     });
