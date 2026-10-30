@@ -1,4 +1,4 @@
-using Concertable.B2B.DataAccess.Infrastructure;
+﻿using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Messaging.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -14,4 +14,5 @@ internal sealed class ApplicationPrivilegedDbContext(
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<VerifyPaymentEntity> VerifyPayments => Set<VerifyPaymentEntity>();
     public DbSet<ConcertAvailabilityEntity> ConcertAvailabilities => Set<ConcertAvailabilityEntity>();
+    public DbSet<ApplicationAccessGrant> ApplicationAccessGrants => Set<ApplicationAccessGrant>();
 }

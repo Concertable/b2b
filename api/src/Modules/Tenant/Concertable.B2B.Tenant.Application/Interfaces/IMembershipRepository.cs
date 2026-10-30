@@ -13,6 +13,10 @@ internal sealed record UserMembership(
 
 internal interface IMembershipRepository : IRepository<TenantMembershipEntity, Guid>
 {
+    Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForShareAsync(
+        IReadOnlyCollection<Guid> membershipIds,
+        CancellationToken ct = default);
+
     /// <summary>The caller's membership in a specific tenant — validates an <c>X-Tenant-Id</c> header against
     /// authority. Null = the caller doesn't belong to that tenant (the request then fails closed).</summary>
     Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default);

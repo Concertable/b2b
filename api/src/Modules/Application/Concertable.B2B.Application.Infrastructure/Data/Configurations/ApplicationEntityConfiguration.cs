@@ -17,6 +17,10 @@ internal sealed class ApplicationEntityConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<ApplicationEntity> builder)
     {
         builder.ToTable(Schema.Tables.Applications, Schema.Name);
+        builder.HasMany(application => application.AccessGrants)
+            .WithOne()
+            .HasForeignKey(grant => grant.ResourceId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasConcurrencyVersion();
         builder.Property(application => application.State).IsRequired().IsConcurrencyToken();
         builder.HasOne(application => application.VerifyPayment)

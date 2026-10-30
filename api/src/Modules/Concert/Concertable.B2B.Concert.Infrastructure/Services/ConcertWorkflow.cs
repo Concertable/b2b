@@ -19,7 +19,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IMembershipContext membership;
-    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IMembershipResolver membershipResolver;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly TimeProvider timeProvider;
 
@@ -30,7 +30,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IDealStrategyFactory<ICompleteStep> completeFactory,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IMembershipContext membership,
-        IMembershipAuthorityFence authorityFence,
+        IMembershipResolver membershipResolver,
         IPermissionCatalog permissionCatalog,
         TimeProvider timeProvider)
     {
@@ -40,7 +40,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         this.completeFactory = completeFactory;
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.membership = membership;
-        this.authorityFence = authorityFence;
+        this.membershipResolver = membershipResolver;
         this.permissionCatalog = permissionCatalog;
         this.timeProvider = timeProvider;
     }
@@ -124,8 +124,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        if (actor is null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        if (!actorOption.TryGetValue(out var actor)
             || !permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsManage))
             return new CancelConcertError.NotPermitted();
 
@@ -149,8 +149,8 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var actor = await authorityFence.RequireCurrentAsync(expectedActor, ct);
-        return actor is not null
+        var actorOption = await membershipResolver.ResolveSnapshotAsync(expectedActor, ct);
+        return actorOption.TryGetValue(out var actor)
             && permissionCatalog.Grants(actor.Role, TenantPermission.ConcertsManage)
             && await CanCancelAsync(concertId, actor, ct);
     }

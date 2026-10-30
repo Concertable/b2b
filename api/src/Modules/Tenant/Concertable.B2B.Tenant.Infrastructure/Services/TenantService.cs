@@ -15,7 +15,7 @@ internal sealed class TenantService : ITenantService
     private readonly IInvitationRepository invitationRepository;
     private readonly ITenantContext tenantContext;
     private readonly IMembershipContext membershipContext;
-    private readonly IMembershipAuthorityFence authorityFence;
+    private readonly IMembershipResolver membershipResolver;
     private readonly IVatPolicy vatPolicy;
     private readonly IPermissionCatalog permissionCatalog;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
@@ -29,7 +29,7 @@ internal sealed class TenantService : ITenantService
         IInvitationRepository invitationRepository,
         ITenantContext tenantContext,
         IMembershipContext membershipContext,
-        IMembershipAuthorityFence authorityFence,
+        IMembershipResolver membershipResolver,
         IVatPolicy vatPolicy,
         IPermissionCatalog permissionCatalog,
         IOutboxUnitOfWorkBehavior unitOfWork,
@@ -42,7 +42,7 @@ internal sealed class TenantService : ITenantService
         this.invitationRepository = invitationRepository;
         this.tenantContext = tenantContext;
         this.membershipContext = membershipContext;
-        this.authorityFence = authorityFence;
+        this.membershipResolver = membershipResolver;
         this.vatPolicy = vatPolicy;
         this.permissionCatalog = permissionCatalog;
         this.unitOfWork = unitOfWork;
@@ -61,7 +61,7 @@ internal sealed class TenantService : ITenantService
     {
         foreach (var tenantId in new[] { venueTenantId, artistTenantId }.Distinct().Order())
         {
-            if (await repository.GetByIdForAdministrationAsync(tenantId, ct) is null)
+            if (!await repository.ExistsForBookingAsync(tenantId, ct))
                 throw new TenantUnavailableException(tenantId);
         }
     }
@@ -99,10 +99,10 @@ internal sealed class TenantService : ITenantService
             ? []
             : await membershipRepository.GetSnapshotsByTenantIdsAsync([tenantId], ct);
 
-    public Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
+    public Task<Option<MembershipSnapshot>> ResolveMembershipSnapshotAsync(
         MembershipSnapshot expected,
         CancellationToken ct = default) =>
-        authorityFence.RequireCurrentAsync(expected, ct);
+        membershipResolver.ResolveSnapshotAsync(expected, ct);
 
     public async Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default) =>
         (await repository.GetTenantBusinessDetailsByTenantIdAsync(tenantId, ct)).ToOption();
@@ -289,8 +289,8 @@ internal sealed class TenantService : ITenantService
         var expected = membershipContext.Membership;
         if (expected is null || expected.TenantId != tenantId)
             return false;
-        var current = await authorityFence.RequireCurrentAsync(expected, ct);
-        return current is not null && permissionCatalog.Grants(current.Role, permission);
+        var currentOption = await membershipResolver.ResolveSnapshotAsync(expected, ct);
+        return currentOption.TryGetValue(out var current) && permissionCatalog.Grants(current.Role, permission);
     }
 
     private TenantDetails ToDetails(TenantEntity tenant) => new()

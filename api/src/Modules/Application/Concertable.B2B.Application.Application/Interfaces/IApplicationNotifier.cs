@@ -1,12 +1,14 @@
+using Concertable.B2B.Application.Domain.Entities;
+
 namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationNotifier
 {
-    Task AppliedAsync(int applicationId);
-    Task AcceptedAsync(int applicationId);
-    Task WithdrawnAsync(int applicationId);
-    Task RejectedAsync(int applicationId);
-    Task CancelledAsync(int applicationId);
+    Task AppliedAsync(ApplicationEntity application);
+    Task AcceptedAsync(ApplicationEntity application);
+    Task WithdrawnAsync(ApplicationEntity application);
+    Task RejectedAsync(ApplicationEntity application);
+    Task CancelledAsync(ApplicationEntity application);
 
     /// <summary>
     /// Tells the venue manager who started the checkout that the card verification failed, so the acceptance

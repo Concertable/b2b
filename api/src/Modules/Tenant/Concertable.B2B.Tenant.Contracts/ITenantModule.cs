@@ -12,7 +12,7 @@ public interface ITenantModule
     Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
         Guid tenantId,
         CancellationToken ct = default);
-    Task<MembershipSnapshot?> RequireCurrentMembershipAsync(
+    Task<Option<MembershipSnapshot>> ResolveMembershipSnapshotAsync(
         MembershipSnapshot expected,
         CancellationToken ct = default);
 
