@@ -29,9 +29,10 @@ public sealed class ContentReportApiTests : IAsyncLifetime
     public async Task Report_ShouldReturn204_AndMailBothTheSafetyInboxAndTheReporter()
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var messageId = await InboundMessageIdAsync(venue);
+        var inbound = await InboundMessageAsync(venue);
 
-        var response = await venue.PostAsync($"/api/Message/{messageId}/report",
+        var response = await venue.PostAsync(
+            $"/api/conversations/{inbound.ConversationId}/messages/{inbound.Id}/report",
             new { category = "illegalContent", details = "This message is unlawful." });
 
         await response.ShouldBe(HttpStatusCode.NoContent);
@@ -46,13 +47,14 @@ public sealed class ContentReportApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Report_ShouldReturn404_WhenTheTenantIsNotPartyToTheThread()
+    public async Task Report_ShouldReturn404_WhenTheTenantIsNotPartyToTheConversation()
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var messageId = await InboundMessageIdAsync(venue);
+        var inbound = await InboundMessageAsync(venue);
         var otherVenue = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
-        var response = await otherVenue.PostAsync($"/api/Message/{messageId}/report",
+        var response = await otherVenue.PostAsync(
+            $"/api/conversations/{inbound.ConversationId}/messages/{inbound.Id}/report",
             new { category = "illegalContent", details = (string?)null });
 
         await response.ShouldBe(HttpStatusCode.NotFound);
@@ -64,21 +66,20 @@ public sealed class ContentReportApiTests : IAsyncLifetime
     {
         var anonymous = fixture.CreateClient();
 
-        var response = await anonymous.PostAsync("/api/Message/1/report",
+        var response = await anonymous.PostAsync("/api/conversations/1/messages/1/report",
             new { category = "illegalContent" });
 
         await response.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
-    // FluentValidation auto-validation rejects before the action runs, so the key is ModelState's
-    // property name — dictionary keys are not camel-cased by JsonSerializerDefaults.Web.
     [Fact]
     public async Task Report_ShouldReturn400_WithFieldIndexedErrors_WhenDetailsAreTooLong()
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var messageId = await InboundMessageIdAsync(venue);
+        var inbound = await InboundMessageAsync(venue);
 
-        var response = await venue.PostAsync($"/api/Message/{messageId}/report",
+        var response = await venue.PostAsync(
+            $"/api/conversations/{inbound.ConversationId}/messages/{inbound.Id}/report",
             new { category = "illegalContent", details = new string('x', 2001) });
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
@@ -92,25 +93,33 @@ public sealed class ContentReportApiTests : IAsyncLifetime
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
-        var page = await GetInboxAsync(venue);
+        var messages = await GetMessagesAsync(venue);
 
-        var inbound = page.Data.Single(m => m.Content == InboundMessage);
+        var inbound = messages.Single(m => m.Content == InboundMessage);
         Assert.NotNull(inbound.Actions.Report);
-        Assert.Equal($"/api/Message/{inbound.Id}/report", inbound.Actions.Report.Href);
+        Assert.Equal(
+            $"/api/conversations/{inbound.ConversationId}/messages/{inbound.Id}/report",
+            inbound.Actions.Report.Href);
         Assert.Equal("POST", inbound.Actions.Report.Method);
 
-        var outbound = page.Data.Single(m => m.Content == OutboundMessage);
+        var outbound = messages.Single(m => m.Content == OutboundMessage);
         Assert.Null(outbound.Actions.Report);
     }
 
-    private static async Task<int> InboundMessageIdAsync(HttpClient client) =>
-        (await GetInboxAsync(client)).Data.Single(m => m.Content == InboundMessage).Id;
+    private static async Task<InboxMessage> InboundMessageAsync(HttpClient client) =>
+        (await GetMessagesAsync(client)).Single(message => message.Content == InboundMessage);
 
-    private static async Task<InboxPage> GetInboxAsync(HttpClient client) =>
-        (await (await client.GetAsync("/api/Message/user")).Content.ReadAsync<InboxPage>())!;
+    private static async Task<List<InboxMessage>> GetMessagesAsync(HttpClient client)
+    {
+        var previews = (await (await client.GetAsync("/api/conversations/previews"))
+            .Content.ReadAsync<List<MessagePreview>>())!;
+        var conversationId = Assert.Single(previews).ConversationId;
+        return (await (await client.GetAsync($"/api/conversations/{conversationId}/messages"))
+            .Content.ReadAsync<List<InboxMessage>>())!;
+    }
 
-    private sealed record InboxPage(List<InboxMessage> Data);
-    private sealed record InboxMessage(int Id, string Content, InboxActions Actions);
+    private sealed record InboxMessage(int Id, int ConversationId, string Content, InboxActions Actions);
+    private sealed record MessagePreview(int ConversationId);
     private sealed record InboxActions(InboxActionLink? Report);
     private sealed record InboxActionLink(string Href, string Method);
     private sealed record ValidationProblem(Dictionary<string, string[]> Errors);

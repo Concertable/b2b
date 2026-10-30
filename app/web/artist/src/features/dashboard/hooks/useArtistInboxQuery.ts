@@ -1,11 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { messageApi } from "@concertable/web-b2b/features/conversations";
-import { DASHBOARD_POLLING } from "@concertable/shared/features/dashboard";
+import { useConversationPreviewsQuery } from "@concertable/web-b2b/features/conversations";
+import { useTenant } from "@concertable/web-b2b/features/tenant";
 
 export function useArtistInboxQuery() {
-  return useQuery({
-    queryKey: ["dashboard", "artist", "inbox"],
-    queryFn: messageApi.getPreviews,
-    refetchInterval: DASHBOARD_POLLING.fast,
-  });
+  const { session, permissions } = useTenant("artist");
+  return useConversationPreviewsQuery(session, 1, permissions.has("messages.read"));
 }

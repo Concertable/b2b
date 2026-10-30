@@ -8,11 +8,15 @@ using Concertable.B2B.Opportunity.Contracts;
 using Concertable.B2B.Venue.Contracts;
 using Concertable.Kernel.Identity;
 using Concertable.Kernel.Notifications;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Concertable.B2B.Application.Infrastructure.Services;
 
 internal sealed class ApplicationNotifier : IApplicationNotifier
 {
+    private static readonly Guid ConversationRequestNamespace =
+        Guid.Parse("127b2cd6-b16f-53df-9853-158673bff66a");
     private readonly IApplicationPrivilegedRepository repository;
     private readonly ICurrentUser currentUser;
     private readonly IConversationsModule conversationsModule;
@@ -98,60 +102,51 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     }
 
     public Task AppliedAsync(ApplicationEntity application) =>
-        NotifyVenueAsync(
+        NotifyAsync(
             application,
             $"{currentUser.Email} has applied to your concert opportunity",
             MessageAction.ApplicationReceived);
 
     public Task WithdrawnAsync(ApplicationEntity application) =>
-        NotifyVenueAsync(
+        NotifyAsync(
             application,
             $"{currentUser.Email} has withdrawn their application to your concert opportunity",
             MessageAction.ApplicationWithdrawn);
 
     public Task AcceptedAsync(ApplicationEntity application) =>
-        NotifyArtistAsync(
+        NotifyAsync(
             application,
             "Your application has been accepted!",
             MessageAction.ApplicationAccepted);
 
     public Task RejectedAsync(ApplicationEntity application) =>
-        NotifyArtistAsync(
+        NotifyAsync(
             application,
             "Your application was not selected for this concert opportunity",
             MessageAction.ApplicationRejected);
 
     public Task CancelledAsync(ApplicationEntity application) =>
-        NotifyArtistAsync(
+        NotifyAsync(
             application,
             "Your application was cancelled by the venue",
             MessageAction.ApplicationCancelled);
 
-    private async Task NotifyVenueAsync(
+    private async Task NotifyAsync(
         ApplicationEntity application,
         string content,
         MessageAction action)
     {
+        var conversationId = await conversationsModule.CreateAsync(
+            RequestId(application.Id, "conversation"),
+            [application.VenueTenantId, application.ArtistTenantId]);
         await conversationsModule.SendAsync(
-            application.VenueTenantId,
-            application.ArtistTenantId,
-            application.ArtistTenantId,
-            currentUser.GetId(),
+            conversationId,
+            RequestId(application.Id, action.ToString()),
             content,
             action);
     }
 
-    private async Task NotifyArtistAsync(
-        ApplicationEntity application,
-        string content,
-        MessageAction action)
-    {
-        await conversationsModule.SendAndNotifyAsync(
-            application.VenueTenantId,
-            application.ArtistTenantId,
-            application.VenueTenantId,
-            currentUser.GetId(),
-            content,
-            action);
-    }
+    private static Guid RequestId(int applicationId, string operation) =>
+        new(MD5.HashData(Encoding.UTF8.GetBytes(
+            $"{ConversationRequestNamespace:N}:{applicationId}:{operation}")));
 }

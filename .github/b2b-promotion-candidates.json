@@ -26,6 +26,10 @@
       "project": "api/src/Modules/Concert/Concertable.B2B.Concert.Contracts/Concertable.B2B.Concert.Contracts.csproj"
     },
     {
+      "id": "Concertable.B2B.Conversations.Contracts",
+      "project": "api/src/Modules/Conversations/Concertable.B2B.Conversations.Contracts/Concertable.B2B.Conversations.Contracts.csproj"
+    },
+    {
       "id": "Concertable.B2B.Deal.Contracts",
       "project": "api/src/Modules/Deal/Concertable.B2B.Deal.Contracts/Concertable.B2B.Deal.Contracts.csproj"
     },

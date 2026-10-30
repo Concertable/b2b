@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddConversationsModule(configuration);
         services.AddControllers()
-            .AddInternalControllers(typeof(MessageController).Assembly);
+            .AddInternalControllers(typeof(ConversationsController).Assembly);
         return services;
     }
 }

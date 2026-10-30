@@ -1,21 +1,45 @@
+using Concertable.B2B.Conversations.Application.Requests;
+
 namespace Concertable.B2B.Conversations.Infrastructure;
 
 internal sealed class ConversationsModule : IConversationsModule
 {
-    private readonly IMessageService messageService;
+    private readonly IConversationService conversationService;
     private readonly ISubjectMessageReader subjectMessageReader;
 
-    public ConversationsModule(IMessageService messageService, ISubjectMessageReader subjectMessageReader)
+    public ConversationsModule(IConversationService conversationService, ISubjectMessageReader subjectMessageReader)
     {
-        this.messageService = messageService;
+        this.conversationService = conversationService;
         this.subjectMessageReader = subjectMessageReader;
     }
 
-    public Task SendAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null) =>
-        messageService.SendAsync(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, action);
+    public async Task<int> CreateAsync(
+        Guid requestId,
+        IReadOnlyCollection<Guid> participantTenantIds,
+        CancellationToken ct = default)
+    {
+        var result = await conversationService.CreateAsync(
+            new CreateConversationRequest(requestId, [.. participantTenantIds]), ct);
+        return result.TryGetValue(out var conversation)
+            ? conversation.ConversationId
+            : throw new InvalidOperationException("The conversation could not be created.");
+    }
 
-    public Task SendAndNotifyAsync(Guid venueTenantId, Guid artistTenantId, Guid senderTenantId, Guid sentByUserId, string content, MessageAction? action = null) =>
-        messageService.SendAndNotifyAsync(venueTenantId, artistTenantId, senderTenantId, sentByUserId, content, action);
+    public async Task SendAsync(
+        int conversationId,
+        Guid requestId,
+        string content,
+        MessageAction? action = null,
+        CancellationToken ct = default)
+    {
+        var result = await conversationService.SendAsync(
+            conversationId,
+            new SendMessageRequest(requestId, content),
+            action,
+            ct);
+        if (result.TryGetError(out _))
+            throw new InvalidOperationException("The conversation message could not be sent.");
+    }
 
     public Task<IReadOnlyList<SubjectMessageDto>> GetSubjectMessagesAsync(Guid userId, CancellationToken ct = default) =>
         this.subjectMessageReader.GetSubjectMessagesAsync(userId, ct);

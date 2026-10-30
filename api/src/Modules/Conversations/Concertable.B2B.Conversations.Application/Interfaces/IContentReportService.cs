@@ -6,8 +6,8 @@ namespace Concertable.B2B.Conversations.Application.Interfaces;
 
 internal interface IContentReportService
 {
-    /// <summary>Records a report against the message and sends the safety-inbox notification plus the
-    /// reporter's acknowledgement. A message the acting tenant is not party to is indistinguishable from
-    /// one that does not exist.</summary>
-    Task<UnitResult<ReportMessageError>> SubmitAsync(int messageId, ReportMessageRequest request);
+    Task<UnitResult<ReportMessageError>> SubmitAsync(
+        int conversationId,
+        int messageId,
+        ReportMessageRequest request);
 }

@@ -30,33 +30,31 @@ public sealed class ModerationApiTests : IAsyncLifetime
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
-        var messageId = await InboundMessageIdAsync(venue);
+        var inbound = await InboundMessageAsync(venue);
         var unreadBefore = await UnreadCountAsync(venue);
 
-        await (await admin.PostAsync($"/api/Moderation/messages/{messageId}/hide")).ShouldBe(HttpStatusCode.NoContent);
+        await (await admin.PostAsync($"/api/Moderation/messages/{inbound.Id}/hide")).ShouldBe(HttpStatusCode.NoContent);
 
-        Assert.DoesNotContain((await GetInboxAsync(venue)).Data, m => m.Id == messageId);
-        Assert.DoesNotContain((await GetInboxAsync(artist)).Data, m => m.Id == messageId);
+        Assert.DoesNotContain(await GetMessagesAsync(venue), message => message.Id == inbound.Id);
+        Assert.DoesNotContain(await GetMessagesAsync(artist), message => message.Id == inbound.Id);
         Assert.Equal(unreadBefore - 1, await UnreadCountAsync(venue));
 
-        await (await admin.PostAsync($"/api/Moderation/messages/{messageId}/restore")).ShouldBe(HttpStatusCode.NoContent);
+        await (await admin.PostAsync($"/api/Moderation/messages/{inbound.Id}/restore")).ShouldBe(HttpStatusCode.NoContent);
 
-        Assert.Contains((await GetInboxAsync(venue)).Data, m => m.Id == messageId);
-        Assert.Contains((await GetInboxAsync(artist)).Data, m => m.Id == messageId);
+        Assert.Contains(await GetMessagesAsync(venue), message => message.Id == inbound.Id);
+        Assert.Contains(await GetMessagesAsync(artist), message => message.Id == inbound.Id);
     }
 
-    // The wrong-axis guard: tenant RBAC is scoped to one tenant, so a venue Owner must never be able to
-    // moderate. Moderation is gated on the platform admin axis only.
     [Fact]
     public async Task Moderation_ShouldReturn403_ForATenantOwner()
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var messageId = await InboundMessageIdAsync(venue);
-        var reportId = await SubmitReportAsync(venue, messageId);
+        var inbound = await InboundMessageAsync(venue);
+        var reportId = await SubmitReportAsync(venue, inbound);
 
         await (await venue.GetAsync("/api/Moderation/reports")).ShouldBe(HttpStatusCode.Forbidden);
-        await (await venue.PostAsync($"/api/Moderation/messages/{messageId}/hide")).ShouldBe(HttpStatusCode.Forbidden);
-        await (await venue.PostAsync($"/api/Moderation/messages/{messageId}/restore")).ShouldBe(HttpStatusCode.Forbidden);
+        await (await venue.PostAsync($"/api/Moderation/messages/{inbound.Id}/hide")).ShouldBe(HttpStatusCode.Forbidden);
+        await (await venue.PostAsync($"/api/Moderation/messages/{inbound.Id}/restore")).ShouldBe(HttpStatusCode.Forbidden);
         await (await venue.PostAsync($"/api/Moderation/reports/{reportId}/resolve",
             new { outcome = "noActionTaken", notes = (string?)null })).ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -75,7 +73,7 @@ public sealed class ModerationApiTests : IAsyncLifetime
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
-        var reportId = await SubmitReportAsync(venue, await InboundMessageIdAsync(venue));
+        var reportId = await SubmitReportAsync(venue, await InboundMessageAsync(venue));
 
         var resolve = await admin.PostAsync($"/api/Moderation/reports/{reportId}/resolve",
             new { outcome = "contentRemoved", notes = "message hidden" });
@@ -96,7 +94,7 @@ public sealed class ModerationApiTests : IAsyncLifetime
     {
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
-        var reportId = await SubmitReportAsync(venue, await InboundMessageIdAsync(venue));
+        var reportId = await SubmitReportAsync(venue, await InboundMessageAsync(venue));
 
         var queue = await GetQueueAsync(admin);
 
@@ -105,31 +103,38 @@ public sealed class ModerationApiTests : IAsyncLifetime
         Assert.Equal(InboundMessage, report.MessageExcerpt);
     }
 
-    private async Task<int> SubmitReportAsync(HttpClient client, int messageId)
+    private async Task<int> SubmitReportAsync(HttpClient client, InboxMessage message)
     {
-        var response = await client.PostAsync($"/api/Message/{messageId}/report",
+        var response = await client.PostAsync(
+            $"/api/conversations/{message.ConversationId}/messages/{message.Id}/report",
             new { category = "illegalContent", details = "unlawful" });
         await response.ShouldBe(HttpStatusCode.NoContent);
 
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
-        return (await GetQueueAsync(admin)).Single(r => r.MessageId == messageId).Id;
+        return (await GetQueueAsync(admin)).Single(report => report.MessageId == message.Id).Id;
     }
 
     private static async Task<List<QueuedReport>> GetQueueAsync(HttpClient admin) =>
         (await (await admin.GetAsync("/api/Moderation/reports")).Content.ReadAsync<QueuePage>())!.Data;
 
-    private static async Task<int> InboundMessageIdAsync(HttpClient client) =>
-        (await GetInboxAsync(client)).Data.Single(m => m.Content == InboundMessage).Id;
+    private static async Task<InboxMessage> InboundMessageAsync(HttpClient client) =>
+        (await GetMessagesAsync(client)).Single(message => message.Content == InboundMessage);
 
-    private static async Task<InboxPage> GetInboxAsync(HttpClient client) =>
-        (await (await client.GetAsync("/api/Message/user")).Content.ReadAsync<InboxPage>())!;
+    private static async Task<List<InboxMessage>> GetMessagesAsync(HttpClient client)
+    {
+        var previews = (await (await client.GetAsync("/api/conversations/previews"))
+            .Content.ReadAsync<List<MessagePreview>>())!;
+        var conversationId = Assert.Single(previews).ConversationId;
+        return (await (await client.GetAsync($"/api/conversations/{conversationId}/messages"))
+            .Content.ReadAsync<List<InboxMessage>>())!;
+    }
 
     private static async Task<int> UnreadCountAsync(HttpClient client) =>
-        await (await client.GetAsync("/api/Message/user/unread-count")).Content.ReadAsync<int>();
+        await (await client.GetAsync("/api/conversations/unread-count")).Content.ReadAsync<int>();
 
-    private sealed record InboxPage(List<InboxMessage> Data);
     private sealed record QueuePage(List<QueuedReport> Data);
-    private sealed record InboxMessage(int Id, string Content);
+    private sealed record InboxMessage(int Id, int ConversationId, string Content);
+    private sealed record MessagePreview(int ConversationId);
     private sealed record QueuedReport(
         int Id, string Reference, int MessageId, string MessageExcerpt,
         string? Outcome, DateTime? ResolvedAt, string? ResolutionNotes);
