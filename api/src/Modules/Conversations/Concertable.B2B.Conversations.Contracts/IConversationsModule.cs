@@ -13,4 +13,6 @@ public interface IConversationsModule
         string content,
         MessageAction? action = null,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<SubjectMessageDto>> GetSubjectMessagesAsync(Guid userId, CancellationToken ct = default);
 }

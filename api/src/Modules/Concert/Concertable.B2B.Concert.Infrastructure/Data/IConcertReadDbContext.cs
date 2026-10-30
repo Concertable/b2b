@@ -8,6 +8,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data;
 internal interface IConcertReadDbContext
 {
     IQueryable<ConcertEntity> Concerts { get; }
+    IQueryable<InvoiceEntity> Invoices { get; }
     IQueryable<SelfBillingAgreementEntity> SelfBillingAgreements { get; }
     IQueryable<ConcertRatingProjection> ConcertRatingProjections { get; }
     IQueryable<ArtistRatingProjection> ArtistRatingProjections { get; }

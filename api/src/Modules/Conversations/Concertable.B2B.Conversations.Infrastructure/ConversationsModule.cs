@@ -5,10 +5,12 @@ namespace Concertable.B2B.Conversations.Infrastructure;
 internal sealed class ConversationsModule : IConversationsModule
 {
     private readonly IConversationService conversationService;
+    private readonly ISubjectMessageReader subjectMessageReader;
 
-    public ConversationsModule(IConversationService conversationService)
+    public ConversationsModule(IConversationService conversationService, ISubjectMessageReader subjectMessageReader)
     {
         this.conversationService = conversationService;
+        this.subjectMessageReader = subjectMessageReader;
     }
 
     public async Task<int> CreateAsync(
@@ -38,4 +40,7 @@ internal sealed class ConversationsModule : IConversationsModule
         if (result.TryGetError(out _))
             throw new InvalidOperationException("The conversation message could not be sent.");
     }
+
+    public Task<IReadOnlyList<SubjectMessageDto>> GetSubjectMessagesAsync(Guid userId, CancellationToken ct = default) =>
+        this.subjectMessageReader.GetSubjectMessagesAsync(userId, ct);
 }
