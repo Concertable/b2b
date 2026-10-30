@@ -90,4 +90,13 @@ internal sealed class UserService : IUserService
 
     public async Task<Option<Guid>> GetIdByEmailAsync(string email) =>
         (await userRepository.GetIdByEmailAsync(email)).ToOption();
+
+    public async Task<Option<SubjectProfileDto>> GetSubjectProfileAsync(Guid subjectId, CancellationToken ct = default)
+    {
+        var user = await this.userRepository.GetByIdAsync(subjectId, ct);
+        if (user is null)
+            return null;
+
+        return user.ToSubjectProfileDto();
+    }
 }
