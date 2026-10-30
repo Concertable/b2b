@@ -113,8 +113,11 @@ def generated(entries):
               "", "    public override string ToString() => Value ?? string.Empty;", "}", ""]
     permission_code = "\n".join(lines)
     catalog = ["#nullable enable", "using System.Collections.Frozen;", "", "namespace Concertable.B2B.Authorization.Contracts;",
+               "", "public enum AuthorizationResource", "{"]
+    catalog += [f"    {pascal(resource)}{' = 1' if index == 0 else ''}," for index, resource in enumerate(BINDINGS)]
+    catalog += ["}",
                "", "public sealed record PermissionResourceBinding(",
-               "    string Resource,", "    string? Facet,", "    ResourcePolicy Policy,",
+               "    AuthorizationResource Resource,", "    string? Scope,", "    ResourcePolicy Policy,",
                "    IReadOnlyList<string> RequiresScopes);",
                "", "public sealed record PermissionDescriptor(",
                "    TenantPermission Permission,", "    string Label,", "    string Category,",
@@ -133,9 +136,10 @@ def generated(entries):
         bindings = []
         for binding in item["resourceBindings"]:
             scopes = ", ".join(quoted(value) for value in binding["requiresScopes"])
-            facet = "null" if binding["facet"] is None else quoted(binding["facet"])
+            scope = "null" if binding["facet"] is None else quoted(binding["facet"])
             bindings.append(
-                f'new({quoted(binding["resource"])}, {facet}, ResourcePolicy.{pascal(binding["policy"])}, [{scopes}])')
+                f'new(AuthorizationResource.{pascal(binding["resource"])}, {scope}, '
+                f'ResourcePolicy.{pascal(binding["policy"])}, [{scopes}])')
         binding_values = ", ".join(bindings)
         catalog.append(
             f'            [TenantPermission.{sym}] = new(TenantPermission.{sym}, {quoted(item["label"])}, '

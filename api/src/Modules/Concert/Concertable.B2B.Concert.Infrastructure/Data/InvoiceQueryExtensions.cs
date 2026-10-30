@@ -12,7 +12,7 @@ internal static class InvoiceQueryExtensions
         public IQueryable<InvoiceEntity> AccessibleBy(
             MembershipSnapshot actor, TenantPermission permission, InvoiceAccessScope scope, DateTime at)
         {
-            var binding = permission.BindingFor("invoice", scope.ToString());
+            var binding = permission.BindingFor(AuthorizationResource.Invoice, scope.ToString());
             if (binding is null || !actor.HasPermission(permission) || binding.Policy != ResourcePolicy.InvoiceGrant)
                 return invoices.Where(_ => false);
 

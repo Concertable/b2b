@@ -162,7 +162,7 @@ internal sealed class TenantService : ITenantService
         if (tenant is null)
             return new UpdateTenantError.TenantNotFound(tenantId);
         if ((await authorizer.AuthorizeAsync(
-                tenantId, TenantPermission.TenantSettingsEdit, ownerRequired: false, ct)).IsFailure)
+                tenantId, TenantPermission.TenantSettingsEdit, ct)).IsFailure)
             return new UpdateTenantError.NotPermitted();
         if (tenant.Version != request.ExpectedVersion)
             return new UpdateTenantError.Superseded();
@@ -207,7 +207,7 @@ internal sealed class TenantService : ITenantService
             if (tenant is null)
                 return new ChangeBusinessActivityError.TenantNotFound(tenantId);
             if ((await authorizer.AuthorizeAsync(
-                    tenantId, TenantPermission.TenantSettingsEdit, ownerRequired: false, ct)).IsFailure)
+                    tenantId, TenantPermission.TenantSettingsEdit, ct)).IsFailure)
                 return new ChangeBusinessActivityError.NotPermitted();
             if (tenant.EligibilityVersion != request.ExpectedEligibilityVersion)
                 return new ChangeBusinessActivityError.Superseded();
@@ -230,8 +230,8 @@ internal sealed class TenantService : ITenantService
         var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new DeleteTenantError.TenantNotFound(tenantId);
-        if ((await authorizer.AuthorizeAsync(
-                tenantId, TenantPermission.TenantDelete, ownerRequired: true, ct)).IsFailure)
+        if ((await authorizer.AuthorizeOwnerAsync(
+                tenantId, TenantPermission.TenantDelete, ct)).IsFailure)
             return new DeleteTenantError.NotPermitted();
 
         foreach (var guard in deletionGuards)

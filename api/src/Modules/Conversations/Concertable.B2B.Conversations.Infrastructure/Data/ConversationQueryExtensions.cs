@@ -11,7 +11,7 @@ internal static class ConversationQueryExtensions
         public IQueryable<ConversationEntity> AccessibleBy(
             MembershipSnapshot actor, TenantPermission permission, ConversationAccessScope? scope, DateTime at)
         {
-            var binding = permission.BindingFor("conversation", scope?.ToString());
+            var binding = permission.BindingFor(AuthorizationResource.Conversation, scope?.ToString());
             if (binding is null || !actor.HasPermission(permission))
                 return conversations.Where(_ => false);
 

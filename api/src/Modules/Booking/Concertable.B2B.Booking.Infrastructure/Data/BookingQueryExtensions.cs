@@ -12,7 +12,7 @@ internal static class BookingQueryExtensions
         public IQueryable<BookingEntity> AccessibleBy(
             MembershipSnapshot actor, TenantPermission permission, BookingAccessScope scope, DateTime at)
         {
-            var binding = permission.BindingFor("booking", scope.ToString());
+            var binding = permission.BindingFor(AuthorizationResource.Booking, scope.ToString());
             if (binding is null || !actor.HasPermission(permission))
                 return bookings.Where(_ => false);
 

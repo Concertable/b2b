@@ -78,8 +78,8 @@ internal sealed class MembershipService : IMembershipService
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new ChangeMemberRolesError.NotPermitted();
-        var authorization = await authorizer.AuthorizeAsync(
-            tenantId, TenantPermission.MembersManageRoles, ownerRequired: true, ct);
+        var authorization = await authorizer.AuthorizeOwnerAsync(
+            tenantId, TenantPermission.MembersManageRoles, ct);
         if (!authorization.TryGetValue(out var actor))
             return new ChangeMemberRolesError.NotPermitted();
 
@@ -115,8 +115,8 @@ internal sealed class MembershipService : IMembershipService
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new RemoveMemberError.NotPermitted();
-        if ((await authorizer.AuthorizeAsync(
-                tenantId, TenantPermission.MembersRemove, ownerRequired: true, ct)).IsFailure)
+        if ((await authorizer.AuthorizeOwnerAsync(
+                tenantId, TenantPermission.MembersRemove, ct)).IsFailure)
             return new RemoveMemberError.NotPermitted();
 
         var member = await repository.FindMembershipAsync(tenantId, userId, ct);

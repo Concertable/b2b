@@ -12,7 +12,7 @@ internal static class ConcertQueryExtensions
         public IQueryable<ConcertEntity> AccessibleBy(
             MembershipSnapshot actor, TenantPermission permission, ConcertAccessScope? scope, DateTime at)
         {
-            var binding = permission.BindingFor("concert", scope?.ToString());
+            var binding = permission.BindingFor(AuthorizationResource.Concert, scope?.ToString());
             if (binding is null || !actor.HasPermission(permission))
                 return concerts.Where(_ => false);
 

@@ -12,7 +12,7 @@ internal static class ContractQueryExtensions
         public IQueryable<ContractEntity> AccessibleBy(
             MembershipSnapshot actor, TenantPermission permission, ContractAccessScope scope, DateTime at)
         {
-            var binding = permission.BindingFor("contract", scope.ToString());
+            var binding = permission.BindingFor(AuthorizationResource.Contract, scope.ToString());
             if (binding is null || !actor.HasPermission(permission) || binding.Policy != ResourcePolicy.ContractGrant)
                 return contracts.Where(_ => false);
 

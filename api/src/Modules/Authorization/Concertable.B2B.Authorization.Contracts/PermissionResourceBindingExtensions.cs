@@ -4,11 +4,10 @@ public static class PermissionResourceBindingExtensions
 {
     extension(TenantPermission permission)
     {
-        public PermissionResourceBinding? BindingFor(string resource, string? facet) =>
+        public PermissionResourceBinding? BindingFor(AuthorizationResource resource, string? scope) =>
             AuthorizationCatalog.Permissions.TryGetValue(permission, out var descriptor)
                 ? descriptor.ResourceBindings.SingleOrDefault(binding =>
-                    string.Equals(binding.Resource, resource, StringComparison.Ordinal)
-                    && binding.Facet == facet)
+                    binding.Resource == resource && binding.Scope == scope)
                 : null;
     }
 }

@@ -90,7 +90,7 @@ internal sealed class InvitationService : IInvitationService
             return new InviteMemberError.TenantNotFound();
 
         var authorization = await authorizer.AuthorizeAsync(
-            tenantId, TenantPermission.MembersInvite, ownerRequired: false, ct);
+            tenantId, TenantPermission.MembersInvite, ct);
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
         if (!authorization.TryGetValue(out var actor) || selectedRoles is null
             || !await CanAssignAsync(actor, selectedRoles, ct))
@@ -135,7 +135,7 @@ internal sealed class InvitationService : IInvitationService
         if (invitation is null || invitation.TenantId != tenantId)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
         if ((await authorizer.AuthorizeAsync(
-                tenantId, TenantPermission.MembersInvite, ownerRequired: false, ct)).IsFailure)
+                tenantId, TenantPermission.MembersInvite, ct)).IsFailure)
             return new RevokeInvitationError.NotPermitted();
         return invitation.Revoke().MapError(error => error.ToRevokeInvitationError());
     }

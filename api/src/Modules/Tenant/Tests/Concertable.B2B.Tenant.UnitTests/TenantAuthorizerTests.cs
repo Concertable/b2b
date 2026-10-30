@@ -28,20 +28,20 @@ public sealed class TenantAuthorizerTests
     }
 
     [Fact]
-    public async Task Authorize_UnchangedOwner_ReturnsTheLockedSnapshot()
+    public async Task AuthorizeOwner_UnchangedOwner_ReturnsTheLockedSnapshot()
     {
-        var result = await authorizer.AuthorizeAsync(
-            owner.TenantId, TenantPermission.MembersManageRoles, ownerRequired: true);
+        var result = await authorizer.AuthorizeOwnerAsync(
+            owner.TenantId, TenantPermission.MembersManageRoles);
 
         Assert.True(result.TryGetValue(out var actor));
         Assert.Same(owner, actor);
     }
 
     [Fact]
-    public async Task Authorize_AnotherTenant_IsDeniedWithoutLocking()
+    public async Task AuthorizeOwner_AnotherTenant_IsDeniedWithoutLocking()
     {
-        var result = await authorizer.AuthorizeAsync(
-            Guid.NewGuid(), TenantPermission.MembersManageRoles, ownerRequired: true);
+        var result = await authorizer.AuthorizeOwnerAsync(
+            Guid.NewGuid(), TenantPermission.MembersManageRoles);
 
         Assert.True(result.IsFailure);
         memberships.Verify(reads => reads.LockIfUnchangedAsync(
@@ -55,7 +55,7 @@ public sealed class TenantAuthorizerTests
             .ReturnsAsync((MembershipSnapshot?)null);
 
         var result = await authorizer.AuthorizeAsync(
-            owner.TenantId, TenantPermission.TenantSettingsEdit, ownerRequired: false);
+            owner.TenantId, TenantPermission.TenantSettingsEdit);
 
         Assert.True(result.IsFailure);
     }
@@ -72,21 +72,21 @@ public sealed class TenantAuthorizerTests
             .ReturnsAsync(staff);
 
         var result = await authorizer.AuthorizeAsync(
-            owner.TenantId, TenantPermission.MembersInvite, ownerRequired: false);
+            owner.TenantId, TenantPermission.MembersInvite);
 
         Assert.True(result.IsFailure);
     }
 
     [Fact]
-    public async Task Authorize_OwnerRequiredWithoutTheProtectedOwnerRole_IsDenied()
+    public async Task AuthorizeOwner_WithoutTheProtectedOwnerRole_IsDeniedWhileAuthorizeAllows()
     {
         roles.Setup(value => value.HasProtectedOwnerAsync(
                 owner.TenantId, owner.MembershipId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
+        Assert.True((await authorizer.AuthorizeOwnerAsync(
+            owner.TenantId, TenantPermission.MembersRemove)).IsFailure);
         Assert.True((await authorizer.AuthorizeAsync(
-            owner.TenantId, TenantPermission.MembersRemove, ownerRequired: true)).IsFailure);
-        Assert.True((await authorizer.AuthorizeAsync(
-            owner.TenantId, TenantPermission.MembersInvite, ownerRequired: false)).IsSuccess);
+            owner.TenantId, TenantPermission.MembersInvite)).IsSuccess);
     }
 }

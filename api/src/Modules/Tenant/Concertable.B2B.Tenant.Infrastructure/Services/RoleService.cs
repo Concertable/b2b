@@ -80,7 +80,7 @@ internal sealed class RoleService : IRoleService
                 .Select(item => new PermissionMetadataDto(
                     item.Permission.Value, item.Label, item.Category,
                     [.. item.ResourceBindings.Select(binding => new ResourceBinding(
-                        binding.Resource, binding.Facet, binding.Policy.WireName, binding.RequiresScopes))],
+                        binding.Resource.WireName, binding.Scope, binding.Policy.WireName, binding.RequiresScopes))],
                     [.. item.AssignableAudiences.Select(audience => audience.ToString())],
                     item.OwnerOnly))
                 .ToArray();
@@ -96,8 +96,8 @@ internal sealed class RoleService : IRoleService
     {
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || (await authorizer.AuthorizeAsync(
-                tenantId, TenantPermission.MembersManageRoles, ownerRequired: true, ct)).IsFailure)
+        if (tenant is null || (await authorizer.AuthorizeOwnerAsync(
+                tenantId, TenantPermission.MembersManageRoles, ct)).IsFailure)
             return new CreateRoleError.NotPermitted();
         if (!TryParseGrants(request.Permissions, out var grants)
             || !ValidName(request.Name))
@@ -122,8 +122,8 @@ internal sealed class RoleService : IRoleService
     {
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || (await authorizer.AuthorizeAsync(
-                tenantId, TenantPermission.MembersManageRoles, ownerRequired: true, ct)).IsFailure)
+        if (tenant is null || (await authorizer.AuthorizeOwnerAsync(
+                tenantId, TenantPermission.MembersManageRoles, ct)).IsFailure)
             return new UpdateRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
         if (role is null)
@@ -154,8 +154,8 @@ internal sealed class RoleService : IRoleService
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new RetireRoleError.NotPermitted();
-        var authorization = await authorizer.AuthorizeAsync(
-            tenantId, TenantPermission.MembersManageRoles, ownerRequired: true, ct);
+        var authorization = await authorizer.AuthorizeOwnerAsync(
+            tenantId, TenantPermission.MembersManageRoles, ct);
         if (!authorization.TryGetValue(out var actor))
             return new RetireRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
