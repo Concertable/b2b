@@ -1,3 +1,4 @@
+using Concertable.B2B.IntegrationTests.Fixtures;
 using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
@@ -38,7 +39,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var client = CreateOwningArtistClient(concert.ArtistId);
-        var recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var recipientTenantId = fixture.SeedState.VenueManager2.TenantId;
         var request = new
         {
             requestId = Guid.NewGuid(),
@@ -66,7 +67,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var owner = CreateOwningArtistClient(concert.ArtistId);
-        var recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var recipientTenantId = fixture.SeedState.VenueManager2.TenantId;
         var share = await owner.PostAsync(
             $"/api/concert/{concert.Id}/summary-shares",
             new
@@ -120,7 +121,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
         var membership = fixture.SeedState.Memberships.Single(value =>
-            value.TenantId == TenantOf(fixture.SeedState.VenueManager2.Id)
+            value.TenantId == fixture.SeedState.VenueManager2.TenantId
             && value.UserId == fixture.SeedState.VenueManager2.Id);
 
         var revoke = await client.DeleteAsync(
@@ -144,9 +145,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     public async Task ShareSummary_WithInvalidValidity_DoesNotRevokeExpiredShare()
     {
         var issuer = fixture.SeedState.VenueManager1;
-        var issuerTenantId = TenantOf(issuer.Id);
+        var issuerTenantId = issuer.TenantId;
         var concert = fixture.SeedState.Concerts.First(value => value.VenueTenantId == issuerTenantId);
-        var recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var recipientTenantId = fixture.SeedState.VenueManager2.TenantId;
         var seeded = await fixture.AddExpiredSummaryShareAsync(
             concert.Id,
             issuerTenantId,
@@ -185,7 +186,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         var request = new
         {
             requestId = Guid.NewGuid(),
-            recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id),
+            recipientTenantId = fixture.SeedState.VenueManager2.TenantId,
             recipientMembershipId = (Guid?)null,
             expectedAccessVersion = concert.AccessVersion,
             validUntil = (DateTime?)null,
@@ -330,7 +331,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     [Fact]
     public async Task AssignAndRemoveMember_ChangesOnlyThePrincipalMembershipGrant()
     {
-        var venueTenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
+        var venueTenantId = fixture.SeedState.VenueManager1.TenantId;
         var concert = fixture.SeedState.Concerts.First(value => value.VenueTenantId == venueTenantId);
         var client = CreateOwningVenueClient(concert.VenueId);
         var membership = fixture.SeedState.Memberships.Single(value =>
@@ -446,10 +447,10 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
 
     private async Task<AssignmentRace> ArrangeAssignedStaffAsync()
     {
-        var venueTenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
-        var booking = fixture.SeedState.Bookings.First(value =>
-            value.VenueTenantId == venueTenantId && value.State == fixture.SeedState.ConfirmedBooking.State);
-        var concert = fixture.SeedState.ConcertFor(booking);
+        var venueTenantId = fixture.SeedState.VenueManager1.TenantId;
+        var confirmedState = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking).State;
+        var concert = fixture.SeedState.Concerts.First(value =>
+            value.VenueTenantId == venueTenantId && value.State == confirmedState);
         var owner = CreateOwningVenueClient(concert.VenueId);
         var staffUser = fixture.SeedState.VenueManager3;
         var membershipId = fixture.SeedState.Memberships.Single(value =>
@@ -498,9 +499,6 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         HttpClient Staff,
         Guid MembershipId,
         long AssignedAccessVersion);
-
-    private Guid TenantOf(Guid userId) =>
-        fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == userId).Id;
 
     private HttpClient CreateOwningVenueClient(int venueId) =>
         fixture.CreateClient(fixture.SeedState.VenueManagers.Single(manager =>

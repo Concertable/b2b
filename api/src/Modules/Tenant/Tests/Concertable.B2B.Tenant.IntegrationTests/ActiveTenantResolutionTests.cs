@@ -28,8 +28,6 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private Guid TenantOf(Guid userId) => fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
-
     private HttpClient ClientWithTenant(Guid tenantId)
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
@@ -46,15 +44,15 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.OK);
         var org = await response.Content.ReadAsync<TenantDetails>();
-        Assert.Equal(TenantOf(manager.Id), org!.Id);
+        Assert.Equal(manager.TenantId, org!.Id);
     }
 
     [Fact]
     public async Task MultiMembership_HeaderSwitchesTheActiveTenant()
     {
         var manager = fixture.SeedState.VenueManager1;
-        var tenantA = TenantOf(manager.Id);
-        var tenantB = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var tenantA = manager.TenantId;
+        var tenantB = fixture.SeedState.VenueManager2.TenantId;
         await fixture.AddOwnerMembershipAsync(tenantB, manager.Id);
 
         var orgA = await (await ClientWithTenant(tenantA).GetAsync("/api/organization")).Content.ReadAsync<TenantDetails>();
@@ -68,7 +66,7 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
     public async Task MultiMembership_NoHeader_FailsClosed()
     {
         var manager = fixture.SeedState.VenueManager1;
-        await fixture.AddOwnerMembershipAsync(TenantOf(fixture.SeedState.VenueManager2.Id), manager.Id);
+        await fixture.AddOwnerMembershipAsync(fixture.SeedState.VenueManager2.TenantId, manager.Id);
 
         // No header + two memberships → no active tenant → the org read sees nothing.
         var response = await fixture.CreateClient(manager).GetAsync("/api/organization");
@@ -80,7 +78,7 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
     public async Task HeaderForUnownedTenant_FailsClosed()
     {
         // VenueManager1 has no membership in VenueManager2's tenant — naming it in the header resolves nothing.
-        var foreignTenant = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var foreignTenant = fixture.SeedState.VenueManager2.TenantId;
 
         var response = await ClientWithTenant(foreignTenant).GetAsync("/api/organization");
 
@@ -121,7 +119,7 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         var me = await response.Content.ReadAsync<MeView>();
         var membership = Assert.Single(me!.Memberships);
-        Assert.Equal(TenantOf(manager.Id), membership.TenantId);
+        Assert.Equal(manager.TenantId, membership.TenantId);
         Assert.Equal(TenantApiFixture.RoleId(membership.TenantId, "Owner"), Assert.Single(membership.Roles).Id);
         Assert.Equal([TenantBusinessActivityKind.VenueOperator], membership.BusinessActivities);
     }

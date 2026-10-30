@@ -27,8 +27,8 @@ public sealed class TenantScopingLifecycleTests : IAsyncLifetime
         await AcceptAndConfirmAsync(venueClient, applicationId);
 
         var command = fixture.PaymentTransport.SingleCommand<CaptureEscrowCommand>();
-        Assert.Equal(TenantOf(fixture.SeedState.VenueManager1.Id), command.PayerId);
-        Assert.Equal(TenantOf(fixture.SeedState.ArtistManager1.Id), command.PayeeId);
+        Assert.Equal(fixture.SeedState.VenueManager1.TenantId, command.PayerId);
+        Assert.Equal(fixture.SeedState.ArtistManager1.TenantId, command.PayeeId);
         var concert = await GetConcertAsync(venueClient, applicationId);
         var artistClient = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         await (await artistClient.GetAsync($"/api/concert/{concert.Id}/operations"))
@@ -76,9 +76,6 @@ public sealed class TenantScopingLifecycleTests : IAsyncLifetime
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
         await fixture.PaymentSimulator.SendWebhookAsync();
     }
-
-    private Guid TenantOf(Guid userId) =>
-        fixture.SeedState.Tenants.Single(value => value.CreatedByUserId == userId).Id;
 
     private async Task<ConcertBoundaryResponse> GetConcertAsync(
         HttpClient client,

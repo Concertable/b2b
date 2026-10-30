@@ -1,3 +1,4 @@
+using Concertable.B2B.IntegrationTests.Fixtures;
 using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Contracts.Enums;
@@ -40,7 +41,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         var context = services.GetRequiredService<ConcertPrivilegedDbContext>();
         var reads = services.GetRequiredService<IConcertPrivilegedReadRepository>();
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
-        var tenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var tenantId = fixture.SeedState.VenueManager2.TenantId;
         var actor = await ActorAsync(
             context, tenantId, fixture.SeedState.VenueManager2.Id,
             TenantPermission.OperationsView, ResourceCoverage.AssignedResources);
@@ -75,7 +76,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         var invoiceReads = services.GetRequiredService<IInvoicePrivilegedReadRepository>();
         var invoice = await context.Invoices.AsNoTracking()
             .SingleAsync(candidate => candidate.ConcertId == concert.Id);
-        var tenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var tenantId = fixture.SeedState.VenueManager2.TenantId;
         var actor = await ActorAsync(
             context, tenantId, fixture.SeedState.VenueManager2.Id,
             TenantPermission.SettlementView, ResourceCoverage.TenantResources);
@@ -114,7 +115,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<ConcertPrivilegedDbContext>();
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
-        var tenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var tenantId = fixture.SeedState.VenueManager2.TenantId;
         var actor = await ActorAsync(
             context, tenantId, fixture.SeedState.VenueManager2.Id,
             TenantPermission.OperationsView, ResourceCoverage.AssignedResources);
@@ -161,9 +162,6 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
             authority.PermissionVersion, authority.RolePolicyVersion,
             ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(permission, coverage));
     }
-
-    private Guid TenantOf(Guid userId) =>
-        fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == userId).Id;
 
     private static Task<bool> IsVisibleAsync(
         ConcertPrivilegedDbContext context, int id, MembershipSnapshot actor, DateTimeOffset now) =>
