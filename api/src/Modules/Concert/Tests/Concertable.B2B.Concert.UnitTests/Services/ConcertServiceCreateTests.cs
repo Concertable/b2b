@@ -69,8 +69,7 @@ public sealed class ConcertServiceCreateTests
         service = new ConcertService(
             Mock.Of<IConcertRepository>(),
             Mock.Of<IConcertPrivilegedReadRepository>(),
-            Mock.Of<IResourceAuthorization>(),
-            Mock.Of<IAuthorizationContext>(),
+            Mock.Of<IConcertAuthorizer>(),
             repository.Object,
             unitOfWork.Object,
             Mock.Of<IConcertReadRepository>(),
@@ -87,7 +86,6 @@ public sealed class ConcertServiceCreateTests
             Mock.Of<ITenantResolver>(),
             Mock.Of<ITenantContext>(),
             Mock.Of<IMembershipContext>(),
-            Mock.Of<IMembershipResolver>(),
             Mock.Of<ITransactionRunner>(),
             Mock.Of<IResourceAccessContext>(),
             Mock.Of<ILogger<ConcertService>>());

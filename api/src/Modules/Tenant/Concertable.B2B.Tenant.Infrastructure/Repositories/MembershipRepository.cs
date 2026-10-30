@@ -86,6 +86,18 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         return revision == AuthorizationCatalog.Revision ? current : null;
     }
 
+    public async Task<bool> TryLockUnchangedAsync(
+        IReadOnlyCollection<TenantMembershipEntity> members,
+        CancellationToken ct = default)
+    {
+        var locked = await GetSnapshotsByIdsForUpdateAsync([.. members.Select(member => member.Id)], ct);
+        return members.All(member => locked.Any(snapshot =>
+            snapshot.MembershipId == member.Id
+            && snapshot.TenantId == member.TenantId
+            && snapshot.UserId == member.UserId
+            && snapshot.PermissionVersion == member.PermissionVersion));
+    }
+
     public Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
         Guid membershipId, CancellationToken ct = default) =>
         ReadWithFenceAsync(async readCt =>

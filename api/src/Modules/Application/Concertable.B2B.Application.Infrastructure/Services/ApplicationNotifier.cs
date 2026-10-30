@@ -23,6 +23,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly IOpportunityPrivilegedReadRepository opportunityRepository;
     private readonly IVenuePrivilegedReadRepository venueRepository;
     private readonly ITenantModule tenantModule;
+    private readonly IMembershipReadRepository memberships;
     private readonly ITransactionRunner transactionRunner;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
 
@@ -34,6 +35,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         IOpportunityPrivilegedReadRepository opportunityRepository,
         IVenuePrivilegedReadRepository venueRepository,
         ITenantModule tenantModule,
+        IMembershipReadRepository memberships,
         ITransactionRunner transactionRunner,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork)
     {
@@ -44,6 +46,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         this.opportunityRepository = opportunityRepository;
         this.venueRepository = venueRepository;
         this.tenantModule = tenantModule;
+        this.memberships = memberships;
         this.transactionRunner = transactionRunner;
         this.unitOfWork = unitOfWork;
     }
@@ -67,8 +70,7 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
                 .ThenBy(membership => membership.UserId);
             foreach (var candidate in eligible)
             {
-                var recipientOption = await tenantModule.ResolveMembershipSnapshotAsync(candidate);
-                if (!recipientOption.TryGetValue(out var recipient)
+                if (await memberships.LockIfUnchangedAsync(candidate) is not { } recipient
                     || !recipient.HasPermission(TenantPermission.ApplicationsDecide))
                     continue;
 

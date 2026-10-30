@@ -88,24 +88,9 @@ internal sealed class MessageRepository : IMessageRepository
 
     private IQueryable<MessageEntity> ReadableMessages(MembershipSnapshot actor)
     {
-        var binding = ResourcePolicyBinding.FromCatalog(
-            TenantPermission.MessagesRead, ResourceKind.Conversation, ResourceFacet.Read);
-        if (binding.Policy != ResourcePolicy.ConversationGrant || binding.RequiredScopes.IsDefaultOrEmpty)
-            throw new InvalidOperationException("Conversation Read binding is unsupported.");
-        var now = clock.GetUtcNow().UtcDateTime;
-        var visible = context.Messages.Where(NotHidden);
-        foreach (var requiredScope in binding.RequiredScopes)
-        {
-            var scope = Enum.Parse<ConversationAccessScope>(requiredScope);
-            var readable = ConversationGrantPolicy.Eligible(
-                context.ConversationAccessGrants.AsNoTracking(),
-                actor,
-                binding.Permission,
-                scope,
-                now);
-            visible = visible.Where(message =>
-                readable.Any(grant => grant.ResourceId == message.ConversationId));
-        }
-        return visible;
+        var readable = context.Conversations.AsNoTracking().AccessibleBy(
+            actor, TenantPermission.MessagesRead, ConversationAccessScope.Read, clock.GetUtcNow().UtcDateTime);
+        return context.Messages.Where(NotHidden)
+            .Where(message => readable.Any(conversation => conversation.Id == message.ConversationId));
     }
 }

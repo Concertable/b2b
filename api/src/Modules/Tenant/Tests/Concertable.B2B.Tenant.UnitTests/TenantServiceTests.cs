@@ -23,9 +23,8 @@ public sealed class TenantServiceTests
     private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<IMembershipContext> membershipContext;
-    private readonly Mock<IMembershipResolver> membershipResolver;
+    private readonly Mock<IMembershipReadRepository> membershipReads;
     private readonly Mock<IRoleRepository> roles;
-    private readonly Mock<IAuthorizationContext> authorizationContext;
     private readonly TenantService service;
 
     public TenantServiceTests()
@@ -35,19 +34,16 @@ public sealed class TenantServiceTests
         this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
         this.membershipContext = new Mock<IMembershipContext>();
-        this.membershipResolver = new Mock<IMembershipResolver>();
+        this.membershipReads = new Mock<IMembershipReadRepository>();
         var actorId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         this.membershipContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
                 userId, 1, 1, AuthorizationCatalog.Presets["Owner"].Permissions.ToImmutableDictionary()));
-        this.membershipResolver.Setup(resolver => resolver.ResolveSnapshotAsync(
+        this.membershipReads.Setup(reads => reads.LockIfUnchangedAsync(
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => (Option<MembershipSnapshot>)expected);
+            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
         this.roles = new Mock<IRoleRepository>();
-        this.authorizationContext = new Mock<IAuthorizationContext>();
-        this.authorizationContext.SetupGet(value => value.IsActive).Returns(true);
-        this.authorizationContext.SetupGet(value => value.UnitOfWorkId).Returns(Guid.NewGuid());
         this.repository.Setup(value => value.GetExistingIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
@@ -61,24 +57,19 @@ public sealed class TenantServiceTests
         this.roles.Setup(value => value.HasProtectedOwnerAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        var authority = new TenantAuthorityResolver(repository.Object, membershipRepository.Object,
-            roles.Object, invitationRepository.Object, membershipContext.Object, authorizationContext.Object,
-            TimeProvider.System);
+        var authorizer = new TenantAuthorizer(membershipContext.Object, membershipReads.Object, roles.Object);
         this.service = new TenantService(
             repository.Object,
             membershipRepository.Object,
             roles.Object,
             invitationRepository.Object,
             tenantContext.Object,
-            membershipContext.Object,
-            membershipResolver.Object,
             new VatPolicy(new UkVatCalculator()),
             new ImmediateUnitOfWorkBehavior(),
             TimeProvider.System,
             [],
             Mock.Of<ICurrentUser>(),
-            authority,
-            authorizationContext.Object);
+            authorizer);
     }
 
     private static TenantEntity Bare() =>
@@ -151,9 +142,9 @@ public sealed class TenantServiceTests
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<MembershipSnapshot>());
+        membershipReads.Setup(reads => reads.LockIfUnchangedAsync(
+                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MembershipSnapshot?)null);
 
         var result = await service.UpdateAsync(null!);
 
@@ -168,9 +159,9 @@ public sealed class TenantServiceTests
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<MembershipSnapshot>());
+        membershipReads.Setup(reads => reads.LockIfUnchangedAsync(
+                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MembershipSnapshot?)null);
 
         var result = await service.DeleteAsync();
 

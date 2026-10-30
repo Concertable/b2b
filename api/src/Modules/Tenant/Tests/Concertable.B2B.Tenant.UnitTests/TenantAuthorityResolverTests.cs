@@ -30,22 +30,13 @@ public sealed class TenantAuthorityResolverTests
     }
 
     [Fact]
-    public async Task ResolveMany_AfterCheckedSelfDowngradeUsesOriginalActor()
+    public async Task ResolveMany_ReturnsOnlyExistingRequestedTenants()
     {
         var fixture = new Fixture();
-        Assert.NotNull(await fixture.Authority.AuthorizeAdministrationAsync(
-            fixture.Tenant.Id, TenantPermission.MembersManageRoles, true));
-        Assert.True(await fixture.Authority.TrackMembershipAsync(fixture.Member));
-        var before = fixture.Member.PermissionVersion;
-        fixture.Member.ReplaceRoles([Guid.NewGuid()], fixture.Member.Id, DateTime.UtcNow);
-        fixture.Authority.RecordMembershipVersion(fixture.Member, before);
-        fixture.CurrentPermissions = ImmutableDictionary<TenantPermission, ResourceAudience>.Empty;
 
-        var resolved = await fixture.Resolver.ResolveManyAsync(fixture.Original, [fixture.Tenant.Id]);
+        var existing = await fixture.Resolver.ResolveManyAsync(fixture.Original, [fixture.Tenant.Id, Guid.NewGuid()]);
 
-        Assert.True(resolved.TryGetValue(out var value));
-        Assert.True(value.Actor.HasPermission(TenantPermission.MembersManageRoles));
-        Assert.Contains(fixture.Tenant.Id, value.ExistingTenantIds);
+        Assert.Equal([fixture.Tenant.Id], existing);
     }
 
     [Fact]
@@ -154,7 +145,7 @@ public sealed class TenantAuthorityResolverTests
             Authority = new TenantAuthorityResolver(tenants.Object, memberships.Object,
                 roles.Object, invitations.Object, membershipContext.Object, authorizationContext.Object,
                 TimeProvider.System);
-            Resolver = new TenantResolver(tenants.Object, memberships.Object, Authority);
+            Resolver = new TenantResolver(tenants.Object, memberships.Object);
         }
 
         public TenantEntity Tenant { get; }

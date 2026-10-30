@@ -15,15 +15,13 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
 {
     private readonly BookingDbContext context;
     private readonly IMembershipContext membership;
-    private readonly IPermissionAuthorization permissions;
     private readonly TimeProvider clock;
 
-    public BookingRepository(BookingDbContext context, IMembershipContext membership,
-        IPermissionAuthorization permissions, TimeProvider clock) : base(context)
+    public BookingRepository(BookingDbContext context, IMembershipContext membership, TimeProvider clock)
+        : base(context)
     {
         this.context = context;
         this.membership = membership;
-        this.permissions = permissions;
         this.clock = clock;
     }
 
@@ -33,21 +31,21 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
     public async Task<BookingEntity?> GetSummaryByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(ResourceFacet.Summary, ct)).SingleOrDefaultAsync(
+        await Accessible(BookingAccessScope.Summary).SingleOrDefaultAsync(
             booking => booking.ApplicationId == applicationId,
             ct);
 
     public async Task<BookingEntity?> GetOperationsByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(ResourceFacet.Operations, ct)).SingleOrDefaultAsync(
+        await Accessible(BookingAccessScope.Operations).SingleOrDefaultAsync(
             booking => booking.ApplicationId == applicationId,
             ct);
 
     public async Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(ResourceFacet.Summary, ct))
+        await Accessible(BookingAccessScope.Summary)
             .Where(booking => booking.ApplicationId == applicationId)
             .Select(booking => (int?)booking.Id)
             .SingleOrDefaultAsync(ct);
@@ -55,7 +53,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
     public async Task<IReadOnlyList<BookingEntity>> GetByApplicationIdsAsync(
         IReadOnlyCollection<int> applicationIds,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(ResourceFacet.Summary, ct))
+        await Accessible(BookingAccessScope.Summary)
             .Where(booking => applicationIds.Contains(booking.ApplicationId))
             .ToListAsync(ct);
 
@@ -86,7 +84,7 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
         Guid artistTenantId,
         DateTime now,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(ResourceFacet.Operations, ct)).CountAsync(
+        await Accessible(BookingAccessScope.Operations).CountAsync(
             booking =>
                 booking.ArtistTenantId == artistTenantId &&
                 booking.EndDate > now &&
@@ -95,18 +93,20 @@ internal sealed class BookingRepository : Repository<BookingEntity>, IBookingRep
                  booking.State == BookingState.ConfirmationFailed),
             ct);
 
-    private async Task<IQueryable<BookingEntity>> WithFacetAsync(ResourceFacet facet, CancellationToken ct)
-    {
-        var actor = membership.Membership;
-        if (actor is null || await permissions.CheckAsync(TenantPermission.OperationsView, ct: ct)
-            != AuthorizationDecision.Allowed)
-            return context.Bookings.Where(_ => false);
+    public Task<bool> IsAccessibleAsync(
+        int bookingId,
+        TenantPermission permission,
+        BookingAccessScope scope,
+        CancellationToken ct = default) =>
+        Accessible(permission, scope).AnyAsync(booking => booking.Id == bookingId, ct);
 
-        var binding = ResourcePolicyBinding.FromCatalog(
-            TenantPermission.OperationsView, ResourceKind.Booking, facet);
-        return BookingAuthorizationPolicy.VisibleBookings(
-            context.Bookings.IgnoreQueryFilters([TenantFilters.Key]),
-            context.BookingAccessGrants.IgnoreQueryFilters([TenantFilters.Key]),
-            context.MembershipAuthority.AsNoTracking(), actor, binding, clock.GetUtcNow().UtcDateTime);
-    }
+    private IQueryable<BookingEntity> Accessible(BookingAccessScope scope) =>
+        Accessible(TenantPermission.OperationsView, scope);
+
+    private IQueryable<BookingEntity> Accessible(TenantPermission permission, BookingAccessScope scope) =>
+        membership.Membership is { } actor
+            ? context.Bookings.IgnoreQueryFilters([TenantFilters.Key])
+                .AccessibleBy(actor, permission, scope, clock.GetUtcNow().UtcDateTime)
+                .WhereCurrentMember(context.MembershipAuthority.AsNoTracking(), actor)
+            : context.Bookings.Where(_ => false);
 }

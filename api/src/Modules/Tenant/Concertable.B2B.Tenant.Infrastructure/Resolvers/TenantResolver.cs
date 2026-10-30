@@ -1,7 +1,6 @@
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Contracts;
-using Concertable.B2B.Tenant.Infrastructure.Authorization;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Resolvers;
 
@@ -9,14 +8,11 @@ internal sealed class TenantResolver : ITenantResolver
 {
     private readonly ITenantRepository tenantRepository;
     private readonly IMembershipRepository membershipRepository;
-    private readonly TenantAuthorityResolver authority;
 
-    public TenantResolver(ITenantRepository tenantRepository, IMembershipRepository membershipRepository,
-        TenantAuthorityResolver authority)
+    public TenantResolver(ITenantRepository tenantRepository, IMembershipRepository membershipRepository)
     {
         this.tenantRepository = tenantRepository;
         this.membershipRepository = membershipRepository;
-        this.authority = authority;
     }
 
     public async Task<Option<TenantResolution>> ResolveAsync(
@@ -40,7 +36,7 @@ internal sealed class TenantResolver : ITenantResolver
         return new TenantResolution(actor, existingTenantIds.Contains(targetTenantId), targetMembership);
     }
 
-    public async Task<Option<TenantSetResolution>> ResolveManyAsync(
+    public async Task<IReadOnlySet<Guid>> ResolveManyAsync(
         MembershipSnapshot expectedActor,
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default)
@@ -48,8 +44,6 @@ internal sealed class TenantResolver : ITenantResolver
         var requestedTenantIds = tenantIds.Distinct().ToHashSet();
         var lockSet = requestedTenantIds.Append(expectedActor.TenantId).Order().ToArray();
         var existingTenantIds = await tenantRepository.GetExistingIdsForShareAsync(lockSet, ct);
-        var current = await authority.ResolveForUnitOfWorkAsync(expectedActor, ct);
-        return !current.TryGetValue(out var actor) ? null : new TenantSetResolution(actor.Actor,
-            existingTenantIds.Where(requestedTenantIds.Contains).ToHashSet());
+        return existingTenantIds.Where(requestedTenantIds.Contains).ToHashSet();
     }
 }

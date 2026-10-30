@@ -10,7 +10,7 @@ public interface ITenantResolver
         Guid? targetMembershipId = null,
         CancellationToken ct = default);
 
-    Task<Option<TenantSetResolution>> ResolveManyAsync(
+    Task<IReadOnlySet<Guid>> ResolveManyAsync(
         MembershipSnapshot expectedActor,
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default);

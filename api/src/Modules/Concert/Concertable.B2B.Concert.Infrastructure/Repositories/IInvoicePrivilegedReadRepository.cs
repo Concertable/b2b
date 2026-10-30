@@ -6,9 +6,9 @@ namespace Concertable.B2B.Concert.Infrastructure.Repositories;
 internal interface IInvoicePrivilegedReadRepository
 {
     Task<InvoiceEntity?> GetByIdAsync(
-        int id, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        int id, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default);
     Task<InvoiceEntity?> GetByConcertIdAsync(
-        int concertId, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        int concertId, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default);
 }

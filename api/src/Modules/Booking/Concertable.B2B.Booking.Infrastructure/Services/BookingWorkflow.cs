@@ -5,6 +5,7 @@ using Concertable.B2B.Booking.Application.Mappers;
 using Concertable.B2B.Booking.Application.Models;
 using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Contracts;
+using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Factories;
 using Concertable.B2B.Booking.Domain.Financial;
@@ -43,9 +44,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
     private readonly IMembershipContext membership;
-    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantResolver tenantResolver;
-    private readonly IResourceAuthorization resources;
+    private readonly IBookingAuthorizer authorizer;
     private readonly ITransactionRunner transactionRunner;
 
     public BookingWorkflow(
@@ -64,9 +64,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
         IMembershipContext membership,
-        IAuthorizationContext authorizationContext,
         ITenantResolver tenantResolver,
-        IResourceAuthorization resources,
+        IBookingAuthorizer authorizer,
         ITransactionRunner transactionRunner)
     {
         this.bookingRepository = bookingRepository;
@@ -84,9 +83,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.membership = membership;
-        this.authorizationContext = authorizationContext;
         this.tenantResolver = tenantResolver;
-        this.resources = resources;
+        this.authorizer = authorizer;
         this.transactionRunner = transactionRunner;
     }
 
@@ -138,10 +136,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
         => await privilegedUnitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            if (await resources.CheckAsync(new AuthorizationRequest(
-                TenantPermission.BookingsCancel,
-                ResourceAddress.Create(ResourceKind.Booking, bookingId),
-                ResourceFacet.Operations), ct) != AuthorizationDecision.Allowed)
+            if (!await bookingRepository.IsAccessibleAsync(
+                    bookingId, TenantPermission.BookingsCancel, BookingAccessScope.Operations, ct))
                 return (UnitResult<CancelBookingError>)new CancelBookingError.NotPermitted();
 
             if (await privilegedRepository.GetStateByIdAsync(bookingId, ct)
@@ -164,20 +160,14 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<UnitResult<CancelBookingError>>(
-            () => new CancelBookingError.NotPermitted());
         var parties = await privilegedRepository.GetPartyTenantIdsAsync(bookingId, ct);
         if (parties.Count == 0)
             return new CancelBookingError.BookingNotFound(bookingId);
-        var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.ExistingTenantIds.SetEquals(parties)
-            || await resources.RequireAsync(new AuthorizationRequest(
-                TenantPermission.BookingsCancel,
-                ResourceAddress.Create(ResourceKind.Booking, bookingId),
-                ResourceFacet.Operations), ct) != AuthorizationDecision.Allowed)
+        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        if (!existingParties.SetEquals(parties)
+            || (await authorizer.AuthorizeAsync(
+                bookingId, TenantPermission.BookingsCancel, BookingAccessScope.Operations, ct)).IsFailure)
             return new CancelBookingError.NotPermitted();
-        var actor = resolution.Actor;
 
         var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);
         if (booking is null)

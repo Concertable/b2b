@@ -67,12 +67,10 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         var actor = Snapshot(fixture.Memberships.First());
         var targetTenantId = fixture.Tenants.First(tenant => tenant.Id != actor.TenantId).Id;
 
-        var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
+        var existing = await fixture.ExecuteResolutionAsync((resolver, ct) =>
             resolver.ResolveManyAsync(actor, [targetTenantId], ct));
 
-        Assert.True(resolved.TryGetValue(out var resolution));
-        Assert.True(actor.HasSameAuthorityAs(resolution.Actor));
-        Assert.True(resolution.ExistingTenantIds.SetEquals([targetTenantId]));
+        Assert.True(existing.SetEquals([targetTenantId]));
     }
 
     [Fact]
@@ -82,25 +80,22 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         var otherTenantId = fixture.Tenants.First(value => value.Id != actor.TenantId).Id;
         Guid[] requested = [actor.TenantId, otherTenantId, actor.TenantId, Guid.NewGuid()];
 
-        var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
+        var existing = await fixture.ExecuteResolutionAsync((resolver, ct) =>
             resolver.ResolveManyAsync(actor, requested, ct));
 
-        Assert.True(resolved.TryGetValue(out var resolution));
-        Assert.True(actor.HasSameAuthorityAs(resolution.Actor));
-        Assert.True(resolution.ExistingTenantIds.SetEquals([actor.TenantId, otherTenantId]));
+        Assert.True(existing.SetEquals([actor.TenantId, otherTenantId]));
     }
 
     [Fact]
-    public async Task ResolveMany_ActorPermissionVersionChanged_RejectsStaleAuthority()
+    public async Task LockIfUnchanged_ActorPermissionVersionChanged_RejectsStaleAuthority()
     {
         var membership = fixture.Memberships.AsEnumerable().First(value => HasRole(value, "Owner"));
         var expected = Snapshot(membership);
         await fixture.ChangeMembershipRolesAsync(membership.TenantId, membership.UserId, "Manager");
+        var current = Snapshot(fixture.Memberships.Single(value => value.Id == membership.Id));
 
-        var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveManyAsync(expected, [expected.TenantId], ct));
-
-        Assert.True(resolved.IsNone);
+        Assert.Null(await fixture.LockIfUnchangedAsync(expected));
+        Assert.True(current.HasSameAuthorityAs(await fixture.LockIfUnchangedAsync(current)));
     }
 
     private MembershipSnapshot Snapshot(TenantMembershipEntity membership)

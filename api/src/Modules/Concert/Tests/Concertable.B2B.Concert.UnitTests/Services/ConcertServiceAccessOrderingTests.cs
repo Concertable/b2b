@@ -7,6 +7,7 @@ using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Application.Responses;
+using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
@@ -102,9 +103,10 @@ public sealed class ConcertServiceAccessOrderingTests
             value => value.GetByIdForUpdateAsync(1, It.IsAny<CancellationToken>()), Times.Never);
         fixture.Repository.Verify(
             value => value.GetStateByIdAsync(1, It.IsAny<CancellationToken>()), Times.Never);
-        fixture.Authorization.Verify(
-            value => value.RequireAsync(
-                It.IsAny<AuthorizationRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        fixture.Authorizer.Verify(
+            value => value.AuthorizeAsync(
+                1, TenantPermission.ConcertsPublish, ConcertAccessScope.Operations, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -136,21 +138,19 @@ public sealed class ConcertServiceAccessOrderingTests
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var membership = new Mock<IMembershipContext>();
         var resolution = new Mock<ITenantResolver>();
-        var membershipResolver = new Mock<IMembershipResolver>();
-        var authorization = new Mock<IResourceAuthorization>();
-        var authorizationContext = new Mock<IAuthorizationContext>();
+        var authorizer = new Mock<IConcertAuthorizer>();
         var steps = new List<string>();
         var transactionRunner = new ImmediateTransactionRunner();
-        authorization
-            .Setup(value => value.RequireAsync(
-                It.Is<AuthorizationRequest>(request =>
-                    request.Permission == TenantPermission.ResourcesShare
-                    && request.Resource.Kind == ResourceKind.Concert
-                    && request.Resource.Id == 1
-                    && request.Facet == null),
-                It.IsAny<CancellationToken>()))
-            .Callback<AuthorizationRequest, CancellationToken>((_, _) => steps.Add("resource"))
-            .ReturnsAsync(AuthorizationDecision.Denied);
+        authorizer
+            .Setup(value => value.AuthorizeAsync(
+                1, TenantPermission.ResourcesShare, null, It.IsAny<CancellationToken>()))
+            .Callback<int, TenantPermission, ConcertAccessScope?, CancellationToken>(
+                (_, _, _, _) => steps.Add("resource"))
+            .ReturnsAsync(new AccessDenied());
+        authorizer
+            .Setup(value => value.AuthorizeAsync(
+                1, TenantPermission.ConcertsPublish, ConcertAccessScope.Operations, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AccessDenied());
         unitOfWork
             .Setup(value => value.ExecuteAsync(
                 It.IsAny<Func<Task<UnitResult<TError>>>>(),
@@ -163,10 +163,6 @@ public sealed class ConcertServiceAccessOrderingTests
             .Returns((Func<Task<Result<ConcertSummaryShare, ShareConcertSummaryError>>> action,
                 CancellationToken _) => action());
         membership.SetupGet(value => value.Membership).Returns(currentActor);
-        membershipResolver
-            .Setup(value => value.ResolveSnapshotAsync(
-                currentActor, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Option<MembershipSnapshot>)currentActor);
         resolution
             .Setup(value => value.ResolveAsync(
                 currentActor,
@@ -181,8 +177,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var service = new ConcertService(
             Mock.Of<IConcertRepository>(),
             Mock.Of<IConcertPrivilegedReadRepository>(),
-            authorization.Object,
-            authorizationContext.Object,
+            authorizer.Object,
             repository.Object,
             unitOfWork.Object,
             Mock.Of<IConcertReadRepository>(),
@@ -199,19 +194,17 @@ public sealed class ConcertServiceAccessOrderingTests
             resolution.Object,
             Mock.Of<ITenantContext>(),
             membership.Object,
-            membershipResolver.Object,
             transactionRunner,
             Mock.Of<IResourceAccessContext>(value => value.UtcNow == DateTime.UnixEpoch),
             Mock.Of<ILogger<ConcertService>>());
         transactionRunner.Service = service;
-        return new Fixture(service, repository, authorization, authorizationContext, steps);
+        return new Fixture(service, repository, authorizer, steps);
     }
 
     private sealed record Fixture(
         ConcertService Service,
         Mock<IConcertPrivilegedRepository> Repository,
-        Mock<IResourceAuthorization> Authorization,
-        Mock<IAuthorizationContext> AuthorizationContext,
+        Mock<IConcertAuthorizer> Authorizer,
         IReadOnlyList<string> Steps);
 
     private sealed class ImmediateTransactionRunner : ITransactionRunner

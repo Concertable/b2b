@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,6 +32,18 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
             .AsNoTracking()
             .Include(conversation => conversation.AccessGrants)
             .SingleOrDefaultAsync(conversation => conversation.Id == conversationId, ct);
+
+    public Task<bool> IsAccessibleAsync(
+        int conversationId,
+        MembershipSnapshot actor,
+        TenantPermission permission,
+        ConversationAccessScope scope,
+        DateTime at,
+        CancellationToken ct = default) =>
+        context.Conversations
+            .AsNoTracking()
+            .AccessibleBy(actor, permission, scope, at)
+            .AnyAsync(conversation => conversation.Id == conversationId, ct);
 
     public async Task<ConversationEntity?> GetWithGrantsByIdForUpdateAsync(
         int conversationId,

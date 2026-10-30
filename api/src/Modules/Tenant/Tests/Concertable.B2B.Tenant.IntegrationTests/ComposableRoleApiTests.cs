@@ -108,7 +108,7 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
         var result = await fixture.RemoveOwnersInOneCommandAsync(owner.Id, coOwner.Id, tenantId);
 
         Assert.True(result.TryGetError(out var error));
-        Assert.IsType<RemoveMemberError.NotPermitted>(error);
+        Assert.IsType<RemoveMemberError.LastOwner>(error);
         var owners = fixture.Memberships.Where(value => value.TenantId == tenantId
             && value.Assignments.Any(row => row.RoleId == TenantApiFixture.RoleId(tenantId, "Owner")))
             .Select(value => value.UserId)

@@ -12,7 +12,6 @@ internal sealed class InvoiceService(
     IInvoicePrivilegedReadRepository repository,
     IInvoicePdfRenderer invoicePdfRenderer,
     IMembershipContext membership,
-    IResourceAuthorization resources,
     TimeProvider timeProvider) : IInvoiceService
 {
     public async Task<Result<InvoiceDto, InvoiceError>> GetByConcertIdAsync(int concertId) =>
@@ -27,13 +26,9 @@ internal sealed class InvoiceService(
         if (concertId <= 0 || membership.Membership is not { } actor)
             return new InvoiceError.ConcertNotFound(concertId);
 
-        var binding = ResourcePolicyBinding.FromCatalog(
-            TenantPermission.SettlementView, ResourceKind.Invoice, ResourceFacet.Read);
         var invoice = await repository.GetByConcertIdAsync(
-            concertId, binding, actor, timeProvider.GetUtcNow());
-        if (invoice is null || await resources.CheckAsync(new AuthorizationRequest(
-                binding.Permission, ResourceAddress.Create(ResourceKind.Invoice, invoice.Id), binding.Facet))
-            != AuthorizationDecision.Allowed)
+            concertId, TenantPermission.SettlementView, actor, timeProvider.GetUtcNow());
+        if (invoice is null)
             return new InvoiceError.ConcertNotFound(concertId);
 
         return invoice;

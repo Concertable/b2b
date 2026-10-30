@@ -6,6 +6,7 @@ using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
 using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
@@ -38,8 +39,6 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<ConcertPrivilegedDbContext>();
         var reads = services.GetRequiredService<IConcertPrivilegedReadRepository>();
-        var evaluator = services.GetServices<IResourceAuthorizationEvaluator>()
-            .Single(candidate => candidate.Kind == ResourceKind.Concert);
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var tenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
         var actor = await ActorAsync(
@@ -52,23 +51,15 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         context.ConcertAccessGrants.Add(grant);
         await context.SaveChangesAsync();
 
-        var operations = Binding(TenantPermission.OperationsView, ResourceKind.Concert, ResourceFacet.Operations);
-        var summary = Binding(TenantPermission.OperationsView, ResourceKind.Concert, ResourceFacet.Summary);
-        var request = new AuthorizationRequest(
-            TenantPermission.OperationsView, ResourceAddress.Create(ResourceKind.Concert, concert.Id),
-            ResourceFacet.Operations);
-
-        Assert.True((await evaluator.CheckAsync(request, operations, actor, now)).IsAllowed);
-        Assert.NotNull(await reads.GetOperationsByIdAsync(concert.Id, operations, actor, now));
+        Assert.True(await reads.IsAccessibleAsync(
+            concert.Id, TenantPermission.OperationsView, ConcertAccessScope.Operations, actor, now));
+        Assert.NotNull(await reads.GetOperationsByIdAsync(concert.Id, TenantPermission.OperationsView, actor, now));
         Assert.Equal(1, await context.Concerts.AsNoTracking()
-            .Where(ConcertAuthorizationPolicy.Concerts(context, operations, actor, now))
+            .AccessibleBy(actor, TenantPermission.OperationsView, ConcertAccessScope.Operations, now.UtcDateTime)
             .CountAsync(candidate => candidate.Id == concert.Id));
-        Assert.Null(await reads.GetSummaryByIdAsync(concert.Id, summary, actor, now));
+        Assert.Null(await reads.GetSummaryByIdAsync(concert.Id, TenantPermission.OperationsView, actor, now));
         Assert.Null(await reads.GetFinanceByIdAsync(
-            concert.Id,
-            Binding(TenantPermission.SettlementView, ResourceKind.Concert, ResourceFacet.Finance),
-            Binding(TenantPermission.SettlementView, ResourceKind.Invoice, ResourceFacet.Read),
-            actor, now));
+            concert.Id, TenantPermission.SettlementView, TenantPermission.SettlementView, actor, now));
     }
 
     [Fact]
@@ -89,8 +80,8 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
             context, tenantId, fixture.SeedState.VenueManager2.Id,
             TenantPermission.SettlementView, ResourceAudience.TenantResources);
         var now = services.GetRequiredService<TimeProvider>().GetUtcNow();
-        var finance = Binding(TenantPermission.SettlementView, ResourceKind.Concert, ResourceFacet.Finance);
-        var read = Binding(TenantPermission.SettlementView, ResourceKind.Invoice, ResourceFacet.Read);
+        var finance = TenantPermission.SettlementView;
+        var read = TenantPermission.SettlementView;
         context.ConcertAccessGrants.Add(ConcertAccessGrant.Issue(
             concert.Id, tenantId, actor.MembershipId, ConcertAccessScope.Finance,
             concert.VenueTenantId, null, ResourceGrantKind.MemberAssignment, now.UtcDateTime));
@@ -102,9 +93,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         Assert.Null(financeWithoutInvoice.InvoiceId);
         Assert.Null(await invoiceReads.GetByIdAsync(invoice.Id, read, actor, now));
         Assert.Null(await concertReads.GetSummaryByIdAsync(
-            concert.Id,
-            Binding(TenantPermission.OperationsView, ResourceKind.Concert, ResourceFacet.Summary),
-            actor, now));
+            concert.Id, TenantPermission.OperationsView, actor, now));
 
         context.InvoiceAccessGrants.Add(InvoiceAccessGrant.Issue(
             invoice.Id, tenantId, actor.MembershipId, InvoiceAccessScope.Read,
@@ -119,7 +108,7 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MembershipAndPinnedGrantChangesDenyTheSameResource()
+    public async Task MembershipAndGrantChangesDenyTheSameResource()
     {
         using var scope = fixture.Services.CreateScope();
         var services = scope.ServiceProvider;
@@ -130,7 +119,6 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
             context, tenantId, fixture.SeedState.VenueManager2.Id,
             TenantPermission.OperationsView, ResourceAudience.AssignedResources);
         var now = services.GetRequiredService<TimeProvider>().GetUtcNow();
-        var binding = Binding(TenantPermission.OperationsView, ResourceKind.Concert, ResourceFacet.Operations);
         var grant = ConcertAccessGrant.Issue(
             concert.Id, tenantId, actor.MembershipId, ConcertAccessScope.Operations,
             concert.VenueTenantId, null, ResourceGrantKind.MemberAssignment,
@@ -138,37 +126,25 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
         context.ConcertAccessGrants.Add(grant);
         await context.SaveChangesAsync();
 
-        var snapshot = new ResourceAuthorizationSnapshot(
-            new AuthorizationRequest(
-                binding.Permission, ResourceAddress.Create(ResourceKind.Concert, concert.Id), ResourceFacet.Operations),
-            binding,
-            new AuthoritySnapshot(actor, AuthorizationCatalog.Revision),
-            null,
-            [new ResourceGrantSnapshot("Operations", grant.Id, grant.Version,
-                new DateTimeOffset(grant.ValidFrom, TimeSpan.Zero), null)]);
-        Assert.True(await IsVisibleAsync(context, concert.Id, binding, actor, now, snapshot));
+        Assert.True(await IsVisibleAsync(context, concert.Id, actor, now));
         Assert.False(await IsVisibleAsync(
-            context, concert.Id, binding, actor with { PermissionVersion = actor.PermissionVersion + 1 },
-            now, snapshot));
+            context, concert.Id, actor with { PermissionVersion = actor.PermissionVersion + 1 }, now));
+        Assert.False(await IsVisibleAsync(context, concert.Id, actor with { TenantId = Guid.NewGuid() }, now));
         Assert.False(await IsVisibleAsync(
-            context, concert.Id, binding, actor with { TenantId = Guid.NewGuid() }, now, snapshot));
-        Assert.False(await IsVisibleAsync(
-            context, concert.Id, binding,
+            context, concert.Id,
             actor with { Permissions = actor.Permissions.SetItem(
-                TenantPermission.OperationsView, ResourceAudience.None) }, now, snapshot));
+                TenantPermission.OperationsView, ResourceAudience.None) }, now));
 
         grant.Revoke(now.UtcDateTime);
         await context.SaveChangesAsync();
-        Assert.False(await IsVisibleAsync(context, concert.Id, binding, actor, now, snapshot));
+        Assert.False(await IsVisibleAsync(context, concert.Id, actor, now));
 
         context.ConcertAccessGrants.Add(ConcertAccessGrant.Issue(
             concert.Id, tenantId, actor.MembershipId, ConcertAccessScope.Operations,
             concert.VenueTenantId, null, ResourceGrantKind.MemberAssignment,
             now.UtcDateTime.AddHours(-2), now.UtcDateTime.AddHours(-1)));
         await context.SaveChangesAsync();
-        Assert.False(await context.Concerts.AsNoTracking()
-            .Where(ConcertAuthorizationPolicy.Concerts(context, binding, actor, now))
-            .AnyAsync(candidate => candidate.Id == concert.Id));
+        Assert.False(await IsVisibleAsync(context, concert.Id, actor, now));
 
     }
 
@@ -189,20 +165,10 @@ public sealed class ConcertAuthorizationPolicyTests : IAsyncLifetime
     private Guid TenantOf(Guid userId) =>
         fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == userId).Id;
 
-    private static ResourcePolicyBinding Binding(
-        TenantPermission permission, ResourceKind kind, ResourceFacet facet)
-    {
-        var source = AuthorizationCatalog.Permissions[permission].ResourceBindings
-            .Single(candidate => candidate.Resource.Equals(kind.ToString(), StringComparison.OrdinalIgnoreCase)
-                && candidate.Facet == facet.ToString());
-        return new ResourcePolicyBinding(
-            permission, kind, facet, source.Policy, source.RequiresScopes.ToImmutableArray());
-    }
-
     private static Task<bool> IsVisibleAsync(
-        ConcertPrivilegedDbContext context, int id, ResourcePolicyBinding binding,
-        MembershipSnapshot actor, DateTimeOffset now, ResourceAuthorizationSnapshot snapshot) =>
+        ConcertPrivilegedDbContext context, int id, MembershipSnapshot actor, DateTimeOffset now) =>
         context.Concerts.AsNoTracking()
-            .Where(ConcertAuthorizationPolicy.Concerts(context, binding, actor, now, snapshot))
+            .AccessibleBy(actor, TenantPermission.OperationsView, ConcertAccessScope.Operations, now.UtcDateTime)
+            .WhereCurrentMember(context.MembershipAuthority, actor)
             .AnyAsync(concert => concert.Id == id);
 }

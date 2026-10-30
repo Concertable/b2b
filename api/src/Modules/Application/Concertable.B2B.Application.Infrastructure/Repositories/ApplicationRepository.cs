@@ -14,34 +14,32 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
 {
     private readonly ApplicationDbContext context;
     private readonly IMembershipContext membership;
-    private readonly IPermissionAuthorization permissions;
     private readonly TimeProvider clock;
 
-    public ApplicationRepository(ApplicationDbContext context, IMembershipContext membership,
-        IPermissionAuthorization permissions, TimeProvider clock) : base(context)
+    public ApplicationRepository(ApplicationDbContext context, IMembershipContext membership, TimeProvider clock)
+        : base(context)
     {
         this.context = context;
         this.membership = membership;
-        this.permissions = permissions;
         this.clock = clock;
     }
 
     public async Task<ApplicationEntity?> GetSummaryByIdAsync(
         int id,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.OperationsView, ResourceFacet.Summary, ct))
+        await Accessible(TenantPermission.OperationsView, ApplicationAccessScope.Summary)
             .SingleOrDefaultAsync(application => application.Id == id, ct);
 
     public async Task<ApplicationEntity?> GetProposalByIdAsync(
         int id,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.TermsRead, ResourceFacet.Proposal, ct))
+        await Accessible(TenantPermission.TermsRead, ApplicationAccessScope.Proposal)
             .SingleOrDefaultAsync(application => application.Id == id, ct);
 
     public async Task<ApplicationEntity?> GetDecisionByIdAsync(
         int id,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.ApplicationsDecide, ResourceFacet.Proposal, ct))
+        await Accessible(TenantPermission.ApplicationsDecide, ApplicationAccessScope.Proposal)
             .SingleOrDefaultAsync(application => application.Id == id, ct);
 
     // Rewriting the state column with the value it already holds is what bumps the row's version; marking the
@@ -52,7 +50,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.TermsRead, ResourceFacet.Proposal, ct))
+        await Accessible(TenantPermission.TermsRead, ApplicationAccessScope.Proposal)
             .Where(application => application.OpportunityId == opportunityId)
             .ToListAsync(ct);
 
@@ -69,7 +67,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
         Guid artistTenantId,
         ApplicationState state,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.TermsRead, ResourceFacet.Proposal, ct))
+        await Accessible(TenantPermission.TermsRead, ApplicationAccessScope.Proposal)
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
                 application.State == state)
@@ -79,7 +77,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
         Guid venueTenantId,
         ApplicationState state,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.TermsRead, ResourceFacet.Proposal, ct))
+        await Accessible(TenantPermission.TermsRead, ApplicationAccessScope.Proposal)
             .AsNoTracking()
             .Where(application =>
                 application.VenueTenantId == venueTenantId &&
@@ -89,7 +87,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyList<ApplicationEntity>> GetCurrentByArtistTenantIdAsync(
         Guid artistTenantId,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.TermsRead, ResourceFacet.Proposal, ct))
+        await Accessible(TenantPermission.TermsRead, ApplicationAccessScope.Proposal)
             .AsNoTracking()
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
@@ -99,7 +97,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<ApplicationState?> GetStateByIdAsync(
         int applicationId,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.TermsRead, ResourceFacet.Proposal, ct))
+        await Accessible(TenantPermission.TermsRead, ApplicationAccessScope.Proposal)
             .Where(application => application.Id == applicationId)
             .Select(application => (ApplicationState?)application.State)
             .FirstOrDefaultAsync(ct);
@@ -140,7 +138,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyList<ApplicationDashboardProjection>> GetVenueDashboardProjectionsAsync(
         Guid venueTenantId,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.OperationsView, ResourceFacet.Summary, ct))
+        await Accessible(TenantPermission.OperationsView, ApplicationAccessScope.Summary)
             .Where(application =>
                 application.VenueTenantId == venueTenantId &&
                 application.State == ApplicationState.Applied)
@@ -153,7 +151,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyList<ApplicationDashboardProjection>> GetArtistDashboardProjectionsAsync(
         Guid artistTenantId,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.OperationsView, ResourceFacet.Summary, ct))
+        await Accessible(TenantPermission.OperationsView, ApplicationAccessScope.Summary)
             .Where(application =>
                 application.ArtistTenantId == artistTenantId &&
                 (application.State == ApplicationState.Applied ||
@@ -167,7 +165,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlyDictionary<int, int>> GetCountsByOpportunityIdsAsync(
         IReadOnlyCollection<int> opportunityIds,
         CancellationToken ct = default) =>
-        await (await WithFacetAsync(TenantPermission.OperationsView, ResourceFacet.Summary, ct))
+        await Accessible(TenantPermission.OperationsView, ApplicationAccessScope.Summary)
             .Where(application => opportunityIds.Contains(application.OpportunityId))
             .GroupBy(application => application.OpportunityId)
             .ToDictionaryAsync(group => group.Key, group => group.Count(), ct);
@@ -175,7 +173,7 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
     public async Task<IReadOnlySet<int>> GetOpportunityIdsForArtistTenantAsync(
         Guid artistTenantId,
         CancellationToken ct = default) =>
-        (await (await WithFacetAsync(TenantPermission.OperationsView, ResourceFacet.Summary, ct))
+        (await Accessible(TenantPermission.OperationsView, ApplicationAccessScope.Summary)
             .Where(application => application.ArtistTenantId == artistTenantId)
             .Select(application => application.OpportunityId)
             .Distinct()
@@ -184,22 +182,15 @@ internal sealed class ApplicationRepository : Repository<ApplicationEntity>, IAp
 
     public async Task<IReadOnlySet<int>> GetAllowedIdsAsync(
         IReadOnlyCollection<int> applicationIds, TenantPermission permission, CancellationToken ct = default) =>
-        (await (await WithFacetAsync(permission, ResourceFacet.Proposal, ct))
+        (await Accessible(permission, ApplicationAccessScope.Proposal)
             .Where(application => applicationIds.Contains(application.Id))
             .Select(application => application.Id)
             .ToListAsync(ct)).ToHashSet();
 
-    private async Task<IQueryable<ApplicationEntity>> WithFacetAsync(
-        TenantPermission permission, ResourceFacet facet, CancellationToken ct)
-    {
-        var actor = membership.Membership;
-        if (actor is null || await permissions.CheckAsync(permission, ct: ct) != AuthorizationDecision.Allowed)
-            return context.Applications.Where(_ => false);
-
-        var binding = ResourcePolicyBinding.FromCatalog(permission, ResourceKind.Application, facet);
-        return ApplicationAuthorizationPolicy.Visible(
-            context.Applications.IgnoreQueryFilters([TenantFilters.Key]),
-            context.ApplicationAccessGrants.IgnoreQueryFilters([TenantFilters.Key]),
-            context.MembershipAuthority.AsNoTracking(), actor, binding, clock.GetUtcNow().UtcDateTime);
-    }
+    private IQueryable<ApplicationEntity> Accessible(TenantPermission permission, ApplicationAccessScope scope) =>
+        membership.Membership is { } actor
+            ? context.Applications.IgnoreQueryFilters([TenantFilters.Key])
+                .AccessibleBy(actor, permission, scope, clock.GetUtcNow().UtcDateTime)
+                .WhereCurrentMember(context.MembershipAuthority.AsNoTracking(), actor)
+            : context.Applications.Where(_ => false);
 }

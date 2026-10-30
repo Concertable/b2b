@@ -41,6 +41,12 @@ public sealed class TenantApiFixture : ApiFixture
         CancellationToken ct = default) =>
         transactionRunner.RunAsync(resolve, ct);
 
+    public Task<MembershipSnapshot?> LockIfUnchangedAsync(
+        MembershipSnapshot expected,
+        CancellationToken ct = default) =>
+        transactionRunner.RunAsync<IMembershipReadRepository, MembershipSnapshot?>(
+            (memberships, token) => memberships.LockIfUnchangedAsync(expected, token), ct);
+
     internal async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
         Guid ownerUserId,
         Guid otherOwnerUserId,
@@ -67,10 +73,7 @@ public sealed class TenantApiFixture : ApiFixture
                     var first = await members.RemoveMemberAsync(otherOwnerUserId, ct);
                     if (first.TryGetError(out var firstError))
                         throw new InvalidOperationException($"First owner removal failed: {firstError}.");
-                    var second = await members.RemoveMemberAsync(ownerUserId, ct);
-                    if (second.TryGetError(out var secondError))
-                        throw new InvalidOperationException($"Second owner removal failed: {secondError}.");
-                    return second;
+                    return await members.RemoveMemberAsync(ownerUserId, ct);
                 });
         }
         finally

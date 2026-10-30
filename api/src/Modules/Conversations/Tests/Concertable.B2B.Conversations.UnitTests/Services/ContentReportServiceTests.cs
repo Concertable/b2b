@@ -1,4 +1,6 @@
+using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Interfaces;
@@ -35,7 +37,7 @@ public sealed class ContentReportServiceTests
         Mock<IMessageRepository> messages,
         Mock<IContentReportRepository> reports,
         Mock<IContentReportNotifier> notifier,
-        AuthorizationDecision decision = AuthorizationDecision.Allowed)
+        bool readable = true)
     {
         var currentUser = new Mock<ICurrentUser>();
         currentUser.SetupGet(u => u.Id).Returns(ReportingUserId);
@@ -43,30 +45,37 @@ public sealed class ContentReportServiceTests
         var tenantContext = new Mock<ITenantContext>();
         tenantContext.SetupGet(t => t.TenantId).Returns(VenueTenantId);
 
-        var resources = new Mock<IResourceAuthorization>();
-        resources.Setup(resource => resource.CheckAsync(
-                It.Is<AuthorizationRequest>(request =>
-                    request.Permission == TenantPermission.MessagesRead
-                    && request.Resource.Kind == ResourceKind.Conversation
-                    && request.Facet == ResourceFacet.Read),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(decision);
+        var actor = new MembershipSnapshot(
+            Guid.NewGuid(), VenueTenantId, ReportingUserId, 1, 1,
+            ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
+                TenantPermission.MessagesRead, ResourceAudience.TenantResources));
+        var membership = new Mock<IMembershipContext>();
+        membership.SetupGet(context => context.Membership).Returns(actor);
 
-        return new ContentReportService(messages.Object, resources.Object, reports.Object, notifier.Object,
+        var conversations = new Mock<IConversationPrivilegedRepository>();
+        conversations.Setup(repository => repository.IsAccessibleAsync(
+                ConversationId,
+                actor,
+                TenantPermission.MessagesRead,
+                ConversationAccessScope.Read,
+                It.IsAny<DateTime>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(readable);
+
+        return new ContentReportService(messages.Object, conversations.Object, membership.Object,
+            reports.Object, notifier.Object,
             currentUser.Object, tenantContext.Object, TimeProvider.System,
             NullLogger<ContentReportService>.Instance);
     }
 
-    [Theory]
-    [InlineData(AuthorizationDecision.Denied)]
-    [InlineData(AuthorizationDecision.AuthorityChanged)]
-    public async Task Submit_WithoutReadAuthority_DoesNotLoadOrReport(AuthorizationDecision decision)
+    [Fact]
+    public async Task Submit_WithoutReadAuthority_DoesNotLoadOrReport()
     {
         var messages = new Mock<IMessageRepository>();
         var reports = new Mock<IContentReportRepository>();
         var notifier = new Mock<IContentReportNotifier>();
 
-        var result = await Service(messages, reports, notifier, decision)
+        var result = await Service(messages, reports, notifier, readable: false)
             .SubmitAsync(ConversationId, 7, new ReportMessageRequest { Category = ReportCategory.Spam });
 
         Assert.True(result.TryGetError(out var error));

@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Strategies;
+using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Extensions;
@@ -19,8 +20,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
     private readonly IMembershipContext membership;
-    private readonly IResourceAuthorization resources;
-    private readonly IAuthorizationContext authorizationContext;
+    private readonly IConcertAuthorizer authorizer;
 
     public ConcertWorkflow(
         IConcertPrivilegedRepository privilegedRepository,
@@ -29,8 +29,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IDealStrategyFactory<ICompleteStep> completeFactory,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
         IMembershipContext membership,
-        IResourceAuthorization resources,
-        IAuthorizationContext authorizationContext)
+        IConcertAuthorizer authorizer)
     {
         this.privilegedRepository = privilegedRepository;
         this.transactionRunner = transactionRunner;
@@ -38,8 +37,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         this.completeFactory = completeFactory;
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
         this.membership = membership;
-        this.resources = resources;
-        this.authorizationContext = authorizationContext;
+        this.authorizer = authorizer;
     }
 
     public async Task<UnitResult<CancelConcertError>> CancelAsync(
@@ -47,15 +45,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         CancellationToken ct = default)
     {
         if (membership.Membership is not { } actor)
-        {
-            if (authorizationContext.IsActive)
-            {
-                authorizationContext.RegisterFailure<UnitResult<CancelConcertError>>(
-                    () => new CancelConcertError.NotPermitted());
-                authorizationContext.MarkAuthorityFailed();
-            }
             return new CancelConcertError.NotPermitted();
-        }
 
         try
         {
@@ -148,19 +138,12 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<UnitResult<CancelConcertError>>(
-            () => new CancelConcertError.NotPermitted());
         if (concertId <= 0 || membership.Membership is not { } actor
             || actor.MembershipId != expectedActor.MembershipId
             || actor.TenantId != expectedActor.TenantId)
-        {
-            authorizationContext.MarkAuthorityFailed();
             return false;
-        }
 
-        return await resources.RequireAsync(new AuthorizationRequest(
-            TenantPermission.ConcertsManage,
-            ResourceAddress.Create(ResourceKind.Concert, concertId),
-            ResourceFacet.Operations), ct) == AuthorizationDecision.Allowed;
+        return (await authorizer.AuthorizeAsync(
+            concertId, TenantPermission.ConcertsManage, ConcertAccessScope.Operations, ct)).IsSuccess;
     }
 }

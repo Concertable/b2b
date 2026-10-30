@@ -35,10 +35,8 @@ internal sealed class ApplicationService : IApplicationService
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IMembershipContext membership;
-    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantResolver tenantResolver;
-    private readonly IResourceAuthorization resources;
-    private readonly IPermissionAuthorization permissions;
+    private readonly IApplicationAuthorizer authorizer;
     private readonly ITransactionRunner transactionRunner;
 
     public ApplicationService(
@@ -57,10 +55,8 @@ internal sealed class ApplicationService : IApplicationService
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IMembershipContext membership,
-        IAuthorizationContext authorizationContext,
         ITenantResolver tenantResolver,
-        IResourceAuthorization resources,
-        IPermissionAuthorization permissions,
+        IApplicationAuthorizer authorizer,
         ITransactionRunner transactionRunner)
     {
         this.applicationRepository = applicationRepository;
@@ -78,10 +74,8 @@ internal sealed class ApplicationService : IApplicationService
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
-        this.authorizationContext = authorizationContext;
         this.tenantResolver = tenantResolver;
-        this.resources = resources;
-        this.permissions = permissions;
+        this.authorizer = authorizer;
         this.transactionRunner = transactionRunner;
     }
 
@@ -314,10 +308,8 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (await resources.CheckAsync(new AuthorizationRequest(
-            TenantPermission.ApplicationsSubmit,
-            ResourceAddress.Create(ResourceKind.Application, applicationId),
-            ResourceFacet.Proposal), ct) != AuthorizationDecision.Allowed)
+        if (!(await applicationRepository.GetAllowedIdsAsync(
+                [applicationId], TenantPermission.ApplicationsSubmit, ct)).Contains(applicationId))
             return new WithdrawApplicationError.NotPermitted();
         if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Withdrawn)
             return new Success();
@@ -330,20 +322,15 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<UnitResult<WithdrawApplicationError>>(
-            () => new WithdrawApplicationError.NotPermitted());
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
-        var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.ExistingTenantIds.SetEquals(parties)
-            || await resources.RequireAsync(new AuthorizationRequest(
-                TenantPermission.ApplicationsSubmit,
-                ResourceAddress.Create(ResourceKind.Application, applicationId),
-                ResourceFacet.Proposal), ct) != AuthorizationDecision.Allowed)
+        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        if (!existingParties.SetEquals(parties)
+            || (await authorizer.AuthorizeAsync(
+                applicationId, TenantPermission.ApplicationsSubmit, ApplicationAccessScope.Proposal, ct)).IsFailure)
             return new WithdrawApplicationError.NotPermitted();
-        var actor = resolution.Actor;
+        var actor = expectedActor;
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
@@ -362,10 +349,8 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (await resources.CheckAsync(new AuthorizationRequest(
-            TenantPermission.ApplicationsDecide,
-            ResourceAddress.Create(ResourceKind.Application, applicationId),
-            ResourceFacet.Proposal), ct) != AuthorizationDecision.Allowed)
+        if (!(await applicationRepository.GetAllowedIdsAsync(
+                [applicationId], TenantPermission.ApplicationsDecide, ct)).Contains(applicationId))
             return new RejectApplicationError.NotPermitted();
         if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Rejected)
             return new Success();
@@ -378,20 +363,15 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<UnitResult<RejectApplicationError>>(
-            () => new RejectApplicationError.NotPermitted());
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
-        var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.ExistingTenantIds.SetEquals(parties)
-            || await resources.RequireAsync(new AuthorizationRequest(
-                TenantPermission.ApplicationsDecide,
-                ResourceAddress.Create(ResourceKind.Application, applicationId),
-                ResourceFacet.Proposal), ct) != AuthorizationDecision.Allowed)
+        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        if (!existingParties.SetEquals(parties)
+            || (await authorizer.AuthorizeAsync(
+                applicationId, TenantPermission.ApplicationsDecide, ApplicationAccessScope.Proposal, ct)).IsFailure)
             return new RejectApplicationError.NotPermitted();
-        var actor = resolution.Actor;
+        var actor = expectedActor;
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
@@ -410,10 +390,8 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (await resources.CheckAsync(new AuthorizationRequest(
-            TenantPermission.ApplicationsDecide,
-            ResourceAddress.Create(ResourceKind.Application, applicationId),
-            ResourceFacet.Proposal), ct) != AuthorizationDecision.Allowed)
+        if (!(await applicationRepository.GetAllowedIdsAsync(
+                [applicationId], TenantPermission.ApplicationsDecide, ct)).Contains(applicationId))
             return new CancelApplicationError.NotPermitted();
         if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Cancelled)
             return new Success();
@@ -426,20 +404,15 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<UnitResult<CancelApplicationError>>(
-            () => new CancelApplicationError.NotPermitted());
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
-        var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.ExistingTenantIds.SetEquals(parties)
-            || await resources.RequireAsync(new AuthorizationRequest(
-                TenantPermission.ApplicationsDecide,
-                ResourceAddress.Create(ResourceKind.Application, applicationId),
-                ResourceFacet.Proposal), ct) != AuthorizationDecision.Allowed)
+        var existingParties = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        if (!existingParties.SetEquals(parties)
+            || (await authorizer.AuthorizeAsync(
+                applicationId, TenantPermission.ApplicationsDecide, ApplicationAccessScope.Proposal, ct)).IsFailure)
             return new CancelApplicationError.NotPermitted();
-        var actor = resolution.Actor;
+        var actor = expectedActor;
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
@@ -456,8 +429,8 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
-        if (await permissions.CheckAsync(TenantPermission.ApplicationsSubmit, ResourceAudience.TenantResources)
-            != AuthorizationDecision.Allowed)
+        if (membership.Membership is not { } actor
+            || !actor.AudienceFor(TenantPermission.ApplicationsSubmit).Covers(ResourceAudience.TenantResources))
             return new ApplicationEligibilityError.MissingArtist();
         var artistOption = await artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))
@@ -475,10 +448,7 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanAcceptAsync(int applicationId)
     {
-        if (applicationId <= 0 || await resources.CheckAsync(new AuthorizationRequest(
-            TenantPermission.ApplicationsDecide,
-            ResourceAddress.Create(ResourceKind.Application, applicationId),
-            ResourceFacet.Proposal)) != AuthorizationDecision.Allowed)
+        if (applicationId <= 0)
             return new ApplicationEligibilityError.ApplicationNotFound();
         var application = await applicationRepository.GetDecisionByIdAsync(applicationId);
         if (application is null)

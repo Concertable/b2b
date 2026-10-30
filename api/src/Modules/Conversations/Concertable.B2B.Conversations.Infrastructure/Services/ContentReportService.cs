@@ -10,7 +10,8 @@ namespace Concertable.B2B.Conversations.Infrastructure.Services;
 internal sealed class ContentReportService : IContentReportService
 {
     private readonly IMessageRepository messageRepository;
-    private readonly IResourceAuthorization resources;
+    private readonly IConversationPrivilegedRepository conversations;
+    private readonly IMembershipContext membership;
     private readonly IContentReportRepository reportRepository;
     private readonly IContentReportNotifier notifier;
     private readonly ICurrentUser currentUser;
@@ -20,7 +21,8 @@ internal sealed class ContentReportService : IContentReportService
 
     public ContentReportService(
         IMessageRepository messageRepository,
-        IResourceAuthorization resources,
+        IConversationPrivilegedRepository conversations,
+        IMembershipContext membership,
         IContentReportRepository reportRepository,
         IContentReportNotifier notifier,
         ICurrentUser currentUser,
@@ -29,7 +31,8 @@ internal sealed class ContentReportService : IContentReportService
         ILogger<ContentReportService> logger)
     {
         this.messageRepository = messageRepository;
-        this.resources = resources;
+        this.conversations = conversations;
+        this.membership = membership;
         this.reportRepository = reportRepository;
         this.notifier = notifier;
         this.currentUser = currentUser;
@@ -49,10 +52,10 @@ internal sealed class ContentReportService : IContentReportService
     private async Task<Option<MessageEntity>> FindMessageAsync(int conversationId, int messageId)
     {
         if (conversationId <= 0
-            || await resources.CheckAsync(new AuthorizationRequest(
-                TenantPermission.MessagesRead,
-                ResourceAddress.Create(ResourceKind.Conversation, conversationId),
-                ResourceFacet.Read)) != AuthorizationDecision.Allowed)
+            || membership.Membership is not { } actor
+            || !await conversations.IsAccessibleAsync(
+                conversationId, actor, TenantPermission.MessagesRead, ConversationAccessScope.Read,
+                timeProvider.GetUtcNow().UtcDateTime))
             return null;
         var message = await messageRepository.GetByIdAsync(messageId);
 

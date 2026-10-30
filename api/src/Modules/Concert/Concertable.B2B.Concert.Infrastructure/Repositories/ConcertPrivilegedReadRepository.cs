@@ -1,5 +1,7 @@
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Application.DTOs;
+using Concertable.B2B.Concert.Contracts.Enums;
+using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.Concert.Infrastructure.Mappers;
@@ -12,17 +14,17 @@ internal sealed class ConcertPrivilegedReadRepository(
     IInvoicePrivilegedReadRepository invoiceReads) : IConcertPrivilegedReadRepository
 {
     public Task<ConcertSummary?> GetSummaryByIdAsync(
-        int id, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        int id, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        SummaryRoot(binding, actor, now)
+        SummaryRoot(permission, actor, now)
             .Where(concert => concert.Id == id)
             .ToSummary()
             .SingleOrDefaultAsync(ct);
 
     public Task<ConcertOperations?> GetOperationsByIdAsync(
-        int id, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        int id, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        OperationsRoot(binding, actor, now)
+        OperationsRoot(permission, actor, now)
             .Where(concert => concert.Id == id)
             .ToOperations(
                 context.ConcertRatingProjections,
@@ -31,10 +33,10 @@ internal sealed class ConcertPrivilegedReadRepository(
             .SingleOrDefaultAsync(ct);
 
     public async Task<ConcertFinance?> GetFinanceByIdAsync(
-        int id, ResourcePolicyBinding binding, ResourcePolicyBinding invoiceBinding,
+        int id, TenantPermission permission, TenantPermission invoicePermission,
         MembershipSnapshot actor, DateTimeOffset now, CancellationToken ct = default)
     {
-        var finance = await FinanceRoot(binding, actor, now)
+        var finance = await FinanceRoot(permission, actor, now)
             .Where(concert => concert.Id == id)
             .Select(concert => new ConcertFinance(
                 concert.Id,
@@ -47,14 +49,19 @@ internal sealed class ConcertPrivilegedReadRepository(
         if (finance is null)
             return null;
 
-        var invoice = await invoiceReads.GetByConcertIdAsync(id, invoiceBinding, actor, now, ct);
+        var invoice = await invoiceReads.GetByConcertIdAsync(id, invoicePermission, actor, now, ct);
         return finance with { InvoiceId = invoice?.Id };
     }
 
-    public Task<bool> CanDeclareDoorRevenueByIdAsync(
-        int id, ResourcePolicyBinding binding, MembershipSnapshot actor,
+    public Task<bool> IsAccessibleAsync(
+        int id, TenantPermission permission, ConcertAccessScope scope, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        FinanceRoot(binding, actor, now)
+        Root(permission, actor, now, scope).AnyAsync(concert => concert.Id == id, ct);
+
+    public Task<bool> CanDeclareDoorRevenueByIdAsync(
+        int id, TenantPermission permission, MembershipSnapshot actor,
+        DateTimeOffset now, CancellationToken ct = default) =>
+        FinanceRoot(permission, actor, now)
             .AnyAsync(concert => concert.Id == id
                 && (concert is DoorSplitConcert && ((DoorSplitConcert)concert).DoorRevenue == null
                     || concert is VersusConcert && ((VersusConcert)concert).DoorRevenue == null)
@@ -63,9 +70,9 @@ internal sealed class ConcertPrivilegedReadRepository(
                     || concert.State == Concertable.B2B.Concert.Domain.Lifecycle.ConcertState.Posted), ct);
 
     public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForVenueTenantIdAsync(
-        Guid venueTenantId, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        Guid venueTenantId, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        await OperationsRoot(binding, actor, now)
+        await OperationsRoot(permission, actor, now)
             .Where(concert => concert.VenueTenantId == venueTenantId
                 && concert.Period.End > now.UtcDateTime
                 && concert.DatePosted != null)
@@ -79,9 +86,9 @@ internal sealed class ConcertPrivilegedReadRepository(
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<ManagerConcertCard>> GetUpcomingCardsForArtistTenantIdAsync(
-        Guid artistTenantId, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        Guid artistTenantId, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        await OperationsRoot(binding, actor, now)
+        await OperationsRoot(permission, actor, now)
             .Where(concert => concert.ArtistTenantId == artistTenantId
                 && concert.Period.End > now.UtcDateTime
                 && concert.DatePosted != null)
@@ -95,42 +102,42 @@ internal sealed class ConcertPrivilegedReadRepository(
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<ConcertDraftReference>> GetDraftReferencesForVenueTenantIdAsync(
-        Guid venueTenantId, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        Guid venueTenantId, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        await OperationsRoot(binding, actor, now)
+        await OperationsRoot(permission, actor, now)
             .Where(concert => concert.VenueTenantId == venueTenantId && concert.DatePosted == null)
             .Select(concert => new ConcertDraftReference(concert.Id, concert.ApplicationId))
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByArtistIdAsync(
-        int artistId, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        int artistId, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        await SummaryRoot(binding, actor, now)
+        await SummaryRoot(permission, actor, now)
             .Where(concert => concert.ArtistId == artistId && concert.DatePosted == null)
             .ToSummary()
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<ConcertSummary>> GetUnpostedByVenueIdAsync(
-        int venueId, ResourcePolicyBinding binding, MembershipSnapshot actor,
+        int venueId, TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        await SummaryRoot(binding, actor, now)
+        await SummaryRoot(permission, actor, now)
             .Where(concert => concert.VenueId == venueId && concert.DatePosted == null)
             .ToSummary()
             .ToListAsync(ct);
 
     public Task<int> CountSummariesAsync(
-        ResourcePolicyBinding binding, MembershipSnapshot actor,
+        TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, CancellationToken ct = default) =>
-        SummaryRoot(binding, actor, now).CountAsync(ct);
+        SummaryRoot(permission, actor, now).CountAsync(ct);
 
     public async Task<IReadOnlyList<ConcertSummary>> GetSummaryPageAsync(
-        ResourcePolicyBinding binding, MembershipSnapshot actor,
+        TenantPermission permission, MembershipSnapshot actor,
         DateTimeOffset now, int afterId, int take, CancellationToken ct = default)
     {
         if (take is < 1 or > 100)
             throw new ArgumentOutOfRangeException(nameof(take));
 
-        return await SummaryRoot(binding, actor, now)
+        return await SummaryRoot(permission, actor, now)
             .Where(concert => concert.Id > afterId)
             .OrderBy(concert => concert.Id)
             .Take(take)
@@ -139,22 +146,21 @@ internal sealed class ConcertPrivilegedReadRepository(
     }
 
     private IQueryable<ConcertEntity> SummaryRoot(
-        ResourcePolicyBinding binding, MembershipSnapshot actor, DateTimeOffset now) =>
-        Root(binding, actor, now, ResourceFacet.Summary);
+        TenantPermission permission, MembershipSnapshot actor, DateTimeOffset now) =>
+        Root(permission, actor, now, ConcertAccessScope.Summary);
 
     private IQueryable<ConcertEntity> OperationsRoot(
-        ResourcePolicyBinding binding, MembershipSnapshot actor, DateTimeOffset now) =>
-        Root(binding, actor, now, ResourceFacet.Operations);
+        TenantPermission permission, MembershipSnapshot actor, DateTimeOffset now) =>
+        Root(permission, actor, now, ConcertAccessScope.Operations);
 
     private IQueryable<ConcertEntity> FinanceRoot(
-        ResourcePolicyBinding binding, MembershipSnapshot actor, DateTimeOffset now) =>
-        Root(binding, actor, now, ResourceFacet.Finance);
+        TenantPermission permission, MembershipSnapshot actor, DateTimeOffset now) =>
+        Root(permission, actor, now, ConcertAccessScope.Finance);
 
     private IQueryable<ConcertEntity> Root(
-        ResourcePolicyBinding binding, MembershipSnapshot actor,
-        DateTimeOffset now, ResourceFacet facet) =>
-        binding.Facet == facet
-            ? context.Concerts.AsNoTracking().Where(
-                ConcertAuthorizationPolicy.Concerts(context, binding, actor, now))
-            : context.Concerts.AsNoTracking().Where(concert => false);
+        TenantPermission permission, MembershipSnapshot actor,
+        DateTimeOffset now, ConcertAccessScope scope) =>
+        context.Concerts.AsNoTracking()
+            .AccessibleBy(actor, permission, scope, now.UtcDateTime)
+            .WhereCurrentMember(context.MembershipAuthority, actor);
 }
