@@ -12,5 +12,5 @@ public sealed record ResourceGrantSnapshot(
         && Version > 0
         && !string.IsNullOrWhiteSpace(Scope)
         && ValidFrom <= now
-        && (ValidUntil is not { } until || (until > now && until > ValidFrom));
+        && (ValidUntil is not { } until || until > now);
 }
