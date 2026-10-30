@@ -98,40 +98,6 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             && snapshot.PermissionVersion == member.PermissionVersion));
     }
 
-    public Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
-        Guid membershipId, CancellationToken ct = default) =>
-        ReadWithFenceAsync(async readCt =>
-        {
-            var tenantId = await context.Memberships.AsNoTracking()
-                .Where(member => member.Id == membershipId)
-                .Select(member => (Guid?)member.TenantId).SingleOrDefaultAsync(readCt);
-            if (tenantId is null)
-                return null;
-            await LockTenantForShareAsync(tenantId.Value, readCt);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => member.Id == membershipId && member.TenantId == tenantId)
-                .ToListAsync(readCt);
-            return (await MaterializeAsync(members, readCt)).SingleOrDefault();
-        }, ct);
-
-    public Task<AuthoritySnapshot?> GetAuthoritySnapshotByUserIdAndTenantIdAsync(
-        Guid userId, Guid tenantId, CancellationToken ct = default) =>
-        ReadWithFenceAsync(async readCt =>
-        {
-            await LockTenantForShareAsync(tenantId, readCt);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => member.UserId == userId && member.TenantId == tenantId)
-                .ToListAsync(readCt);
-            var actor = (await MaterializeAsync(members, readCt)).SingleOrDefault();
-            if (actor is null)
-                return null;
-            var revision = await context.AuthorizationCatalogStates.AsNoTracking()
-                .Where(state => state.Id == 1)
-                .Select(state => state.Revision)
-                .SingleOrDefaultAsync(readCt);
-            return revision is null ? null : new AuthoritySnapshot(actor, revision);
-        }, ct);
-
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
         Guid userId, Guid tenantId, CancellationToken cancellationToken = default) =>
         ReadWithFenceAsync(async ct =>

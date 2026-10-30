@@ -13,22 +13,6 @@ internal sealed class TransactionRunner(
         Func<TService, CancellationToken, Task<TResult>> operation,
         CancellationToken ct = default)
         where TService : notnull
-        => await RunCoreAsync(operation, null, null, ct);
-
-    public async Task<TResult> RunAsync<TService, TResult>(
-        Func<TService, CancellationToken, Task<TResult>> operation,
-        Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
-        Func<TResult> authorityFailure,
-        CancellationToken ct = default)
-        where TService : notnull
-        => await RunCoreAsync(operation, validateAuthority, authorityFailure, ct);
-
-    private async Task<TResult> RunCoreAsync<TService, TResult>(
-        Func<TService, CancellationToken, Task<TResult>> operation,
-        Func<TService, TResult, CancellationToken, Task<bool>>? validateAuthority,
-        Func<TResult>? authorityFailure,
-        CancellationToken ct)
-        where TService : notnull
     {
         var scope = scopeFactory.CreateAsyncScope();
         UnitOfWork? unitOfWork = null;
@@ -57,31 +41,6 @@ internal sealed class TransactionRunner(
             }
 
             await unitOfWork.FlushAsync(ct);
-            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None);
-                return unitOfWork.FailedResult(result);
-            }
-
-            await unitOfWork.ValidateAuthorityAsync(ct);
-            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None);
-                return unitOfWork.FailedResult(result);
-            }
-            if (validateAuthority is not null
-                && !await validateAuthority(service, result, ct))
-            {
-                await unitOfWork.RollbackAsync(ct);
-                return (authorityFailure
-                    ?? throw new InvalidOperationException("An authority failure result is required."))();
-            }
-            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None);
-                return unitOfWork.FailedResult(result);
-            }
-
             await unitOfWork.CommitAsync(ct);
             return result;
         }

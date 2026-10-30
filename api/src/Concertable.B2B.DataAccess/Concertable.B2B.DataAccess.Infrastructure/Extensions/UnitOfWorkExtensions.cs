@@ -1,5 +1,4 @@
 using System.Data;
-using Concertable.B2B.Authorization.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -18,7 +17,6 @@ public static class UnitOfWorkExtensions
             return builder.Build();
         });
         services.AddScoped<UnitOfWorkAccessor>();
-        services.AddScoped<IAuthorizationContext, AuthorizationContext>();
         services.AddSingleton<ITransactionCommitter, TransactionCommitter>();
         services.AddSingleton<ITransactionRunner, TransactionRunner>();
         services.AddScoped(provider => new UnitOfWorkRunner(

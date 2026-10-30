@@ -216,13 +216,5 @@ public sealed class ConcertServiceAccessOrderingTests
             CancellationToken ct = default)
             where TService : notnull =>
             command((TService)(object)Service, ct);
-
-        public Task<TResult> RunAsync<TService, TResult>(
-            Func<TService, CancellationToken, Task<TResult>> command,
-            Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
-            Func<TResult> authorityFailure,
-            CancellationToken ct = default)
-            where TService : notnull =>
-            command((TService)(object)Service, ct);
     }
 }

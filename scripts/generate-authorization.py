@@ -13,7 +13,7 @@ BINDINGS = {
     "tenant": {"membership"},
     "conversation": {"conversation_grant", "principal_administration"},
     "concert": {"concert_grant", "venue_principal", "either_principal", "principal_administration"},
-    "opportunity": {"opportunity_grant", "venue_principal"},
+    "opportunity": {"venue_principal"},
     "application": {"application_grant", "artist_principal", "venue_principal", "principal_administration"},
     "booking": {"booking_grant", "either_principal", "principal_administration"},
     "invoice": {"invoice_grant"},

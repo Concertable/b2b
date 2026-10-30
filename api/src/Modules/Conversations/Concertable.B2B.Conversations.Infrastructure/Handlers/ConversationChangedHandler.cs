@@ -1,5 +1,6 @@
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Contracts.Events;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.DataAccess.Infrastructure;
 using Concertable.Messaging.Contracts;
@@ -43,12 +44,9 @@ internal sealed class ConversationChangedHandler : IIntegrationEventHandler<Conv
         foreach (var recipient in memberships
                      .Where(actor =>
                          actor.HasPermission(TenantPermission.MessagesRead)
-                         && ResourceGrantPolicy.Allows(
-                             conversation.AccessGrants,
-                             ConversationAccessScope.Read,
-                             actor,
-                             TenantPermission.MessagesRead,
-                             at))
+                         && conversation.AccessGrants.AsQueryable().Any(
+                             ResourceAccessGrant<ConversationAccessScope>.IsLiveFor<ConversationAccessGrant>(
+                                 actor, TenantPermission.MessagesRead, at, ConversationAccessScope.Read)))
                      .DistinctBy(actor => actor.UserId))
             await notifier.ConversationChangedAsync(recipient.UserId, e.ConversationId, ct);
     }

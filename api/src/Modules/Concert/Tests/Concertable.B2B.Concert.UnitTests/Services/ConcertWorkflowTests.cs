@@ -230,18 +230,6 @@ public sealed class ConcertWorkflowTests
             where TService : notnull =>
             command(Resolve<TService>(), ct);
 
-        public async Task<TResult> RunAsync<TService, TResult>(
-            Func<TService, CancellationToken, Task<TResult>> command,
-            Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
-            Func<TResult> authorityFailure,
-            CancellationToken ct = default)
-            where TService : notnull
-        {
-            var service = Resolve<TService>();
-            var result = await command(service, ct);
-            return await validateAuthority(service, result, ct) ? result : authorityFailure();
-        }
-
         private TService Resolve<TService>() where TService : notnull =>
             typeof(TService) == typeof(ConcertWorkflow)
                 ? (TService)(object)Workflow

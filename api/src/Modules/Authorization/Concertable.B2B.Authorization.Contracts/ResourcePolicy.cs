@@ -11,7 +11,6 @@ public enum ResourcePolicy
     ContractGrant,
     ConversationGrant,
     InvoiceGrant,
-    OpportunityGrant,
     VenuePrincipal,
     ArtistPrincipal,
     EitherPrincipal,

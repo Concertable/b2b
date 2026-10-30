@@ -20,7 +20,6 @@ internal static class ConcertQueryExtensions
             {
                 ResourcePolicy.ConcertGrant => concerts,
                 ResourcePolicy.VenuePrincipal => concerts.Where(concert => concert.VenueTenantId == actor.TenantId),
-                ResourcePolicy.ArtistPrincipal => concerts.Where(concert => concert.ArtistTenantId == actor.TenantId),
                 ResourcePolicy.EitherPrincipal or ResourcePolicy.PrincipalAdministration => concerts.Where(concert =>
                     concert.VenueTenantId == actor.TenantId || concert.ArtistTenantId == actor.TenantId),
                 _ => concerts.Where(_ => false),
