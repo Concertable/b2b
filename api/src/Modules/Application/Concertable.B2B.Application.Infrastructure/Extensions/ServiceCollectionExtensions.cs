@@ -71,6 +71,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IResourceAuthorizationEvaluator, ApplicationResourceAuthorizationEvaluator>();
+            services.AddScoped<IApplicationAuthorizer, ApplicationAuthorizer>();
             services.AddScoped<IApplicationRepository, ApplicationRepository>();
             services.AddScoped<IApplicationPrivilegedRepository, ApplicationPrivilegedRepository>();
             services.AddScoped<IApplicationEligibility, ApplicationEligibility>();

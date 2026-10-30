@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.DataAccess.Application;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
@@ -111,18 +112,8 @@ internal static class ConcertAuthorizationPolicy
         DateTimeOffset now,
         ResourceGrantSnapshot? pinned = null)
     {
-        var audience = actor.AudienceFor(permission);
-        var at = now.UtcDateTime;
-        var grants = context.ConcertAccessGrants.AsNoTracking().Where(grant =>
-            grant.Scope == scope
-            && grant.TenantId == actor.TenantId
-            && grant.RevokedAt == null
-            && grant.ValidFrom <= at
-            && (grant.ValidUntil == null || grant.ValidUntil > at)
-            && (audience == ResourceAudience.TenantResources
-                    && (grant.MembershipId == null || grant.MembershipId == actor.MembershipId)
-                || audience == ResourceAudience.AssignedResources
-                    && grant.MembershipId == actor.MembershipId));
+        var grants = context.ConcertAccessGrants.AsNoTracking().Where(
+            ResourceAccessGrant<ConcertAccessScope>.IsLiveFor<ConcertAccessGrant>(actor, permission, now.UtcDateTime, scope));
 
         if (pinned is not null)
         {
@@ -146,18 +137,8 @@ internal static class ConcertAuthorizationPolicy
         DateTimeOffset now,
         ResourceGrantSnapshot? pinned = null)
     {
-        var audience = actor.AudienceFor(permission);
-        var at = now.UtcDateTime;
-        var grants = context.InvoiceAccessGrants.AsNoTracking().Where(grant =>
-            grant.Scope == scope
-            && grant.TenantId == actor.TenantId
-            && grant.RevokedAt == null
-            && grant.ValidFrom <= at
-            && (grant.ValidUntil == null || grant.ValidUntil > at)
-            && (audience == ResourceAudience.TenantResources
-                    && (grant.MembershipId == null || grant.MembershipId == actor.MembershipId)
-                || audience == ResourceAudience.AssignedResources
-                    && grant.MembershipId == actor.MembershipId));
+        var grants = context.InvoiceAccessGrants.AsNoTracking().Where(
+            ResourceAccessGrant<InvoiceAccessScope>.IsLiveFor<InvoiceAccessGrant>(actor, permission, now.UtcDateTime, scope));
 
         if (pinned is not null)
         {

@@ -42,18 +42,18 @@ internal sealed class ConcertDbContext(
         modelBuilder.Entity<ConcertAccessGrant>().HasQueryFilter(TenantFilters.Key,
             ResourceAccessExpressions.LiveForAudience<ConcertAccessGrant, ConcertAccessScope>(
                     this,
-                    _ => OperationsAudience,
+                    () => OperationsAudience,
                     ConcertAccessScope.Summary,
                     ConcertAccessScope.Operations)
                 .Or(ResourceAccessExpressions.LiveForAudience<ConcertAccessGrant, ConcertAccessScope>(
                     this,
-                    _ => FinanceAudience,
+                    () => FinanceAudience,
                     ConcertAccessScope.Finance)));
 
         modelBuilder.Entity<InvoiceAccessGrant>().HasQueryFilter(TenantFilters.Key,
             ResourceAccessExpressions.LiveForAudience<InvoiceAccessGrant, InvoiceAccessScope>(
                 this,
-                _ => FinanceAudience,
+                () => FinanceAudience,
                 InvoiceAccessScope.Read));
 
         modelBuilder.Entity<ConcertEntity>().HasQueryFilter(TenantFilters.Key, concert =>

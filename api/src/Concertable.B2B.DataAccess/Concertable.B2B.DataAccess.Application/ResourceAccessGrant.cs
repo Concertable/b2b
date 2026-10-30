@@ -1,4 +1,6 @@
-﻿using Concertable.Kernel;
+﻿using System.Linq.Expressions;
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.Kernel;
 
 namespace Concertable.B2B.DataAccess.Application;
 
@@ -28,6 +30,54 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
 
     public bool IsLiveAt(DateTime at) =>
         RevokedAt is null && ValidFrom <= at && (ValidUntil is null || ValidUntil > at);
+
+    public static Expression<Func<TGrant, bool>> IsLiveFor<TGrant>(
+        MembershipSnapshot actor,
+        TenantPermission permission,
+        DateTime at,
+        params TScope[] scopes)
+        where TGrant : ResourceAccessGrant<TScope>
+    {
+        var audience = actor.AudienceFor(permission);
+        return IsLiveFor<TGrant>(() => actor.TenantId, () => actor.MembershipId, () => audience, () => at, scopes);
+    }
+
+    public static Expression<Func<TGrant, bool>> IsLiveFor<TGrant>(
+        Expression<Func<Guid?>> tenantId,
+        Expression<Func<Guid?>> membershipId,
+        Expression<Func<ResourceAudience>> audience,
+        Expression<Func<DateTime>> at,
+        params TScope[] scopes)
+        where TGrant : ResourceAccessGrant<TScope>
+    {
+        if (scopes.Length == 0)
+            throw new ArgumentException("At least one scope is required.", nameof(scopes));
+
+        Expression<Func<TGrant, Guid?, Guid?, ResourceAudience, DateTime, bool>> live =
+            (grant, grantee, member, coverage, now) =>
+                grant.TenantId == grantee
+                && grant.RevokedAt == null
+                && grant.ValidFrom <= now
+                && (grant.ValidUntil == null || now < grant.ValidUntil)
+                && (coverage == ResourceAudience.TenantResources
+                        && (grant.MembershipId == null || grant.MembershipId == member)
+                    || coverage == ResourceAudience.AssignedResources
+                        && grant.MembershipId == member);
+        var grant = live.Parameters[0];
+        var body = new ParameterBinder(new Dictionary<ParameterExpression, Expression>
+        {
+            [live.Parameters[1]] = tenantId.Body,
+            [live.Parameters[2]] = membershipId.Body,
+            [live.Parameters[3]] = audience.Body,
+            [live.Parameters[4]] = at.Body,
+        }).Visit(live.Body)!;
+        var scope = Expression.Property(grant, nameof(Scope));
+        var scopeMatches = scopes
+            .Select(candidate => (Expression)Expression.Equal(scope, Expression.Constant(candidate)))
+            .Aggregate(Expression.OrElse);
+
+        return Expression.Lambda<Func<TGrant, bool>>(Expression.AndAlso(scopeMatches, body), grant);
+    }
 
     protected void Initialize(
         int resourceId,
@@ -64,4 +114,10 @@ public abstract class ResourceAccessGrant<TScope> : IGuidEntity
         RevokedAt = at;
         Version++;
     }
+}
+
+file sealed class ParameterBinder(IReadOnlyDictionary<ParameterExpression, Expression> bindings) : ExpressionVisitor
+{
+    protected override Expression VisitParameter(ParameterExpression node) =>
+        bindings.TryGetValue(node, out var bound) ? bound : base.VisitParameter(node);
 }

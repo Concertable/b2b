@@ -47,7 +47,7 @@ internal sealed class ConversationChangedHandler : IIntegrationEventHandler<Conv
                              conversation.AccessGrants,
                              ConversationAccessScope.Read,
                              actor,
-                             actor.AudienceFor(TenantPermission.MessagesRead),
+                             TenantPermission.MessagesRead,
                              at))
                      .DistinctBy(actor => actor.UserId))
             await notifier.ConversationChangedAsync(recipient.UserId, e.ConversationId, ct);

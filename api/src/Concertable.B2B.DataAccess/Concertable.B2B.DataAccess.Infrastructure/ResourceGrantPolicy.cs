@@ -9,16 +9,9 @@ public static class ResourceGrantPolicy
         IEnumerable<TGrant> grants,
         TScope scope,
         MembershipSnapshot actor,
-        ResourceAudience audience,
+        TenantPermission permission,
         DateTime at)
         where TGrant : ResourceAccessGrant<TScope>
         where TScope : struct, Enum =>
-        grants.Any(grant =>
-            EqualityComparer<TScope>.Default.Equals(grant.Scope, scope)
-            && grant.TenantId == actor.TenantId
-            && grant.IsLiveAt(at)
-            && (audience == ResourceAudience.TenantResources
-                    && (grant.MembershipId is null || grant.MembershipId == actor.MembershipId)
-                || audience == ResourceAudience.AssignedResources
-                    && grant.MembershipId == actor.MembershipId));
+        grants.AsQueryable().Any(ResourceAccessGrant<TScope>.IsLiveFor<TGrant>(actor, permission, at, scope));
 }

@@ -28,11 +28,11 @@ internal sealed class ApplicationDbContext(
         modelBuilder.Entity<ApplicationAccessGrant>().HasQueryFilter(TenantFilters.Key,
             ResourceAccessExpressions.LiveForAudience<ApplicationAccessGrant, ApplicationAccessScope>(
                     this,
-                    _ => OperationsAudience,
+                    () => OperationsAudience,
                     ApplicationAccessScope.Summary)
                 .Or(ResourceAccessExpressions.LiveForAudience<ApplicationAccessGrant, ApplicationAccessScope>(
                     this,
-                    _ => TermsAudience,
+                    () => TermsAudience,
                     ApplicationAccessScope.Proposal)));
 
         modelBuilder.Entity<ApplicationEntity>().HasQueryFilter(TenantFilters.Key, application =>

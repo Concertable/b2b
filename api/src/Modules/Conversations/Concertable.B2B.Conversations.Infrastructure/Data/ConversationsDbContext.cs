@@ -32,11 +32,11 @@ internal sealed class ConversationsDbContext(
         modelBuilder.Entity<ConversationAccessGrant>().HasQueryFilter(TenantFilters.Key,
             ResourceAccessExpressions.LiveForAudience<ConversationAccessGrant, ConversationAccessScope>(
                     this,
-                    _ => ReadAudience,
+                    () => ReadAudience,
                     ConversationAccessScope.Read)
                 .Or(ResourceAccessExpressions.LiveForAudience<ConversationAccessGrant, ConversationAccessScope>(
                     this,
-                    _ => SendAudience,
+                    () => SendAudience,
                     ConversationAccessScope.SendMessages)));
 
         modelBuilder.Entity<ConversationEntity>().HasQueryFilter(TenantFilters.Key, conversation =>

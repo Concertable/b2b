@@ -64,6 +64,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMessagePrivilegedRepository, MessagePrivilegedRepository>();
         services.AddScoped<IContentReportPrivilegedRepository, ContentReportPrivilegedRepository>();
         services.AddScoped<IResourceAuthorizationEvaluator, ConversationResourceAuthorizationEvaluator>();
+        services.AddScoped<IConversationAuthorizer, ConversationAuthorizer>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
         services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
         services.AddScoped<ConversationService>();

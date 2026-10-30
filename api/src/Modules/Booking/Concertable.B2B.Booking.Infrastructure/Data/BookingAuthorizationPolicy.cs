@@ -76,17 +76,8 @@ internal static class BookingAuthorizationPolicy
         BookingAccessScope scope,
         DateTime now)
     {
-        var audience = actor.AudienceFor(permission);
-        return grants.Where(grant =>
-            grant.TenantId == actor.TenantId
-            && grant.Scope == scope
-            && grant.RevokedAt == null
-            && grant.ValidFrom <= now
-            && (grant.ValidUntil == null || now < grant.ValidUntil)
-            && (audience == ResourceAudience.TenantResources
-                    && (grant.MembershipId == null || grant.MembershipId == actor.MembershipId)
-                || audience == ResourceAudience.AssignedResources
-                    && grant.MembershipId == actor.MembershipId));
+        return grants.Where(
+            ResourceAccessGrant<BookingAccessScope>.IsLiveFor<BookingAccessGrant>(actor, permission, now, scope));
     }
 
     public static IQueryable<ContractAccessGrant> EligibleContracts(
@@ -96,16 +87,7 @@ internal static class BookingAuthorizationPolicy
         ContractAccessScope scope,
         DateTime now)
     {
-        var audience = actor.AudienceFor(permission);
-        return grants.Where(grant =>
-            grant.TenantId == actor.TenantId
-            && grant.Scope == scope
-            && grant.RevokedAt == null
-            && grant.ValidFrom <= now
-            && (grant.ValidUntil == null || now < grant.ValidUntil)
-            && (audience == ResourceAudience.TenantResources
-                    && (grant.MembershipId == null || grant.MembershipId == actor.MembershipId)
-                || audience == ResourceAudience.AssignedResources
-                    && grant.MembershipId == actor.MembershipId));
+        return grants.Where(
+            ResourceAccessGrant<ContractAccessScope>.IsLiveFor<ContractAccessGrant>(actor, permission, now, scope));
     }
 }

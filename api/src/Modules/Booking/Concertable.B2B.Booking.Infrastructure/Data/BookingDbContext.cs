@@ -28,14 +28,14 @@ internal sealed class BookingDbContext(
         modelBuilder.Entity<BookingAccessGrant>().HasQueryFilter(TenantFilters.Key,
             ResourceAccessExpressions.LiveForAudience<BookingAccessGrant, BookingAccessScope>(
                 this,
-                _ => OperationsAudience,
+                () => OperationsAudience,
                 BookingAccessScope.Summary,
                 BookingAccessScope.Operations));
 
         modelBuilder.Entity<ContractAccessGrant>().HasQueryFilter(TenantFilters.Key,
             ResourceAccessExpressions.LiveForAudience<ContractAccessGrant, ContractAccessScope>(
                 this,
-                _ => TermsAudience,
+                () => TermsAudience,
                 ContractAccessScope.Read));
 
         modelBuilder.Entity<BookingEntity>().HasQueryFilter(TenantFilters.Key, booking =>

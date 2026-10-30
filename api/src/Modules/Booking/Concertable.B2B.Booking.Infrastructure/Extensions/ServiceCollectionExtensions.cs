@@ -65,6 +65,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IResourceAuthorizationEvaluator, BookingResourceAuthorizationEvaluator>();
             services.AddScoped<IResourceAuthorizationEvaluator, ContractResourceAuthorizationEvaluator>();
+            services.AddScoped<IBookingAuthorizer, BookingAuthorizer>();
             services.AddScoped<IBookingRepository, BookingRepository>();
             services.AddScoped<IBookingPrivilegedRepository, BookingPrivilegedRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();
