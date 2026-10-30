@@ -10,9 +10,10 @@ import type {
 import { useMountEffect } from "@concertable/shared/hooks/useMountEffect";
 import { useConcertStore } from "../store/useConcertStore";
 import type { ConcertOperations } from "../types";
-import { myConcertKeys, useMyConcertQuery } from "./useMyConcertQuery";
+import { concertKeys } from "../queryKeys";
+import { useConcertOperationsQuery } from "./useConcertOperationsQuery";
 
-interface UseMyConcertResult {
+interface UseConcertOperationsResult {
   concert: ConcertOperations | undefined;
   draft:
     | Pick<Concert, "name" | "about" | "price" | "totalTickets">
@@ -38,8 +39,8 @@ const emptyRequest: UpdateConcertRequest = {
   totalTickets: 0,
 };
 
-export function useMyConcert(id: number): UseMyConcertResult {
-  const { data: concert, isLoading, isError } = useMyConcertQuery(id);
+export function useConcertOperations(id: number): UseConcertOperationsResult {
+  const { data: concert, isLoading, isError } = useConcertOperationsQuery(id);
   const queryClient = useQueryClient();
   const draft = useConcertStore((state) => state.draft);
   const editMode = useConcertStore((state) => state.editMode);
@@ -64,7 +65,7 @@ export function useMyConcert(id: number): UseMyConcertResult {
     mutationFn: (request: UpdateConcertRequest) =>
       concertApi.updateConcert(id, request),
     onSuccess: (saved) => {
-      queryClient.setQueryData<ConcertOperations>(myConcertKeys.operations(id), (previous) =>
+      queryClient.setQueryData<ConcertOperations>(concertKeys.operations(id), (previous) =>
         previous ? { ...previous, ...saved } : undefined,
       );
       reset();

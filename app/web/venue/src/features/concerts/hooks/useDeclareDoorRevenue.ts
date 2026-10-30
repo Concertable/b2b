@@ -9,7 +9,7 @@ import {
   doorRevenueRequestSchema,
   type DoorRevenueRequest,
 } from "@concertable/shared/features/concerts/schemas/doorRevenueRequestSchema";
-import { myConcertKeys } from "@concertable/web-b2b/features/concerts";
+import { concertKeys } from "@concertable/web-b2b/features/concerts";
 import { venueDashboardKey } from "../../dashboard/queryKeys";
 
 export function useDeclareDoorRevenue(
@@ -33,7 +33,7 @@ export function useDeclareDoorRevenue(
       concertApi.declareDoorRevenue(concert.id, request),
     onSuccess: () => {
       toast.success("Door takings recorded. The artist's share will settle shortly.");
-      queryClient.invalidateQueries({ queryKey: myConcertKeys.finance(concert.id) });
+      queryClient.invalidateQueries({ queryKey: concertKeys.finance(concert.id) });
       queryClient.invalidateQueries({ queryKey: venueDashboardKey("kpis") });
     },
   });

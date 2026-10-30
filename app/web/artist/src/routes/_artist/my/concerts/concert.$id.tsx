@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MyConcertPage } from "@concertable/web-b2b/features/concerts";
+import { ConcertOperationsPage } from "@concertable/web-b2b/features/concerts";
 
 export const Route = createFileRoute("/_artist/my/concerts/concert/$id")({
   params: {
@@ -8,6 +8,6 @@ export const Route = createFileRoute("/_artist/my/concerts/concert/$id")({
   },
   component: () => {
     const { id } = Route.useParams();
-    return <MyConcertPage id={id} />;
+    return <ConcertOperationsPage id={id} />;
   },
 });

@@ -22,12 +22,10 @@ export type {
 } from "./types";
 export { useESignature } from "./hooks/useESignature";
 export { ConfirmActionDialog } from "./components/applications/ConfirmActionDialog";
-export { MyConcertPage } from "./pages/MyConcertPage";
-export { useMyConcert } from "./hooks/useMyConcert";
-export {
-  myConcertKeys,
-  useConcertFinanceQuery,
-} from "./hooks/useMyConcertQuery";
+export { ConcertOperationsPage } from "./pages/ConcertOperationsPage";
+export { useConcertOperations } from "./hooks/useConcertOperations";
+export { concertKeys } from "./queryKeys";
+export { useConcertFinanceQuery } from "./hooks/useConcertFinanceQuery";
 export { useOpportunitiesQuery } from "./hooks/useOpportunitiesQuery";
 export {
   useApplicationQuery,

@@ -1,9 +1,10 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { BriefcaseBusiness, Building2, Music2, Settings, User } from "lucide-react-native";
+import { BriefcaseBusiness, Building2, MessageCircle, Music2, Settings, User } from "lucide-react-native";
 import type {
   TenantBusinessActivity,
   TenantPermission,
 } from "@concertable/b2b/features/tenant/types";
+import { ConversationsScreen } from "../features/business/screens/ConversationsScreen";
 import { OperationsScreen } from "../features/business/screens/OperationsScreen";
 import { OrganizationScreen } from "../features/business/screens/OrganizationScreen";
 import { MyArtistStack } from "./MyArtistStack";
@@ -60,6 +61,17 @@ export function BusinessNavigator({
           options={{
             tabBarIcon: ({ color, size }) => (
               <Music2 size={size} color={color} />
+            ),
+          }}
+        />
+      ) : null}
+      {permissions.has("messages.read") ? (
+        <Tab.Screen
+          name="Messages"
+          component={ConversationsScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MessageCircle size={size} color={color} />
             ),
           }}
         />
