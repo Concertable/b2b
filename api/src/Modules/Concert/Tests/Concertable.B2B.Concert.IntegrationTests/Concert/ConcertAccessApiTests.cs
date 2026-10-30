@@ -446,7 +446,10 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
 
     private async Task<AssignmentRace> ArrangeAssignedStaffAsync()
     {
-        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
+        var venueTenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
+        var booking = fixture.SeedState.Bookings.First(value =>
+            value.VenueTenantId == venueTenantId && value.State == fixture.SeedState.ConfirmedBooking.State);
+        var concert = fixture.SeedState.ConcertFor(booking);
         var owner = CreateOwningVenueClient(concert.VenueId);
         var staffUser = fixture.SeedState.VenueManager3;
         var membershipId = fixture.SeedState.Memberships.Single(value =>
