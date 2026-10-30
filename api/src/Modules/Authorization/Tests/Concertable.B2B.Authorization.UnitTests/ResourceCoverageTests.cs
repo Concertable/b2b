@@ -19,4 +19,21 @@ public sealed class ResourceCoverageTests
     {
         Assert.Equal(expected, held.Covers(required));
     }
+
+    [Theory]
+    [InlineData(ResourceCoverage.None, false)]
+    [InlineData(ResourceCoverage.AssignedResources, true)]
+    [InlineData(ResourceCoverage.TenantResources, true)]
+    [InlineData((ResourceCoverage)99, false)]
+    public void IsGranted_OnlyForDeclaredBreadths(ResourceCoverage coverage, bool expected)
+    {
+        Assert.Equal(expected, coverage.IsGranted);
+    }
+
+    [Fact]
+    public void Values_BroaderCoverageComparesGreater()
+    {
+        Assert.True(ResourceCoverage.TenantResources > ResourceCoverage.AssignedResources);
+        Assert.True(ResourceCoverage.AssignedResources > ResourceCoverage.None);
+    }
 }

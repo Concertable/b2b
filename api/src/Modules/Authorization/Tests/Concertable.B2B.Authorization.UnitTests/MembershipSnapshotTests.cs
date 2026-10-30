@@ -58,4 +58,48 @@ public sealed class MembershipSnapshotTests
         Assert.False(actor.HasSameAuthorityAs(changed));
         Assert.True(actor.HasSameAuthorityAs(actor with { }));
     }
+
+    [Fact]
+    public void CoverageFor_UnheldOrDefaultPermission_IsNone()
+    {
+        Assert.Equal(ResourceCoverage.None, actor.CoverageFor(TenantPermission.SettlementView));
+        Assert.Equal(ResourceCoverage.None, actor.CoverageFor(default));
+        Assert.False(actor.HasPermission(TenantPermission.SettlementView));
+    }
+
+    [Fact]
+    public void HasSameAuthorityAs_RolePolicyVersionChanged_IsAnotherAuthority()
+    {
+        Assert.False(actor.HasSameAuthorityAs(actor with { RolePolicyVersion = actor.RolePolicyVersion + 1 }));
+    }
+
+    [Fact]
+    public void HasSameAuthorityAs_CoverageNarrowedUnderTheSameVersions_IsAnotherAuthority()
+    {
+        var narrowed = actor with
+        {
+            Permissions = actor.Permissions.SetItem(TenantPermission.OperationsView, ResourceCoverage.AssignedResources),
+        };
+
+        Assert.False(actor.HasSameAuthorityAs(narrowed));
+    }
+
+    [Fact]
+    public void HasSameAuthorityAs_AnotherMembershipOrNone_IsAnotherAuthority()
+    {
+        Assert.False(actor.HasSameAuthorityAs(actor with { MembershipId = Guid.NewGuid() }));
+        Assert.False(actor.HasSameAuthorityAs(null));
+    }
+
+    [Fact]
+    public void HasSameAuthorityAs_IndependentlyBuiltEqualPermissions_IsTheSameAuthority()
+    {
+        var rebuilt = actor with
+        {
+            Permissions = ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty
+                .Add(TenantPermission.OperationsView, ResourceCoverage.TenantResources),
+        };
+
+        Assert.True(actor.HasSameAuthorityAs(rebuilt));
+    }
 }

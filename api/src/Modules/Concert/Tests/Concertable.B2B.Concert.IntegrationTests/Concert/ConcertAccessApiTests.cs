@@ -1,6 +1,8 @@
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Application.Responses;
 using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
@@ -398,6 +400,101 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(removed.AccessVersion, afterRepeatedRemove.AccessVersion);
     }
+
+    [Fact]
+    public async Task OpsEdit_WhenTheMemberAssignmentIsRevokedBeforeItLocksTheConcert_IsDenied()
+    {
+        var race = await ArrangeAssignedStaffAsync();
+        fixture.CommandPause.Arm(command => IsConcertRowLock(command, race.Concert.Id));
+        var edit = race.Staff.PutAsync(
+            $"/api/concert/{race.Concert.Id}",
+            ConcertRequestBuilders.BuildPostRequest(name: "Edited by staff"));
+        await fixture.CommandPause.WaitUntilPausedAsync();
+
+        var revocation = await RevokeAssignmentAsync(race);
+        fixture.CommandPause.Release();
+
+        await revocation.ShouldBe(HttpStatusCode.NoContent);
+        await (await edit).ShouldBe(HttpStatusCode.Forbidden);
+        var persisted = await LoadWithGrantsAsync(race.Concert.Id);
+        Assert.NotEqual("Edited by staff", persisted.Name);
+        Assert.False(HasLiveAssignment(persisted, race.MembershipId));
+    }
+
+    [Fact]
+    public async Task Revocation_WhileAnOpsEditHoldsTheConcertLock_WaitsForTheEditToCommit()
+    {
+        var race = await ArrangeAssignedStaffAsync();
+        fixture.CommandPause.Arm(command => IsConcertUpdate(command, race.Concert.Id));
+        var edit = race.Staff.PutAsync(
+            $"/api/concert/{race.Concert.Id}",
+            ConcertRequestBuilders.BuildPostRequest(name: "Edited by staff"));
+        await fixture.CommandPause.WaitUntilPausedAsync();
+
+        var revocation = RevokeAssignmentAsync(race);
+        await PostgresLockWaits.WaitForWaiterAsync(fixture.ConnectionString, """%concert."Concerts"%FOR UPDATE%""");
+        var revokedWhileLocked = revocation.IsCompleted;
+        fixture.CommandPause.Release();
+
+        await (await edit).ShouldBe(HttpStatusCode.OK);
+        await (await revocation).ShouldBe(HttpStatusCode.NoContent);
+        Assert.False(revokedWhileLocked);
+        var persisted = await LoadWithGrantsAsync(race.Concert.Id);
+        Assert.Equal("Edited by staff", persisted.Name);
+        Assert.False(HasLiveAssignment(persisted, race.MembershipId));
+    }
+
+    private async Task<AssignmentRace> ArrangeAssignedStaffAsync()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
+        var owner = CreateOwningVenueClient(concert.VenueId);
+        var staffUser = fixture.SeedState.VenueManager3;
+        var membershipId = fixture.SeedState.Memberships.Single(value =>
+            value.TenantId == concert.VenueTenantId && value.UserId == staffUser.Id).Id;
+
+        var demotion = await owner.PutAsJsonAsync(
+            $"/api/organization/members/{staffUser.Id}/roles",
+            new { roleIds = new[] { SystemPresetIds.For(concert.VenueTenantId, "Staff") } });
+        await demotion.ShouldBe(HttpStatusCode.NoContent);
+        var assignment = await owner.PostAsync(
+            $"/api/concert/{concert.Id}/member-assignments",
+            new { membershipId, expectedAccessVersion = concert.AccessVersion });
+        await assignment.ShouldBe(HttpStatusCode.NoContent);
+
+        var staff = fixture.CreateClient(staffUser);
+        staff.DefaultRequestHeaders.Add(TenantHeaders.TenantId, concert.VenueTenantId.ToString());
+        return new AssignmentRace(concert, owner, staff, membershipId, concert.AccessVersion + 1);
+    }
+
+    private static Task<HttpResponseMessage> RevokeAssignmentAsync(AssignmentRace race) =>
+        race.Owner.DeleteAsync(
+            $"/api/concert/{race.Concert.Id}/member-assignments/{race.MembershipId}?expectedVersion={race.AssignedAccessVersion}");
+
+    private Task<ConcertEntity> LoadWithGrantsAsync(int concertId) =>
+        fixture.Concerts.AsNoTracking()
+            .Include(value => value.AccessGrants)
+            .SingleAsync(value => value.Id == concertId);
+
+    private static bool HasLiveAssignment(ConcertEntity concert, Guid membershipId) =>
+        concert.AccessGrants.Any(grant => grant.Kind == ResourceGrantKind.MemberAssignment
+                                          && grant.MembershipId == membershipId
+                                          && grant.RevokedAt is null);
+
+    private static bool IsConcertRowLock(DbCommand command, int concertId) =>
+        command.CommandText.Contains("FROM concert.\"Concerts\"", StringComparison.Ordinal)
+        && command.CommandText.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase)
+        && command.HasParameter(concertId);
+
+    private static bool IsConcertUpdate(DbCommand command, int concertId) =>
+        command.CommandText.Contains("UPDATE concert.\"Concerts\"", StringComparison.Ordinal)
+        && command.HasParameter(concertId);
+
+    private sealed record AssignmentRace(
+        ConcertEntity Concert,
+        HttpClient Owner,
+        HttpClient Staff,
+        Guid MembershipId,
+        long AssignedAccessVersion);
 
     private Guid TenantOf(Guid userId) =>
         fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == userId).Id;

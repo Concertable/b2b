@@ -80,4 +80,26 @@ public sealed class ResourceAccessGrantTests
 
         public void Revoke(DateTime at) => RevokeCore(at);
     }
+
+    [Fact]
+    public void IsLiveFor_SeveralScopes_MatchesAnyOfThem()
+    {
+        var live = ResourceAccessGrant<TestScope>.IsLiveFor<TestGrant>(
+            Actor, TenantPermission.OperationsView, Now, TestScope.Operations, TestScope.Finance);
+
+        Assert.True(new[] { Grant(scope: TestScope.Finance) }.AsQueryable().Any(live));
+    }
+
+    [Fact]
+    public void IsLiveFor_NoScopes_IsRejected()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            ResourceAccessGrant<TestScope>.IsLiveFor<TestGrant>(Actor, TenantPermission.OperationsView, Now));
+    }
+
+    [Fact]
+    public void IsLiveFor_GrantStartingNow_IsLive()
+    {
+        Assert.True(IsLive(TenantPermission.OperationsView, Grant(validFrom: Now)));
+    }
 }

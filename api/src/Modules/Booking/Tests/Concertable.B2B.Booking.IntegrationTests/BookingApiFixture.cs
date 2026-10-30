@@ -16,6 +16,7 @@ public sealed class BookingApiFixture : ApiFixture
     private BookingDbContext dbContext = null!;
 
     internal ConcurrencyConflictInterceptor Conflicts { get; } = new();
+    internal CommandPauseInterceptor CommandPause { get; } = new();
 
     internal string ConnectionString => dbContext.Database.GetConnectionString()!;
     internal IQueryable<BookingEntity> Bookings => readDbContext.Bookings;
@@ -45,6 +46,14 @@ public sealed class BookingApiFixture : ApiFixture
             "Bookings",
             "CK_Bookings_FailUpdate_ForTest");
 
+    internal Task<long> GetPermissionVersionAsync(Guid tenantId, Guid userId) =>
+        dbContext.Database.SqlQuery<long>($"""
+                SELECT "PermissionVersion" AS "Value"
+                FROM tenant."Memberships"
+                WHERE "TenantId" = {tenantId} AND "UserId" = {userId}
+                """)
+            .SingleAsync();
+
     internal Task<int> GetConcertCountAsync(int bookingId) =>
         dbContext.Database.SqlQuery<int>($"""
                 SELECT COUNT(*)::int AS "Value"
@@ -64,9 +73,11 @@ public sealed class BookingApiFixture : ApiFixture
 
     protected override void OnConfigureServices(IServiceCollection services)
     {
-        services.AddResettables(Conflicts);
+        services.AddResettables(Conflicts, CommandPause);
         services.ConfigureDbContext<BookingDbContext>(
             (_, options) => options.AddInterceptors(Conflicts));
+        services.ConfigureDbContext<BookingPrivilegedDbContext>(
+            (_, options) => options.AddInterceptors(CommandPause));
     }
 
     protected override void OnReset(IServiceScope scope)

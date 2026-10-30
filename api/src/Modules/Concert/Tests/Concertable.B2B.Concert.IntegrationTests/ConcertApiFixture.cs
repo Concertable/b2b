@@ -32,6 +32,8 @@ public sealed class ConcertApiFixture : ApiFixture
     private string connectionString = null!;
 
     internal IQueryable<ConcertEntity> Concerts => readDbContext.Concerts;
+    internal CommandPauseInterceptor CommandPause { get; } = new();
+    internal string ConnectionString => connectionString;
 
     internal async Task<HttpResponseMessage> GetConcertByApplicationAsync(HttpClient client, int applicationId)
     {
@@ -497,6 +499,9 @@ public sealed class ConcertApiFixture : ApiFixture
 
     protected override void OnConfigureServices(IServiceCollection services)
     {
+        services.AddResettables(CommandPause);
+        services.ConfigureDbContext<ConcertPrivilegedDbContext>(
+            (_, options) => options.AddInterceptors(CommandPause));
     }
 
     protected override void OnReset(IServiceScope scope)

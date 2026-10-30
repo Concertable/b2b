@@ -27,11 +27,18 @@ like redundant synonyms; they aren't, and you **cannot** collapse them — a *fi
     words — you can't put "payee" on an invoice. Mapping: `supplier` = settlement payee, `customer` =
     settlement payer.
 
-**Neither axis is visibility.** Who may read a concert, its invoice or its booking is a
-`ConcertAccessGrant` / `InvoiceAccessGrant` / `BookingAccessGrant` at a named scope — the roster is in
-[`CODE_PATTERNS.md`](../../../CODE_PATTERNS.md). A promoter or a production member reaches an engagement
-through a grant while being neither the venue nor the act, which is exactly what the old
-`venue == me || artist == me` filter could not express.
+**Neither axis is visibility.** Who may read or change a concert or its invoice is the module's own
+`AccessibleBy` rule (`ConcertQueryExtensions`, `InvoiceQueryExtensions`): the permission's catalog binding
+names a principal policy (venue, either party) and the `ConcertAccessScope` / `InvoiceAccessScope` grants
+it requires, and a live `ConcertAccessGrant` / `InvoiceAccessGrant` must cover the member. A promoter or a
+production member reaches an engagement through a grant while being neither the venue nor the act. Writes
+decide through `ConcertAuthorizer`, which locks before it checks; the design is in
+[ARCHITECTURE.md § Authorization](../../../../ARCHITECTURE.md#authorization).
+
+```csharp
+if ((await AuthorizeConcertAsync(id, TenantPermission.ConcertsOpsEdit, ConcertAccessScope.Operations, ct)).IsFailure)
+    return new UpdateConcertError.NotPermitted();
+```
 
 **`Party`** is the abstract "one side," and is **reserved for the invoice snapshot VO** (`InvoiceParty`:
 a side's legal identity frozen at settlement). It is **not** a synonym for `tenant` — don't use the bare

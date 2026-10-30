@@ -1,10 +1,14 @@
 using Concertable.B2B.Infrastructure.Payments;
+using System.Data.Common;
 using System.Net;
+using System.Net.Http.Json;
 using Concertable.B2B.Application.Contracts;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -448,6 +452,82 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.Forbidden);
         Assert.Equal(BookingState.AwaitingConfirmation, await StateOfAsync(bookingId));
     }
+
+    [Fact]
+    public async Task Cancel_WhenADemotionCommitsAfterTheRequestStarted_IsDeniedUnderTheNewRoles()
+    {
+        var race = await ArrangeDemotionRaceAsync();
+        fixture.CommandPause.Arm(command => IsPartyRead(command, race.BookingId));
+        var cancellation = race.Manager.PostAsync($"/api/booking/{race.BookingId}/cancel", (object?)null);
+        await fixture.CommandPause.WaitUntilPausedAsync();
+
+        var demotion = await DemoteAsync(race);
+        fixture.CommandPause.Release();
+
+        await demotion.ShouldBe(HttpStatusCode.NoContent);
+        await (await cancellation).ShouldBe(HttpStatusCode.Forbidden);
+        Assert.Equal(race.PermissionVersion + 1, await fixture.GetPermissionVersionAsync(race.TenantId, race.ManagerId));
+        Assert.Equal(BookingState.AwaitingConfirmation, await StateOfAsync(race.BookingId));
+    }
+
+    [Fact]
+    public async Task Demotion_WhileACancelHoldsItsAuthorizationLocks_WaitsForTheCancelToCommit()
+    {
+        var race = await ArrangeDemotionRaceAsync();
+        fixture.CommandPause.Arm(command => IsBookingRowLock(command, race.BookingId));
+        var cancellation = race.Manager.PostAsync($"/api/booking/{race.BookingId}/cancel", (object?)null);
+        await fixture.CommandPause.WaitUntilPausedAsync();
+
+        var demotion = DemoteAsync(race);
+        await PostgresLockWaits.WaitForWaiterAsync(fixture.ConnectionString, """%tenant."Tenants"%FOR UPDATE%""");
+        var demotedWhileLocked = demotion.IsCompleted;
+        fixture.CommandPause.Release();
+
+        await (await cancellation).ShouldBe(HttpStatusCode.NoContent);
+        await (await demotion).ShouldBe(HttpStatusCode.NoContent);
+        Assert.False(demotedWhileLocked);
+        Assert.Equal(BookingState.CancellationPending, await StateOfAsync(race.BookingId));
+        Assert.Equal(race.PermissionVersion + 1, await fixture.GetPermissionVersionAsync(race.TenantId, race.ManagerId));
+    }
+
+    private async Task<DemotionRace> ArrangeDemotionRaceAsync()
+    {
+        var ownerUser = fixture.SeedState.VenueManager1;
+        var managerUser = fixture.SeedState.VenueManager3;
+        var tenantId = fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == ownerUser.Id).Id;
+        var owner = fixture.CreateClient(ownerUser);
+        var bookingId = await AcceptFlatFeeAsync(owner);
+        var manager = fixture.CreateClient(managerUser);
+        manager.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
+        return new DemotionRace(
+            owner, manager, tenantId, managerUser.Id, bookingId,
+            await fixture.GetPermissionVersionAsync(tenantId, managerUser.Id));
+    }
+
+    private static Task<HttpResponseMessage> DemoteAsync(DemotionRace race) =>
+        race.Owner.PutAsJsonAsync(
+            $"/api/organization/members/{race.ManagerId}/roles",
+            new { roleIds = new[] { SystemPresetIds.For(race.TenantId, "Staff") } });
+
+    private static bool IsPartyRead(DbCommand command, int bookingId) =>
+        command.CommandText.Contains("FROM booking.\"Bookings\"", StringComparison.Ordinal)
+        && command.CommandText.Contains("\"VenueTenantId\"", StringComparison.Ordinal)
+        && command.CommandText.Contains("\"ArtistTenantId\"", StringComparison.Ordinal)
+        && !command.CommandText.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase)
+        && command.HasParameter(bookingId);
+
+    private static bool IsBookingRowLock(DbCommand command, int bookingId) =>
+        command.CommandText.Contains("FROM booking.\"Bookings\"", StringComparison.Ordinal)
+        && command.CommandText.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase)
+        && command.HasParameter(bookingId);
+
+    private sealed record DemotionRace(
+        HttpClient Owner,
+        HttpClient Manager,
+        Guid TenantId,
+        Guid ManagerId,
+        int BookingId,
+        long PermissionVersion);
 
     private async Task<int> AcceptFlatFeeAsync(HttpClient client)
     {
