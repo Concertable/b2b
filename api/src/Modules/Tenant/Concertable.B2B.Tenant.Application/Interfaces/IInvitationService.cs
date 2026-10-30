@@ -11,7 +11,7 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 /// </summary>
 internal interface IInvitationService
 {
-    Task<IReadOnlyList<InvitationDto>> ListPendingInvitationsAsync(CancellationToken ct = default);
+    Task<Result<IReadOnlyList<InvitationDto>, ListInvitationsError>> ListPendingInvitationsAsync(CancellationToken ct = default);
     Task<Result<InvitationDto, InviteMemberError>> InviteAsync(InviteMemberRequest request, CancellationToken ct = default);
     Task<UnitResult<RevokeInvitationError>> RevokeInvitationAsync(Guid invitationId, CancellationToken ct = default);
     Task<Result<MembershipDto, AcceptInvitationError>> AcceptInvitationAsync(Guid invitationId, CancellationToken ct = default);

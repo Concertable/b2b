@@ -10,7 +10,7 @@ public sealed class MessageEntity : IIdEntity
     public int ConversationId { get; private set; }
     public long Sequence { get; private set; }
     public Guid RequestId { get; private set; }
-    public CommandPayloadHash PayloadHash { get; private set; } = null!;
+    public IdempotencyHash IdempotencyHash { get; private set; }
     public string Content { get; private set; } = null!;
     public Guid SenderTenantId { get; private set; }
     public Guid SentByMembershipId { get; private set; }
@@ -28,7 +28,7 @@ public sealed class MessageEntity : IIdEntity
         int conversationId,
         long sequence,
         Guid requestId,
-        CommandPayloadHash payloadHash,
+        IdempotencyHash idempotencyHash,
         Guid senderTenantId,
         Guid sentByMembershipId,
         Guid sentByUserId,
@@ -39,7 +39,9 @@ public sealed class MessageEntity : IIdEntity
             ConversationId = conversationId,
             Sequence = sequence,
             RequestId = requestId,
-            PayloadHash = payloadHash ?? throw new ArgumentNullException(nameof(payloadHash)),
+            IdempotencyHash = idempotencyHash != default
+                ? idempotencyHash
+                : throw new ArgumentException("An idempotency hash is required.", nameof(idempotencyHash)),
             SenderTenantId = senderTenantId,
             SentByMembershipId = sentByMembershipId,
             SentByUserId = sentByUserId,

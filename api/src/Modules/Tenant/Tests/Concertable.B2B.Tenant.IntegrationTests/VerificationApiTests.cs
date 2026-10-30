@@ -146,7 +146,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
         var owner = fixture.SeedState.UnverifiedVenueManager;
         var tenantId = TenantOf(owner.Id);
         var staff = fixture.SeedState.VenueManagerNoVenue;
-        await fixture.AddMembershipAsync(tenantId, staff.Id, TenantRole.Staff);
+        await fixture.AddMembershipAsync(tenantId, staff.Id, "Staff");
         var client = fixture.CreateClient(staff);
         client.DefaultRequestHeaders.Add(TenantHeaders.TenantId, tenantId.ToString());
 

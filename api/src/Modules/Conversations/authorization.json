@@ -1,0 +1,63 @@
+{
+  "permissions": [
+    {
+      "name": "messages.read",
+      "symbol": "MessagesRead",
+      "label": "Read messages",
+      "category": "Conversations",
+      "assignableAudiences": [
+        "AssignedResources",
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources",
+        "Finance": "TenantResources",
+        "Staff": "AssignedResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "conversation",
+          "facet": "Read",
+          "policy": "conversation_grant",
+          "requiresScopes": [
+            "Read"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "messages.send",
+      "symbol": "MessagesSend",
+      "label": "Send messages",
+      "category": "Conversations",
+      "assignableAudiences": [
+        "AssignedResources",
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources",
+        "Staff": "AssignedResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "conversation",
+          "facet": "SendMessages",
+          "policy": "conversation_grant",
+          "requiresScopes": [
+            "SendMessages"
+          ]
+        },
+        {
+          "resource": "tenant",
+          "facet": null,
+          "policy": "membership",
+          "requiresScopes": []
+        }
+      ]
+    }
+  ]
+}

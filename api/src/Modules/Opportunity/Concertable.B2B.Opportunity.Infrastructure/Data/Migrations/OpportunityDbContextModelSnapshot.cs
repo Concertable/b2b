@@ -32,7 +32,14 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.PrimitiveCollection<List<int>>("CancelledApplicationIds")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
                     b.Property<int>("DealId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("FilledByApplicationId")
                         .HasColumnType("integer");
 
                     b.PrimitiveCollection<int[]>("Genres")

@@ -6,6 +6,9 @@ internal interface IInvitationRepository : IRepository<TenantInvitationEntity, G
 {
     Task<TenantInvitationEntity?> GetByIdForUpdateAsync(Guid invitationId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<TenantInvitationEntity>> ListPendingAssignedToRoleAsync(
+        Guid tenantId, Guid roleId, CancellationToken ct = default);
+
     /// <summary>Every invitation row of a tenant — the delete-org cascade removes them so no invitation outlives its tenant.</summary>
     Task<IReadOnlyList<TenantInvitationEntity>> ListInvitationsByTenantAsync(Guid tenantId, CancellationToken ct = default);
 

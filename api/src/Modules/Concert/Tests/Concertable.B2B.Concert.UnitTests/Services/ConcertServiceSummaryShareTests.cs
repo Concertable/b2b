@@ -20,7 +20,7 @@ public sealed class ConcertServiceSummaryShareTests
         var result = ConcertService.RecoverSummaryShareDuplicate(
             recovery.Concert,
             recovery.Receipt,
-            recovery.PayloadHash);
+            recovery.IdempotencyHash);
 
         Assert.True(result.TryGetValue(out var share));
         Assert.Equal(recovery.Grant.Id, share.GrantId);
@@ -34,7 +34,7 @@ public sealed class ConcertServiceSummaryShareTests
         var result = ConcertService.RecoverSummaryShareDuplicate(
             recovery.Concert,
             recovery.Receipt,
-            CommandPayloadHash.Create("different"));
+            IdempotencyHash.Create("different"));
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<ShareConcertSummaryError.RequestConflict>(error);
@@ -53,7 +53,7 @@ public sealed class ConcertServiceSummaryShareTests
             ConcertService.RecoverSummaryShareDuplicate(
                 concert,
                 recovery.Receipt,
-                recovery.PayloadHash));
+                recovery.IdempotencyHash));
 
         Assert.Contains(recovery.Receipt.Id.ToString(), exception.Message);
         Assert.Contains(recovery.Grant.Id.ToString(), exception.Message);
@@ -67,7 +67,7 @@ public sealed class ConcertServiceSummaryShareTests
             ConfirmedBookings.VenueTenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             Guid.NewGuid(),
-            recovery.PayloadHash,
+            recovery.IdempotencyHash,
             "not-a-grant-id",
             DateTime.UnixEpoch);
 
@@ -75,7 +75,7 @@ public sealed class ConcertServiceSummaryShareTests
             ConcertService.RecoverSummaryShareDuplicate(
                 recovery.Concert,
                 receipt,
-                recovery.PayloadHash));
+                recovery.IdempotencyHash));
 
         Assert.Contains(receipt.Id.ToString(), exception.Message);
         Assert.Contains("invalid grant outcome", exception.Message);
@@ -89,7 +89,7 @@ public sealed class ConcertServiceSummaryShareTests
         var result = ConcertService.RecoverSummaryShareDuplicate(
             recovery.Concert,
             null,
-            recovery.PayloadHash);
+            recovery.IdempotencyHash);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<ShareConcertSummaryError.AlreadyShared>(error);
@@ -109,7 +109,7 @@ public sealed class ConcertServiceSummaryShareTests
             DateTime.UnixEpoch,
             null);
         Assert.True(grantResult.TryGetValue(out var grant));
-        var payloadHash = CommandPayloadHash.Create(
+        var idempotencyHash = IdempotencyHash.Create(
             concert.Id,
             RecipientTenantId,
             null,
@@ -118,15 +118,15 @@ public sealed class ConcertServiceSummaryShareTests
             ConfirmedBookings.VenueTenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             Guid.NewGuid(),
-            payloadHash,
+            idempotencyHash,
             grant.Id.ToString(),
             DateTime.UnixEpoch);
-        return new Recovery(concert, grant, receipt, payloadHash);
+        return new Recovery(concert, grant, receipt, idempotencyHash);
     }
 
     private sealed record Recovery(
         ConcertEntity Concert,
         ConcertAccessGrant Grant,
         ConcertCommandReceipt Receipt,
-        CommandPayloadHash PayloadHash);
+        IdempotencyHash IdempotencyHash);
 }

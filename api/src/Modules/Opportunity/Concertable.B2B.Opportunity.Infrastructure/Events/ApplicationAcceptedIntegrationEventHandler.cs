@@ -29,8 +29,22 @@ internal sealed class ApplicationAcceptedIntegrationEventHandler : IIntegrationE
                 return;
 
             context.AddInboxMessage(envelope, handler);
+            await LockOpportunityAsync(@event.OpportunityId, ct);
             var opportunity = await context.Opportunities
-                .SingleOrDefaultAsync(value => value.Id == @event.OpportunityId, ct);
-            opportunity?.MarkFilled();
+                .SingleOrDefaultAsync(
+                    value => value.Id == @event.OpportunityId
+                             && value.TenantId == @event.VenueTenantId,
+                    ct);
+            opportunity?.MarkFilled(@event.ApplicationId);
         }, ct);
+
+    private Task LockOpportunityAsync(int opportunityId, CancellationToken ct) =>
+        context.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+             SELECT 1
+             FROM opportunity."Opportunities"
+             WHERE "Id" = {opportunityId}
+             FOR UPDATE
+             """,
+            ct);
 }

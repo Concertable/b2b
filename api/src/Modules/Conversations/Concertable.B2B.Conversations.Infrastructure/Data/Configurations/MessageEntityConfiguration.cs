@@ -13,8 +13,8 @@ internal sealed class MessageEntityConfiguration : IEntityTypeConfiguration<Mess
             .WithMany()
             .HasForeignKey(message => message.ConversationId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.Property(message => message.PayloadHash)
-            .HasConversion(hash => hash.Value, value => CommandPayloadHash.From(value))
+        builder.Property(message => message.IdempotencyHash)
+            .HasConversion(hash => hash.Value, value => IdempotencyHash.From(value))
             .IsRequired()
             .HasMaxLength(64);
         builder.Property(message => message.Content).IsRequired();

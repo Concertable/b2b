@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure;
@@ -10,9 +10,9 @@ internal interface IPrivilegedOutboxUnitOfWorkBehavior : IOutboxUnitOfWorkBehavi
 
 internal sealed class PrivilegedOutboxUnitOfWorkBehavior(
     ConcertPrivilegedDbContext context,
-    CommandTransactionFactory transactions,
-    CommandTransactionAccessor commandAccessor,
+    UnitOfWorkRunner unitOfWorkRunner,
+    UnitOfWorkAccessor unitOfWorkAccessor,
     IDbContextAccessor outboxAccessor)
-    : CommandOutboxUnitOfWorkBehavior<ConcertPrivilegedDbContext>(
-        context, transactions, commandAccessor, outboxAccessor),
+    : Concertable.B2B.DataAccess.Infrastructure.OutboxUnitOfWorkBehavior<ConcertPrivilegedDbContext>(
+        context, unitOfWorkRunner, unitOfWorkAccessor, outboxAccessor),
         IPrivilegedOutboxUnitOfWorkBehavior;

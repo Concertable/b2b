@@ -9,23 +9,23 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
 {
     private const long CreationLockSeed = 638457220;
     private readonly TenantDbContext context;
-    private readonly CommandTransactionAccessor transactions;
+    private readonly UnitOfWorkAccessor unitOfWorkAccessor;
 
     public TenantRepository(
         TenantDbContext context,
-        CommandTransactionAccessor transactions) : base(context)
+        UnitOfWorkAccessor unitOfWorkAccessor) : base(context)
     {
         this.context = context;
-        this.transactions = transactions;
+        this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
     public async Task<IReadOnlySet<Guid>> GetExistingIdsForShareAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default)
     {
-        var transaction = transactions.Current
+        var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Tenant locking requires an active transaction.");
-        await transaction.EnlistAsync(context, ct);
+        await unitOfWork.EnlistAsync(context, ct);
         var distinctIds = tenantIds.Distinct().Order().ToArray();
         foreach (var tenantId in distinctIds)
         {
@@ -45,13 +45,19 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
             .ToHashSetAsync(ct);
     }
 
+    public Task<string?> GetAuthorizationCatalogRevisionAsync(CancellationToken ct = default) =>
+        context.AuthorizationCatalogStates.AsNoTracking()
+            .Where(state => state.Id == 1)
+            .Select(state => state.Revision)
+            .SingleOrDefaultAsync(ct);
+
     public async Task<TenantEntity?> GetByIdForAdministrationAsync(
         Guid tenantId,
         CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant administration requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Tenant administration requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
@@ -65,9 +71,9 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
 
     public async Task<bool> ExistsForBookingAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Booking tenant validation requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        var unitOfWork = unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("Booking tenant validation requires an active unit of work.");
+        await unitOfWork.EnlistAsync(context, ct);
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
@@ -83,9 +89,10 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         Guid userId,
         CancellationToken ct = default)
     {
-        var transaction = transactions.Current
-            ?? throw new InvalidOperationException("Tenant creation requires an active command transaction.");
-        await transaction.EnlistAsync(context, ct);
+        if (unitOfWorkAccessor.Current is { } unitOfWork)
+            await unitOfWork.EnlistAsync(context, ct);
+        else if (context.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Tenant creation requires an active transaction.");
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT pg_advisory_xact_lock(hashtextextended(CAST({userId} AS text), {CreationLockSeed}))

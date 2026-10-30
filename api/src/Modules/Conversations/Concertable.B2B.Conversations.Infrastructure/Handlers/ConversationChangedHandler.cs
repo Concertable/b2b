@@ -10,20 +10,17 @@ internal sealed class ConversationChangedHandler : IIntegrationEventHandler<Conv
 {
     private readonly IConversationPrivilegedRepository repository;
     private readonly ITenantModule tenantModule;
-    private readonly IPermissionCatalog permissionCatalog;
     private readonly IConversationsNotifier notifier;
     private readonly TimeProvider timeProvider;
 
     public ConversationChangedHandler(
         IConversationPrivilegedRepository repository,
         ITenantModule tenantModule,
-        IPermissionCatalog permissionCatalog,
         IConversationsNotifier notifier,
         TimeProvider timeProvider)
     {
         this.repository = repository;
         this.tenantModule = tenantModule;
-        this.permissionCatalog = permissionCatalog;
         this.notifier = notifier;
         this.timeProvider = timeProvider;
     }
@@ -45,12 +42,12 @@ internal sealed class ConversationChangedHandler : IIntegrationEventHandler<Conv
         var at = timeProvider.GetUtcNow().UtcDateTime;
         foreach (var recipient in memberships
                      .Where(actor =>
-                         permissionCatalog.Grants(actor.Role, TenantPermission.MessagesRead)
+                         actor.HasPermission(TenantPermission.MessagesRead)
                          && ResourceGrantPolicy.Allows(
                              conversation.AccessGrants,
                              ConversationAccessScope.Read,
                              actor,
-                             permissionCatalog.AudienceFor(actor.Role, TenantPermission.MessagesRead),
+                             actor.AudienceFor(TenantPermission.MessagesRead),
                              at))
                      .DistinctBy(actor => actor.UserId))
             await notifier.ConversationChangedAsync(recipient.UserId, e.ConversationId, ct);

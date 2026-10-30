@@ -19,7 +19,7 @@ function BusinessLayout() {
   const mailbox =
     session !== undefined && permissions.has("messages.read") ? (
       <Mailbox
-        key={`${session.tenantId}:${session.membershipId}:${session.permissionVersion}:${session.generation}`}
+        key={`${session.tenantId}:${session.membershipId}:${session.permissionVersion}:${session.rolePolicyVersion}:${session.generation}`}
         session={session}
       />
     ) : undefined;

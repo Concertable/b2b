@@ -1,5 +1,6 @@
 using Npgsql;
 using Respawn;
+using Respawn.Graph;
 using Testcontainers.PostgreSql;
 
 namespace Concertable.B2B.IntegrationTests.Fixtures;
@@ -38,6 +39,7 @@ internal sealed class B2BPostgresFixture : IAsyncDisposable
             TablesToIgnore =
             [
                 .. Concertable.Testing.Integration.OwnedSchemaSelector.TablesToIgnore(owned),
+                new Table("user", "Users"),
             ],
             DbAdapter = DbAdapter.Postgres,
             WithReseed = true,

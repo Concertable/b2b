@@ -102,6 +102,7 @@ var boundTypes = new[]
     typeof(Concertable.B2B.Authorization.Contracts.MembershipSnapshot),
     typeof(Concertable.B2B.Booking.Contracts.ConfirmedBookingSnapshot),
     typeof(Concertable.B2B.Concert.Contracts.ArtistDashboardCounts),
+    typeof(Concertable.B2B.Conversations.Contracts.Events.ConversationChanged),
     typeof(Concertable.B2B.Deal.Contracts.FlatFeeTerms),
     typeof(Concertable.B2B.Seed.Contracts.Specs.ArtistSeedSpec),
     typeof(Concertable.B2B.Tenant.Contracts.ActivityItemDto),

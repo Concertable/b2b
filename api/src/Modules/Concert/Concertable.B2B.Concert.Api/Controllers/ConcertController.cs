@@ -161,7 +161,7 @@ internal sealed class ConcertController : ControllerBase
         return Ok((await concertService.GetUnpostedByVenueIdAsync(id, ct)).ToSummaryResponses());
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
+    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HttpGet("unposted/artist/{id}")]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUnpostedByArtistId(
@@ -183,7 +183,7 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.ConcertsOpsEditName)]
+    [HasPermission(TenantPermission.ConcertsPublishName)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(
         int id,

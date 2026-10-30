@@ -34,8 +34,9 @@ const membership: Membership = {
   tenantId: "tenant-one",
   legalName: "Tenant One",
   businessActivities: ["venueOperator"],
-  role: "owner",
+  roles: [{ id: "owner-id", name: "Owner", isProtectedOwner: true }],
   permissionVersion: 1,
+  rolePolicyVersion: 1,
   permissions: ["tenant.settings.edit"],
 };
 

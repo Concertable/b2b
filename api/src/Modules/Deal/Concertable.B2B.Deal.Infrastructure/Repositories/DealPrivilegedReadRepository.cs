@@ -9,11 +9,11 @@ namespace Concertable.B2B.Deal.Infrastructure.Repositories;
 internal sealed class DealPrivilegedReadRepository(
     DealPrivilegedDbContext context,
     IDealMapper mapper,
-    CommandTransactionAccessor transactions) : IDealPrivilegedReadRepository
+    UnitOfWorkAccessor unitOfWorkAccessor) : IDealPrivilegedReadRepository
 {
     public async Task<DealDto?> GetByIdAsync(int dealId, CancellationToken ct = default)
     {
-        await (transactions.Current
+        await (unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Deal privileged queries require an active transaction."))
             .EnlistAsync(context, ct);
 

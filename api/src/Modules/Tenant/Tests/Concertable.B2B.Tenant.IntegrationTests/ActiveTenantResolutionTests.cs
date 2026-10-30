@@ -122,7 +122,7 @@ public sealed class ActiveTenantResolutionTests : IAsyncLifetime
         var me = await response.Content.ReadAsync<MeView>();
         var membership = Assert.Single(me!.Memberships);
         Assert.Equal(TenantOf(manager.Id), membership.TenantId);
-        Assert.Equal(TenantRole.Owner, membership.Role);
+        Assert.Equal(TenantApiFixture.RoleId(membership.TenantId, "Owner"), Assert.Single(membership.Roles).Id);
         Assert.Equal([TenantBusinessActivityKind.VenueOperator], membership.BusinessActivities);
     }
 

@@ -1,25 +1,25 @@
-using Concertable.B2B.Authorization.Infrastructure.Authorization;
+using Concertable.B2B.Authorization.Contracts;
 
 namespace Concertable.B2B.Authorization.UnitTests;
 
 public sealed class PermissionCatalogTests
 {
-    public static TheoryData<TenantRole, TenantPermission, bool> RolePermissions => new()
+    public static TheoryData<string, TenantPermission, bool> PresetPermissions => new()
     {
-        { TenantRole.Finance, TenantPermission.PayoutsManage, true },
-        { TenantRole.Finance, TenantPermission.SettlementTrigger, true },
-        { TenantRole.Finance, TenantPermission.ProfileEdit, false },
-        { TenantRole.Manager, TenantPermission.OpportunitiesManage, true },
-        { TenantRole.Manager, TenantPermission.ResourcesShare, true },
-        { TenantRole.Manager, TenantPermission.PayoutsManage, false },
-        { TenantRole.Manager, TenantPermission.TenantDelete, false },
-        { TenantRole.Manager, TenantPermission.MembersManageRoles, false },
-        { TenantRole.Staff, TenantPermission.MessagesSend, true },
-        { TenantRole.Staff, TenantPermission.ProfileEdit, false },
-        { TenantRole.Door, TenantPermission.ConcertsCheckIn, true },
-        { TenantRole.Door, TenantPermission.ConcertsOpsEdit, false },
-        { TenantRole.Sound, TenantPermission.ConcertsOpsEdit, true },
-        { TenantRole.Sound, TenantPermission.ConcertsCheckIn, false },
+        { "Finance", TenantPermission.PayoutsManage, true },
+        { "Finance", TenantPermission.SettlementTrigger, true },
+        { "Finance", TenantPermission.ProfileEdit, false },
+        { "Manager", TenantPermission.OpportunitiesManage, true },
+        { "Manager", TenantPermission.ResourcesShare, true },
+        { "Manager", TenantPermission.PayoutsManage, false },
+        { "Manager", TenantPermission.TenantDelete, false },
+        { "Manager", TenantPermission.MembersManageRoles, false },
+        { "Staff", TenantPermission.MessagesSend, true },
+        { "Staff", TenantPermission.ProfileEdit, false },
+        { "Door", TenantPermission.ConcertsCheckIn, true },
+        { "Door", TenantPermission.ConcertsOpsEdit, false },
+        { "Sound", TenantPermission.ConcertsOpsEdit, true },
+        { "Sound", TenantPermission.ConcertsCheckIn, false },
     };
 
     public static TheoryData<TenantPermission> ManagerMarketplacePermissions => new()
@@ -29,47 +29,41 @@ public sealed class PermissionCatalogTests
         TenantPermission.OpportunitiesManage,
     };
 
-    private readonly PermissionCatalog catalog;
-
-    public PermissionCatalogTests()
+    [Fact]
+    public void Permissions_ExactlyMatchDeclaredPermissions()
     {
-        this.catalog = new PermissionCatalog();
+        Assert.Equal(TenantPermission.All.OrderBy(value => value.Value),
+            AuthorizationCatalog.Permissions.Keys.OrderBy(value => value.Value));
     }
 
     [Fact]
-    public void All_DeclaredPermissions_ExactlyMatchTheGrantedSet()
+    public void OwnerPreset_ContainsEveryPermission()
     {
-        Assert.Empty(TenantPermission.All.Except(PermissionCatalog.All));
-        Assert.Empty(PermissionCatalog.All.Except(TenantPermission.All));
+        var owner = AuthorizationCatalog.Presets["Owner"];
+
+        Assert.True(owner.IsProtectedOwner);
+        Assert.Equal(TenantPermission.All.Count, owner.Permissions.Count);
+        Assert.All(TenantPermission.All, permission => Assert.True(owner.Permissions.ContainsKey(permission)));
     }
 
     [Fact]
-    public void Grants_Owner_HoldsEveryPermission()
+    public void Presets_DeclareOperationsViewMetadata()
     {
-        var ungranted = TenantPermission.All
-            .Where(permission => !this.catalog.Grants(TenantRole.Owner, permission))
-            .ToList();
-
-        Assert.Empty(ungranted);
-    }
-
-    [Fact]
-    public void Grants_EveryRole_CanSeeOperations()
-    {
-        var blind = Enum.GetValues<TenantRole>()
-            .Where(role => !this.catalog.Grants(role, TenantPermission.OperationsView))
-            .ToList();
-
-        Assert.Empty(blind);
+        Assert.All(AuthorizationCatalog.Presets.Values, preset =>
+            Assert.True(preset.Permissions.ContainsKey(TenantPermission.OperationsView)));
     }
 
     [Theory]
-    [MemberData(nameof(RolePermissions))]
-    public void Grants_Role_MatchesTheMatrix(TenantRole role, TenantPermission permission, bool expected) =>
-        Assert.Equal(expected, this.catalog.Grants(role, permission));
+    [MemberData(nameof(PresetPermissions))]
+    public void Preset_DeclaresExpectedPermission(string presetKey, TenantPermission permission, bool expected)
+    {
+        var granted = AuthorizationCatalog.Presets[presetKey].Permissions.ContainsKey(permission);
+
+        Assert.Equal(expected, granted);
+    }
 
     [Theory]
     [MemberData(nameof(ManagerMarketplacePermissions))]
-    public void Grants_Manager_ReachesBothSidesOfTheMarketplace(TenantPermission permission) =>
-        Assert.True(this.catalog.Grants(TenantRole.Manager, permission));
+    public void ManagerPreset_ReachesBothSidesOfMarketplace(TenantPermission permission) =>
+        Assert.True(AuthorizationCatalog.Presets["Manager"].Permissions.ContainsKey(permission));
 }

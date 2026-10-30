@@ -7,8 +7,13 @@ internal static class Schema
     public static class Tables
     {
         public const string Tenants = "Tenants";
+        public const string AuthorizationCatalogState = "AuthorizationCatalogState";
         public const string BusinessActivities = "BusinessActivities";
         public const string Memberships = "Memberships";
+        public const string RoleDefinitions = "RoleDefinitions";
+        public const string RolePermissions = "RolePermissions";
+        public const string MembershipRoleAssignments = "MembershipRoleAssignments";
+        public const string InvitationRoleAssignments = "InvitationRoleAssignments";
         public const string Invitations = "Invitations";
         public const string Activities = "Activities";
         public const string Verifications = "Verifications";

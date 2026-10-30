@@ -1,14 +1,18 @@
 using System.Net;
 using Concertable.B2B.Deal.Contracts;
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
 using Concertable.B2B.Opportunity.Api.Responses;
 using Concertable.B2B.Opportunity.Application.Requests;
 using Concertable.B2B.Opportunity.Domain.Entities;
+using Concertable.B2B.Opportunity.Infrastructure.Services;
 using Concertable.Contracts;
 using Concertable.Contracts.Enums;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 using static Concertable.B2B.Opportunity.IntegrationTests.OpportunityRequestBuilders;
 
@@ -218,4 +222,23 @@ public sealed class OpportunityApiTests : IAsyncLifetime
     }
 
     #endregion
+    [Fact]
+    public async Task DeletionGuard_FindsOnlyTheOwningTenantOpportunity()
+    {
+        var activeTenantId = fixture.SeedState.ActiveVenueHireOpportunity.TenantId;
+        var otherTenantId = fixture.SeedState.Tenants.Single(tenant =>
+            tenant.CreatedByUserId == fixture.SeedState.VenueManagerNoVenue.Id).Id;
+        var transactionRunner = fixture.Services.GetRequiredService<ITransactionRunner>();
+
+        var (hasActive, hasOther) = await transactionRunner.RunAsync<IEnumerable<ITenantDeletionGuard>, (bool, bool)>(
+            async (guards, ct) =>
+            {
+                var guard = Assert.Single(guards.OfType<OpportunityTenantDeletionGuard>());
+                return (await guard.HasLiveObligationsAsync(activeTenantId, ct),
+                    await guard.HasLiveObligationsAsync(otherTenantId, ct));
+            });
+
+        Assert.True(hasActive);
+        Assert.False(hasOther);
+    }
 }

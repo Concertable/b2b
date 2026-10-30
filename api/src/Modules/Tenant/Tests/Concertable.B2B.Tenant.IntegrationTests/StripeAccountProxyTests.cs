@@ -78,7 +78,7 @@ public sealed class StripeAccountProxyTests : IAsyncLifetime
         // Manager (no PayoutsManage in the matrix) acting in another tenant via the X-Tenant-Id header.
         var manager = fixture.SeedState.VenueManager1;
         var otherTenant = TenantOf(fixture.SeedState.VenueManager2.Id);
-        await fixture.AddMembershipAsync(otherTenant, manager.Id, TenantRole.Manager);
+        await fixture.AddMembershipAsync(otherTenant, manager.Id, "Manager");
 
         var client = fixture.CreateClient(manager);
         client.DefaultRequestHeaders.Add(TenantHeaders.TenantId, otherTenant.ToString());
@@ -94,7 +94,7 @@ public sealed class StripeAccountProxyTests : IAsyncLifetime
         // Finance holds PayoutsManage (money-only role), so the proxy serves it — keyed on that tenant.
         var manager = fixture.SeedState.VenueManager1;
         var otherTenant = TenantOf(fixture.SeedState.VenueManager2.Id);
-        await fixture.AddMembershipAsync(otherTenant, manager.Id, TenantRole.Finance);
+        await fixture.AddMembershipAsync(otherTenant, manager.Id, "Finance");
 
         var client = fixture.CreateClient(manager);
         client.DefaultRequestHeaders.Add(TenantHeaders.TenantId, otherTenant.ToString());

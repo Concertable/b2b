@@ -11,8 +11,13 @@ internal sealed class TenantDbContext(
     : DbContextBase(options, outboxOptions)
 {
     public DbSet<TenantEntity> Tenants => Set<TenantEntity>();
+    public DbSet<AuthorizationCatalogState> AuthorizationCatalogStates => Set<AuthorizationCatalogState>();
     public DbSet<TenantBusinessActivityEntity> BusinessActivities => Set<TenantBusinessActivityEntity>();
     public DbSet<TenantMembershipEntity> Memberships => Set<TenantMembershipEntity>();
+    public DbSet<TenantRoleDefinition> RoleDefinitions => Set<TenantRoleDefinition>();
+    public DbSet<TenantRolePermission> RolePermissions => Set<TenantRolePermission>();
+    public DbSet<MembershipRoleAssignment> MembershipRoleAssignments => Set<MembershipRoleAssignment>();
+    public DbSet<InvitationRoleAssignment> InvitationRoleAssignments => Set<InvitationRoleAssignment>();
     public DbSet<TenantInvitationEntity> Invitations => Set<TenantInvitationEntity>();
     public DbSet<TenantActivityEntity> Activities => Set<TenantActivityEntity>();
     public DbSet<TenantVerificationEntity> Verifications => Set<TenantVerificationEntity>();

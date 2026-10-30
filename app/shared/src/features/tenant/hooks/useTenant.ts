@@ -29,6 +29,7 @@ export function useTenant(
       isSelectionPending,
       resolution.activeMembership?.membershipId,
       resolution.activeMembership?.permissionVersion,
+      resolution.activeMembership?.rolePolicyVersion,
       resolution.activeMembership?.tenantId,
     ],
   );

@@ -1,4 +1,5 @@
 using Concertable.B2B.Application.Domain.Entities;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Application.Models;
 using Concertable.DataAccess.Application;
@@ -7,9 +8,11 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 
 internal interface IApplicationRepository : IRepository<ApplicationEntity, int>
 {
-    Task<ApplicationEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default);
     Task<ApplicationEntity?> GetSummaryByIdAsync(int id, CancellationToken ct = default);
     Task<ApplicationEntity?> GetProposalByIdAsync(int id, CancellationToken ct = default);
+    Task<ApplicationEntity?> GetDecisionByIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlySet<int>> GetAllowedIdsAsync(
+        IReadOnlyCollection<int> applicationIds, TenantPermission permission, CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default);

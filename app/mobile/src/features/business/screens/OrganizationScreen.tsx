@@ -38,8 +38,8 @@ export function OrganizationScreen() {
             key={member.userId}
           >
             <Text>{member.email}</Text>
-            <Text className="capitalize text-muted-foreground">
-              {member.role}
+            <Text className="text-muted-foreground">
+              {member.roles.map((role) => role.name).join(", ")}
             </Text>
           </View>
         ))}

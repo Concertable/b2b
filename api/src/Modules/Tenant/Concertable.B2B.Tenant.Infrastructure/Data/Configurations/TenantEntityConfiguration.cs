@@ -15,6 +15,7 @@ internal sealed class TenantEntityConfiguration : IEntityTypeConfiguration<Tenan
         builder.Property(o => o.Version).IsRequired().IsConcurrencyToken();
         builder.Property(o => o.ContactEmail).IsRequired().HasMaxLength(320);
         builder.Property(o => o.EligibilityVersion).IsRequired();
+        builder.Property(o => o.RolePolicyVersion).IsRequired().IsConcurrencyToken();
         builder.Property(o => o.CreatedAt).IsRequired();
         builder.HasIndex(o => o.CreatedByUserId).IsUnique();
 

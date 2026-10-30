@@ -1,5 +1,7 @@
-﻿using Concertable.B2B.Artist.Domain.ReadModels;
+using Concertable.B2B.Artist.Domain.ReadModels;
 using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.ReadModels;
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Venue.Domain.ReadModels;
 using Concertable.Messaging.Infrastructure.Outbox;
@@ -24,4 +26,8 @@ internal sealed class ConcertPrivilegedDbContext(
     public DbSet<ConcertAccessGrant> ConcertAccessGrants => Set<ConcertAccessGrant>();
     public DbSet<InvoiceAccessGrant> InvoiceAccessGrants => Set<InvoiceAccessGrant>();
     public DbSet<ConcertCommandReceipt> ConcertCommandReceipts => Set<ConcertCommandReceipt>();
+    public DbSet<ConcertRatingProjection> ConcertRatingProjections => Set<ConcertRatingProjection>();
+    public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
+    public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
+    public DbSet<MembershipAuthority> MembershipAuthority => Set<MembershipAuthority>();
 }

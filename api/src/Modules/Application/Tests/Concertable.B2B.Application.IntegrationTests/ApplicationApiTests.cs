@@ -5,7 +5,6 @@ using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Concertable.B2B.Application.Contracts.Commands;
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Authorization.Contracts.Enums;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Tenant.Contracts;
@@ -308,7 +307,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 new { eSignature = new { signatoryName = "Test Signatory" } }),
             () => competitor.PostAsync($"/api/application/{applicationId}/reject"));
 
-        AssertSerialized(responses);
+        await AssertSerializedAsync(responses);
         var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
         Assert.True(state is ApplicationState.Accepted or ApplicationState.Rejected);
     }
@@ -325,7 +324,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 new { eSignature = new { signatoryName = "Test Signatory" } }),
             () => competitor.PostAsync($"/api/application/{applicationId}/cancel"));
 
-        AssertSerialized(responses);
+        await AssertSerializedAsync(responses);
         var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
         Assert.True(state is ApplicationState.Accepted or ApplicationState.Cancelled);
     }
@@ -342,7 +341,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 new { eSignature = new { signatoryName = "Test Signatory" } }),
             () => artist.PostAsync($"/api/application/{applicationId}/withdraw"));
 
-        AssertSerialized(responses);
+        await AssertSerializedAsync(responses);
         var state = (await fixture.Applications.SingleAsync(value => value.Id == applicationId)).State;
         Assert.True(state is ApplicationState.Accepted or ApplicationState.Withdrawn);
     }
@@ -404,7 +403,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 $"/api/application/{winnerApplicationId}/accept",
                 new { eSignature = new { signatoryName = "Test Signatory" } }));
 
-        AssertSerialized(responses);
+        await AssertSerializedAsync(responses);
         var states = await fixture.Applications
             .Where(value => value.Id == winnerApplicationId || value.Id == loserApplicationId)
             .Select(value => value.State)
@@ -458,8 +457,8 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var replacement = fixture.SeedState.VenueManager3;
         var client = fixture.CreateClient(creator);
         var promote = await client.PutAsJsonAsync(
-            $"/api/organization/members/{replacement.Id}/role",
-            new { role = TenantRole.Owner.ToString() });
+            $"/api/organization/members/{replacement.Id}/roles",
+            new { roleIds = new[] { SystemPresetIds.For(fixture.SeedState.DoorSplitApp.VenueTenantId, "Owner") } });
         await promote.ShouldBe(HttpStatusCode.NoContent);
         var remove = await client.DeleteAsync($"/api/organization/members/{creator.Id}");
         await remove.ShouldBe(HttpStatusCode.NoContent);
@@ -488,8 +487,8 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var replacement = fixture.SeedState.VenueManager3;
         var client = fixture.CreateClient(creator);
         var promote = await client.PutAsJsonAsync(
-            $"/api/organization/members/{replacement.Id}/role",
-            new { role = TenantRole.Owner.ToString() });
+            $"/api/organization/members/{replacement.Id}/roles",
+            new { roleIds = new[] { SystemPresetIds.For(fixture.SeedState.DoorSplitApp.VenueTenantId, "Owner") } });
         await promote.ShouldBe(HttpStatusCode.NoContent);
 
         var enteredSend = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -561,16 +560,26 @@ public sealed class ApplicationApiTests : IAsyncLifetime
             changeMembers.Transaction = transaction;
             changeMembers.CommandText = """
                 UPDATE tenant."Memberships"
-                SET "Role" = @role, "PermissionVersion" = "PermissionVersion" + 1
+                SET "PermissionVersion" = "PermissionVersion" + 1
+                WHERE "TenantId" = @tenantId AND "UserId" = @replacementId;
+                DELETE FROM tenant."MembershipRoleAssignments" assignments
+                USING tenant."Memberships" memberships
+                WHERE assignments."TenantId" = memberships."TenantId"
+                  AND assignments."MembershipId" = memberships."Id"
+                  AND memberships."TenantId" = @tenantId
+                  AND memberships."UserId" = @replacementId;
+                INSERT INTO tenant."MembershipRoleAssignments" ("TenantId", "MembershipId", "RoleId", "IssuedByMembershipId", "CreatedAt")
+                SELECT "TenantId", "Id", @ownerRoleId, NULL, NOW()
+                FROM tenant."Memberships"
                 WHERE "TenantId" = @tenantId AND "UserId" = @replacementId;
                 DELETE FROM tenant."Memberships"
                 WHERE "TenantId" = @tenantId AND "UserId" = @creatorId
                 """;
-            changeMembers.Parameters.AddWithValue("role", (int)TenantRole.Owner);
+            changeMembers.Parameters.AddWithValue("ownerRoleId", SystemPresetIds.For(application.VenueTenantId, "Owner"));
             changeMembers.Parameters.AddWithValue("tenantId", application.VenueTenantId);
             changeMembers.Parameters.AddWithValue("replacementId", replacement.Id);
             changeMembers.Parameters.AddWithValue("creatorId", creator.Id);
-            Assert.Equal(2, await changeMembers.ExecuteNonQueryAsync());
+            Assert.Equal(4, await changeMembers.ExecuteNonQueryAsync());
         }
 
         var handler = scope.ServiceProvider.GetRequiredService<
@@ -665,10 +674,20 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         return await Task.WhenAll(firstTask, secondTask);
     }
 
-    private static void AssertSerialized(IEnumerable<HttpResponseMessage> responses) =>
-        Assert.Equal(
-            [HttpStatusCode.NoContent, HttpStatusCode.Conflict],
-            responses.Select(response => response.StatusCode).Order().ToArray());
+    private static async Task AssertSerializedAsync(IEnumerable<HttpResponseMessage> responses)
+    {
+        var all = responses.ToArray();
+        HttpStatusCode[] expected = [HttpStatusCode.NoContent, HttpStatusCode.Conflict];
+        var actual = all.Select(response => response.StatusCode).Order().ToArray();
+        if (actual.SequenceEqual(expected))
+            return;
+
+        var details = await Task.WhenAll(all.Select(async response =>
+            $"{(int)response.StatusCode} {response.StatusCode}: {await response.Content.ReadAsStringAsync()}"));
+        Assert.True(false,
+            $"Expected [{string.Join(", ", expected)}], got [{string.Join(", ", actual)}]. "
+            + $"Responses: {string.Join(" | ", details)}");
+    }
 
     private static async Task AssertProblemCodeAsync(
         HttpResponseMessage response,

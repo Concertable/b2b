@@ -6,8 +6,8 @@ describe("inviteMemberRequestSchema", () => {
     expect(
       inviteMemberRequestSchema.parse({
         email: "  MEMBER@EXAMPLE.COM ",
-        role: "manager",
+        roleIds: ["11111111-1111-4111-8111-111111111111"],
       }),
-    ).toEqual({ email: "member@example.com", role: "manager" });
+    ).toEqual({ email: "member@example.com", roleIds: ["11111111-1111-4111-8111-111111111111"] });
   });
 });

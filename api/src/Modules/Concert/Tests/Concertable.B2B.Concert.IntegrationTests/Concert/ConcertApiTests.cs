@@ -52,6 +52,20 @@ public sealed class ConcertApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetUnpostedForArtist_WithArtistActivityAndSummaryGrant_ReturnsDraft()
+    {
+        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
+        var client = CreateOwningArtistClient(concert.ArtistId);
+
+        var response = await client.GetAsync($"/api/concert/unposted/artist/{concert.ArtistId}");
+
+        await response.ShouldBe(HttpStatusCode.OK);
+        var concerts = await response.Content.ReadAsync<List<ConcertSummary>>();
+        Assert.NotNull(concerts);
+        Assert.Contains(concerts, candidate => candidate.Id == concert.Id);
+    }
+
+    [Fact]
     public async Task GetPublished_ReturnsOnlyPostedConcerts()
     {
         var client = fixture.CreateClient();

@@ -23,6 +23,48 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.InvitationRoleAssignment", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InvitationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("TenantId", "InvitationId", "RoleId");
+
+                    b.HasIndex("TenantId", "RoleId");
+
+                    b.ToTable("InvitationRoleAssignments", "tenant");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.MembershipRoleAssignment", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("IssuedByMembershipId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("TenantId", "MembershipId", "RoleId");
+
+                    b.HasIndex("TenantId", "RoleId");
+
+                    b.ToTable("MembershipRoleAssignments", "tenant");
+                });
+
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantActivityEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -126,6 +168,10 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<long>("RolePolicyVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
@@ -166,8 +212,8 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Property<long>("InviterPermissionVersion")
                         .HasColumnType("bigint");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
+                    b.Property<long>("InviterRolePolicyVersion")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -206,9 +252,6 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
@@ -223,6 +266,69 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Memberships", "tenant");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantRoleDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsInvitationAssignable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsProtectedOwner")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("RetiredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SystemPresetKey")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "SystemPresetKey")
+                        .IsUnique()
+                        .HasFilter("\"SystemPresetKey\" IS NOT NULL");
+
+                    b.ToTable("RoleDefinitions", "tenant");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantRolePermission", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PermissionKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Audience")
+                        .HasColumnType("integer");
+
+                    b.HasKey("TenantId", "RoleId", "PermissionKey");
+
+                    b.ToTable("RolePermissions", "tenant");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantVerificationEntity", b =>
@@ -285,6 +391,31 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.HasIndex("TenantVerificationId");
 
                     b.ToTable("VerificationDocuments", "tenant");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Infrastructure.Data.AuthorizationCatalogState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Revision")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuthorizationCatalogState", "tenant");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Revision = "8b2f220b198af94ea7592c8d895be0dabaf24561bc53fdade387e08c18f30dde"
+                        });
                 });
 
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
@@ -361,6 +492,40 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.InvitationRoleAssignment", b =>
+                {
+                    b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantInvitationEntity", null)
+                        .WithMany("Assignments")
+                        .HasForeignKey("TenantId", "InvitationId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantRoleDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.MembershipRoleAssignment", b =>
+                {
+                    b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantMembershipEntity", null)
+                        .WithMany("Assignments")
+                        .HasForeignKey("TenantId", "MembershipId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantRoleDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantBusinessActivityEntity", b =>
@@ -447,6 +612,25 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Navigation("TaxCompliance");
                 });
 
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantRoleDefinition", b =>
+                {
+                    b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantEntity", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantRolePermission", b =>
+                {
+                    b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantRoleDefinition", null)
+                        .WithMany("Permissions")
+                        .HasForeignKey("TenantId", "RoleId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.VerificationDocumentEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Tenant.Domain.Entities.TenantVerificationEntity", null)
@@ -459,6 +643,21 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantEntity", b =>
                 {
                     b.Navigation("BusinessActivities");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantInvitationEntity", b =>
+                {
+                    b.Navigation("Assignments");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantMembershipEntity", b =>
+                {
+                    b.Navigation("Assignments");
+                });
+
+            modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantRoleDefinition", b =>
+                {
+                    b.Navigation("Permissions");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Tenant.Domain.Entities.TenantVerificationEntity", b =>

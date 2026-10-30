@@ -8,7 +8,7 @@ namespace Concertable.B2B.Artist.Infrastructure.Repositories;
 
 internal sealed class ArtistPrivilegedReadRepository(
     ArtistPrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : IArtistPrivilegedReadRepository
+    UnitOfWorkAccessor unitOfWorkAccessor) : IArtistPrivilegedReadRepository
 {
     public async Task<ArtistProfile?> GetByIdAsync(int artistId, CancellationToken ct = default)
     {
@@ -40,7 +40,7 @@ internal sealed class ArtistPrivilegedReadRepository(
     }
 
     private Task EnlistAsync(CancellationToken ct) =>
-        (transactions.Current
+        (unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Artist privileged queries require an active transaction."))
         .EnlistAsync(context, ct);
 }
