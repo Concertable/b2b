@@ -4,6 +4,7 @@ public sealed class MailboxPage
 {
     private readonly IPage page;
     private readonly string spaBaseUrl;
+    private IElementHandle? openedTrigger;
 
     public MailboxPage(IPage page, string spaBaseUrl)
     {
@@ -30,7 +31,18 @@ public sealed class MailboxPage
     public async Task OpenAsync()
     {
         await Assertions.Expect(Trigger).ToBeVisibleAsync(new() { Timeout = 30_000 });
+        openedTrigger = await Trigger.ElementHandleAsync();
         await Trigger.ClickAsync();
+    }
+
+    public async Task ExpectTriggerStillMountedAsync()
+    {
+        var trigger = openedTrigger
+            ?? throw new InvalidOperationException("Open the mailbox before checking its trigger.");
+        Assert.True(
+            await trigger.EvaluateAsync<bool>("element => element.isConnected"),
+            "The mailbox trigger was remounted while the inbox opened and marked messages read.");
+        await Assertions.Expect(Trigger).ToHaveCountAsync(1);
     }
 
     // A member of two orgs lands on the full-page TenantChooser after a fresh sign-in (no active tenant),

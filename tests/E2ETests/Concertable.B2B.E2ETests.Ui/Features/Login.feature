@@ -5,4 +5,4 @@
     Given a visitor is on the business home page
     When they click sign in
     And they submit seeded venue manager credentials
-    Then they are returned to the business home page
+    Then they land on the business operations page

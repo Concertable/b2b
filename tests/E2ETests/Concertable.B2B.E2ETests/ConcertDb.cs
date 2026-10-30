@@ -16,6 +16,9 @@ public sealed class ConcertDb
     public async Task<ConcertState> GetStateByApplicationIdAsync(int applicationId) =>
         (ConcertState)await client.GetConcertStateByApplicationAsync(applicationId);
 
+    public Task<int> GetIdByApplicationIdAsync(int applicationId) =>
+        client.GetConcertIdByApplicationAsync(applicationId);
+
     public Task DeclareDoorRevenueAsync(int concertId, decimal doorRevenue) =>
         client.DeclareDoorRevenueAsync(concertId, doorRevenue);
 }

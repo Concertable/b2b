@@ -34,7 +34,11 @@ public sealed class GroupInboxSteps
         mailbox.ExpectMessageFromAsync(sender);
 
     [Then(@"the owner has no unread messages")]
-    public Task OwnerHasNoUnread() => mailbox.ExpectNoUnreadAsync();
+    public async Task OwnerHasNoUnread()
+    {
+        await mailbox.ExpectNoUnreadAsync();
+        await mailbox.ExpectTriggerStillMountedAsync();
+    }
 
     [When(@"a colleague of the venue signs in and switches to the venue organization")]
     public async Task ColleagueSignsInAndSwitches()
