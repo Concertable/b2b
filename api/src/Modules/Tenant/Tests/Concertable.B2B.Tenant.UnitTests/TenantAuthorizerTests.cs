@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Infrastructure.Authorization;
@@ -13,7 +12,7 @@ public sealed class TenantAuthorizerTests
     private readonly Mock<IRoleRepository> roles = new();
     private readonly MembershipSnapshot owner = new(
         Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 1, 1,
-        AuthorizationCatalog.Presets["Owner"].Permissions.ToImmutableDictionary());
+        EffectivePermissions.From(AuthorizationCatalog.Presets["Owner"].Permissions));
     private readonly TenantAuthorizer authorizer;
 
     public TenantAuthorizerTests()
@@ -65,7 +64,7 @@ public sealed class TenantAuthorizerTests
     {
         var staff = owner with
         {
-            Permissions = AuthorizationCatalog.Presets["Staff"].Permissions.ToImmutableDictionary(),
+            Permissions = EffectivePermissions.From(AuthorizationCatalog.Presets["Staff"].Permissions),
         };
         membership.SetupGet(context => context.Membership).Returns(staff);
         memberships.Setup(reads => reads.LockIfUnchangedAsync(staff, It.IsAny<CancellationToken>()))

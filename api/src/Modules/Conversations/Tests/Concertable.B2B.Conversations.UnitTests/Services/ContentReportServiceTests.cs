@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
@@ -47,8 +46,7 @@ public sealed class ContentReportServiceTests
 
         var actor = new MembershipSnapshot(
             Guid.NewGuid(), VenueTenantId, ReportingUserId, 1, 1,
-            ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
-                TenantPermission.MessagesRead, ResourceCoverage.TenantResources));
+            EffectivePermissions.From([KeyValuePair.Create(TenantPermission.MessagesRead, ResourceAccess.All)]));
         var membership = new Mock<IAuthorizationContext>();
         membership.SetupGet(context => context.Membership).Returns(actor);
 

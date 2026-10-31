@@ -98,7 +98,7 @@ internal sealed class ConversationService : IConversationService
             return new CreateConversationError.NotPermitted();
         if (!existingParticipants.SetEquals(participants))
             return new CreateConversationError.InvalidParticipants();
-        if (!actor.CoverageFor(TenantPermission.MessagesSend).Covers(ResourceCoverage.TenantResources))
+        if (!actor.Permissions[TenantPermission.MessagesSend].Includes(ResourceAccess.All))
             return new CreateConversationError.NotPermitted();
 
         var idempotencyHash = IdempotencyHash.Create(string.Join(",", participants));

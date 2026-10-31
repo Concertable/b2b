@@ -76,7 +76,7 @@ internal sealed class TenantService : ITenantService
                 m.Snapshot.PermissionVersion,
                 m.Snapshot.RolePolicyVersion,
                 m.BusinessActivities,
-                [.. m.Snapshot.Permissions.Keys.Select(permission => permission.Value)]))
+                [.. m.Snapshot.Permissions.Select(grant => grant.Key.Value)]))
             .ToList();
     }
 

@@ -6,15 +6,15 @@
       "label": "Edit concert operations",
       "category": "Concert",
       "assignableAudiences": [
-        "AssignedResources",
-        "TenantResources"
+        "Assigned",
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources",
-        "Staff": "AssignedResources",
-        "Sound": "AssignedResources"
+        "Owner": "All",
+        "Manager": "All",
+        "Staff": "Assigned",
+        "Sound": "Assigned"
       },
       "resourceBindings": [
         {
@@ -33,15 +33,15 @@
       "label": "Check in attendees",
       "category": "Concert",
       "assignableAudiences": [
-        "AssignedResources",
-        "TenantResources"
+        "Assigned",
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources",
-        "Staff": "AssignedResources",
-        "Door": "AssignedResources"
+        "Owner": "All",
+        "Manager": "All",
+        "Staff": "Assigned",
+        "Door": "Assigned"
       },
       "resourceBindings": [
         {
@@ -60,12 +60,12 @@
       "label": "Declare door revenue",
       "category": "Concert",
       "assignableAudiences": [
-        "TenantResources"
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
+        "Owner": "All",
+        "Manager": "All"
       },
       "resourceBindings": [
         {
@@ -85,12 +85,12 @@
       "label": "Manage concerts",
       "category": "Concert",
       "assignableAudiences": [
-        "TenantResources"
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
+        "Owner": "All",
+        "Manager": "All"
       },
       "resourceBindings": [
         {
@@ -109,12 +109,12 @@
       "label": "Share resources",
       "category": "Concert",
       "assignableAudiences": [
-        "TenantResources"
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
+        "Owner": "All",
+        "Manager": "All"
       },
       "resourceBindings": [
         {
@@ -137,12 +137,12 @@
       "label": "Publish concerts",
       "category": "Concert",
       "assignableAudiences": [
-        "TenantResources"
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
+        "Owner": "All",
+        "Manager": "All"
       },
       "resourceBindings": [
         {

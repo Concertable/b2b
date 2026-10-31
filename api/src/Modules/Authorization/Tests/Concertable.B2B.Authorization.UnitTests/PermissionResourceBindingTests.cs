@@ -5,11 +5,11 @@ namespace Concertable.B2B.Authorization.UnitTests;
 public sealed class PermissionResourceBindingTests
 {
     [Fact]
-    public void BindingFor_PermissionWithSeveralScopes_RequiresTheExactScope()
+    public void FindBinding_PermissionWithSeveralScopes_RequiresTheExactScope()
     {
-        Assert.Null(TenantPermission.OperationsView.BindingFor(AuthorizationResource.Booking, null));
+        Assert.Null(TenantPermission.OperationsView.FindBinding(AuthorizationResource.Booking, null));
 
-        var operations = TenantPermission.OperationsView.BindingFor(AuthorizationResource.Booking, "Operations");
+        var operations = TenantPermission.OperationsView.FindBinding(AuthorizationResource.Booking, "Operations");
 
         Assert.NotNull(operations);
         Assert.Equal(ResourcePolicy.BookingGrant, operations.Policy);
@@ -17,19 +17,19 @@ public sealed class PermissionResourceBindingTests
     }
 
     [Fact]
-    public void BindingFor_UnboundResourceOrScope_ReturnsNull()
+    public void FindBinding_UnboundResourceOrScope_ReturnsNull()
     {
-        Assert.Null(TenantPermission.OperationsView.BindingFor(AuthorizationResource.Invoice, "Read"));
-        Assert.Null(TenantPermission.OperationsView.BindingFor(AuthorizationResource.Booking, "Finance"));
-        Assert.Null(default(TenantPermission).BindingFor(AuthorizationResource.Booking, "Summary"));
+        Assert.Null(TenantPermission.OperationsView.FindBinding(AuthorizationResource.Invoice, "Read"));
+        Assert.Null(TenantPermission.OperationsView.FindBinding(AuthorizationResource.Booking, "Finance"));
+        Assert.Null(default(TenantPermission).FindBinding(AuthorizationResource.Booking, "Summary"));
     }
 
     [Theory]
     [InlineData(AuthorizationResource.Concert)]
     [InlineData(AuthorizationResource.Conversation)]
-    public void BindingFor_ShareBindingHasNoScope(AuthorizationResource resource)
+    public void FindBinding_ShareBindingHasNoScope(AuthorizationResource resource)
     {
-        var binding = TenantPermission.ResourcesShare.BindingFor(resource, null);
+        var binding = TenantPermission.ResourcesShare.FindBinding(resource, null);
 
         Assert.NotNull(binding);
         Assert.Equal(ResourcePolicy.PrincipalAdministration, binding.Policy);

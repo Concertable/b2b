@@ -17,8 +17,9 @@ internal sealed class ConcertDbContext(
     IOptions<OutboxOptions> outboxOptions,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext,
-    IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
+    IAuthorizationContext authorization,
+    TimeProvider timeProvider)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();
@@ -34,26 +35,25 @@ internal sealed class ConcertDbContext(
     public DbSet<InvoiceAccessGrant> InvoiceAccessGrants => Set<InvoiceAccessGrant>();
     public DbSet<ConcertCommandReceipt> ConcertCommandReceipts => Set<ConcertCommandReceipt>();
 
-    public ResourceCoverage OperationsCoverage => CoverageFor(TenantPermission.OperationsView);
-    public ResourceCoverage FinanceCoverage => CoverageFor(TenantPermission.SettlementView);
+    public ResourceAccess OperationsAccess =>
+        Membership?.Permissions[TenantPermission.OperationsView] ?? ResourceAccess.None;
+    public ResourceAccess FinanceAccess =>
+        Membership?.Permissions[TenantPermission.SettlementView] ?? ResourceAccess.None;
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ConcertAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCoverage<ConcertAccessGrant, ConcertAccessScope>(
-                    this,
-                    () => OperationsCoverage,
+            IsVisibleGrant<ConcertAccessGrant, ConcertAccessScope>(
+                    () => OperationsAccess,
                     ConcertAccessScope.Summary,
                     ConcertAccessScope.Operations)
-                .Or(ResourceAccessExpressions.LiveForCoverage<ConcertAccessGrant, ConcertAccessScope>(
-                    this,
-                    () => FinanceCoverage,
+                .Or(IsVisibleGrant<ConcertAccessGrant, ConcertAccessScope>(
+                    () => FinanceAccess,
                     ConcertAccessScope.Finance)));
 
         modelBuilder.Entity<InvoiceAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCoverage<InvoiceAccessGrant, InvoiceAccessScope>(
-                this,
-                () => FinanceCoverage,
+            IsVisibleGrant<InvoiceAccessGrant, InvoiceAccessScope>(
+                () => FinanceAccess,
                 InvoiceAccessScope.Read));
 
         modelBuilder.Entity<ConcertEntity>().HasQueryFilter(TenantFilters.Key, concert =>

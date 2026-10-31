@@ -6,12 +6,12 @@
       "label": "Decide applications",
       "category": "Application",
       "assignableAudiences": [
-        "TenantResources"
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
+        "Owner": "All",
+        "Manager": "All"
       },
       "resourceBindings": [
         {
@@ -30,12 +30,12 @@
       "label": "Submit applications",
       "category": "Application",
       "assignableAudiences": [
-        "TenantResources"
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
+        "Owner": "All",
+        "Manager": "All"
       },
       "resourceBindings": [
         {

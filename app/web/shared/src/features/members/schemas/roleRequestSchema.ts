@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const rolePermissionSchema = z.object({
   permission: z.string().min(1),
-  audience: z.enum(["AssignedResources", "TenantResources"]),
+  audience: z.enum(["Assigned", "All"]),
 });
 
 export const roleRequestSchema = z.object({

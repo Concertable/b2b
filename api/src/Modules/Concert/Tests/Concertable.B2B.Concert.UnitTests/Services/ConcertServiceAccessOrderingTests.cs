@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Booking.Contracts;
@@ -28,8 +27,7 @@ public sealed class ConcertServiceAccessOrderingTests
         Guid.NewGuid(),
         1,
         1,
-        ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
-            TenantPermission.ResourcesShare, ResourceCoverage.TenantResources));
+        EffectivePermissions.From([KeyValuePair.Create(TenantPermission.ResourcesShare, ResourceAccess.All)]));
 
     [Fact]
     public async Task RevokeSummaryShare_WithoutConcertAuthority_DoesNotLoadGrants()
@@ -87,8 +85,10 @@ public sealed class ConcertServiceAccessOrderingTests
     {
         var editOnly = actor with
         {
-            Permissions = ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
-                TenantPermission.ConcertsOpsEdit, ResourceCoverage.TenantResources),
+            Permissions = EffectivePermissions.From(
+            [
+                KeyValuePair.Create(TenantPermission.ConcertsOpsEdit, ResourceAccess.All),
+            ]),
         };
         var fixture = CreateFixture<PostConcertError>(editOnly);
 
@@ -194,7 +194,6 @@ public sealed class ConcertServiceAccessOrderingTests
             Mock.Of<ITenantContext>(),
             membership.Object,
             transactionRunner,
-            Mock.Of<IResourceAccessContext>(value => value.UtcNow == DateTime.UnixEpoch),
             Mock.Of<ILogger<ConcertService>>());
         transactionRunner.Service = service;
         return new Fixture(service, repository, authorizer, steps);

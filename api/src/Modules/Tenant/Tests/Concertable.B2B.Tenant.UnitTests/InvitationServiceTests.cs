@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Errors;
 using Concertable.B2B.Tenant.Application.Interfaces;
@@ -186,5 +185,5 @@ public sealed class InvitationServiceTests
             membership.UserId,
             membership.PermissionVersion,
             1,
-            AuthorizationCatalog.Presets[key].Permissions.ToImmutableDictionary());
+            EffectivePermissions.From(AuthorizationCatalog.Presets[key].Permissions));
 }

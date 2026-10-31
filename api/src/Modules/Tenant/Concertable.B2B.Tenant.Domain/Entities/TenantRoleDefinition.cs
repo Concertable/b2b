@@ -34,7 +34,7 @@ public sealed class TenantRoleDefinition
         Guid tenantId,
         string name,
         bool invitationAssignable,
-        IReadOnlyDictionary<TenantPermission, ResourceCoverage> grants)
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants)
     {
         var role = Create(tenantId, name, grants, false);
         role.IsInvitationAssignable = invitationAssignable;
@@ -44,7 +44,7 @@ public sealed class TenantRoleDefinition
     private static TenantRoleDefinition Create(
         Guid tenantId,
         string name,
-        IReadOnlyDictionary<TenantPermission, ResourceCoverage> grants,
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants,
         bool systemPreset,
         Guid? id = null)
     {
@@ -64,7 +64,7 @@ public sealed class TenantRoleDefinition
     public void Update(
         string name,
         bool invitationAssignable,
-        IReadOnlyDictionary<TenantPermission, ResourceCoverage> grants)
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants)
     {
         EnsureEditable();
         if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > 100)
@@ -85,24 +85,24 @@ public sealed class TenantRoleDefinition
     public bool Has(TenantPermission permission) =>
         permissions.Any(row => row.PermissionKey == permission.Value);
 
-    private void SetPermissions(IReadOnlyDictionary<TenantPermission, ResourceCoverage> grants, bool systemPreset)
+    private void SetPermissions(IReadOnlyDictionary<TenantPermission, ResourceAccess> grants, bool systemPreset)
     {
-        foreach (var (permission, coverage) in grants)
+        foreach (var (permission, access) in grants)
         {
             if (!TenantPermission.TryParse(permission.Value, out var known)
                 || !AuthorizationCatalog.Permissions.TryGetValue(known, out var descriptor)
-                || !descriptor.AssignableCoverages.Contains(coverage)
+                || !descriptor.AssignableAccess.Contains(access)
                 || descriptor.OwnerOnly && !systemPreset)
-                throw new ArgumentException("Invalid role permission or coverage.");
+                throw new ArgumentException("Invalid role permission or access.");
         }
         permissions.RemoveAll(row => !grants.Keys.Any(key => key.Value == row.PermissionKey));
-        foreach (var (permission, coverage) in grants)
+        foreach (var (permission, access) in grants)
         {
             var existing = permissions.Find(row => row.PermissionKey == permission.Value);
             if (existing is null)
-                permissions.Add(TenantRolePermission.Create(TenantId, Id, permission, coverage));
+                permissions.Add(TenantRolePermission.Create(TenantId, Id, permission, access));
             else
-                existing.ChangeAudience(coverage);
+                existing.ChangeAudience(access);
         }
     }
 

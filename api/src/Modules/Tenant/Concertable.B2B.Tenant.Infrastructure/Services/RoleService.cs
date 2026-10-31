@@ -81,7 +81,7 @@ internal sealed class RoleService : IRoleService
                     item.Permission.Value, item.Label, item.Category,
                     [.. item.ResourceBindings.Select(binding => new ResourceBinding(
                         binding.Resource.WireName, binding.Scope, binding.Policy.WireName, binding.RequiresScopes))],
-                    [.. item.AssignableCoverages.Select(coverage => coverage.ToString())],
+                    [.. item.AssignableAccess.Select(access => access.ToString())],
                     item.OwnerOnly))
                 .ToArray();
             return Result.Success<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(metadata);
@@ -211,18 +211,18 @@ internal sealed class RoleService : IRoleService
 
     private static bool TryParseGrants(
         IReadOnlyList<RolePermissionDto> items,
-        out IReadOnlyDictionary<TenantPermission, ResourceCoverage> grants)
+        out IReadOnlyDictionary<TenantPermission, ResourceAccess> grants)
     {
-        var parsed = new Dictionary<TenantPermission, ResourceCoverage>();
+        var parsed = new Dictionary<TenantPermission, ResourceAccess>();
         foreach (var item in items)
         {
             if (!TenantPermission.TryParse(item.Permission, out var permission)
-                || !Enum.TryParse<ResourceCoverage>(item.Audience, false, out var coverage)
-                || coverage == ResourceCoverage.None
+                || !Enum.TryParse<ResourceAccess>(item.Audience, false, out var access)
+                || access == ResourceAccess.None
                 || !AuthorizationCatalog.Permissions.TryGetValue(permission, out var descriptor)
                 || descriptor.OwnerOnly
-                || !descriptor.AssignableCoverages.Contains(coverage)
-                || !parsed.TryAdd(permission, coverage))
+                || !descriptor.AssignableAccess.Contains(access)
+                || !parsed.TryAdd(permission, access))
             {
                 grants = parsed;
                 return false;

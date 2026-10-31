@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Data;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Infrastructure.Data;
@@ -77,7 +76,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         await LockTenantForShareAsync(expected.TenantId, cancellationToken);
         var current = (await GetSnapshotsByIdsForShareAsync([expected.MembershipId], cancellationToken))
             .SingleOrDefault();
-        if (current is null || !current.HasSameAuthorityAs(expected))
+        if (current != expected)
             return null;
         var revision = await context.AuthorizationCatalogStates.AsNoTracking()
             .Where(state => state.Id == 1)
@@ -177,18 +176,13 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             .ToDictionaryAsync(role => role.Id, ct);
         return members.Select(member =>
         {
-            var effective = member.Assignments
+            var permissions = member.Assignments
                 .Where(row => roles.TryGetValue(row.RoleId, out var role) && role.TenantId == member.TenantId)
-                .SelectMany(row => roles[row.RoleId].Permissions)
-                .Where(row => TenantPermission.TryParse(row.PermissionKey, out _)
-                    && row.Audience is ResourceCoverage.AssignedResources or ResourceCoverage.TenantResources)
-                .GroupBy(row => row.PermissionKey, StringComparer.Ordinal)
-                .ToImmutableDictionary(
-                    group => TenantPermission.TryParse(group.Key, out var key) ? key : default,
-                    group => (ResourceCoverage)group.Max(row => (int)row.Audience));
+                .Select(row => roles[row.RoleId])
+                .ToEffectivePermissions();
             return new MembershipSnapshot(
                 member.Id, member.TenantId, member.UserId, member.PermissionVersion,
-                tenants[member.TenantId].RolePolicyVersion, effective);
+                tenants[member.TenantId].RolePolicyVersion, permissions);
         }).ToList();
     }
 

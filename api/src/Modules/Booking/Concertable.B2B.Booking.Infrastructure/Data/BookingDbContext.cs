@@ -12,30 +12,31 @@ internal sealed class BookingDbContext(
     IOptions<OutboxOptions> outboxOptions,
     BookingConfigurationProvider provider,
     ITenantContext tenantContext,
-    IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
+    IAuthorizationContext authorization,
+    TimeProvider timeProvider)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
 {
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
     public DbSet<ContractEntity> Contracts => Set<ContractEntity>();
     public DbSet<BookingAccessGrant> BookingAccessGrants => Set<BookingAccessGrant>();
     public DbSet<ContractAccessGrant> ContractAccessGrants => Set<ContractAccessGrant>();
 
-    public ResourceCoverage OperationsCoverage => CoverageFor(TenantPermission.OperationsView);
-    public ResourceCoverage TermsCoverage => CoverageFor(TenantPermission.TermsRead);
+    public ResourceAccess OperationsAccess =>
+        Membership?.Permissions[TenantPermission.OperationsView] ?? ResourceAccess.None;
+    public ResourceAccess TermsAccess =>
+        Membership?.Permissions[TenantPermission.TermsRead] ?? ResourceAccess.None;
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<BookingAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCoverage<BookingAccessGrant, BookingAccessScope>(
-                this,
-                () => OperationsCoverage,
+            IsVisibleGrant<BookingAccessGrant, BookingAccessScope>(
+                () => OperationsAccess,
                 BookingAccessScope.Summary,
                 BookingAccessScope.Operations));
 
         modelBuilder.Entity<ContractAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCoverage<ContractAccessGrant, ContractAccessScope>(
-                this,
-                () => TermsCoverage,
+            IsVisibleGrant<ContractAccessGrant, ContractAccessScope>(
+                () => TermsAccess,
                 ContractAccessScope.Read));
 
         modelBuilder.Entity<BookingEntity>().HasQueryFilter(TenantFilters.Key, booking =>

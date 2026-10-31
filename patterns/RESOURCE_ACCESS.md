@@ -10,14 +10,14 @@ The bases live in `B2B.DataAccess.Infrastructure`; each concrete context lives i
 | Stance | Base | Concrete examples |
 |---|---|---|
 | Tenant-filtered single owner | `TenantScopedDbContext` | `VenueDbContext`, `ArtistDbContext`, `OpportunityDbContext` |
-| Resource coverage and grants | `ResourceScopedDbContext` | `ApplicationDbContext`, `BookingDbContext`, `ConcertDbContext`, `ConversationsDbContext` |
+| Resource access and grants | `ResourceScopedDbContext` | `ApplicationDbContext`, `BookingDbContext`, `ConcertDbContext`, `ConversationsDbContext` |
 | Tenant-independent read, `SaveChanges` throws | `ReadDbContext` (shared DataAccess) | `Application`, `Artist`, `Booking`, `Concert`, `Opportunity`, `Venue` |
 | Unscoped but writable | `PrivilegedDbContext` | `ArtistPrivilegedDbContext`, `OpportunityPrivilegedDbContext`, `ConversationsPrivilegedDbContext` |
 | Module-owned configuration | `DbContextBase` + own `OnModelCreating` | `Admin`, `Deal`, `Tenant`, `User` |
 
 Each scoped context declares its filters in `ApplyTenantFilters`. Artist, Venue and Opportunity use
 `ApplySingleOwner` for their tenant-owned entities. Application, Booking, Concert and Conversations use
-resource grants and `ResourceCoverage` for shared visibility; their ordinary contexts inherit `ResourceScopedDbContext`.
+resource grants and `ResourceAccess` for shared visibility; their ordinary contexts inherit `ResourceScopedDbContext`.
 
 Repository examples distinguish visibility from exposed operations: `ArtistRepository` is tenant-bound,
 `ArtistReadRepository` uses `ArtistReadDbContext`, and `ArtistPrivilegedReadRepository` exposes
@@ -35,7 +35,7 @@ aggregate. Application owns `IConcertAvailabilityChecker`; its `ConcertAvailabil
 - **Owner-filtered:** `Venue`, `Artist`, `Opportunity` in their ordinary tenant contexts; marketplace
   browsing uses the separate read stance.
 - **Resource-filtered:** Application, Booking/Contract, Concert/Invoice and Conversations use live grants
-  and the coverage the operation's permission holds. Public Concert listing uses its read stance.
+  and the access the operation's permission holds. Public Concert listing uses its read stance.
 - **Module-owned, unfiltered context:** Deal; transaction-enlisted cross-module reads use
   `DealPrivilegedReadRepository`.
 

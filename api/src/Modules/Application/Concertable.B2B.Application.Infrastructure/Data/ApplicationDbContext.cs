@@ -12,27 +12,28 @@ internal sealed class ApplicationDbContext(
     IOptions<OutboxOptions> outboxOptions,
     ApplicationConfigurationProvider provider,
     ITenantContext tenantContext,
-    IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
+    IAuthorizationContext authorization,
+    TimeProvider timeProvider)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
 {
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<VerifyPaymentEntity> VerifyPayments => Set<VerifyPaymentEntity>();
     public DbSet<ConcertAvailabilityEntity> ConcertAvailabilities => Set<ConcertAvailabilityEntity>();
     public DbSet<ApplicationAccessGrant> ApplicationAccessGrants => Set<ApplicationAccessGrant>();
 
-    public ResourceCoverage OperationsCoverage => CoverageFor(TenantPermission.OperationsView);
-    public ResourceCoverage TermsCoverage => CoverageFor(TenantPermission.TermsRead);
+    public ResourceAccess OperationsAccess =>
+        Membership?.Permissions[TenantPermission.OperationsView] ?? ResourceAccess.None;
+    public ResourceAccess TermsAccess =>
+        Membership?.Permissions[TenantPermission.TermsRead] ?? ResourceAccess.None;
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ApplicationAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCoverage<ApplicationAccessGrant, ApplicationAccessScope>(
-                    this,
-                    () => OperationsCoverage,
+            IsVisibleGrant<ApplicationAccessGrant, ApplicationAccessScope>(
+                    () => OperationsAccess,
                     ApplicationAccessScope.Summary)
-                .Or(ResourceAccessExpressions.LiveForCoverage<ApplicationAccessGrant, ApplicationAccessScope>(
-                    this,
-                    () => TermsCoverage,
+                .Or(IsVisibleGrant<ApplicationAccessGrant, ApplicationAccessScope>(
+                    () => TermsAccess,
                     ApplicationAccessScope.Proposal)));
 
         modelBuilder.Entity<ApplicationEntity>().HasQueryFilter(TenantFilters.Key, application =>

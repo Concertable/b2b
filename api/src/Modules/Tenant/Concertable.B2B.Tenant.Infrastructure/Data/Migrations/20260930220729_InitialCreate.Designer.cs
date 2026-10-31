@@ -417,7 +417,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         new
                         {
                             Id = 1,
-                            Revision = "8b2f220b198af94ea7592c8d895be0dabaf24561bc53fdade387e08c18f30dde"
+                            Revision = "1af96819c91a46228e6d425e40a25610ffbdf840e1ae2d4d156287b718c9feb5"
                         });
                 });
 

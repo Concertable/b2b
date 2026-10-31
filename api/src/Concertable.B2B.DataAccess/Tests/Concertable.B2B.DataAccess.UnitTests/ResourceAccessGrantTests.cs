@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Application;
 
@@ -10,12 +9,14 @@ public sealed class ResourceAccessGrantTests
 
     private static readonly MembershipSnapshot Actor = new(
         Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 1, 1,
-        ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty
-            .Add(TenantPermission.OperationsView, ResourceCoverage.TenantResources)
-            .Add(TenantPermission.ConcertsOpsEdit, ResourceCoverage.AssignedResources));
+        EffectivePermissions.From(
+        [
+            KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.All),
+            KeyValuePair.Create(TenantPermission.ConcertsOpsEdit, ResourceAccess.Assigned),
+        ]));
 
     [Fact]
-    public void IsLiveFor_TenantCoverage_CoversTenantWideAndOwnAssignedGrants()
+    public void IsLiveFor_AllAccess_CoversTenantWideAndOwnAssignedGrants()
     {
         Assert.True(IsLive(TenantPermission.OperationsView, Grant(membershipId: null)));
         Assert.True(IsLive(TenantPermission.OperationsView, Grant(membershipId: Actor.MembershipId)));
@@ -23,7 +24,7 @@ public sealed class ResourceAccessGrantTests
     }
 
     [Fact]
-    public void IsLiveFor_AssignedCoverage_CoversOnlyOwnAssignedGrants()
+    public void IsLiveFor_AssignedAccess_CoversOnlyOwnAssignedGrants()
     {
         Assert.True(IsLive(TenantPermission.ConcertsOpsEdit, Grant(membershipId: Actor.MembershipId)));
         Assert.False(IsLive(TenantPermission.ConcertsOpsEdit, Grant(membershipId: null)));

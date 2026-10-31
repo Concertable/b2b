@@ -6,15 +6,15 @@
       "label": "Read messages",
       "category": "Conversations",
       "assignableAudiences": [
-        "AssignedResources",
-        "TenantResources"
+        "Assigned",
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources",
-        "Finance": "TenantResources",
-        "Staff": "AssignedResources"
+        "Owner": "All",
+        "Manager": "All",
+        "Finance": "All",
+        "Staff": "Assigned"
       },
       "resourceBindings": [
         {
@@ -33,14 +33,14 @@
       "label": "Send messages",
       "category": "Conversations",
       "assignableAudiences": [
-        "AssignedResources",
-        "TenantResources"
+        "Assigned",
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources",
-        "Staff": "AssignedResources"
+        "Owner": "All",
+        "Manager": "All",
+        "Staff": "Assigned"
       },
       "resourceBindings": [
         {

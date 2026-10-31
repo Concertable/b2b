@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
@@ -41,8 +40,8 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         Assert.True(stale.IsNone);
         Assert.NotEqual(expected.PermissionVersion, current.PermissionVersion);
         Assert.True(resolved.TryGetValue(out var resolution));
-        Assert.True(current.HasSameAuthorityAs(resolution.Actor));
-        Assert.True(current.HasSameAuthorityAs(resolution.TargetMembership));
+        Assert.Equal(current, resolution.Actor);
+        Assert.Equal(current, resolution.TargetMembership);
         Assert.True(resolution.TargetTenantExists);
     }
 
@@ -56,7 +55,7 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
             resolver.ResolveAsync(actor, actor.TenantId, target.Id, ct));
 
         Assert.True(resolved.TryGetValue(out var resolution));
-        Assert.True(actor.HasSameAuthorityAs(resolution.Actor));
+        Assert.Equal(actor, resolution.Actor);
         Assert.True(resolution.TargetTenantExists);
         Assert.Null(resolution.TargetMembership);
     }
@@ -95,7 +94,7 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         var current = Snapshot(fixture.Memberships.Single(value => value.Id == membership.Id));
 
         Assert.Null(await fixture.LockIfUnchangedAsync(expected));
-        Assert.True(current.HasSameAuthorityAs(await fixture.LockIfUnchangedAsync(current)));
+        Assert.Equal(current, await fixture.LockIfUnchangedAsync(current));
     }
 
     private MembershipSnapshot Snapshot(TenantMembershipEntity membership)
@@ -103,10 +102,8 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         var tenant = fixture.Tenants.Single(value => value.Id == membership.TenantId);
         var presetKeys = AuthorizationCatalog.Presets.Keys.Where(key =>
             membership.Assignments.Any(assignment => assignment.RoleId == TenantApiFixture.RoleId(membership.TenantId, key)));
-        var permissions = presetKeys
-            .SelectMany(key => AuthorizationCatalog.Presets[key].Permissions)
-            .GroupBy(permission => permission.Key)
-            .ToImmutableDictionary(group => group.Key, group => group.Max(permission => permission.Value));
+        var permissions = EffectivePermissions.From(
+            presetKeys.SelectMany(key => AuthorizationCatalog.Presets[key].Permissions));
         return new MembershipSnapshot(
             membership.Id,
             membership.TenantId,

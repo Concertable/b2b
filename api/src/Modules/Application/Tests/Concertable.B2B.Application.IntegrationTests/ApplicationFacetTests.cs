@@ -30,7 +30,7 @@ public sealed class ApplicationFacetTests : IAsyncLifetime
     {
         var tenantId = fixture.SeedState.PostedFlatFeeApp.VenueTenantId;
         var owner = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var roleId = await CreateRoleAsync(owner, "Terms reader", "terms.read", "TenantResources");
+        var roleId = await CreateRoleAsync(owner, "Terms reader", "terms.read", "All");
         await (await owner.PutAsJsonAsync(
             $"/api/organization/members/{fixture.SeedState.VenueManager3.Id}/roles",
             new { roleIds = new[] { roleId } })).ShouldBe(HttpStatusCode.NoContent);
@@ -52,7 +52,7 @@ public sealed class ApplicationFacetTests : IAsyncLifetime
     {
         var application = fixture.SeedState.FlatFeeApp;
         var owner = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var roleId = await CreateRoleAsync(owner, "Decision maker", "applications.decide", "TenantResources");
+        var roleId = await CreateRoleAsync(owner, "Decision maker", "applications.decide", "All");
         await (await owner.PutAsJsonAsync(
             $"/api/organization/members/{fixture.SeedState.VenueManager3.Id}/roles",
             new { roleIds = new[] { roleId } })).ShouldBe(HttpStatusCode.NoContent);
@@ -70,7 +70,7 @@ public sealed class ApplicationFacetTests : IAsyncLifetime
     {
         var application = fixture.SeedState.FlatFeeApp;
         var owner = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var roleId = await CreateRoleAsync(owner, "Assigned reader", "operations.view", "AssignedResources");
+        var roleId = await CreateRoleAsync(owner, "Assigned reader", "operations.view", "Assigned");
         await (await owner.PutAsJsonAsync(
             $"/api/organization/members/{fixture.SeedState.VenueManager3.Id}/roles",
             new { roleIds = new[] { roleId } })).ShouldBe(HttpStatusCode.NoContent);

@@ -46,7 +46,6 @@ internal sealed class ConcertService : IConcertService
     private readonly ITenantContext tenantContext;
     private readonly IAuthorizationContext membership;
     private readonly ITransactionRunner transactionRunner;
-    private readonly IResourceAccessContext resourceAccess;
     private readonly ILogger<ConcertService> logger;
 
     public ConcertService(
@@ -70,7 +69,6 @@ internal sealed class ConcertService : IConcertService
         ITenantContext tenantContext,
         IAuthorizationContext membership,
         ITransactionRunner transactionRunner,
-        IResourceAccessContext resourceAccess,
         ILogger<ConcertService> logger)
     {
         this.concertRepository = concertRepository;
@@ -93,7 +91,6 @@ internal sealed class ConcertService : IConcertService
         this.tenantContext = tenantContext;
         this.membership = membership;
         this.transactionRunner = transactionRunner;
-        this.resourceAccess = resourceAccess;
         this.logger = logger;
     }
 
@@ -525,7 +522,7 @@ internal sealed class ConcertService : IConcertService
         if (concert.AccessVersion != request.ExpectedAccessVersion)
             return new ShareConcertSummaryError.Superseded(id);
 
-        var decidedAt = resourceAccess.UtcNow;
+        var decidedAt = timeProvider.GetUtcNow().UtcDateTime;
         var validation = concert.ValidateSummaryShare(
                 resolution.Actor.TenantId,
                 decidedAt,
@@ -678,7 +675,7 @@ internal sealed class ConcertService : IConcertService
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
         if (concert.AccessVersion != expectedAccessVersion)
             return new RevokeConcertSummaryShareError.Superseded(id);
-        if (concert.RevokeSummaryShare(grantId, resolution.Actor.TenantId, resourceAccess.UtcNow)
+        if (concert.RevokeSummaryShare(grantId, resolution.Actor.TenantId, timeProvider.GetUtcNow().UtcDateTime)
             .TryGetError(out var revocationError))
             return revocationError.ToRevokeConcertSummaryShareError();
 
@@ -738,7 +735,7 @@ internal sealed class ConcertService : IConcertService
         var assignment = concert.AssignMember(
                 resolution.Actor.TenantId,
                 resolution.TargetMembership.MembershipId,
-                resourceAccess.UtcNow);
+                timeProvider.GetUtcNow().UtcDateTime);
         if (assignment.TryGetError(out var assignmentError))
             return assignmentError.ToAssignConcertMemberError();
         if (!assignment.TryGetValue(out var grants))
@@ -800,7 +797,8 @@ internal sealed class ConcertService : IConcertService
             ?? throw new InvalidOperationException($"Concert {id} disappeared while locked.");
         if (concert.AccessVersion != expectedAccessVersion)
             return new AssignConcertMemberError.Superseded(id);
-        if (concert.RemoveMemberAssignment(resolution.Actor.TenantId, membershipId, resourceAccess.UtcNow)
+        if (concert.RemoveMemberAssignment(
+                resolution.Actor.TenantId, membershipId, timeProvider.GetUtcNow().UtcDateTime)
             .TryGetError(out var assignmentError))
             return assignmentError.ToAssignConcertMemberError();
 

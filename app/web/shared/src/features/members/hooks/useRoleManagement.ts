@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { usePermissionsQuery, useRolesQuery } from "./useRolesQuery";
 import { useRoleMutations } from "./useRoleMutations";
 import { roleRequestSchema, retireRoleRequestSchema, updateRoleRequestSchema } from "../schemas/roleRequestSchema";
-import type { PermissionMetadata, ResourceCoverage, Role, RolePermission } from "../types";
+import type { PermissionMetadata, ResourceAccess, Role, RolePermission } from "../types";
 
 interface Draft {
   name: string;
@@ -92,11 +92,11 @@ export function useRoleManagement() {
         : current.permissions.filter((entry) => entry.permission !== item.permission),
     }));
   };
-  const changeCoverage = (item: PermissionMetadata, coverage: ResourceCoverage) =>
+  const changeAccess = (item: PermissionMetadata, access: ResourceAccess) =>
     setDraft((current) => ({
       ...current,
       permissions: current.permissions.map((entry) =>
-        entry.permission === item.permission ? { ...entry, audience: coverage } : entry),
+        entry.permission === item.permission ? { ...entry, audience: access } : entry),
     }));
   const save = () => {
     if (!parsed.success) return;
@@ -131,6 +131,6 @@ export function useRoleManagement() {
     saveError: create.isError || update.isError,
     retireError: retireMutation.isError,
     openNew, openRole, clone, startEditing, setName, setInvitationAssignable,
-    togglePermission, changeCoverage, save, setReplacementRoleId, retire,
+    togglePermission, changeAccess, save, setReplacementRoleId, retire,
   };
 }

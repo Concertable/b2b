@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = ("Tenant", "Conversations", "Concert", "Opportunity", "Application", "Booking")
-COVERAGES = {"AssignedResources", "TenantResources"}
+ACCESS_LEVELS = {"Assigned", "All"}
 PRESETS = ("Owner", "Manager", "Finance", "Staff", "Door", "Sound")
 BINDINGS = {
     "tenant": {"membership"},
@@ -78,14 +78,14 @@ def load():
             if binding_key in seen_bindings:
                 raise ValueError(f"Duplicate resource/facet binding: {key}")
             seen_bindings.add(binding_key)
-        coverages = item["assignableAudiences"]
-        if not coverages or set(coverages) - COVERAGES or len(set(coverages)) != len(coverages):
-            raise ValueError(f"Invalid coverages: {key}")
+        access_levels = item["assignableAudiences"]
+        if not access_levels or set(access_levels) - ACCESS_LEVELS or len(set(access_levels)) != len(access_levels):
+            raise ValueError(f"Invalid access levels: {key}")
         grants = item["systemPresets"]
         if not isinstance(grants, dict) or "Owner" not in grants or set(grants) - set(PRESETS):
             raise ValueError(f"Invalid preset declaration: {key}")
-        if any(coverage not in coverages for coverage in grants.values()):
-            raise ValueError(f"Invalid preset coverage: {key}")
+        if any(access not in access_levels for access in grants.values()):
+            raise ValueError(f"Invalid preset access: {key}")
         if item["ownerOnly"] and set(grants) != {"Owner"}:
             raise ValueError(f"Owner-only permission outside Owner preset: {key}")
     return sorted(entries, key=lambda item: item["name"])
@@ -122,17 +122,17 @@ def generated(entries):
                "", "public sealed record PermissionDescriptor(",
                "    TenantPermission Permission,", "    string Label,", "    string Category,",
                "    IReadOnlyList<PermissionResourceBinding> ResourceBindings,",
-               "    IReadOnlyList<ResourceCoverage> AssignableCoverages,", "    bool OwnerOnly);",
+               "    IReadOnlyList<ResourceAccess> AssignableAccess,", "    bool OwnerOnly);",
                "", "public sealed record SystemPresetDescriptor(",
                "    string Key,", "    bool IsProtectedOwner,", "    bool IsInvitationAssignable,",
-               "    IReadOnlyDictionary<TenantPermission, ResourceCoverage> Permissions);",
+               "    IReadOnlyDictionary<TenantPermission, ResourceAccess> Permissions);",
                "", "public static class AuthorizationCatalog", "{",
                f'    public const string Revision = "{revision}";', "",
                "    public static IReadOnlyDictionary<TenantPermission, PermissionDescriptor> Permissions { get; } =",
                "        new Dictionary<TenantPermission, PermissionDescriptor>", "        {"]
     for item in entries:
         sym = item["symbol"]
-        coverages = ", ".join("ResourceCoverage." + c for c in item["assignableAudiences"])
+        access_levels = ", ".join("ResourceAccess." + c for c in item["assignableAudiences"])
         bindings = []
         for binding in item["resourceBindings"]:
             scopes = ", ".join(quoted(value) for value in binding["requiresScopes"])
@@ -143,7 +143,7 @@ def generated(entries):
         binding_values = ", ".join(bindings)
         catalog.append(
             f'            [TenantPermission.{sym}] = new(TenantPermission.{sym}, {quoted(item["label"])}, '
-            f'{quoted(item["category"])}, [{binding_values}], [{coverages}], '
+            f'{quoted(item["category"])}, [{binding_values}], [{access_levels}], '
             f'{str(item["ownerOnly"]).lower()}),')
     catalog += ["        }.ToFrozenDictionary();", "",
                 "    public static IReadOnlyDictionary<string, SystemPresetDescriptor> Presets { get; } =",
@@ -152,12 +152,12 @@ def generated(entries):
         catalog.append(f'            [{quoted(preset)}] = new({quoted(preset)}, '
                        f'{str(preset == "Owner").lower()}, '
                        f'{str(preset in ("Staff", "Door", "Sound")).lower()}, '
-                       "new Dictionary<TenantPermission, ResourceCoverage>")
+                       "new Dictionary<TenantPermission, ResourceAccess>")
         catalog.append("            {")
         for item in entries:
-            coverage = item["systemPresets"].get(preset)
-            if coverage:
-                catalog.append(f'                [TenantPermission.{item["symbol"]}] = ResourceCoverage.{coverage},')
+            access = item["systemPresets"].get(preset)
+            if access:
+                catalog.append(f'                [TenantPermission.{item["symbol"]}] = ResourceAccess.{access},')
         catalog += ["            }.ToFrozenDictionary()),"]
     catalog += ["        }.ToFrozenDictionary(StringComparer.Ordinal);", "}", ""]
     union = "export type TenantPermission =\n" + "  " + " |\n  ".join(

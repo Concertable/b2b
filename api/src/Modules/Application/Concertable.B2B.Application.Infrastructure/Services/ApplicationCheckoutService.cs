@@ -74,7 +74,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         int opportunityId)
     {
         if (membership.Membership is not { } actor
-            || !actor.CoverageFor(TenantPermission.ApplicationsSubmit).Covers(ResourceCoverage.TenantResources))
+            || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplicationCheckoutError.Ineligible(
                 new ApplicationEligibilityError.MissingArtist());
         var opportunityOption = await opportunityModule.GetOpenAsync(opportunityId);

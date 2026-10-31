@@ -296,7 +296,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant",
                 table: "AuthorizationCatalogState",
                 columns: new[] { "Id", "Revision" },
-                values: new object[] { 1, "8b2f220b198af94ea7592c8d895be0dabaf24561bc53fdade387e08c18f30dde" });
+                values: new object[] { 1, "1af96819c91a46228e6d425e40a25610ffbdf840e1ae2d4d156287b718c9feb5" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Activities_TenantId_At",

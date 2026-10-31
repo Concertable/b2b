@@ -26,12 +26,6 @@ internal sealed class AuthorizationContext : ITenantContext, ITenantResolver, IA
 
     public Guid? TenantId => Membership?.TenantId;
 
-    public bool HasPermission(TenantPermission permission) =>
-        Membership is { } active && active.HasPermission(permission);
-
-    public ResourceCoverage CoverageFor(TenantPermission permission) =>
-        Membership?.CoverageFor(permission) ?? ResourceCoverage.None;
-
     public async Task ResolveAsync(CancellationToken cancellationToken = default)
     {
         if (httpContextAccessor.HttpContext is null || accessor.Resolution is not null)

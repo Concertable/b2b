@@ -27,7 +27,7 @@ internal sealed class TargetTenantResolver : ITargetTenantResolver
             ? [expectedActor.MembershipId, targetId]
             : [expectedActor.MembershipId];
         var memberships = await membershipRepository.GetSnapshotsByIdsForShareAsync(membershipIds, ct);
-        var actor = memberships.SingleOrDefault(membership => membership.HasSameAuthorityAs(expectedActor));
+        var actor = memberships.SingleOrDefault(membership => membership == expectedActor);
         if (actor is null)
             return null;
 

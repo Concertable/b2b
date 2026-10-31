@@ -1,5 +1,4 @@
 using Concertable.B2B.Booking.Contracts;
-using System.Collections.Immutable;
 
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Domain.ValueObjects;
@@ -36,8 +35,7 @@ public sealed class ConcertWorkflowTests
         Guid.NewGuid(),
         1,
         1,
-        ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
-            TenantPermission.ConcertsManage, ResourceCoverage.TenantResources));
+        EffectivePermissions.From([KeyValuePair.Create(TenantPermission.ConcertsManage, ResourceAccess.All)]));
 
     public ConcertWorkflowTests()
     {

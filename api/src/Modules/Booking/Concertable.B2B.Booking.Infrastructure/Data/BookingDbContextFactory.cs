@@ -13,5 +13,6 @@ internal sealed class BookingDbContextFactory : B2BDesignTimeDbContextFactory<Bo
             DefaultOutboxOptions,
             new BookingConfigurationProvider(),
             DesignTimeTenantContext.Instance,
-            DesignTimeResourceAccessContext.Instance);
+            DesignTimeAuthorizationContext.Instance,
+            TimeProvider.System);
 }

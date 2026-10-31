@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 
 namespace Concertable.B2B.Authorization.UnitTests;
@@ -9,97 +8,90 @@ public sealed class MembershipSnapshotTests
         Guid.Parse("11111111-1111-1111-1111-111111111111"),
         Guid.Parse("22222222-2222-2222-2222-222222222222"),
         Guid.Parse("33333333-3333-3333-3333-333333333333"), 3, 5,
-        ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty.Add(
-            TenantPermission.OperationsView, ResourceCoverage.TenantResources));
+        Permissions((TenantPermission.OperationsView, ResourceAccess.All)));
 
     [Theory]
-    [InlineData(ResourceCoverage.AssignedResources)]
-    [InlineData(ResourceCoverage.TenantResources)]
-    public void HasPermission_ResourceReadPermission_AllowsEitherGrantedCoverage(ResourceCoverage coverage)
+    [InlineData(ResourceAccess.Assigned)]
+    [InlineData(ResourceAccess.All)]
+    public void HasPermission_ResourceReadPermission_AllowsEitherGrantedAccess(ResourceAccess access)
     {
-        var reader = actor with { Permissions = actor.Permissions.Add(TenantPermission.TermsRead, coverage) };
+        var reader = actor with
+        {
+            Permissions = Permissions(
+                (TenantPermission.OperationsView, ResourceAccess.All), (TenantPermission.TermsRead, access)),
+        };
 
         Assert.True(reader.HasPermission(TenantPermission.TermsRead));
     }
 
     [Theory]
-    [InlineData(ResourceCoverage.AssignedResources, false)]
-    [InlineData(ResourceCoverage.TenantResources, true)]
-    [InlineData(ResourceCoverage.None, false)]
-    public void CoverageFor_CreationPermission_RequiresTenantCoverage(ResourceCoverage coverage, bool expected)
+    [InlineData(ResourceAccess.Assigned, false)]
+    [InlineData(ResourceAccess.All, true)]
+    [InlineData(ResourceAccess.None, false)]
+    public void Permissions_CreationPermission_RequiresAllAccess(ResourceAccess access, bool expected)
     {
-        var creator = actor with
-        {
-            Permissions = actor.Permissions.Add(TenantPermission.ApplicationsSubmit, coverage),
-        };
+        var creator = actor with { Permissions = Permissions((TenantPermission.ApplicationsSubmit, access)) };
 
-        Assert.Equal(expected, creator.CoverageFor(TenantPermission.ApplicationsSubmit)
-            .Covers(ResourceCoverage.TenantResources));
-    }
-
-    [Theory]
-    [InlineData(ResourceCoverage.None)]
-    [InlineData((ResourceCoverage)99)]
-    public void Covers_InvalidRequiredCoverage_IsNeverSatisfied(ResourceCoverage required)
-    {
-        Assert.False(actor.CoverageFor(TenantPermission.OperationsView).Covers(required));
+        Assert.Equal(expected, creator.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All));
     }
 
     [Fact]
-    public void HasSameAuthorityAs_PermissionAddedUnderANewVersion_IsAnotherAuthority()
+    public void Permissions_UnheldOrDefaultPermission_IsNone()
     {
-        var changed = actor with
-        {
-            PermissionVersion = actor.PermissionVersion + 1,
-            Permissions = actor.Permissions.Add(
-                TenantPermission.ApplicationsSubmit, ResourceCoverage.TenantResources),
-        };
-
-        Assert.False(actor.HasSameAuthorityAs(changed));
-        Assert.True(actor.HasSameAuthorityAs(actor with { }));
-    }
-
-    [Fact]
-    public void CoverageFor_UnheldOrDefaultPermission_IsNone()
-    {
-        Assert.Equal(ResourceCoverage.None, actor.CoverageFor(TenantPermission.SettlementView));
-        Assert.Equal(ResourceCoverage.None, actor.CoverageFor(default));
+        Assert.Equal(ResourceAccess.None, actor.Permissions[TenantPermission.SettlementView]);
+        Assert.Equal(ResourceAccess.None, actor.Permissions[default]);
         Assert.False(actor.HasPermission(TenantPermission.SettlementView));
     }
 
     [Fact]
-    public void HasSameAuthorityAs_RolePolicyVersionChanged_IsAnotherAuthority()
+    public void Equality_PermissionAddedUnderANewVersion_IsAnotherAuthority()
     {
-        Assert.False(actor.HasSameAuthorityAs(actor with { RolePolicyVersion = actor.RolePolicyVersion + 1 }));
+        var changed = actor with
+        {
+            PermissionVersion = actor.PermissionVersion + 1,
+            Permissions = Permissions(
+                (TenantPermission.OperationsView, ResourceAccess.All),
+                (TenantPermission.ApplicationsSubmit, ResourceAccess.All)),
+        };
+
+        Assert.NotEqual(actor, changed);
+        Assert.Equal(actor, actor with { });
     }
 
     [Fact]
-    public void HasSameAuthorityAs_CoverageNarrowedUnderTheSameVersions_IsAnotherAuthority()
+    public void Equality_RolePolicyVersionChanged_IsAnotherAuthority()
+    {
+        Assert.NotEqual(actor, actor with { RolePolicyVersion = actor.RolePolicyVersion + 1 });
+    }
+
+    [Fact]
+    public void Equality_AccessNarrowedUnderTheSameVersions_IsAnotherAuthority()
     {
         var narrowed = actor with
         {
-            Permissions = actor.Permissions.SetItem(TenantPermission.OperationsView, ResourceCoverage.AssignedResources),
+            Permissions = Permissions((TenantPermission.OperationsView, ResourceAccess.Assigned)),
         };
 
-        Assert.False(actor.HasSameAuthorityAs(narrowed));
+        Assert.NotEqual(actor, narrowed);
     }
 
     [Fact]
-    public void HasSameAuthorityAs_AnotherMembershipOrNone_IsAnotherAuthority()
+    public void Equality_AnotherMembershipOrNone_IsAnotherAuthority()
     {
-        Assert.False(actor.HasSameAuthorityAs(actor with { MembershipId = Guid.NewGuid() }));
-        Assert.False(actor.HasSameAuthorityAs(null));
+        Assert.NotEqual(actor, actor with { MembershipId = Guid.NewGuid() });
+        Assert.False(actor == null);
     }
 
     [Fact]
-    public void HasSameAuthorityAs_IndependentlyBuiltEqualPermissions_IsTheSameAuthority()
+    public void Equality_IndependentlyBuiltEqualPermissions_IsTheSameAuthority()
     {
-        var rebuilt = actor with
-        {
-            Permissions = ImmutableDictionary<TenantPermission, ResourceCoverage>.Empty
-                .Add(TenantPermission.OperationsView, ResourceCoverage.TenantResources),
-        };
+        var rebuilt = actor with { Permissions = Permissions((TenantPermission.OperationsView, ResourceAccess.All)) };
 
-        Assert.True(actor.HasSameAuthorityAs(rebuilt));
+        Assert.Equal(actor, rebuilt);
+        Assert.True(actor == rebuilt);
     }
+
+    private static EffectivePermissions Permissions(
+        params (TenantPermission Permission, ResourceAccess Access)[] grants) =>
+        EffectivePermissions.From(grants.Select(grant => KeyValuePair.Create(grant.Permission, grant.Access)));
 }

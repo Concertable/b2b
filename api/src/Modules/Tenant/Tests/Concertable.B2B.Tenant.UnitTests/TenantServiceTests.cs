@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Errors;
@@ -39,7 +38,7 @@ public sealed class TenantServiceTests
         var userId = Guid.NewGuid();
         this.authorizationContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
-                userId, 1, 1, AuthorizationCatalog.Presets["Owner"].Permissions.ToImmutableDictionary()));
+                userId, 1, 1, EffectivePermissions.From(AuthorizationCatalog.Presets["Owner"].Permissions)));
         this.membershipReads.Setup(reads => reads.LockIfUnchangedAsync(
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
@@ -496,7 +495,7 @@ public sealed class TenantServiceTests
             .ReturnsAsync([new UserMembership(
                 new MembershipSnapshot(
                     Guid.NewGuid(), tenantId, userId, 1, 1,
-                    AuthorizationCatalog.Presets["Door"].Permissions.ToImmutableDictionary()),
+                    EffectivePermissions.From(AuthorizationCatalog.Presets["Door"].Permissions)),
                 "Bare Ltd", [new RoleSummary(Guid.NewGuid(), "Door", false)], [])]);
 
         var memberships = await service.GetMembershipsAsync(userId);

@@ -429,7 +429,7 @@ internal sealed class ApplicationService : IApplicationService
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
         if (membership.Membership is not { } actor
-            || !actor.CoverageFor(TenantPermission.ApplicationsSubmit).Covers(ResourceCoverage.TenantResources))
+            || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplicationEligibilityError.MissingArtist();
         var artistOption = await artistModule.GetCurrentProfileAsync();
         if (!artistOption.TryGetValue(out var artist))

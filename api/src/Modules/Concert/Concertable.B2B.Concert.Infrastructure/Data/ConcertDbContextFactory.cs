@@ -14,7 +14,8 @@ internal sealed class ConcertDbContextFactory : B2BDesignTimeDbContextFactory<Co
             DefaultOutboxOptions,
             new ConcertConfigurationProvider(),
             DesignTimeTenantContext.Instance,
-            DesignTimeResourceAccessContext.Instance);
+            DesignTimeAuthorizationContext.Instance,
+            TimeProvider.System);
 
     protected override void ConfigureNpgsql(NpgsqlDbContextOptionsBuilder npgsql) =>
         npgsql.UseNetTopologySuite();

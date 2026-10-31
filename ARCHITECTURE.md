@@ -120,15 +120,15 @@ commit.
 | `MembershipId`, `TenantId`, `UserId` | Who is acting, in which tenant |
 | `PermissionVersion` | Bumped by the membership's role changes |
 | `RolePolicyVersion` | The tenant's role-definition version, bumped when a role's permissions change |
-| `Permissions` | Each effective `TenantPermission` with its `ResourceCoverage`: `AssignedResources` (only resources the member is assigned to) or `TenantResources` (everything the tenant can see) |
+| `Permissions` | `EffectivePermissions`: each held `TenantPermission` with its `ResourceAccess`: `Assigned` (only resources the member is assigned to) or `All` (everything the tenant can see) |
 
-The snapshot never changes during the request. `HasPermission` and `CoverageFor` answer tenant-level
-questions in memory; anything that writes re-checks the snapshot under lock (below).
+The snapshot never changes during the request and compares by value. `HasPermission` and
+`Permissions[permission]` answer tenant-level questions in memory; anything that writes re-checks the snapshot under lock (below).
 
 ### Endpoint gate
 
 `[HasPermission(TenantPermission.XName)]` names a policy that `PermissionPolicyProvider` builds and
-`PermissionAuthorizationHandler` satisfies when the snapshot holds the permission at any coverage. It is a
+`PermissionAuthorizationHandler` satisfies when the snapshot holds the permission at any access. It is a
 coarse filter that keeps callers without the permission out of the service; it does not decide access to
 a particular resource.
 
@@ -138,7 +138,7 @@ Each module that stores a shareable resource owns its rule as an `IQueryable<X>.
 permission, scope, at)` extension in its `Infrastructure/Data`: Application, Booking and Contract,
 Concert and Invoice, Conversation. The rule reads the permission's catalog binding for that resource and
 scope, applies its principal policy (for example, the venue or artist tenant of a booking) and requires a
-live grant for each scope the binding names. Grant liveness and coverage are one expression,
+live grant for each scope the binding names. Grant liveness and access are one expression,
 `ResourceAccessGrant<TScope>.IsLiveFor`.
 
 Reads compose `AccessibleBy` into the query, so lists and single reads share the rule. Writes go
@@ -172,7 +172,7 @@ work rolls back. The Booking and Concert integration race tests prove both order
 ### Generated catalog
 
 Each module declares its permissions in `api/src/Modules/<Module>/authorization.json`: label, resource
-bindings (resource, scope, principal policy, required grant scopes), assignable coverage and the coverage
+bindings (resource, scope, principal policy, required grant scopes), assignable access and the access
 each system preset role holds. `scripts/generate-authorization.py` validates them and writes
 `TenantPermission`, `AuthorizationCatalog` (with the `AuthorizationResource` enum and a content-hash
 `Revision`) and the frontend `TenantPermission` union. CI runs it with `--check`, so the committed output

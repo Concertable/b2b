@@ -166,7 +166,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
         if (!existingParties.SetEquals(parties)
             || await memberships.LockIfUnchangedAsync(expectedActor, ct) is not { } actor
-            || !actor.CoverageFor(TenantPermission.ApplicationsSubmit).Covers(ResourceCoverage.TenantResources))
+            || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplyApplicationError.NotPermitted();
         await privilegedRepository.LockOpportunityAsync(opportunityId, ct);
         if (await privilegedRepository.AnyAcceptedByOpportunityIdAsync(opportunityId, ct))
@@ -259,7 +259,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         CancellationToken ct) =>
         privilegedUnitOfWork.ExecuteAsync(async () =>
         {
-            if (!expectedActor.CoverageFor(TenantPermission.ApplicationsSubmit).Covers(ResourceCoverage.TenantResources))
+            if (!expectedActor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
                 return (Result<ApplicationProposal, ApplyApplicationError>)new ApplyApplicationError.NotPermitted();
 
             if (await privilegedRepository.ExistsByOpportunityIdAndArtistTenantIdAsync(

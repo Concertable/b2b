@@ -12,7 +12,7 @@ internal static class ApplicationQueryExtensions
         public IQueryable<ApplicationEntity> AccessibleBy(
             MembershipSnapshot actor, TenantPermission permission, ApplicationAccessScope scope, DateTime at)
         {
-            var binding = permission.BindingFor(AuthorizationResource.Application, scope.ToString());
+            var binding = permission.FindBinding(AuthorizationResource.Application, scope.ToString());
             if (binding is null || !actor.HasPermission(permission))
                 return applications.Where(_ => false);
 

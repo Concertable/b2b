@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.Tenant.Domain.Entities;
@@ -43,9 +42,9 @@ public sealed class TenantRoleAssignmentPolicyTests
         var tenantId = Guid.NewGuid();
         var actor = Snapshot(tenantId, "Manager");
         var role = TenantRoleDefinition.CreateCustom(tenantId, "Inviter", true,
-            new Dictionary<TenantPermission, ResourceCoverage>
+            new Dictionary<TenantPermission, ResourceAccess>
             {
-                [TenantPermission.MembersInvite] = ResourceCoverage.TenantResources,
+                [TenantPermission.MembersInvite] = ResourceAccess.All,
             });
 
         Assert.False(TenantRoleAssignmentPolicy.CanAssign(actor, false, [role]));
@@ -61,7 +60,7 @@ public sealed class TenantRoleAssignmentPolicyTests
             Guid.NewGuid(),
             1,
             1,
-            preset.Permissions.ToImmutableDictionary());
+            EffectivePermissions.From(preset.Permissions));
     }
 
     private static TenantRoleDefinition Preset(Guid tenantId, string key)

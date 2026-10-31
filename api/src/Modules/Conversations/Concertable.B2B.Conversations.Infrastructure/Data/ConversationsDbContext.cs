@@ -14,8 +14,9 @@ internal sealed class ConversationsDbContext(
     IOptions<OutboxOptions> outboxOptions,
     ConversationsConfigurationProvider provider,
     ITenantContext tenantContext,
-    IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
+    IAuthorizationContext authorization,
+    TimeProvider timeProvider)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
@@ -24,19 +25,19 @@ internal sealed class ConversationsDbContext(
     public DbSet<ConversationReadPosition> ConversationReadPositions => Set<ConversationReadPosition>();
     public DbSet<TenantDisplay> TenantDisplays => Set<TenantDisplay>();
 
-    public ResourceCoverage ReadCoverage => CoverageFor(TenantPermission.MessagesRead);
-    public ResourceCoverage SendCoverage => CoverageFor(TenantPermission.MessagesSend);
+    public ResourceAccess ReadAccess =>
+        Membership?.Permissions[TenantPermission.MessagesRead] ?? ResourceAccess.None;
+    public ResourceAccess SendAccess =>
+        Membership?.Permissions[TenantPermission.MessagesSend] ?? ResourceAccess.None;
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ConversationAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForCoverage<ConversationAccessGrant, ConversationAccessScope>(
-                    this,
-                    () => ReadCoverage,
+            IsVisibleGrant<ConversationAccessGrant, ConversationAccessScope>(
+                    () => ReadAccess,
                     ConversationAccessScope.Read)
-                .Or(ResourceAccessExpressions.LiveForCoverage<ConversationAccessGrant, ConversationAccessScope>(
-                    this,
-                    () => SendCoverage,
+                .Or(IsVisibleGrant<ConversationAccessGrant, ConversationAccessScope>(
+                    () => SendAccess,
                     ConversationAccessScope.SendMessages)));
 
         modelBuilder.Entity<ConversationEntity>().HasQueryFilter(TenantFilters.Key, conversation =>

@@ -6,12 +6,12 @@
       "label": "Cancel bookings",
       "category": "Booking",
       "assignableAudiences": [
-        "TenantResources"
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
+        "Owner": "All",
+        "Manager": "All"
       },
       "resourceBindings": [
         {
@@ -30,13 +30,13 @@
       "label": "Read agreement terms",
       "category": "Booking",
       "assignableAudiences": [
-        "TenantResources"
+        "All"
       ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources",
-        "Finance": "TenantResources"
+        "Owner": "All",
+        "Manager": "All",
+        "Finance": "All"
       },
       "resourceBindings": [
         {
