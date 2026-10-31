@@ -57,8 +57,9 @@ public sealed class AuthorizationContextTests
         await context.ResolveAsync();
 
         Assert.Equal(tenantId, ((ITenantContext)context).TenantId);
-        Assert.Equal(3, ((IAuthorizationContext)context).Membership?.PermissionVersion);
-        Assert.Equal(4, ((IAuthorizationContext)context).Membership?.RolePolicyVersion);
+        Assert.True(((IAuthorizationContext)context).Membership.TryGetValue(out var resolved));
+        Assert.Equal(3, resolved.PermissionVersion);
+        Assert.Equal(4, resolved.RolePolicyVersion);
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public sealed class AuthorizationContextTests
         await context.ResolveAsync();
 
         Assert.Null(((ITenantContext)context).TenantId);
-        Assert.Null(((IAuthorizationContext)context).Membership);
+        Assert.False(((IAuthorizationContext)context).Membership.TryGetValue(out _));
     }
 
     [Fact]
@@ -139,7 +140,7 @@ public sealed class AuthorizationContextTests
 
         await context.ResolveAsync();
 
-        Assert.Null(((IAuthorizationContext)context).Membership);
+        Assert.False(((IAuthorizationContext)context).Membership.TryGetValue(out _));
     }
 
     [Fact]
@@ -169,7 +170,7 @@ public sealed class AuthorizationContextTests
 
         await context.ResolveAsync();
 
-        var membership = ((IAuthorizationContext)context).Membership!;
+        Assert.True(((IAuthorizationContext)context).Membership.TryGetValue(out var membership));
         Assert.True(membership.HasPermission(permission));
         Assert.Equal(ResourceAccess.All, membership.Permissions[permission]);
         Assert.False(membership.HasPermission(TenantPermission.ProfileEdit));

@@ -52,7 +52,7 @@ internal sealed class ContentReportService : IContentReportService
     private async Task<Option<MessageEntity>> FindMessageAsync(int conversationId, int messageId)
     {
         if (conversationId <= 0
-            || membership.Membership is not { } actor
+            || !membership.Membership.TryGetValue(out var actor)
             || await conversations.GetByIdAsync(conversationId) is not { } conversation
             || !conversation.IsReadableBy(actor))
             return null;

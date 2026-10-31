@@ -47,7 +47,7 @@ public sealed class TenantServiceTests
         this.membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
-                Task.FromResult<IReadOnlyList<MembershipSnapshot>>([authorizationContext.Object.Membership!]));
+                Task.FromResult<IReadOnlyList<MembershipSnapshot>>(authorizationContext.Object.Membership.TryGetValue(out var actor) ? [actor] : []));
         this.roles.Setup(value => value.HasProtectedOwnerAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);

@@ -18,7 +18,7 @@ internal sealed class PermissionAuthorizationHandler : AuthorizationHandler<Perm
     {
         await resolver.ResolveAsync();
 
-        if (authorization.Membership?.HasPermission(requirement.Permission) is true)
+        if (authorization.Membership.TryGetValue(out var actor) && actor.HasPermission(requirement.Permission))
             context.Succeed(requirement);
     }
 }

@@ -42,7 +42,7 @@ public sealed class InvitationServiceTests
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
                 Task.FromResult<IReadOnlyList<MembershipSnapshot>>(
-                    authorizationContext.Object.Membership is { } actor
+                    authorizationContext.Object.Membership.TryGetValue(out var actor)
                         ? new[] { actor }
                         : Array.Empty<MembershipSnapshot>()));
         service = new InvitationService(

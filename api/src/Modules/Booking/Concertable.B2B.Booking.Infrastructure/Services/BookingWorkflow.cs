@@ -92,7 +92,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         int bookingId,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new CancelBookingError.NotPermitted();
 
         try

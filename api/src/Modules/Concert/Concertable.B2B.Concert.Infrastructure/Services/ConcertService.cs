@@ -159,7 +159,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentVenueAsync()
     {
-        if (tenantContext.TenantId is not { } tenantId || membership.Membership is null)
+        if (tenantContext.TenantId is not { } tenantId || !membership.Membership.TryGetValue(out _))
             return new ConcertError.MissingVenue();
 
         return new Success<IReadOnlyList<ManagerConcertCard>>(
@@ -169,7 +169,7 @@ internal sealed class ConcertService : IConcertService
     public async Task<Result<IReadOnlyList<ConcertDraftReference>, ConcertError>> GetDraftsForCurrentVenueAsync(
         CancellationToken ct = default)
     {
-        if (tenantContext.TenantId is not { } tenantId || membership.Membership is null)
+        if (tenantContext.TenantId is not { } tenantId || !membership.Membership.TryGetValue(out _))
             return new ConcertError.MissingVenue();
 
         return new Success<IReadOnlyList<ConcertDraftReference>>(
@@ -178,7 +178,7 @@ internal sealed class ConcertService : IConcertService
 
     public async Task<Result<IReadOnlyList<ManagerConcertCard>, ConcertError>> GetUpcomingForCurrentArtistAsync()
     {
-        if (tenantContext.TenantId is not { } tenantId || membership.Membership is null)
+        if (tenantContext.TenantId is not { } tenantId || !membership.Membership.TryGetValue(out _))
             return new ConcertError.MissingArtist();
 
         return new Success<IReadOnlyList<ManagerConcertCard>>(
@@ -236,7 +236,7 @@ internal sealed class ConcertService : IConcertService
         UpdateConcertRequest request,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new UpdateConcertError.NotPermitted();
 
         try
@@ -256,7 +256,7 @@ internal sealed class ConcertService : IConcertService
         UpdateConcertRequest request,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new PostConcertError.NotPermitted();
 
         try
@@ -278,7 +278,7 @@ internal sealed class ConcertService : IConcertService
         decimal doorRevenue,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new DeclareDoorRevenueError.VenueForbidden();
 
         try
@@ -418,7 +418,7 @@ internal sealed class ConcertService : IConcertService
         ShareConcertSummaryRequest request,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new ShareConcertSummaryError.NotPermitted();
 
         if (request.RequestId == Guid.Empty || request.RecipientTenantId == Guid.Empty)
@@ -588,7 +588,7 @@ internal sealed class ConcertService : IConcertService
         long expectedAccessVersion,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new RevokeConcertSummaryShareError.NotPermitted();
 
         try
@@ -643,7 +643,7 @@ internal sealed class ConcertService : IConcertService
         AssignConcertMemberRequest request,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new AssignConcertMemberError.NotPermitted();
 
         try
@@ -704,7 +704,7 @@ internal sealed class ConcertService : IConcertService
         long expectedAccessVersion,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new AssignConcertMemberError.NotPermitted();
 
         try
@@ -777,7 +777,7 @@ internal sealed class ConcertService : IConcertService
         ConcertOperations operations,
         CancellationToken ct)
     {
-        var canCancel = membership.Membership is { } actor
+        var canCancel = membership.Membership.TryGetValue(out var actor)
             && await privilegedRepository.GetByIdAsync(operations.Id, ct) is { } concert
             && concert.IsCancellableBy(actor);
         return operations with
@@ -791,7 +791,7 @@ internal sealed class ConcertService : IConcertService
         ConcertFinance finance,
         CancellationToken ct)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return finance with { CanDeclareDoorRevenue = false };
 
         var canDeclareDoorRevenue = await privilegedRepository.GetByIdAsync(finance.Id, ct) is { } concert

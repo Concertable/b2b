@@ -85,7 +85,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new ApplyApplicationError.NotPermitted();
 
         var ipAddress = clientContext.IpAddress;
@@ -266,7 +266,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new AcceptApplicationError.NotPermitted();
 
         try

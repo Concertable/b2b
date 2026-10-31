@@ -45,8 +45,7 @@ internal sealed class RoleService : IRoleService
             if (!(await tenants.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId))
                 return Result.Failure<IReadOnlyList<RoleDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
-            var actor = authorizationContext.FindActor(tenantId);
-            if (actor is null || !actor.HasPermission(TenantPermission.MembersInvite))
+            if (!authorizationContext.FindActor(tenantId).TryGetValue(out var actor) || !actor.HasPermission(TenantPermission.MembersInvite))
                 return Result.Failure<IReadOnlyList<RoleDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
 
@@ -64,7 +63,7 @@ internal sealed class RoleService : IRoleService
         {
             var tenantId = tenantContext.GetTenantId();
             if (!(await tenants.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
-                || authorizationContext.FindActor(tenantId) is not { } actor
+                || !authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
                 || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
                 return Result.Failure<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
@@ -142,7 +141,7 @@ internal sealed class RoleService : IRoleService
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new RetireRoleError.NotPermitted();
-        if (authorizationContext.FindActor(tenantId) is not { } actor
+        if (!authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
             || !await IsRoleManagerAsync(tenantId, ct))
             return new RetireRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
@@ -185,7 +184,7 @@ internal sealed class RoleService : IRoleService
     }
 
     private async Task<bool> IsRoleManagerAsync(Guid tenantId, CancellationToken ct) =>
-        authorizationContext.FindActor(tenantId) is { } actor
+        authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
         && actor.HasPermission(TenantPermission.MembersManageRoles)
         && await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct);
 

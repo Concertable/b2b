@@ -43,7 +43,7 @@ internal sealed class MembershipService : IMembershipService
         {
             var tenantId = tenantContext.GetTenantId();
             if (!(await tenantRepository.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
-                || authorizationContext.FindActor(tenantId) is not { } actor
+                || !authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
                 || !actor.HasPermission(TenantPermission.OperationsView))
                 return Result.Failure<IReadOnlyList<MemberDto>, ListMembersError>(
                     new ListMembersError.NotPermitted());
@@ -72,7 +72,7 @@ internal sealed class MembershipService : IMembershipService
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new ChangeMemberRolesError.NotPermitted();
-        if (authorizationContext.FindActor(tenantId) is not { } actor
+        if (!authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
             || !actor.HasPermission(TenantPermission.MembersManageRoles)
             || !await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct))
             return new ChangeMemberRolesError.NotPermitted();
@@ -110,7 +110,7 @@ internal sealed class MembershipService : IMembershipService
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new RemoveMemberError.NotPermitted();
-        if (authorizationContext.FindActor(tenantId) is not { } actor
+        if (!authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
             || !actor.HasPermission(TenantPermission.MembersRemove)
             || !await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct))
             return new RemoveMemberError.NotPermitted();

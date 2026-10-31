@@ -13,8 +13,9 @@ public sealed class AuthorizationContextExtensionsTests
         var actor = new MembershipSnapshot(Guid.NewGuid(), tenantId, Guid.NewGuid(), 1, 1, default);
         var context = Mock.Of<IAuthorizationContext>(value => value.Membership == actor);
 
-        Assert.Same(actor, context.FindActor(tenantId));
-        Assert.Null(context.FindActor(Guid.NewGuid()));
-        Assert.Null(Mock.Of<IAuthorizationContext>().FindActor(tenantId));
+        Assert.True(context.FindActor(tenantId).TryGetValue(out var found));
+        Assert.Same(actor, found);
+        Assert.False(context.FindActor(Guid.NewGuid()).TryGetValue(out _));
+        Assert.False(Mock.Of<IAuthorizationContext>().FindActor(tenantId).TryGetValue(out _));
     }
 }

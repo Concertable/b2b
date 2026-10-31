@@ -1,3 +1,4 @@
+using Reunion;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Concertable.Kernel.Identity;
@@ -77,6 +78,6 @@ public sealed class ConcertVisibilityTests : IAsyncLifetime
 
     private sealed class FixedAuthorizationContext(MembershipSnapshot actor) : IAuthorizationContext
     {
-        public MembershipSnapshot? Membership => actor;
+        public Option<MembershipSnapshot> Membership => actor;
     }
 }

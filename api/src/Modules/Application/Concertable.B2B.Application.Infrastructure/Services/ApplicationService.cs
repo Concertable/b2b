@@ -219,7 +219,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new WithdrawApplicationError.NotPermitted();
 
         try
@@ -241,7 +241,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new RejectApplicationError.NotPermitted();
 
         try
@@ -263,7 +263,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new CancelApplicationError.NotPermitted();
 
         try
@@ -415,7 +415,7 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
-        if (membership.Membership is not { } actor
+        if (!membership.Membership.TryGetValue(out var actor)
             || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplicationEligibilityError.MissingArtist();
         var artistOption = await artistModule.GetCurrentProfileAsync();

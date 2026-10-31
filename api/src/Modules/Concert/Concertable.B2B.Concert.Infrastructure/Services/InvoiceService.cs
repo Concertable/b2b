@@ -22,7 +22,7 @@ internal sealed class InvoiceService(
 
     private async Task<Result<InvoiceEntity, InvoiceError>> GetReadableAsync(int concertId)
     {
-        if (concertId <= 0 || membership.Membership is null)
+        if (concertId <= 0 || !membership.Membership.TryGetValue(out _))
             return new InvoiceError.ConcertNotFound(concertId);
 
         var invoice = await repository.GetByConcertIdAsync(concertId);

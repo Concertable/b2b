@@ -26,7 +26,7 @@ public abstract class ResourceScopedDbContext : TenantScopedDbContext
         this.timeProvider = timeProvider;
     }
 
-    public MembershipSnapshot? Actor => authorization.Membership;
+    public MembershipSnapshot? Actor => authorization.Membership.TryGetValue(out var actor) ? actor : null;
 
     public DateTime Now => timeProvider.GetUtcNow().UtcDateTime;
 

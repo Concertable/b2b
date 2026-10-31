@@ -1,4 +1,5 @@
-﻿using Concertable.Kernel.Identity;
+﻿using Reunion;
+using Concertable.Kernel.Identity;
 using Microsoft.AspNetCore.Http;
 
 namespace Concertable.B2B.Authorization.Infrastructure.Services;
@@ -22,9 +23,9 @@ internal sealed class AuthorizationContext : ITenantContext, ITenantResolver, IA
         this.accessor = accessor;
     }
 
-    public MembershipSnapshot? Membership => accessor.Resolution?.Membership;
+    public Option<MembershipSnapshot> Membership => accessor.Resolution?.Membership;
 
-    public Guid? TenantId => Membership?.TenantId;
+    public Guid? TenantId => Membership.TryGetValue(out var membership) ? membership.TenantId : null;
 
     public async Task ResolveAsync(CancellationToken cancellationToken = default)
     {

@@ -40,7 +40,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         int concertId,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return new CancelConcertError.NotPermitted();
 
         try

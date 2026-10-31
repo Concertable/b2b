@@ -56,7 +56,7 @@ internal sealed class ConversationService : IConversationService
         CreateConversationRequest request,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return Task.FromResult<Result<ConversationDto, CreateConversationError>>(
                 new CreateConversationError.NotPermitted());
 
@@ -150,7 +150,7 @@ internal sealed class ConversationService : IConversationService
         MessageAction? action = null,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return Task.FromResult<Result<MessageDto, SendMessageError>>(new SendMessageError.NotPermitted());
         if (unitOfWorkAccessor.Current is not null)
             return unitOfWork.ExecuteAsync(
@@ -213,7 +213,7 @@ internal sealed class ConversationService : IConversationService
         AdvanceConversationReadPositionRequest request,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return Task.FromResult<UnitResult<ConversationAccessError>>(
                 new ConversationAccessError.NotPermitted());
         return transactionRunner.RunAsync<ConversationService, UnitResult<ConversationAccessError>>(
@@ -272,7 +272,7 @@ internal sealed class ConversationService : IConversationService
         Func<ConversationService, MembershipSnapshot, CancellationToken, Task<UnitResult<AssignConversationMemberError>>> command,
         CancellationToken ct)
     {
-        if (membership.Membership is not { } actor)
+        if (!membership.Membership.TryGetValue(out var actor))
             return Task.FromResult<UnitResult<AssignConversationMemberError>>(
                 new AssignConversationMemberError.NotPermitted());
         return transactionRunner.RunAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
@@ -389,13 +389,13 @@ internal sealed class ConversationService : IConversationService
     }
 
     private MembershipSnapshot? ReadActor() =>
-        membership.Membership is { } actor && actor.HasPermission(TenantPermission.MessagesRead)
+        membership.Membership.TryGetValue(out var actor) && actor.HasPermission(TenantPermission.MessagesRead)
             ? actor
             : null;
 
     private async Task<ConversationEntity?> FindReadableAsync(int conversationId, CancellationToken ct) =>
         conversationId > 0
-        && membership.Membership is { } actor
+        && membership.Membership.TryGetValue(out var actor)
         && await privilegedRepository.GetByIdAsync(conversationId, ct) is { } conversation
         && conversation.IsReadableBy(actor)
             ? conversation
