@@ -255,7 +255,7 @@ internal sealed class ConversationService : IConversationService
         AssignConversationMemberRequest request,
         CancellationToken ct = default) =>
         RunAssignmentCommandAsync(
-            (actor, token) => AssignMemberCoreAsync(
+            (service, actor, token) => service.AssignMemberCoreAsync(
                 conversationId, request.MembershipId, request.ExpectedAccessVersion, actor, token),
             ct);
 
@@ -265,18 +265,18 @@ internal sealed class ConversationService : IConversationService
         long expectedAccessVersion,
         CancellationToken ct = default) =>
         RunAssignmentCommandAsync(
-            (actor, token) => UnassignMemberCoreAsync(conversationId, membershipId, expectedAccessVersion, actor, token),
+            (service, actor, token) => service.UnassignMemberCoreAsync(conversationId, membershipId, expectedAccessVersion, actor, token),
             ct);
 
     private Task<UnitResult<AssignConversationMemberError>> RunAssignmentCommandAsync(
-        Func<MembershipSnapshot, CancellationToken, Task<UnitResult<AssignConversationMemberError>>> command,
+        Func<ConversationService, MembershipSnapshot, CancellationToken, Task<UnitResult<AssignConversationMemberError>>> command,
         CancellationToken ct)
     {
         if (membership.Membership is not { } actor)
             return Task.FromResult<UnitResult<AssignConversationMemberError>>(
                 new AssignConversationMemberError.NotPermitted());
         return transactionRunner.RunAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
-            (service, token) => service.unitOfWork.ExecuteAsync(() => command(actor, token), token),
+            (service, token) => service.unitOfWork.ExecuteAsync(() => command(service, actor, token), token),
             ct);
     }
 
