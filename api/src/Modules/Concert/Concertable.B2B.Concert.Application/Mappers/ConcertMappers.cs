@@ -42,8 +42,6 @@ internal static class ConcertMappers
         {
             ConcertSummaryShareRevocationError.GrantNotFound =>
                 new RevokeConcertSummaryShareError.GrantNotFound(),
-            ConcertSummaryShareRevocationError.NotAShare =>
-                new RevokeConcertSummaryShareError.NotAShare(),
             ConcertSummaryShareRevocationError.NotTheIssuer =>
                 new RevokeConcertSummaryShareError.NotTheIssuer()
         };
@@ -62,17 +60,17 @@ internal static class ConcertMappers
         };
     }
 
-    extension(ConcertAccessGrant grant)
+    extension(ConcertShare share)
     {
         public ConcertSummaryShare ToSummaryShare(long accessVersion) => new()
         {
-            GrantId = grant.Id,
-            GrantVersion = grant.Version,
+            GrantId = share.Id,
+            GrantVersion = 1,
             AccessVersion = accessVersion,
-            RecipientTenantId = grant.TenantId,
-            RecipientMembershipId = grant.MembershipId,
-            ValidFrom = grant.ValidFrom,
-            ValidUntil = grant.ValidUntil
+            RecipientTenantId = share.RecipientTenantId,
+            RecipientMembershipId = share.RecipientMembershipId,
+            ValidFrom = share.SharedAt,
+            ValidUntil = share.ExpiresAt
         };
     }
 

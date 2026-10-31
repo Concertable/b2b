@@ -22,8 +22,6 @@ public sealed class MemberManagementTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private Guid TenantOf(Guid userId) => fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
-
     private static Task<HttpResponseMessage> PutRole(HttpClient client, Guid tenantId, Guid userId, string presetKey) =>
         client.PutAsJsonAsync($"/api/organization/members/{userId}/roles", new { roleIds = new[] { TenantApiFixture.RoleId(tenantId, presetKey) } });
 
@@ -42,7 +40,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.VenueManager1; // founding Owner, sole membership → default tenant
         var second = fixture.SeedState.VenueManagerNoVenue;
-        await fixture.AddMembershipAsync(TenantOf(owner.Id), second.Id, "Staff");
+        await fixture.AddMembershipAsync(owner.TenantId, second.Id, "Staff");
 
         var response = await fixture.CreateClient(owner).GetAsync("/api/organization/members");
 
@@ -57,7 +55,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         // Manager holds OperationsView, so viewing the roster is allowed (only mutations are Owner-gated).
         var manager = fixture.SeedState.VenueManagerNoVenue;
-        var tenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
+        var tenantId = fixture.SeedState.VenueManager1.TenantId;
         await fixture.AddMembershipAsync(tenantId, manager.Id, "Manager");
 
         var response = await ClientInTenant(manager.Id, manager.Email, tenantId).GetAsync("/api/organization/members");
@@ -73,7 +71,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     public async Task ChangeRole_AsOwner_UpdatesRole()
     {
         var owner = fixture.SeedState.VenueManager1;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var member = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
 
@@ -89,7 +87,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         // Manager lacks MembersManageRoles — the mutation is refused before any service logic.
         var owner = fixture.SeedState.VenueManager1;
         var manager = fixture.SeedState.VenueManagerNoVenue;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         await fixture.AddMembershipAsync(tenantId, manager.Id, "Manager");
 
         var response = await PutRole(
@@ -106,7 +104,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.VenueManager1;
 
-        var response = await PutRole(fixture.CreateClient(owner), TenantOf(owner.Id), fixture.SeedState.VenueManagerNoVenue.Id, "Manager");
+        var response = await PutRole(fixture.CreateClient(owner), owner.TenantId, fixture.SeedState.VenueManagerNoVenue.Id, "Manager");
 
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -115,7 +113,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     public async Task ChangeRole_DemotingSoleOwner_IsConflict()
     {
         var owner = fixture.SeedState.VenueManager1; // sole Owner of their tenant
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
 
         var response = await PutRole(fixture.CreateClient(owner), tenantId, owner.Id, "Manager");
 
@@ -131,7 +129,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     public async Task RemoveMember_AsOwner_RemovesMembership()
     {
         var owner = fixture.SeedState.VenueManager1;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var member = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
 
@@ -146,7 +144,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.VenueManager1;
         var manager = fixture.SeedState.VenueManagerNoVenue;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         await fixture.AddMembershipAsync(tenantId, manager.Id, "Manager");
 
         var response = await ClientInTenant(manager.Id, manager.Email, tenantId)
@@ -159,7 +157,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     public async Task RemoveMember_SoleOwnerSelfLeave_IsConflict()
     {
         var owner = fixture.SeedState.VenueManager1; // the only Owner
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
 
         var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organization/members/{owner.Id}");
 
@@ -172,7 +170,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         // Two Owners → an Owner may leave (self-leave allowed unless sole Owner); the tenant keeps an Owner.
         var owner = fixture.SeedState.VenueManager1;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var coOwner = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddOwnerMembershipAsync(tenantId, coOwner.Id);
 
@@ -191,7 +189,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     public async Task DeleteTenant_AsOwner_DeletesTenantAndMemberships()
     {
         var owner = fixture.SeedState.VenueManagerNoVenue;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         await fixture.AddMembershipAsync(tenantId, fixture.SeedState.ArtistManagerNoArtist.Id, "Staff");
 
         var response = await fixture.CreateClient(owner).DeleteAsync("/api/organization");
@@ -206,7 +204,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.VenueManager1;
         var manager = fixture.SeedState.VenueManagerNoVenue;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         await fixture.AddMembershipAsync(tenantId, manager.Id, "Manager");
 
         var response = await ClientInTenant(manager.Id, manager.Email, tenantId)
@@ -223,7 +221,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     public async Task Members_ArtistOwner_CanListAndManage()
     {
         var owner = fixture.SeedState.ArtistManager1; // founding Owner of an artist tenant
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var member = fixture.SeedState.ArtistManagerNoArtist;
         await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
 

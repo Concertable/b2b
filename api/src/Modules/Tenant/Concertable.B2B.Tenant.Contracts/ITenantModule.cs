@@ -12,10 +12,6 @@ public interface ITenantModule
     Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
         Guid tenantId,
         CancellationToken ct = default);
-    Task<Option<MembershipSnapshot>> ResolveMembershipSnapshotAsync(
-        MembershipSnapshot expected,
-        CancellationToken ct = default);
-
     Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default);
     Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
     Task<bool> HasBusinessActivityAsync(Guid tenantId, TenantBusinessActivityKind kind, CancellationToken ct = default);

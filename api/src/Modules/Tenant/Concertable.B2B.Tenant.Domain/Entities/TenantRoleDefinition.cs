@@ -34,7 +34,7 @@ public sealed class TenantRoleDefinition
         Guid tenantId,
         string name,
         bool invitationAssignable,
-        IReadOnlyDictionary<TenantPermission, ResourceAudience> grants)
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants)
     {
         var role = Create(tenantId, name, grants, false);
         role.IsInvitationAssignable = invitationAssignable;
@@ -44,7 +44,7 @@ public sealed class TenantRoleDefinition
     private static TenantRoleDefinition Create(
         Guid tenantId,
         string name,
-        IReadOnlyDictionary<TenantPermission, ResourceAudience> grants,
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants,
         bool systemPreset,
         Guid? id = null)
     {
@@ -64,7 +64,7 @@ public sealed class TenantRoleDefinition
     public void Update(
         string name,
         bool invitationAssignable,
-        IReadOnlyDictionary<TenantPermission, ResourceAudience> grants)
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants)
     {
         EnsureEditable();
         if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > 100)
@@ -83,26 +83,25 @@ public sealed class TenantRoleDefinition
     }
 
     public bool Has(TenantPermission permission) =>
-        permissions.Any(row => row.PermissionKey == permission.Value);
+        permissions.Any(row => row.PermissionKey == permission.Key);
 
-    private void SetPermissions(IReadOnlyDictionary<TenantPermission, ResourceAudience> grants, bool systemPreset)
+    private void SetPermissions(IReadOnlyDictionary<TenantPermission, ResourceAccess> grants, bool systemPreset)
     {
-        foreach (var (permission, audience) in grants)
+        foreach (var (permission, access) in grants)
         {
-            if (!TenantPermission.TryParse(permission.Value, out var known)
-                || !AuthorizationCatalog.Permissions.TryGetValue(known, out var descriptor)
-                || !descriptor.AssignableAudiences.Contains(audience)
+            if (!AuthorizationCatalog.Permissions.TryGetValue(permission, out var descriptor)
+                || access is not (ResourceAccess.Assigned or ResourceAccess.All)
                 || descriptor.OwnerOnly && !systemPreset)
-                throw new ArgumentException("Invalid role permission or audience.");
+                throw new ArgumentException("Invalid role permission or access.");
         }
-        permissions.RemoveAll(row => !grants.Keys.Any(key => key.Value == row.PermissionKey));
-        foreach (var (permission, audience) in grants)
+        permissions.RemoveAll(row => !grants.Keys.Any(key => key.Key == row.PermissionKey));
+        foreach (var (permission, access) in grants)
         {
-            var existing = permissions.Find(row => row.PermissionKey == permission.Value);
+            var existing = permissions.Find(row => row.PermissionKey == permission.Key);
             if (existing is null)
-                permissions.Add(TenantRolePermission.Create(TenantId, Id, permission, audience));
+                permissions.Add(TenantRolePermission.Create(TenantId, Id, permission, access));
             else
-                existing.ChangeAudience(audience);
+                existing.ChangeAudience(access);
         }
     }
 

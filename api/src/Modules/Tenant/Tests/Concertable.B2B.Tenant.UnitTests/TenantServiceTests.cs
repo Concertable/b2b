@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Interfaces;
 using Concertable.B2B.Tenant.Application.Errors;
@@ -22,10 +21,8 @@ public sealed class TenantServiceTests
     private readonly Mock<IMembershipRepository> membershipRepository;
     private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
-    private readonly Mock<IMembershipContext> membershipContext;
-    private readonly Mock<IMembershipResolver> membershipResolver;
-    private readonly Mock<IRoleRepository> roles;
     private readonly Mock<IAuthorizationContext> authorizationContext;
+    private readonly Mock<IRoleRepository> roles;
     private readonly TenantService service;
 
     public TenantServiceTests()
@@ -34,20 +31,13 @@ public sealed class TenantServiceTests
         this.membershipRepository = new Mock<IMembershipRepository>();
         this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
-        this.membershipContext = new Mock<IMembershipContext>();
-        this.membershipResolver = new Mock<IMembershipResolver>();
+        this.authorizationContext = new Mock<IAuthorizationContext>();
         var actorId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        this.membershipContext.SetupGet(context => context.Membership).Returns(() =>
+        this.authorizationContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
-                userId, 1, 1, AuthorizationCatalog.Presets["Owner"].Permissions.ToImmutableDictionary()));
-        this.membershipResolver.Setup(resolver => resolver.ResolveSnapshotAsync(
-                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => (Option<MembershipSnapshot>)expected);
+                userId, 1, 1, EffectivePermissions.From(AuthorizationCatalog.Presets["Owner"].Permissions)));
         this.roles = new Mock<IRoleRepository>();
-        this.authorizationContext = new Mock<IAuthorizationContext>();
-        this.authorizationContext.SetupGet(value => value.IsActive).Returns(true);
-        this.authorizationContext.SetupGet(value => value.UnitOfWorkId).Returns(Guid.NewGuid());
         this.repository.Setup(value => value.GetExistingIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
@@ -57,27 +47,21 @@ public sealed class TenantServiceTests
         this.membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
-                Task.FromResult<IReadOnlyList<MembershipSnapshot>>([membershipContext.Object.Membership!]));
+                Task.FromResult<IReadOnlyList<MembershipSnapshot>>([authorizationContext.Object.Membership!]));
         this.roles.Setup(value => value.HasProtectedOwnerAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        var authority = new TenantAuthorityResolver(repository.Object, membershipRepository.Object,
-            roles.Object, invitationRepository.Object, membershipContext.Object, authorizationContext.Object,
-            TimeProvider.System);
         this.service = new TenantService(
             repository.Object,
             membershipRepository.Object,
             roles.Object,
             invitationRepository.Object,
             tenantContext.Object,
-            membershipContext.Object,
-            membershipResolver.Object,
             new VatPolicy(new UkVatCalculator()),
             new ImmediateUnitOfWorkBehavior(),
             TimeProvider.System,
             [],
             Mock.Of<ICurrentUser>(),
-            authority,
             authorizationContext.Object);
     }
 
@@ -145,15 +129,13 @@ public sealed class TenantServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_RevokedMembershipAfterLock_IsForbidden()
+    public async Task UpdateAsync_WithoutMembership_IsForbidden()
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<MembershipSnapshot>());
+        authorizationContext.SetupGet(context => context.Membership).Returns((MembershipSnapshot?)null);
 
         var result = await service.UpdateAsync(null!);
 
@@ -162,15 +144,13 @@ public sealed class TenantServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_RevokedMembershipAfterLock_IsForbidden()
+    public async Task DeleteAsync_WithoutMembership_IsForbidden()
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<MembershipSnapshot>());
+        authorizationContext.SetupGet(context => context.Membership).Returns((MembershipSnapshot?)null);
 
         var result = await service.DeleteAsync();
 
@@ -505,13 +485,13 @@ public sealed class TenantServiceTests
             .ReturnsAsync([new UserMembership(
                 new MembershipSnapshot(
                     Guid.NewGuid(), tenantId, userId, 1, 1,
-                    AuthorizationCatalog.Presets["Door"].Permissions.ToImmutableDictionary()),
+                    EffectivePermissions.From(AuthorizationCatalog.Presets["Door"].Permissions)),
                 "Bare Ltd", [new RoleSummary(Guid.NewGuid(), "Door", false)], [])]);
 
         var memberships = await service.GetMembershipsAsync(userId);
 
         Assert.Equal(
-            [TenantPermission.ConcertsCheckIn.Value, TenantPermission.OperationsView.Value],
+            [TenantPermission.ConcertsCheckIn.Key, TenantPermission.OperationsView.Key],
             memberships.Single().Permissions.Order());
     }
 }

@@ -29,7 +29,7 @@ function ArtistLayout() {
   useArtistNotifications(session);
   if (selectionRequired) return <TenantChooser businessActivity="artist" />;
   const mailbox =
-    session !== undefined && permissions.has("messages.read") ? (
+    session !== undefined && permissions.has("messages:read") ? (
       <Mailbox
         key={`${session.tenantId}:${session.membershipId}:${session.permissionVersion}:${session.rolePolicyVersion}:${session.generation}`}
         session={session}

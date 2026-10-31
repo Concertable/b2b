@@ -97,7 +97,117 @@ No sync calls to Customer or Search. B2B and Customer communicate **exclusively 
 
 - JWT Bearer, audience `concertable.b2b.api`
 - `client_credentials` client: `concertable-b2b`, scope `payment:write`
-- **No role claims in tokens.** B2B tokens are identity-only (`sub` + `email`); acting authority is the request-scoped active tenant (`X-Tenant-Id` → membership `TenantRole`), never a token claim.
+- **No role claims in tokens.** B2B tokens are identity-only (`sub` + `email`); acting authority is the request-scoped active tenant membership (`X-Tenant-Id` → the member's roles), never a token claim. See [Authorization](#authorization).
+
+---
+
+## Authorization
+
+B2B decides every permission in-process, from data it owns, in three layers: a generated **RBAC**
+catalog says what each role may do and how widely; **ABAC** principal rules on each aggregate give the
+venue and artist tenants access from the aggregate's own columns; **ACL** rows (member assignments and
+concert shares) extend access to named members and other tenants. Permission changes take effect from
+the member's next request; there is no authorization locking.
+
+### Request authority
+
+`TenantResolutionMiddleware` runs after authentication and asks `AuthorizationContext`
+(`Authorization.Infrastructure`) to resolve the caller's membership in the active tenant: the
+`X-Tenant-Id` header, or the caller's only membership when there is no header. The result is a
+`MembershipSnapshot`, exposed for the rest of the request as `IAuthorizationContext.Membership`:
+
+| Snapshot member | Meaning |
+|---|---|
+| `MembershipId`, `TenantId`, `UserId` | Who is acting, in which tenant |
+| `PermissionVersion` | Bumped by the membership's role changes |
+| `RolePolicyVersion` | The tenant's role-definition version, bumped when a role's permissions change |
+| `Permissions` | `EffectivePermissions`: each held `TenantPermission` with its `ResourceAccess` |
+
+`ResourceAccess` is `None`, `Assigned` or `All`. Tenant-wide routes (being a principal, receiving a tenant
+share) need `All`; member routes (an assignment, a share to one membership) need `Assigned` or `All`.
+The snapshot never changes during the request and compares by value.
+
+### Generated catalog (RBAC)
+
+Each module declares its permissions in `api/src/Modules/<Module>/authorization.json`: a
+`resource:action` name, a label, whether it is owner-only, and the access each system preset holds.
+`scripts/generate-authorization.py` writes the `TenantPermission` enum (`[JsonStringEnumMemberName]` keeps
+the `resource:action` key on the wire), `AuthorizationCatalog` with a content-hash `Revision`, and the
+frontend `TenantPermission` union. CI runs it with `--check`. The revision is seeded into the database
+and checked by the health check and invitation acceptance.
+
+```json
+{ "name": "concerts:ops_edit", "label": "Edit concert operations", "ownerOnly": false,
+  "systemPresets": { "Owner": "All", "Manager": "All", "Staff": "Assigned", "Sound": "Assigned" } }
+```
+
+`[HasPermission(TenantPermission.ConcertsOpsEdit)]` gates an endpoint when the snapshot holds the
+permission at any access. It keeps callers without the permission out of the service; it does not decide
+access to a particular resource.
+
+### Principal rules (ABAC), assignments and shares (ACL)
+
+Each aggregate decides what an actor may do to it, by what it decides:
+
+| Aggregate | Principal access (venue and artist tenants, at `All`) | Assignments and shares |
+|---|---|---|
+| Application | read; venue decides (`IsDecidableBy`), artist withdraws (`IsWithdrawableBy`) | — |
+| Booking | read; either principal cancels (`IsCancellableBy`) | — |
+| Contract | read with `terms:read` | — |
+| Concert | summary, operations, finance; venue edits and publishes, either principal cancels | `Assignments` (summary, operations); `Shares` (summary, optional `ExpiresAt`) |
+| Invoice | read with `settlement:view` | — |
+| Conversation | participants read and send | `Assignments` (read, send) |
+
+`MemberAssignment(MembershipId, AssignedByUserId, AssignedAt)` is one shared value object, owned by
+`ConcertEntity.Assignments` and `ConversationEntity.Assignments`; `ConcertShare` and
+`ConversationParticipant` are owned by their aggregates. Unassigning and unsharing delete the row.
+
+```csharp
+var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+if (concert is null || !concert.IsEditableBy(expectedActor))
+    return new UpdateConcertError.NotPermitted();
+```
+
+Reads go through the module's `ResourceScopedDbContext`, whose plain-lambda query filters apply the same
+rules for the request's actor, so lists and single reads see exactly what the aggregate would allow. A
+read gated by a different permission than the filter's (terms, settlement) narrows explicitly in its
+repository.
+
+```csharp
+modelBuilder.Entity<BookingEntity>().HasQueryFilter(TenantFilters.Key, booking =>
+    OperationsAccess == ResourceAccess.All
+    && (booking.VenueTenantId == ActorTenantId || booking.ArtistTenantId == ActorTenantId));
+```
+
+Locks that protect domain invariants stay: tenant administration takes the tenant row `FOR UPDATE`
+(last owner, role changes), and aggregates keep their own concurrency tokens and row locks.
+
+### Request flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Middleware as TenantResolutionMiddleware
+    participant Context as AuthorizationContext
+    participant Gate as PermissionAuthorizationHandler
+    participant Service as Module service
+    participant Db as PostgreSQL
+    Client->>Middleware: request (+ X-Tenant-Id)
+    Middleware->>Context: ResolveAsync()
+    Context->>Db: read membership snapshot
+    Context-->>Middleware: IAuthorizationContext.Membership
+    Middleware->>Gate: [HasPermission] policy
+    Gate-->>Client: 403 when the snapshot lacks the permission
+    Gate->>Service: call
+    alt read
+        Service->>Db: query through ResourceScopedDbContext (principal, assignment and share filters)
+    else write
+        Service->>Db: load the aggregate
+        Service->>Service: aggregate.IsXableBy(actor)
+        Service->>Db: change, commit
+    end
+    Service-->>Client: result or the operation's typed error
+```
 
 ---
 

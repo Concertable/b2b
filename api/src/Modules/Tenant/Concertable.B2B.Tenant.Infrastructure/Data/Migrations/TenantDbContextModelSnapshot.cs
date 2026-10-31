@@ -18,7 +18,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("tenant")
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -414,7 +414,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         new
                         {
                             Id = 1,
-                            Revision = "8b2f220b198af94ea7592c8d895be0dabaf24561bc53fdade387e08c18f30dde"
+                            Revision = "43b845fd702a1b077afa0a3f23cab33d3bcdb8a7351ed53e9ea921cd9ff07b35"
                         });
                 });
 

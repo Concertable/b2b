@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Data;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Infrastructure.Data;
@@ -68,39 +67,17 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         return await MaterializeAsync(members, ct);
     }
 
-    public Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
-        Guid membershipId, CancellationToken ct = default) =>
-        ReadWithFenceAsync(async readCt =>
-        {
-            var tenantId = await context.Memberships.AsNoTracking()
-                .Where(member => member.Id == membershipId)
-                .Select(member => (Guid?)member.TenantId).SingleOrDefaultAsync(readCt);
-            if (tenantId is null)
-                return null;
-            await LockTenantForShareAsync(tenantId.Value, readCt);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => member.Id == membershipId && member.TenantId == tenantId)
-                .ToListAsync(readCt);
-            return (await MaterializeAsync(members, readCt)).SingleOrDefault();
-        }, ct);
-
-    public Task<AuthoritySnapshot?> GetAuthoritySnapshotByUserIdAndTenantIdAsync(
-        Guid userId, Guid tenantId, CancellationToken ct = default) =>
-        ReadWithFenceAsync(async readCt =>
-        {
-            await LockTenantForShareAsync(tenantId, readCt);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => member.UserId == userId && member.TenantId == tenantId)
-                .ToListAsync(readCt);
-            var actor = (await MaterializeAsync(members, readCt)).SingleOrDefault();
-            if (actor is null)
-                return null;
-            var revision = await context.AuthorizationCatalogStates.AsNoTracking()
-                .Where(state => state.Id == 1)
-                .Select(state => state.Revision)
-                .SingleOrDefaultAsync(readCt);
-            return revision is null ? null : new AuthoritySnapshot(actor, revision);
-        }, ct);
+    public async Task<bool> TryLockUnchangedAsync(
+        IReadOnlyCollection<TenantMembershipEntity> members,
+        CancellationToken ct = default)
+    {
+        var locked = await GetSnapshotsByIdsForUpdateAsync([.. members.Select(member => member.Id)], ct);
+        return members.All(member => locked.Any(snapshot =>
+            snapshot.MembershipId == member.Id
+            && snapshot.TenantId == member.TenantId
+            && snapshot.UserId == member.UserId
+            && snapshot.PermissionVersion == member.PermissionVersion));
+    }
 
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
         Guid userId, Guid tenantId, CancellationToken cancellationToken = default) =>
@@ -181,18 +158,13 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             .ToDictionaryAsync(role => role.Id, ct);
         return members.Select(member =>
         {
-            var effective = member.Assignments
+            var permissions = member.Assignments
                 .Where(row => roles.TryGetValue(row.RoleId, out var role) && role.TenantId == member.TenantId)
-                .SelectMany(row => roles[row.RoleId].Permissions)
-                .Where(row => TenantPermission.TryParse(row.PermissionKey, out _)
-                    && row.Audience is ResourceAudience.AssignedResources or ResourceAudience.TenantResources)
-                .GroupBy(row => row.PermissionKey, StringComparer.Ordinal)
-                .ToImmutableDictionary(
-                    group => TenantPermission.TryParse(group.Key, out var key) ? key : default,
-                    group => (ResourceAudience)group.Max(row => (int)row.Audience));
+                .Select(row => roles[row.RoleId])
+                .ToEffectivePermissions();
             return new MembershipSnapshot(
                 member.Id, member.TenantId, member.UserId, member.PermissionVersion,
-                tenants[member.TenantId].RolePolicyVersion, effective);
+                tenants[member.TenantId].RolePolicyVersion, permissions);
         }).ToList();
     }
 

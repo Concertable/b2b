@@ -44,7 +44,7 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
             var venueMembershipId = MembershipId(venueTenantId, venueUserId);
             var artistMembershipId = MembershipId(artistTenantId, artistUserId);
             var conversation = ConversationEntity.Create(
-                [venueTenantId, artistTenantId], artistTenantId, artistUserId, now.AddDays(-1));
+                [venueTenantId, artistTenantId], artistTenantId, now.AddDays(-1));
             context.Conversations.Add(conversation);
             await context.SaveChangesAsync(ct);
 

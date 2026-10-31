@@ -1,5 +1,4 @@
 using Concertable.B2B.Concert.Infrastructure.Data.Configurations;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.DataAccess.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,13 +19,6 @@ internal sealed class ConcertConfigurationProvider : IEntityTypeConfigurationPro
         modelBuilder.ApplyConfiguration(new ArtistReadModelConfiguration());
         modelBuilder.ApplyConfiguration(new ArtistReadModelGenreConfiguration());
         modelBuilder.ApplyConfiguration(new VenueReadModelConfiguration());
-        modelBuilder.ApplyConfiguration(new ConcertAccessGrantConfiguration());
-        modelBuilder.ApplyConfiguration(new InvoiceAccessGrantConfiguration());
         modelBuilder.ApplyConfiguration(new ConcertCommandReceiptConfiguration());
-        modelBuilder.Entity<MembershipAuthority>(builder =>
-        {
-            builder.HasNoKey();
-            builder.ToView("MembershipAuthority", "tenant");
-        });
     }
 }

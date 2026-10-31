@@ -82,10 +82,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
             services.AddScoped<IConcertPrivilegedRepository, ConcertPrivilegedRepository>();
-            services.AddScoped<IResourceAuthorizationEvaluator, ConcertResourceAuthorizationEvaluator>();
-            services.AddScoped<IResourceAuthorizationEvaluator, InvoiceResourceAuthorizationEvaluator>();
-            services.AddScoped<IConcertPrivilegedReadRepository, ConcertPrivilegedReadRepository>();
-            services.AddScoped<IInvoicePrivilegedReadRepository, InvoicePrivilegedReadRepository>();
+            services.AddScoped<IInvoiceRepository, InvoiceRepository>();
             services.AddScoped<IInvoicePrivilegedRepository, InvoicePrivilegedRepository>();
             services.AddScoped<IInvoiceSequenceRepository, InvoiceSequenceRepository>();
 

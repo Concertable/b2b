@@ -13,38 +13,29 @@ internal sealed class RoleService : IRoleService
     private readonly ITenantRepository tenants;
     private readonly IMembershipRepository memberships;
     private readonly ITenantContext tenantContext;
-    private readonly IMembershipContext membershipContext;
-    private readonly IMembershipResolver membershipResolver;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly IInvitationRepository invitations;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
-    private readonly TenantAuthorityResolver authority;
-    private readonly IAuthorizationContext authorizationContext;
 
     public RoleService(
         IRoleRepository roles,
         ITenantRepository tenants,
         IMembershipRepository memberships,
         ITenantContext tenantContext,
-        IMembershipContext membershipContext,
-        IMembershipResolver membershipResolver,
+        IAuthorizationContext authorizationContext,
         IInvitationRepository invitations,
         IOutboxUnitOfWorkBehavior unitOfWork,
-        TimeProvider timeProvider,
-        TenantAuthorityResolver authority,
-        IAuthorizationContext authorizationContext)
+        TimeProvider timeProvider)
     {
         this.roles = roles;
         this.tenants = tenants;
         this.memberships = memberships;
         this.tenantContext = tenantContext;
-        this.membershipContext = membershipContext;
-        this.membershipResolver = membershipResolver;
+        this.authorizationContext = authorizationContext;
         this.invitations = invitations;
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
-        this.authority = authority;
-        this.authorizationContext = authorizationContext;
     }
 
     public Task<Result<IReadOnlyList<RoleDto>, ListRolesError>> ListAsync(CancellationToken ct = default) =>
@@ -54,7 +45,7 @@ internal sealed class RoleService : IRoleService
             if (!(await tenants.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId))
                 return Result.Failure<IReadOnlyList<RoleDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
-            var actor = await GetCurrentActorAsync(tenantId, ct);
+            var actor = authorizationContext.FindActor(tenantId);
             if (actor is null || !actor.HasPermission(TenantPermission.MembersInvite))
                 return Result.Failure<IReadOnlyList<RoleDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
@@ -73,7 +64,7 @@ internal sealed class RoleService : IRoleService
         {
             var tenantId = tenantContext.GetTenantId();
             if (!(await tenants.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
-                || await GetCurrentActorAsync(tenantId, ct) is not { } actor
+                || authorizationContext.FindActor(tenantId) is not { } actor
                 || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
                 return Result.Failure<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
@@ -81,11 +72,7 @@ internal sealed class RoleService : IRoleService
             IReadOnlyList<PermissionMetadataDto> metadata = AuthorizationCatalog.Permissions.Values
                 .OrderBy(item => item.Category).ThenBy(item => item.Label)
                 .Select(item => new PermissionMetadataDto(
-                    item.Permission.Value, item.Label, item.Category,
-                    [.. item.ResourceBindings.Select(binding => new ResourceBinding(
-                        binding.Resource, binding.Facet, binding.Policy.WireName, binding.RequiresScopes))],
-                    [.. item.AssignableAudiences.Select(audience => audience.ToString())],
-                    item.OwnerOnly))
+                    item.Permission.Key, item.Label, item.Category, item.OwnerOnly))
                 .ToArray();
             return Result.Success<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(metadata);
         }, ct);
@@ -97,12 +84,9 @@ internal sealed class RoleService : IRoleService
     private async Task<Result<RoleDto, CreateRoleError>> CreateCoreAsync(
         CreateRoleRequest request, CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<Result<RoleDto, CreateRoleError>>(
-            () => Result.Failure<RoleDto, CreateRoleError>(new CreateRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || await authority.AuthorizeAdministrationAsync(
-            tenantId, TenantPermission.MembersManageRoles, true, ct) is null)
+        if (tenant is null || !await IsRoleManagerAsync(tenantId, ct))
             return new CreateRoleError.NotPermitted();
         if (!TryParseGrants(request.Permissions, out var grants)
             || !ValidName(request.Name))
@@ -114,9 +98,7 @@ internal sealed class RoleService : IRoleService
         var role = TenantRoleDefinition.CreateCustom(
             tenantId, name, request.IsInvitationAssignable, grants);
         roles.Insert(role);
-        var beforeVersion = tenant.RolePolicyVersion;
         tenant.AdvanceRolePolicyVersion();
-        authority.RecordPolicyVersion(tenant, beforeVersion);
         return ToDto(role);
     }
 
@@ -127,12 +109,9 @@ internal sealed class RoleService : IRoleService
     private async Task<Result<RoleDto, UpdateRoleError>> UpdateCoreAsync(
         Guid roleId, UpdateRoleRequest request, CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<Result<RoleDto, UpdateRoleError>>(
-            () => Result.Failure<RoleDto, UpdateRoleError>(new UpdateRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        if (tenant is null || await authority.AuthorizeAdministrationAsync(
-            tenantId, TenantPermission.MembersManageRoles, true, ct) is null)
+        if (tenant is null || !await IsRoleManagerAsync(tenantId, ct))
             return new UpdateRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
         if (role is null)
@@ -148,9 +127,7 @@ internal sealed class RoleService : IRoleService
             return new UpdateRoleError.NameInUse();
 
         role.Update(name, request.IsInvitationAssignable, grants);
-        var beforeVersion = tenant.RolePolicyVersion;
         tenant.AdvanceRolePolicyVersion();
-        authority.RecordPolicyVersion(tenant, beforeVersion);
         return ToDto(role);
     }
 
@@ -161,13 +138,12 @@ internal sealed class RoleService : IRoleService
     private async Task<UnitResult<RetireRoleError>> RetireCoreAsync(
         Guid roleId, RetireRoleRequest request, CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<UnitResult<RetireRoleError>>(
-            () => UnitResult.Failure<RetireRoleError>(new RetireRoleError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
-        var actor = tenant is null ? null : await authority.AuthorizeAdministrationAsync(
-            tenantId, TenantPermission.MembersManageRoles, true, ct);
-        if (tenant is null || actor is null)
+        if (tenant is null)
+            return new RetireRoleError.NotPermitted();
+        if (authorizationContext.FindActor(tenantId) is not { } actor
+            || !await IsRoleManagerAsync(tenantId, ct))
             return new RetireRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
         if (role is null)
@@ -189,59 +165,45 @@ internal sealed class RoleService : IRoleService
         if (affected.Count > 0 && replacement is null)
             return new RetireRoleError.ReplacementRequired();
 
-        foreach (var member in affected.OrderBy(member => member.Id))
-        {
-            if (!await authority.TrackMembershipAsync(member, ct))
-                return new RetireRoleError.Superseded();
-        }
+        if (!await memberships.TryLockUnchangedAsync(affected, ct))
+            return new RetireRoleError.Superseded();
         var now = timeProvider.GetUtcNow().UtcDateTime;
         foreach (var member in affected)
         {
             var roleIds = member.Assignments.Where(row => row.RoleId != roleId)
-                .Select(row => row.RoleId).Append(replacement!.Id).Distinct().ToArray();
-            var beforeVersion = member.PermissionVersion;
-            member.ReplaceRoles(roleIds, actor.MembershipId, now);
-            if (member.PermissionVersion != beforeVersion)
-                authority.RecordMembershipVersion(member, beforeVersion);
+                .Select(row => row.RoleId).Append(replacement!.Id).ToHashSet();
+            if (member.ChangeRoles(roleIds, actor.MembershipId, now).TryGetError(out var error))
+                return error.ToRetireRoleError();
         }
         var pendingInvitations = await invitations.ListPendingAssignedToRoleAsync(
             tenantId, roleId, ct);
         foreach (var invitation in pendingInvitations)
             invitation.Revoke();
         role.Retire(now);
-        var beforePolicyVersion = tenant.RolePolicyVersion;
         tenant.AdvanceRolePolicyVersion();
-        authority.RecordPolicyVersion(tenant, beforePolicyVersion);
         return new Success();
     }
 
-    private async Task<MembershipSnapshot?> GetCurrentActorAsync(
-        Guid tenantId, CancellationToken ct)
-    {
-        var expected = membershipContext.Membership;
-        if (expected is null || expected.TenantId != tenantId)
-            return null;
-        var resolved = await membershipResolver.ResolveSnapshotAsync(expected, ct);
-        return resolved.TryGetValue(out var current) ? current : null;
-    }
+    private async Task<bool> IsRoleManagerAsync(Guid tenantId, CancellationToken ct) =>
+        authorizationContext.FindActor(tenantId) is { } actor
+        && actor.HasPermission(TenantPermission.MembersManageRoles)
+        && await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct);
 
     private static bool ValidName(string name) =>
         !string.IsNullOrWhiteSpace(name) && name.Trim().Length <= 100;
 
     private static bool TryParseGrants(
         IReadOnlyList<RolePermissionDto> items,
-        out IReadOnlyDictionary<TenantPermission, ResourceAudience> grants)
+        out IReadOnlyDictionary<TenantPermission, ResourceAccess> grants)
     {
-        var parsed = new Dictionary<TenantPermission, ResourceAudience>();
+        var parsed = new Dictionary<TenantPermission, ResourceAccess>();
         foreach (var item in items)
         {
-            if (!TenantPermission.TryParse(item.Permission, out var permission)
-                || !Enum.TryParse<ResourceAudience>(item.Audience, false, out var audience)
-                || audience == ResourceAudience.None
-                || !AuthorizationCatalog.Permissions.TryGetValue(permission, out var descriptor)
-                || descriptor.OwnerOnly
-                || !descriptor.AssignableAudiences.Contains(audience)
-                || !parsed.TryAdd(permission, audience))
+            if (!TenantPermission.TryParseKey(item.Permission, out var permission)
+                || !Enum.TryParse<ResourceAccess>(item.Audience, false, out var access)
+                || access is not (ResourceAccess.Assigned or ResourceAccess.All)
+                || AuthorizationCatalog.Permissions[permission].OwnerOnly
+                || !parsed.TryAdd(permission, access))
             {
                 grants = parsed;
                 return false;

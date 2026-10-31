@@ -1,282 +1,95 @@
 {
   "permissions": [
     {
-      "name": "operations.view",
-      "symbol": "OperationsView",
+      "name": "operations:view",
       "label": "View operations",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "AssignedResources",
-        "TenantResources"
-      ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources",
-        "Finance": "TenantResources",
-        "Staff": "AssignedResources",
-        "Door": "AssignedResources",
-        "Sound": "AssignedResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        },
-        {
-          "resource": "application",
-          "facet": "Summary",
-          "policy": "application_grant",
-          "requiresScopes": [
-            "Summary"
-          ]
-        },
-        {
-          "resource": "booking",
-          "facet": "Summary",
-          "policy": "booking_grant",
-          "requiresScopes": [
-            "Summary"
-          ]
-        },
-        {
-          "resource": "booking",
-          "facet": "Operations",
-          "policy": "booking_grant",
-          "requiresScopes": [
-            "Operations"
-          ]
-        },
-        {
-          "resource": "concert",
-          "facet": "Summary",
-          "policy": "concert_grant",
-          "requiresScopes": [
-            "Summary"
-          ]
-        },
-        {
-          "resource": "concert",
-          "facet": "Operations",
-          "policy": "concert_grant",
-          "requiresScopes": [
-            "Operations"
-          ]
-        }
-      ]
+        "Owner": "All",
+        "Manager": "All",
+        "Finance": "All",
+        "Staff": "Assigned",
+        "Door": "Assigned",
+        "Sound": "Assigned"
+      }
     },
     {
-      "name": "profile.edit",
-      "symbol": "ProfileEdit",
+      "name": "profile:edit",
       "label": "Edit business profiles",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+        "Owner": "All",
+        "Manager": "All"
+      }
     },
     {
-      "name": "payouts.manage",
-      "symbol": "PayoutsManage",
+      "name": "payouts:manage",
       "label": "Manage payouts",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Finance": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+        "Owner": "All",
+        "Finance": "All"
+      }
     },
     {
-      "name": "settlement.view",
-      "symbol": "SettlementView",
+      "name": "settlement:view",
       "label": "View settlement",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources",
-        "Finance": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        },
-        {
-          "resource": "concert",
-          "facet": "Finance",
-          "policy": "concert_grant",
-          "requiresScopes": [
-            "Finance"
-          ]
-        },
-        {
-          "resource": "invoice",
-          "facet": "Read",
-          "policy": "invoice_grant",
-          "requiresScopes": [
-            "Read"
-          ]
-        }
-      ]
+        "Owner": "All",
+        "Manager": "All",
+        "Finance": "All"
+      }
     },
     {
-      "name": "settlement.trigger",
-      "symbol": "SettlementTrigger",
+      "name": "settlement:trigger",
       "label": "Trigger settlement",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Finance": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+        "Owner": "All",
+        "Finance": "All"
+      }
     },
     {
-      "name": "tenant.settings.edit",
-      "symbol": "TenantSettingsEdit",
+      "name": "tenant_settings:edit",
       "label": "Edit organization settings",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+        "Owner": "All"
+      }
     },
     {
-      "name": "tenant.delete",
-      "symbol": "TenantDelete",
+      "name": "tenant:delete",
       "label": "Delete organization",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": true,
       "systemPresets": {
-        "Owner": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+        "Owner": "All"
+      }
     },
     {
-      "name": "members.invite",
-      "symbol": "MembersInvite",
+      "name": "members:invite",
       "label": "Invite members",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": false,
       "systemPresets": {
-        "Owner": "TenantResources",
-        "Manager": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+        "Owner": "All",
+        "Manager": "All"
+      }
     },
     {
-      "name": "members.remove",
-      "symbol": "MembersRemove",
+      "name": "members:remove",
       "label": "Remove members",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": true,
       "systemPresets": {
-        "Owner": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+        "Owner": "All"
+      }
     },
     {
-      "name": "members.manage_roles",
-      "symbol": "MembersManageRoles",
+      "name": "members:manage_roles",
       "label": "Manage member roles",
-      "category": "Tenant",
-      "assignableAudiences": [
-        "TenantResources"
-      ],
       "ownerOnly": true,
       "systemPresets": {
-        "Owner": "TenantResources"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+        "Owner": "All"
+      }
     }
   ]
 }

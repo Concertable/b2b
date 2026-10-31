@@ -4,13 +4,10 @@ public static class PermissionPolicy
 {
     public const string Prefix = "perm:";
 
-    public static string Name(TenantPermission permission)
-    {
-        if (!TenantPermission.TryParse(permission.Value, out var declared) || declared != permission)
-            throw new ArgumentOutOfRangeException(nameof(permission));
-
-        return $"{Prefix}{permission.Value}";
-    }
+    public static string Name(TenantPermission permission) =>
+        TenantPermission.All.Contains(permission)
+            ? $"{Prefix}{permission.Key}"
+            : throw new ArgumentOutOfRangeException(nameof(permission));
 
     public static bool TryParse(string? policyName, out TenantPermission permission)
     {
@@ -19,6 +16,6 @@ public static class PermissionPolicy
         if (policyName is null || !policyName.StartsWith(Prefix, StringComparison.Ordinal))
             return false;
 
-        return TenantPermission.TryParse(policyName[Prefix.Length..], out permission);
+        return TenantPermission.TryParseKey(policyName[Prefix.Length..], out permission);
     }
 }

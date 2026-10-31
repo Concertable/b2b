@@ -21,9 +21,9 @@ public static class TenantRoleAssignmentPolicy
             role.IsInvitationAssignable
             && !role.IsProtectedOwner
             && role.Permissions.All(grant =>
-                TenantPermission.TryParse(grant.PermissionKey, out var permission)
+                TenantPermission.TryParseKey(grant.PermissionKey, out var permission)
                 && permission != TenantPermission.MembersInvite
                 && !AuthorizationCatalog.Permissions[permission].OwnerOnly
-                && actor.AudienceFor(permission) >= grant.Audience));
+                && actor.Permissions[permission] >= grant.Audience));
     }
 }

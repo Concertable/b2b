@@ -9,7 +9,7 @@ describe("business navigation", () => {
 
   it("includes Operations with operations.view", () => {
     expect(
-      includesOperationsTab(new Set<TenantPermission>(["operations.view"])),
+      includesOperationsTab(new Set<TenantPermission>(["operations:view"])),
     ).toBe(true);
   });
 });

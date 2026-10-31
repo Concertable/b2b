@@ -27,7 +27,7 @@ internal sealed class ConversationsController : ControllerBase
         this.contentReportService = contentReportService;
     }
 
-    [HasPermission(TenantPermission.MessagesSendName)]
+    [HasPermission(TenantPermission.MessagesSend)]
     [HttpPost]
     public async Task<ActionResult<ConversationResponse>> Create(
         [FromBody] CreateConversationRequest request,
@@ -36,7 +36,7 @@ internal sealed class ConversationsController : ControllerBase
             .Map(conversation => conversation.ToResponse())
             .ToCreatedOrProblem(conversation => $"/api/conversations/{conversation.ConversationId}");
 
-    [HasPermission(TenantPermission.MessagesReadName)]
+    [HasPermission(TenantPermission.MessagesRead)]
     [HttpGet("{conversationId:int}")]
     public async Task<ActionResult<ConversationResponse>> Get(
         int conversationId,
@@ -44,7 +44,7 @@ internal sealed class ConversationsController : ControllerBase
         (await conversationService.GetAsync(conversationId, ct)).ToOkOrProblem(
             conversation => conversation.ToResponse());
 
-    [HasPermission(TenantPermission.MessagesReadName)]
+    [HasPermission(TenantPermission.MessagesRead)]
     [HttpGet("{conversationId:int}/messages")]
     public async Task<ActionResult<IReadOnlyList<MessageResponse>>> GetMessages(
         int conversationId,
@@ -53,7 +53,7 @@ internal sealed class ConversationsController : ControllerBase
             messages => (IReadOnlyList<MessageResponse>)messages
                 .Select(message => message.ToResponse()).ToList());
 
-    [HasPermission(TenantPermission.MessagesSendName)]
+    [HasPermission(TenantPermission.MessagesSend)]
     [EnableRateLimiting(RateLimitPolicies.Messaging)]
     [HttpPost("{conversationId:int}/messages")]
     public async Task<ActionResult<MessageResponse>> Send(
@@ -64,7 +64,7 @@ internal sealed class ConversationsController : ControllerBase
             .Map(message => message.ToResponse())
             .ToCreatedOrProblem(message => $"/api/conversations/{conversationId}/messages/{message.Id}");
 
-    [HasPermission(TenantPermission.MessagesReadName)]
+    [HasPermission(TenantPermission.MessagesRead)]
     [HttpPut("{conversationId:int}/read-position")]
     public async Task<IActionResult> AdvanceReadPosition(
         int conversationId,
@@ -73,7 +73,7 @@ internal sealed class ConversationsController : ControllerBase
         (await conversationService.AdvanceReadPositionAsync(conversationId, request, ct))
             .ToNoContentOrProblem();
 
-    [HasPermission(TenantPermission.ResourcesShareName)]
+    [HasPermission(TenantPermission.ResourcesShare)]
     [HttpPost("{conversationId:int}/member-assignments")]
     public async Task<IActionResult> AssignMember(
         int conversationId,
@@ -81,30 +81,30 @@ internal sealed class ConversationsController : ControllerBase
         CancellationToken ct) =>
         (await conversationService.AssignMemberAsync(conversationId, request, ct)).ToNoContentOrProblem();
 
-    [HasPermission(TenantPermission.ResourcesShareName)]
+    [HasPermission(TenantPermission.ResourcesShare)]
     [HttpDelete("{conversationId:int}/member-assignments/{membershipId:guid}")]
     public async Task<IActionResult> RemoveMemberAssignment(
         int conversationId,
         Guid membershipId,
         [FromQuery, BindRequired] long expectedVersion,
         CancellationToken ct) =>
-        (await conversationService.RemoveMemberAssignmentAsync(
+        (await conversationService.UnassignMemberAsync(
             conversationId, membershipId, expectedVersion, ct))
             .ToNoContentOrProblem();
 
-    [HasPermission(TenantPermission.MessagesReadName)]
+    [HasPermission(TenantPermission.MessagesRead)]
     [HttpGet("unread-count")]
     public async Task<ActionResult<int>> GetUnreadCount(CancellationToken ct) =>
         Ok(await conversationService.GetUnreadCountAsync(ct));
 
-    [HasPermission(TenantPermission.MessagesReadName)]
+    [HasPermission(TenantPermission.MessagesRead)]
     [HttpGet("previews")]
     public async Task<ActionResult<IReadOnlyList<MessagePreviewDto>>> GetRecentPreviews(
         CancellationToken ct,
         [FromQuery, Range(1, int.MaxValue / 5)] int pageNumber = 1) =>
         Ok(await conversationService.GetRecentPreviewsAsync(pageNumber, ct));
 
-    [HasPermission(TenantPermission.MessagesReadName)]
+    [HasPermission(TenantPermission.MessagesRead)]
     [EnableRateLimiting(RateLimitPolicies.Messaging)]
     [HttpPost("{conversationId:int}/messages/{messageId:int}/report")]
     public async Task<ActionResult> Report(

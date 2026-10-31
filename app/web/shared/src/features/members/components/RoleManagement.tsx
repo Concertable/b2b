@@ -6,11 +6,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@concertable/web/components/ui/select";
 import { useRoleManagement } from "../hooks/useRoleManagement";
-import type { ResourceAudience } from "../types";
+import type { ResourceAccess } from "../types";
 import { Spinner } from "./Spinner";
 
-function audienceLabel(audience: ResourceAudience) {
-  return audience === "TenantResources" ? "All tenant resources" : "Assigned resources";
+const resourceAccessLevels: ReadonlyArray<ResourceAccess> = ["Assigned", "All"];
+
+function accessLabel(access: ResourceAccess) {
+  return access === "All" ? "All tenant resources" : "Assigned resources";
 }
 
 export function RoleManagement() {
@@ -19,7 +21,7 @@ export function RoleManagement() {
     selectedId, selected, draft, editable, showEditor, nameError, replacementRoleId,
     isSaving, canSave, canRetire, saveError, retireError,
     openNew, openRole, clone, startEditing, setName, setInvitationAssignable,
-    togglePermission, changeAudience, save, setReplacementRoleId, retire,
+    togglePermission, changeAccess, save, setReplacementRoleId, retire,
   } = useRoleManagement();
 
   if (isLoading) return <Spinner />;
@@ -75,14 +77,14 @@ export function RoleManagement() {
                   return (
                     <div key={item.permission} className="flex flex-wrap items-center gap-3 rounded-md border p-2">
                       <div className="flex min-w-48 items-center gap-2">
-                        <Checkbox id={"permission-" + item.permission} checked={selectedPermission !== undefined} disabled={item.assignableAudiences.length === 0} onCheckedChange={(checked) => togglePermission(item, checked === true)} />
+                        <Checkbox id={"permission-" + item.permission} checked={selectedPermission !== undefined} onCheckedChange={(checked) => togglePermission(item, checked === true)} />
                         <Label htmlFor={"permission-" + item.permission}>{item.label}</Label>
                       </div>
                       <span className="text-muted-foreground text-xs">{item.category}</span>
                       {selectedPermission && (
-                        <Select value={selectedPermission.audience} onValueChange={(audience) => changeAudience(item, audience as ResourceAudience)}>
+                        <Select value={selectedPermission.audience} onValueChange={(access) => changeAccess(item, access as ResourceAccess)}>
                           <SelectTrigger className="w-44" aria-label={item.label + " audience"}><SelectValue /></SelectTrigger>
-                          <SelectContent>{item.assignableAudiences.map((audience) => <SelectItem key={audience} value={audience}>{audienceLabel(audience)}</SelectItem>)}</SelectContent>
+                          <SelectContent>{resourceAccessLevels.map((access) => <SelectItem key={access} value={access}>{accessLabel(access)}</SelectItem>)}</SelectContent>
                         </Select>
                       )}
                     </div>
@@ -96,7 +98,7 @@ export function RoleManagement() {
             <div className="space-y-2 rounded-md border p-4">
               <p className="font-medium">{selected.name}</p>
               <p className="text-muted-foreground text-sm">{selected.isInvitationAssignable ? "Invitation assignable" : "Not invitation assignable"}</p>
-              <ul className="text-sm">{selected.permissions.map((item) => <li key={item.permission}>{metadata.find((entry) => entry.permission === item.permission)?.label ?? item.permission}: {audienceLabel(item.audience)}</li>)}</ul>
+              <ul className="text-sm">{selected.permissions.map((item) => <li key={item.permission}>{metadata.find((entry) => entry.permission === item.permission)?.label ?? item.permission}: {accessLabel(item.audience)}</li>)}</ul>
             </div>
           )}
           {selected && !selected.isSystemPreset && !showEditor && (

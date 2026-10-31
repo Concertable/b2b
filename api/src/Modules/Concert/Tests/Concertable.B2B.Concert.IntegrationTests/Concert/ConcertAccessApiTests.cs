@@ -1,8 +1,10 @@
+using Concertable.B2B.IntegrationTests.Fixtures;
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Application.Responses;
-using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.DataAccess.Application;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +38,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var client = CreateOwningArtistClient(concert.ArtistId);
-        var recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var recipientTenantId = fixture.SeedState.VenueManager2.TenantId;
         var request = new
         {
             requestId = Guid.NewGuid(),
@@ -64,7 +66,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var owner = CreateOwningArtistClient(concert.ArtistId);
-        var recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var recipientTenantId = fixture.SeedState.VenueManager2.TenantId;
         var share = await owner.PostAsync(
             $"/api/concert/{concert.Id}/summary-shares",
             new
@@ -118,7 +120,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
         var membership = fixture.SeedState.Memberships.Single(value =>
-            value.TenantId == TenantOf(fixture.SeedState.VenueManager2.Id)
+            value.TenantId == fixture.SeedState.VenueManager2.TenantId
             && value.UserId == fixture.SeedState.VenueManager2.Id);
 
         var revoke = await client.DeleteAsync(
@@ -142,9 +144,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     public async Task ShareSummary_WithInvalidValidity_DoesNotRevokeExpiredShare()
     {
         var issuer = fixture.SeedState.VenueManager1;
-        var issuerTenantId = TenantOf(issuer.Id);
+        var issuerTenantId = issuer.TenantId;
         var concert = fixture.SeedState.Concerts.First(value => value.VenueTenantId == issuerTenantId);
-        var recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var recipientTenantId = fixture.SeedState.VenueManager2.TenantId;
         var seeded = await fixture.AddExpiredSummaryShareAsync(
             concert.Id,
             issuerTenantId,
@@ -166,12 +168,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var persisted = await fixture.Concerts
             .AsNoTracking()
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(seeded.AccessVersion, persisted.AccessVersion);
-        Assert.Contains(
-            persisted.AccessGrants,
-            grant => grant.Id == seeded.GrantId && grant.RevokedAt is null);
+        Assert.Contains(persisted.Shares, share => share.Id == seeded.GrantId);
     }
 
     [Fact]
@@ -183,7 +182,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         var request = new
         {
             requestId = Guid.NewGuid(),
-            recipientTenantId = TenantOf(fixture.SeedState.VenueManager2.Id),
+            recipientTenantId = fixture.SeedState.VenueManager2.TenantId,
             recipientMembershipId = (Guid?)null,
             expectedAccessVersion = concert.AccessVersion,
             validUntil = (DateTime?)null,
@@ -199,14 +198,11 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         Assert.All(shares, Assert.NotNull);
         Assert.Single(shares.Select(share => share!.GrantId).Distinct());
         var persisted = await fixture.Concerts
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Single(
-            persisted.AccessGrants,
-            grant => grant.Kind == ResourceGrantKind.SharedSummary
-                     && grant.IssuedByTenantId == concert.VenueTenantId
-                     && grant.TenantId == request.recipientTenantId
-                     && grant.RevokedAt is null);
+            persisted.Shares,
+            share => share.SharedByTenantId == concert.VenueTenantId
+                     && share.RecipientTenantId == request.recipientTenantId);
     }
 
     [Fact]
@@ -328,7 +324,7 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
     [Fact]
     public async Task AssignAndRemoveMember_ChangesOnlyThePrincipalMembershipGrant()
     {
-        var venueTenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
+        var venueTenantId = fixture.SeedState.VenueManager1.TenantId;
         var concert = fixture.SeedState.Concerts.First(value => value.VenueTenantId == venueTenantId);
         var client = CreateOwningVenueClient(concert.VenueId);
         var membership = fixture.SeedState.Memberships.Single(value =>
@@ -346,18 +342,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         await assign.ShouldBe(HttpStatusCode.NoContent);
         var assigned = await fixture.Concerts
             .AsNoTracking()
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(concert.AccessVersion + 1, assigned.AccessVersion);
-        Assert.Equal(
-            [ConcertAccessScope.Summary, ConcertAccessScope.Operations],
-            assigned.AccessGrants
-                .Where(grant => grant.Kind == ResourceGrantKind.MemberAssignment
-                                && grant.MembershipId == membership.Id
-                                && grant.RevokedAt is null)
-                .Select(grant => grant.Scope)
-                .Order()
-                .ToArray());
+        Assert.Contains(assigned.Assignments, assignment => assignment.MembershipId == membership.Id);
 
         var staleRemove = await client.DeleteAsync(
             $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={concert.AccessVersion}");
@@ -365,14 +352,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         await staleRemove.ShouldBe(HttpStatusCode.Conflict);
         var unchanged = await fixture.Concerts
             .AsNoTracking()
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(assigned.AccessVersion, unchanged.AccessVersion);
-        Assert.Contains(
-            unchanged.AccessGrants,
-            grant => grant.Kind == ResourceGrantKind.MemberAssignment
-                     && grant.MembershipId == membership.Id
-                     && grant.RevokedAt is null);
+        Assert.Contains(unchanged.Assignments, assignment => assignment.MembershipId == membership.Id);
 
         var remove = await client.DeleteAsync(
             $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={assigned.AccessVersion}");
@@ -380,14 +362,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         await remove.ShouldBe(HttpStatusCode.NoContent);
         var removed = await fixture.Concerts
             .AsNoTracking()
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(assigned.AccessVersion + 1, removed.AccessVersion);
-        Assert.DoesNotContain(
-            removed.AccessGrants,
-            grant => grant.Kind == ResourceGrantKind.MemberAssignment
-                     && grant.MembershipId == membership.Id
-                     && grant.RevokedAt is null);
+        Assert.DoesNotContain(removed.Assignments, assignment => assignment.MembershipId == membership.Id);
 
         var repeatedRemove = await client.DeleteAsync(
             $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={removed.AccessVersion}");
@@ -398,9 +375,6 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(removed.AccessVersion, afterRepeatedRemove.AccessVersion);
     }
-
-    private Guid TenantOf(Guid userId) =>
-        fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == userId).Id;
 
     private HttpClient CreateOwningVenueClient(int venueId) =>
         fixture.CreateClient(fixture.SeedState.VenueManagers.Single(manager =>

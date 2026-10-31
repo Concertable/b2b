@@ -14,6 +14,5 @@ internal sealed class ConversationsConfigurationProvider : IEntityTypeConfigurat
         modelBuilder.ApplyConfiguration(new ConversationReadPositionConfiguration());
         modelBuilder.ApplyConfiguration(new TenantDisplayConfiguration());
         modelBuilder.ApplyConfiguration(new ConversationEntityConfiguration());
-        modelBuilder.ApplyConfiguration(new ConversationAccessGrantConfiguration());
     }
 }

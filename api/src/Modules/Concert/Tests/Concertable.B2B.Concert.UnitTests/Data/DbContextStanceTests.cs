@@ -31,7 +31,8 @@ public sealed class DbContextStanceTests
             Options.Create(new OutboxOptions()),
             provider,
             Mock.Of<ITenantContext>(),
-            DesignTimeResourceAccessContext.Instance);
+            DesignTimeAuthorizationContext.Instance,
+            TimeProvider.System);
 
         Assert.IsAssignableFrom<IReadDbContext>(readContext);
         Assert.False(typeof(IDbContext).IsAssignableFrom(readContext.GetType()));

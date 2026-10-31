@@ -1,4 +1,3 @@
-using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Reunion;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +25,7 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RunAsync_IgnoredAuthorityDenial_RollsBack()
+    public async Task RunAsync_DeniedResult_RollsBack()
     {
         await this.fixture.PrepareCommitProbeAsync();
         var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
@@ -36,134 +35,101 @@ public sealed class TransactionRunnerTests : IAsyncLifetime
             async (writer, ct) =>
             {
                 await writer.StageAsync(id, ct);
-                writer.RegisterAuthorityFailure();
-                writer.Deny();
-                return Result.Success<int, string>(1);
+                return Result.Failure<int, string>("denied");
             });
 
         Assert.True(result.TryGetError(out var error));
-        Assert.Equal("authority", error);
+        Assert.Equal("denied", error);
         Assert.Equal(0, await this.fixture.CountCommitProbesAsync(id));
     }
 
     [Fact]
-    public async Task RunAsync_FlushRegisteredValidator_RollsBack()
+    public async Task RunAsync_FlushFailure_RollsBack()
     {
         await this.fixture.PrepareCommitProbeAsync();
         var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
         var id = Guid.NewGuid();
 
-        var result = await transactionRunner.RunAsync<CommitProbeWriter, Result<int, string>>(
-            async (writer, ct) =>
-            {
-                await writer.StageAsync(id, ct);
-                writer.RegisterAuthorityFailure();
-                writer.OnFlush(() =>
-                    writer.RegisterValidator(_ => Task.FromResult(false)));
-                return Result.Success<int, string>(1);
-            });
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            transactionRunner.RunAsync<CommitProbeWriter, Result<int, string>>(
+                async (writer, ct) =>
+                {
+                    await writer.StageAsync(id, ct);
+                    writer.OnFlush(() => throw new InvalidOperationException("flush"));
+                    return Result.Success<int, string>(1);
+                }));
 
-        Assert.True(result.TryGetError(out var error));
-        Assert.Equal("authority", error);
         Assert.Equal(0, await this.fixture.CountCommitProbesAsync(id));
     }
 
     [Fact]
-    public async Task RunAsync_ExistingFailureRemainsTheOperationFailure()
-    {
-        await this.fixture.PrepareCommitProbeAsync();
-        var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
-        var id = Guid.NewGuid();
-
-        var result = await transactionRunner.RunAsync<CommitProbeWriter, Result<int, string>>(
-            async (writer, ct) =>
-            {
-                await writer.StageAsync(id, ct);
-                writer.RegisterAuthorityFailure();
-                writer.Deny();
-                return Result.Failure<int, string>("domain");
-            });
-
-        Assert.True(result.TryGetError(out var error));
-        Assert.Equal("domain", error);
-        Assert.Equal(0, await this.fixture.CountCommitProbesAsync(id));
-    }
-
-    [Fact]
-    public async Task UnitOfWorkRunner_IgnoredAuthorityDenial_RollsBack()
+    public async Task UnitOfWorkRunner_FlushFailure_RollsBack()
     {
         await this.fixture.PrepareCommitProbeAsync();
         await using var scope = this.fixture.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
         var runner = services.GetRequiredService<UnitOfWorkRunner>();
         var context = services.GetRequiredService<CommitProbeDbContext>();
-        var authorization = services.GetRequiredService<IAuthorizationContext>();
-        var id = Guid.NewGuid();
-
-        var result = await runner.RunAsync(context, () =>
-        {
-            context.Probes.Add(new CommitProbe(id));
-            authorization.RegisterFailure<Result<int, string>>(
-                () => Result.Failure<int, string>("authority"));
-            authorization.MarkAuthorityFailed();
-            return Task.FromResult(Result.Success<int, string>(1));
-        });
-
-        Assert.True(result.TryGetError(out var error));
-        Assert.Equal("authority", error);
-        Assert.Equal(0, await this.fixture.CountCommitProbesAsync(id));
-    }
-
-    [Fact]
-    public async Task RunAsync_FlushPoison_RollsBack()
-    {
-        await this.fixture.PrepareCommitProbeAsync();
-        var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();
-        var id = Guid.NewGuid();
-
-        var result = await transactionRunner.RunAsync<CommitProbeWriter, Result<int, string>>(
-            async (writer, ct) =>
-            {
-                await writer.StageAsync(id, ct);
-                writer.RegisterAuthorityFailure();
-                writer.OnFlush(writer.Deny);
-                return Result.Success<int, string>(1);
-            });
-
-        Assert.True(result.TryGetError(out var error));
-        Assert.Equal("authority", error);
-        Assert.Equal(0, await this.fixture.CountCommitProbesAsync(id));
-    }
-
-    [Fact]
-    public async Task UnitOfWorkRunner_FlushRegisteredValidator_RollsBack()
-    {
-        await this.fixture.PrepareCommitProbeAsync();
-        await using var scope = this.fixture.Services.CreateAsyncScope();
-        var services = scope.ServiceProvider;
-        var runner = services.GetRequiredService<UnitOfWorkRunner>();
-        var context = services.GetRequiredService<CommitProbeDbContext>();
-        var authorization = services.GetRequiredService<IAuthorizationContext>();
         var flushHook = services.GetRequiredService<CommitProbeFlushHook>();
         var id = Guid.NewGuid();
 
-        var result = await runner.RunAsync(context, () =>
-        {
-            context.Probes.Add(new CommitProbe(id));
-            authorization.RegisterFailure<Result<int, string>>(
-                () => Result.Failure<int, string>("authority"));
-            flushHook.OnSaving = () =>
-                authorization.RegisterValidator(_ => Task.FromResult(false));
-            return Task.FromResult(Result.Success<int, string>(1));
-        });
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            runner.RunAsync(context, () =>
+            {
+                context.Probes.Add(new CommitProbe(id));
+                flushHook.OnSaving = () => throw new InvalidOperationException("flush");
+                return Task.FromResult(Result.Success<int, string>(1));
+            }));
 
-        Assert.True(result.TryGetError(out var error));
-        Assert.Equal("authority", error);
         Assert.Equal(0, await this.fixture.CountCommitProbesAsync(id));
     }
 
     [Fact]
-    public async Task RunAsync_WithoutAuthorizationState_Commits()
+    public async Task UnitOfWorkRunner_NestedDenialIgnoredByTheOuterOperation_Throws()
+    {
+        await this.fixture.PrepareCommitProbeAsync();
+        await using var scope = this.fixture.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var runner = services.GetRequiredService<UnitOfWorkRunner>();
+        var context = services.GetRequiredService<CommitProbeDbContext>();
+        var id = Guid.NewGuid();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            runner.RunAsync(context, async () =>
+            {
+                context.Probes.Add(new CommitProbe(id));
+                await runner.RunAsync(context, () =>
+                    Task.FromResult(Result.Failure<int, string>("denied")));
+                return Result.Success<int, string>(1);
+            }));
+
+        Assert.Equal(0, await this.fixture.CountCommitProbesAsync(id));
+    }
+
+    [Fact]
+    public async Task UnitOfWorkRunner_NestedDenialPropagatedByTheOuterOperation_RollsBack()
+    {
+        await this.fixture.PrepareCommitProbeAsync();
+        await using var scope = this.fixture.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var runner = services.GetRequiredService<UnitOfWorkRunner>();
+        var context = services.GetRequiredService<CommitProbeDbContext>();
+        var id = Guid.NewGuid();
+
+        var result = await runner.RunAsync(context, async () =>
+        {
+            context.Probes.Add(new CommitProbe(id));
+            return await runner.RunAsync(context, () =>
+                Task.FromResult(Result.Failure<int, string>("denied")));
+        });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.Equal("denied", error);
+        Assert.Equal(0, await this.fixture.CountCommitProbesAsync(id));
+    }
+
+    [Fact]
+    public async Task RunAsync_WithoutFailure_Commits()
     {
         await this.fixture.PrepareCommitProbeAsync();
         var transactionRunner = this.fixture.Services.GetRequiredService<ITransactionRunner>();

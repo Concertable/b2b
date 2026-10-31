@@ -37,7 +37,7 @@ public sealed class TenantApiFixture : ApiFixture
         dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
 
     public Task<TResult> ExecuteResolutionAsync<TResult>(
-        Func<ITenantResolver, CancellationToken, Task<TResult>> resolve,
+        Func<ITargetTenantResolver, CancellationToken, Task<TResult>> resolve,
         CancellationToken ct = default) =>
         transactionRunner.RunAsync(resolve, ct);
 
@@ -67,10 +67,7 @@ public sealed class TenantApiFixture : ApiFixture
                     var first = await members.RemoveMemberAsync(otherOwnerUserId, ct);
                     if (first.TryGetError(out var firstError))
                         throw new InvalidOperationException($"First owner removal failed: {firstError}.");
-                    var second = await members.RemoveMemberAsync(ownerUserId, ct);
-                    if (second.TryGetError(out var secondError))
-                        throw new InvalidOperationException($"Second owner removal failed: {secondError}.");
-                    return second;
+                    return await members.RemoveMemberAsync(ownerUserId, ct);
                 });
         }
         finally
@@ -98,7 +95,8 @@ public sealed class TenantApiFixture : ApiFixture
     {
         var membership = await dbContext.Memberships.SingleAsync(
             candidate => candidate.TenantId == tenantId && candidate.UserId == userId);
-        membership.ReplaceRoles([.. presetKeys.Select(key => RoleId(tenantId, key))], Guid.NewGuid(), DateTime.UtcNow);
+        Assert.True(membership.ChangeRoles(
+            presetKeys.Select(key => RoleId(tenantId, key)).ToHashSet(), Guid.NewGuid(), DateTime.UtcNow).IsSuccess);
         await dbContext.SaveChangesAsync();
     }
 

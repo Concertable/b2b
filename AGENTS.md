@@ -2,6 +2,14 @@
 
 Data service — venue↔artist booking + settlement. B2B's DbContext stances, filtered-entity list and `DealType` strategy/workflow rosters: @./CODE_PATTERNS.md. Internal design → [`ARCHITECTURE.md`](./ARCHITECTURE.md); deal/contract/workflow → [`api/src/Modules/Deal/ARCHITECTURE.md`](./api/src/Modules/Deal/ARCHITECTURE.md) + [`api/src/Modules/Concert/AGENTS.md`](./api/src/Modules/Concert/AGENTS.md); legal/VAT → [`api/src/Modules/Deal/LEGAL_REQUIREMENTS.md`](./api/src/Modules/Deal/LEGAL_REQUIREMENTS.md).
 
+## Integration and E2E suites run in PR CI
+
+Verify locally with the build and unit tests, then push and let PR CI run integration and E2E. Run those suites locally, or start Docker for them, only when Tommy asks. Diagnosis → `integration-debug`, `e2e-debug`.
+
+```text
+Change touches Booking and Concert: dotnet build + their UnitTests locally → push → PR CI runs both integration projects.
+```
+
 ## Product direction — configurable work within fixed lifecycle routes
 
 Before designing a deal or lifecycle change, read the central [configurable-workflow product direction](https://github.com/Concertable/docs/blob/main/product/CONFIGURABLE_DEAL_WORKFLOWS.md), especially its [entry routes and stage ownership](https://github.com/Concertable/docs/blob/main/product/CONFIGURABLE_DEAL_WORKFLOWS.md#applications-and-direct-offers): **Opportunity → Application → Booking → Concert**, or **Direct Invitation → Booking → Concert**. These are the fixed product routes; configuration composes supported work inside their owning stages, not an arbitrary replacement lifecycle.
@@ -12,7 +20,7 @@ The [nightclub/DJ benchmark](https://github.com/Concertable/docs/blob/main/produ
 
 ## Authority is the request-scoped active tenant, never a token claim
 
-Tokens are identity-only (`sub` + `email`); authority is the active tenant (`X-Tenant-Id` → membership `TenantRole`) resolved per request via `ITenantContext`. Never add a role/authority claim to a B2B token. The tenant *is* the legal/VAT/Stripe entity (`TenantEntity.TaxCompliance`).
+Tokens are identity-only (`sub` + `email`); authority is the active tenant membership (`X-Tenant-Id`) resolved per request into `IAuthorizationContext`. Never add a role/authority claim to a B2B token. The tenant *is* the legal/VAT/Stripe entity (`TenantEntity.TaxCompliance`).
 
 The active tenant is therefore the **default scope of every application service**, and names must not restate a default. A controller neither accepts nor resolves a tenant id, and a repository never independently interprets the active request. Name the ordinary scoped use case for its domain intent (`GetDetailsAsync`, `CreateAsync`); name an *alternative* capability explicitly (`GetDetailsByIdAsync`). Repository queries state the actual key (`GetDetailsByTenantIdAsync(Guid tenantId, …)`). Don't add `ActiveTenant` to ordinary method names, and don't add profile-ID resolvers that turn the active tenant into an Artist or Venue id — tenant-owned queries use `TenantId` directly, backed by a module-local projection when they cross a module boundary. `CurrentUser`, `ForUser`, `Me` and `Self` stay reserved for data belonging to the authenticated human.
 

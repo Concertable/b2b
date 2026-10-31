@@ -12,7 +12,6 @@ internal sealed class ConversationsPrivilegedDbContext(
     : PrivilegedDbContext(options, outboxOptions, provider, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
-    public DbSet<ConversationAccessGrant> ConversationAccessGrants => Set<ConversationAccessGrant>();
     public DbSet<ConversationCreationReceipt> ConversationCreationReceipts => Set<ConversationCreationReceipt>();
     public DbSet<ConversationReadPosition> ConversationReadPositions => Set<ConversationReadPosition>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();

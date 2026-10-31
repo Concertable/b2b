@@ -1,6 +1,5 @@
 ﻿using Concertable.B2B.Artist.Domain.ReadModels;
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Infrastructure;
@@ -17,8 +16,9 @@ internal sealed class ConcertDbContext(
     IOptions<OutboxOptions> outboxOptions,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext,
-    IResourceAccessContext resourceAccess)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, resourceAccess, Schema.Name)
+    IAuthorizationContext authorization,
+    TimeProvider timeProvider)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();
@@ -30,39 +30,31 @@ internal sealed class ConcertDbContext(
     public DbSet<ConcertRatingProjection> ConcertRatingProjections => Set<ConcertRatingProjection>();
     public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
-    public DbSet<ConcertAccessGrant> ConcertAccessGrants => Set<ConcertAccessGrant>();
-    public DbSet<InvoiceAccessGrant> InvoiceAccessGrants => Set<InvoiceAccessGrant>();
     public DbSet<ConcertCommandReceipt> ConcertCommandReceipts => Set<ConcertCommandReceipt>();
 
-    public ResourceAudience OperationsAudience => AudienceFor(TenantPermission.OperationsView);
-    public ResourceAudience FinanceAudience => AudienceFor(TenantPermission.SettlementView);
+    public ResourceAccess OperationsAccess => ActorAccess(TenantPermission.OperationsView);
+    public ResourceAccess FinanceAccess => ActorAccess(TenantPermission.SettlementView);
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ConcertAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForAudience<ConcertAccessGrant, ConcertAccessScope>(
-                    this,
-                    _ => OperationsAudience,
-                    ConcertAccessScope.Summary,
-                    ConcertAccessScope.Operations)
-                .Or(ResourceAccessExpressions.LiveForAudience<ConcertAccessGrant, ConcertAccessScope>(
-                    this,
-                    _ => FinanceAudience,
-                    ConcertAccessScope.Finance)));
-
-        modelBuilder.Entity<InvoiceAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            ResourceAccessExpressions.LiveForAudience<InvoiceAccessGrant, InvoiceAccessScope>(
-                this,
-                _ => FinanceAudience,
-                InvoiceAccessScope.Read));
-
         modelBuilder.Entity<ConcertEntity>().HasQueryFilter(TenantFilters.Key, concert =>
-            ConcertAccessGrants.Any(grant =>
-                grant.ResourceId == concert.Id && grant.Scope == ConcertAccessScope.Summary));
+            OperationsAccess == ResourceAccess.All
+                && (concert.VenueTenantId == ActorTenantId
+                    || concert.ArtistTenantId == ActorTenantId
+                    || concert.Shares.Any(share =>
+                        share.RecipientTenantId == ActorTenantId
+                        && share.RecipientMembershipId == null
+                        && (share.ExpiresAt == null || share.ExpiresAt > Now)))
+            || OperationsAccess != ResourceAccess.None
+                && (concert.Assignments.Any(assignment => assignment.MembershipId == ActorMembershipId)
+                    || concert.Shares.Any(share =>
+                        share.RecipientTenantId == ActorTenantId
+                        && share.RecipientMembershipId == ActorMembershipId
+                        && (share.ExpiresAt == null || share.ExpiresAt > Now))));
 
         modelBuilder.Entity<InvoiceEntity>().HasQueryFilter(TenantFilters.Key, invoice =>
-            InvoiceAccessGrants.Any(grant =>
-                grant.ResourceId == invoice.Id && grant.Scope == InvoiceAccessScope.Read));
+            FinanceAccess == ResourceAccess.All
+            && (invoice.VenueTenantId == ActorTenantId || invoice.ArtistTenantId == ActorTenantId));
 
         modelBuilder.ApplySingleOwner<SelfBillingAgreementEntity>(this);
     }

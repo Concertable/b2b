@@ -34,7 +34,7 @@ internal interface IConversationService
         AssignConversationMemberRequest request,
         CancellationToken ct = default);
 
-    Task<UnitResult<AssignConversationMemberError>> RemoveMemberAssignmentAsync(
+    Task<UnitResult<AssignConversationMemberError>> UnassignMemberAsync(
         int conversationId,
         Guid membershipId,
         long expectedAccessVersion,

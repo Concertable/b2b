@@ -152,9 +152,7 @@ public sealed class ConcertApiFixture : ApiFixture
         Guid recipientTenantId)
     {
         dbContext.ChangeTracker.Clear();
-        var concert = await dbContext.Concerts
-            .Include(value => value.AccessGrants)
-            .SingleAsync(value => value.Id == concertId);
+        var concert = await dbContext.Concerts.SingleAsync(value => value.Id == concertId);
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var share = concert.ShareSummary(
             issuerTenantId,
@@ -166,7 +164,6 @@ public sealed class ConcertApiFixture : ApiFixture
         if (!share.TryGetValue(out var grant))
             throw new InvalidOperationException("Could not seed an expired summary share.");
 
-        dbContext.Add(grant);
         await dbContext.SaveChangesAsync();
         return (grant.Id, concert.AccessVersion, now);
     }

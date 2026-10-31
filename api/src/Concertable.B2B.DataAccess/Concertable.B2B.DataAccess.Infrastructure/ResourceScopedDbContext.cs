@@ -1,5 +1,4 @@
-﻿using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.DataAccess.Application;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.DataAccess.Infrastructure.Data;
 using Concertable.Kernel.Identity;
 using Concertable.Messaging.Infrastructure.Outbox;
@@ -8,35 +7,35 @@ using Microsoft.Extensions.Options;
 
 namespace Concertable.B2B.DataAccess.Infrastructure;
 
-public abstract class ResourceScopedDbContext : TenantScopedDbContext, IHasResourceAccessContext
+public abstract class ResourceScopedDbContext : TenantScopedDbContext
 {
-    public IResourceAccessContext ResourceAccess { get; }
-
-    public DbSet<MembershipAuthority> MembershipAuthority => Set<MembershipAuthority>();
-
-    public Guid? ActiveMembershipId => ResourceAccess.Membership?.MembershipId;
-    public Guid? ActiveTenantId => ResourceAccess.Membership?.TenantId;
-    public Guid? ActiveUserId => ResourceAccess.Membership?.UserId;
-    public long? ActivePermissionVersion => ResourceAccess.Membership?.PermissionVersion;
-    public long? ActiveRolePolicyVersion => ResourceAccess.Membership?.RolePolicyVersion;
-
-    public ResourceAudience AudienceFor(TenantPermission permission) => ResourceAccess.AudienceFor(permission);
+    private readonly IAuthorizationContext authorization;
+    private readonly TimeProvider timeProvider;
 
     protected ResourceScopedDbContext(
         DbContextOptions options,
         IOptions<OutboxOptions> outboxOptions,
         IEntityTypeConfigurationProvider provider,
         ITenantContext tenantContext,
-        IResourceAccessContext resourceAccess,
+        IAuthorizationContext authorization,
+        TimeProvider timeProvider,
         string defaultSchema)
         : base(options, outboxOptions, provider, tenantContext, defaultSchema)
     {
-        ResourceAccess = resourceAccess;
+        this.authorization = authorization;
+        this.timeProvider = timeProvider;
     }
 
-    protected override void ConfigureMembershipAuthority(ModelBuilder modelBuilder)
-    {
-        base.ConfigureMembershipAuthority(modelBuilder);
-        modelBuilder.ApplyConfiguration(new MembershipAuthorityConfiguration());
-    }
+    public MembershipSnapshot? Actor => authorization.Membership;
+
+    public DateTime Now => timeProvider.GetUtcNow().UtcDateTime;
+
+    // A filter cannot dereference Actor — the member access is evaluated before the query runs, so an
+    // unresolved caller would throw rather than read nothing.
+    public Guid? ActorTenantId => Actor?.TenantId;
+    public Guid? ActorMembershipId => Actor?.MembershipId;
+    public Guid? ActorUserId => Actor?.UserId;
+
+    protected ResourceAccess ActorAccess(TenantPermission permission) =>
+        Actor?.Permissions[permission] ?? ResourceAccess.None;
 }

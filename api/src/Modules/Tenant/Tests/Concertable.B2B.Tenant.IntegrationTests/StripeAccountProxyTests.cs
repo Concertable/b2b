@@ -27,8 +27,6 @@ public sealed class StripeAccountProxyTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private Guid TenantOf(Guid userId) => fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
-
     [Fact]
     public async Task AccountStatus_ForOwner_PassesTheActiveTenantAsOwner()
     {
@@ -39,7 +37,7 @@ public sealed class StripeAccountProxyTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.Equal(PayoutAccountStatus.Verified, await response.Content.ReadAsync<PayoutAccountStatus>());
         // The proxy keys Payment on the tenant, never the user — that's the whole point of the indirection.
-        Assert.Equal(TenantOf(manager.Id), fixture.PayoutAccountClient.LastOwnerId);
+        Assert.Equal(manager.TenantId, fixture.PayoutAccountClient.LastOwnerId);
         Assert.NotEqual(manager.Id, fixture.PayoutAccountClient.LastOwnerId);
     }
 
@@ -77,7 +75,7 @@ public sealed class StripeAccountProxyTests : IAsyncLifetime
     {
         // Manager (no PayoutsManage in the matrix) acting in another tenant via the X-Tenant-Id header.
         var manager = fixture.SeedState.VenueManager1;
-        var otherTenant = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var otherTenant = fixture.SeedState.VenueManager2.TenantId;
         await fixture.AddMembershipAsync(otherTenant, manager.Id, "Manager");
 
         var client = fixture.CreateClient(manager);
@@ -93,7 +91,7 @@ public sealed class StripeAccountProxyTests : IAsyncLifetime
     {
         // Finance holds PayoutsManage (money-only role), so the proxy serves it — keyed on that tenant.
         var manager = fixture.SeedState.VenueManager1;
-        var otherTenant = TenantOf(fixture.SeedState.VenueManager2.Id);
+        var otherTenant = fixture.SeedState.VenueManager2.TenantId;
         await fixture.AddMembershipAsync(otherTenant, manager.Id, "Finance");
 
         var client = fixture.CreateClient(manager);

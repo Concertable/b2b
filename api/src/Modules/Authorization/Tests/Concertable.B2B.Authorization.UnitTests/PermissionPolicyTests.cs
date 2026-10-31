@@ -7,7 +7,7 @@ public sealed class PermissionPolicyTests
     {
         var policyName = PermissionPolicy.Name(TenantPermission.OperationsView);
 
-        Assert.Equal($"{PermissionPolicy.Prefix}{TenantPermission.OperationsViewName}", policyName);
+        Assert.Equal("perm:operations:view", policyName);
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public sealed class PermissionPolicyTests
     public void TryParse_DeclaredPolicy_ReturnsPermission()
     {
         var parsed = PermissionPolicy.TryParse(
-            $"{PermissionPolicy.Prefix}{TenantPermission.OperationsViewName}",
+            "perm:operations:view",
             out var permission);
 
         Assert.True(parsed);
@@ -43,14 +43,14 @@ public sealed class PermissionPolicyTests
     [Fact]
     public void HasPermissionAttribute_DeclaredName_UsesTypedPolicy()
     {
-        var attribute = new HasPermissionAttribute(TenantPermission.OperationsViewName);
+        var attribute = new HasPermissionAttribute(TenantPermission.OperationsView);
 
         Assert.Equal(PermissionPolicy.Name(TenantPermission.OperationsView), attribute.Policy);
     }
 
     [Fact]
-    public void HasPermissionAttribute_UndeclaredName_Throws()
+    public void HasPermissionAttribute_UndeclaredPermission_Throws()
     {
-        Assert.Throws<ArgumentException>(() => new HasPermissionAttribute("unknown"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HasPermissionAttribute((TenantPermission)999));
     }
 }

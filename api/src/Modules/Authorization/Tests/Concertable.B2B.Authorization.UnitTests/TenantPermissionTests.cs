@@ -1,45 +1,43 @@
-using System.Reflection;
+using System.Text.Json;
 
 namespace Concertable.B2B.Authorization.UnitTests;
 
 public sealed class TenantPermissionTests
 {
     [Fact]
-    public void TryParse_DeclaredNames_ReturnsMatchingInstances()
+    public void TryParseKey_EveryDeclaredKey_RoundTrips()
     {
-        var nameFields = typeof(TenantPermission)
-            .GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Where(field => field.IsLiteral
-                && field.FieldType == typeof(string)
-                && field.Name.EndsWith("Name", StringComparison.Ordinal))
-            .ToList();
-
-        Assert.Equal(TenantPermission.All.Count, nameFields.Count);
-
-        foreach (var nameField in nameFields)
+        Assert.All(TenantPermission.All, permission =>
         {
-            var value = Assert.IsType<string>(nameField.GetRawConstantValue());
-            var instanceProperty = typeof(TenantPermission).GetProperty(
-                nameField.Name[..^"Name".Length],
-                BindingFlags.Public | BindingFlags.Static);
+            Assert.True(TenantPermission.TryParseKey(permission.Key, out var parsed));
+            Assert.Equal(permission, parsed);
+        });
+    }
 
-            Assert.NotNull(instanceProperty);
-            var expected = Assert.IsType<TenantPermission>(instanceProperty.GetValue(null));
-            Assert.True(TenantPermission.TryParse(value, out var parsed));
-            Assert.Equal(expected, parsed);
-            Assert.Equal(value, parsed.Value);
-            Assert.Equal(value, parsed.ToString());
-        }
+    [Fact]
+    public void Key_IsResourceColonAction()
+    {
+        Assert.Equal("concerts:ops_edit", TenantPermission.ConcertsOpsEdit.Key);
+        Assert.Equal("tenant_settings:edit", TenantPermission.TenantSettingsEdit.Key);
+        Assert.All(TenantPermission.All, permission => Assert.Matches("^[a-z_]+:[a-z_]+$", permission.Key));
+    }
+
+    [Fact]
+    public void Json_UsesTheKey()
+    {
+        Assert.Equal("\"messages:read\"", JsonSerializer.Serialize(TenantPermission.MessagesRead));
+        Assert.Equal(TenantPermission.MessagesRead, JsonSerializer.Deserialize<TenantPermission>("\"messages:read\""));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("operations.View")]
+    [InlineData("operations.view")]
+    [InlineData("OperationsView")]
     [InlineData("unknown")]
-    public void TryParse_UndeclaredValue_ReturnsFalse(string? value)
+    public void TryParseKey_UndeclaredValue_ReturnsFalse(string? value)
     {
-        var parsed = TenantPermission.TryParse(value, out var permission);
+        var parsed = TenantPermission.TryParseKey(value, out var permission);
 
         Assert.False(parsed);
         Assert.Equal(default, permission);

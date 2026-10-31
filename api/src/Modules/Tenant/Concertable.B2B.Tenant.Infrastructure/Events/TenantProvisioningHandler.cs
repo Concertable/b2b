@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.Auth.Contracts;
 using Concertable.Auth.Contracts.Events;
@@ -84,16 +83,9 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
                 .ToListAsync(ct);
             var inviterRoles = roles.Where(role => inviterRoleIds.Contains(role.Id)).ToArray();
             var invitedRoles = roles.Where(role => invitedRoleIds.Contains(role.Id)).ToArray();
-            var permissions = inviterRoles.SelectMany(role => role.Permissions)
-                .Where(row => TenantPermission.TryParse(row.PermissionKey, out _)
-                    && row.Audience is ResourceAudience.AssignedResources or ResourceAudience.TenantResources)
-                .GroupBy(row => row.PermissionKey, StringComparer.Ordinal)
-                .ToImmutableDictionary(
-                    group => TenantPermission.TryParse(group.Key, out var key) ? key : default,
-                    group => (ResourceAudience)group.Max(row => (int)row.Audience));
             var snapshot = inviter is null ? null : new MembershipSnapshot(
                 inviter.Id, inviter.TenantId, inviter.UserId, inviter.PermissionVersion,
-                tenant.RolePolicyVersion, permissions);
+                tenant.RolePolicyVersion, inviterRoles.ToEffectivePermissions());
             if (snapshot is null
                 || snapshot.PermissionVersion != invitation.InviterPermissionVersion
                 || tenant.RolePolicyVersion != invitation.InviterRolePolicyVersion

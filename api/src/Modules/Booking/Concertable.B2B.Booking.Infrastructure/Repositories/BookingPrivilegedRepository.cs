@@ -1,6 +1,5 @@
 using Concertable.B2B.Booking.Application.Interfaces;
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Infrastructure.Data;
@@ -28,9 +27,8 @@ internal sealed class BookingPrivilegedRepository(BookingPrivilegedDbContext con
         int bookingId,
         CancellationToken ct = default)
     {
-        await LockResourceAndGrantsAsync(bookingId, ct);
+        await LockAsync(bookingId, ct);
         return await context.Bookings
-            .Include(booking => booking.AccessGrants)
             .SingleOrDefaultAsync(booking => booking.Id == bookingId, ct);
     }
 
@@ -43,7 +41,7 @@ internal sealed class BookingPrivilegedRepository(BookingPrivilegedDbContext con
         int bookingId,
         CancellationToken ct = default)
     {
-        await LockResourceAndGrantsAsync(bookingId, ct);
+        await LockAsync(bookingId, ct);
         return await context.Bookings
             .Include(booking => booking.Contract)
             .SingleOrDefaultAsync(booking => booking.Id == bookingId, ct);
@@ -67,21 +65,13 @@ internal sealed class BookingPrivilegedRepository(BookingPrivilegedDbContext con
 
     public Task SaveChangesAsync(CancellationToken ct = default) => context.SaveChangesAsync(ct);
 
-    private async Task LockResourceAndGrantsAsync(int bookingId, CancellationToken ct)
+    private async Task LockAsync(int bookingId, CancellationToken ct)
     {
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
              FROM booking."Bookings"
              WHERE "Id" = {bookingId}
-             FOR UPDATE
-             """,
-            ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM booking."BookingAccessGrants"
-             WHERE "ResourceId" = {bookingId}
              FOR UPDATE
              """,
             ct);

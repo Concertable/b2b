@@ -13,6 +13,4 @@ internal sealed class BookingPrivilegedDbContext(
 {
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
     public DbSet<ContractEntity> Contracts => Set<ContractEntity>();
-    public DbSet<BookingAccessGrant> BookingAccessGrants => Set<BookingAccessGrant>();
-    public DbSet<ContractAccessGrant> ContractAccessGrants => Set<ContractAccessGrant>();
 }

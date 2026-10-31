@@ -1,75 +1,109 @@
 using System.Collections.Frozen;
+using System.Text.Json.Serialization;
 
 namespace Concertable.B2B.Authorization.Contracts;
 
-public readonly record struct TenantPermission
+[JsonConverter(typeof(JsonStringEnumConverter<TenantPermission>))]
+public enum TenantPermission
 {
-    public const string ApplicationsDecideName = "applications.decide";
-    public const string ApplicationsSubmitName = "applications.submit";
-    public const string BookingsCancelName = "bookings.cancel";
-    public const string ConcertsCheckInName = "concerts.check_in";
-    public const string ConcertsDeclareDoorRevenueName = "concerts.declare_door_revenue";
-    public const string ConcertsManageName = "concerts.manage";
-    public const string ConcertsOpsEditName = "concerts.ops_edit";
-    public const string ConcertsPublishName = "concerts.publish";
-    public const string MembersInviteName = "members.invite";
-    public const string MembersManageRolesName = "members.manage_roles";
-    public const string MembersRemoveName = "members.remove";
-    public const string MessagesReadName = "messages.read";
-    public const string MessagesSendName = "messages.send";
-    public const string OperationsViewName = "operations.view";
-    public const string OpportunitiesManageName = "opportunities.manage";
-    public const string PayoutsManageName = "payouts.manage";
-    public const string ProfileEditName = "profile.edit";
-    public const string ResourcesShareName = "resources.share";
-    public const string SettlementTriggerName = "settlement.trigger";
-    public const string SettlementViewName = "settlement.view";
-    public const string TenantDeleteName = "tenant.delete";
-    public const string TenantSettingsEditName = "tenant.settings.edit";
-    public const string TermsReadName = "terms.read";
+    [JsonStringEnumMemberName("applications:decide")]
+    ApplicationsDecide = 1,
+    [JsonStringEnumMemberName("applications:submit")]
+    ApplicationsSubmit,
+    [JsonStringEnumMemberName("bookings:cancel")]
+    BookingsCancel,
+    [JsonStringEnumMemberName("concerts:check_in")]
+    ConcertsCheckIn,
+    [JsonStringEnumMemberName("concerts:declare_door_revenue")]
+    ConcertsDeclareDoorRevenue,
+    [JsonStringEnumMemberName("concerts:manage")]
+    ConcertsManage,
+    [JsonStringEnumMemberName("concerts:ops_edit")]
+    ConcertsOpsEdit,
+    [JsonStringEnumMemberName("concerts:publish")]
+    ConcertsPublish,
+    [JsonStringEnumMemberName("members:invite")]
+    MembersInvite,
+    [JsonStringEnumMemberName("members:manage_roles")]
+    MembersManageRoles,
+    [JsonStringEnumMemberName("members:remove")]
+    MembersRemove,
+    [JsonStringEnumMemberName("messages:read")]
+    MessagesRead,
+    [JsonStringEnumMemberName("messages:send")]
+    MessagesSend,
+    [JsonStringEnumMemberName("operations:view")]
+    OperationsView,
+    [JsonStringEnumMemberName("opportunities:manage")]
+    OpportunitiesManage,
+    [JsonStringEnumMemberName("payouts:manage")]
+    PayoutsManage,
+    [JsonStringEnumMemberName("profile:edit")]
+    ProfileEdit,
+    [JsonStringEnumMemberName("resources:share")]
+    ResourcesShare,
+    [JsonStringEnumMemberName("settlement:trigger")]
+    SettlementTrigger,
+    [JsonStringEnumMemberName("settlement:view")]
+    SettlementView,
+    [JsonStringEnumMemberName("tenant:delete")]
+    TenantDelete,
+    [JsonStringEnumMemberName("tenant_settings:edit")]
+    TenantSettingsEdit,
+    [JsonStringEnumMemberName("terms:read")]
+    TermsRead,
+}
 
-    public static TenantPermission ApplicationsDecide { get; } = new(ApplicationsDecideName);
-    public static TenantPermission ApplicationsSubmit { get; } = new(ApplicationsSubmitName);
-    public static TenantPermission BookingsCancel { get; } = new(BookingsCancelName);
-    public static TenantPermission ConcertsCheckIn { get; } = new(ConcertsCheckInName);
-    public static TenantPermission ConcertsDeclareDoorRevenue { get; } = new(ConcertsDeclareDoorRevenueName);
-    public static TenantPermission ConcertsManage { get; } = new(ConcertsManageName);
-    public static TenantPermission ConcertsOpsEdit { get; } = new(ConcertsOpsEditName);
-    public static TenantPermission ConcertsPublish { get; } = new(ConcertsPublishName);
-    public static TenantPermission MembersInvite { get; } = new(MembersInviteName);
-    public static TenantPermission MembersManageRoles { get; } = new(MembersManageRolesName);
-    public static TenantPermission MembersRemove { get; } = new(MembersRemoveName);
-    public static TenantPermission MessagesRead { get; } = new(MessagesReadName);
-    public static TenantPermission MessagesSend { get; } = new(MessagesSendName);
-    public static TenantPermission OperationsView { get; } = new(OperationsViewName);
-    public static TenantPermission OpportunitiesManage { get; } = new(OpportunitiesManageName);
-    public static TenantPermission PayoutsManage { get; } = new(PayoutsManageName);
-    public static TenantPermission ProfileEdit { get; } = new(ProfileEditName);
-    public static TenantPermission ResourcesShare { get; } = new(ResourcesShareName);
-    public static TenantPermission SettlementTrigger { get; } = new(SettlementTriggerName);
-    public static TenantPermission SettlementView { get; } = new(SettlementViewName);
-    public static TenantPermission TenantDelete { get; } = new(TenantDeleteName);
-    public static TenantPermission TenantSettingsEdit { get; } = new(TenantSettingsEditName);
-    public static TenantPermission TermsRead { get; } = new(TermsReadName);
+public static class TenantPermissionExtensions
+{
+    private static readonly FrozenDictionary<TenantPermission, string> Keys =
+        new Dictionary<TenantPermission, string>
+        {
+            [TenantPermission.ApplicationsDecide] = "applications:decide",
+            [TenantPermission.ApplicationsSubmit] = "applications:submit",
+            [TenantPermission.BookingsCancel] = "bookings:cancel",
+            [TenantPermission.ConcertsCheckIn] = "concerts:check_in",
+            [TenantPermission.ConcertsDeclareDoorRevenue] = "concerts:declare_door_revenue",
+            [TenantPermission.ConcertsManage] = "concerts:manage",
+            [TenantPermission.ConcertsOpsEdit] = "concerts:ops_edit",
+            [TenantPermission.ConcertsPublish] = "concerts:publish",
+            [TenantPermission.MembersInvite] = "members:invite",
+            [TenantPermission.MembersManageRoles] = "members:manage_roles",
+            [TenantPermission.MembersRemove] = "members:remove",
+            [TenantPermission.MessagesRead] = "messages:read",
+            [TenantPermission.MessagesSend] = "messages:send",
+            [TenantPermission.OperationsView] = "operations:view",
+            [TenantPermission.OpportunitiesManage] = "opportunities:manage",
+            [TenantPermission.PayoutsManage] = "payouts:manage",
+            [TenantPermission.ProfileEdit] = "profile:edit",
+            [TenantPermission.ResourcesShare] = "resources:share",
+            [TenantPermission.SettlementTrigger] = "settlement:trigger",
+            [TenantPermission.SettlementView] = "settlement:view",
+            [TenantPermission.TenantDelete] = "tenant:delete",
+            [TenantPermission.TenantSettingsEdit] = "tenant_settings:edit",
+            [TenantPermission.TermsRead] = "terms:read",
+        }.ToFrozenDictionary();
 
-    public static IReadOnlySet<TenantPermission> All { get; } = new[]
+    private static readonly FrozenDictionary<string, TenantPermission> ByKey =
+        Keys.ToFrozenDictionary(pair => pair.Value, pair => pair.Key, StringComparer.Ordinal);
+
+    private static readonly FrozenSet<TenantPermission> Declared = Keys.Keys.ToFrozenSet();
+
+    extension(TenantPermission permission)
     {
-        ApplicationsDecide, ApplicationsSubmit, BookingsCancel, ConcertsCheckIn, ConcertsDeclareDoorRevenue, ConcertsManage, ConcertsOpsEdit, ConcertsPublish, MembersInvite, MembersManageRoles, MembersRemove, MessagesRead, MessagesSend, OperationsView, OpportunitiesManage, PayoutsManage, ProfileEdit, ResourcesShare, SettlementTrigger, SettlementView, TenantDelete, TenantSettingsEdit, TermsRead,
-    }.ToFrozenSet();
-
-    private static readonly FrozenDictionary<string, TenantPermission> ByValue =
-        All.ToFrozenDictionary(permission => permission.Value, StringComparer.Ordinal);
-
-    private TenantPermission(string value) => Value = value;
-    public string Value { get; }
-
-    public static bool TryParse(string? value, out TenantPermission permission)
-    {
-        if (value is not null && ByValue.TryGetValue(value, out permission))
-            return true;
-        permission = default;
-        return false;
+        public string Key => Keys.TryGetValue(permission, out var key) ? key : string.Empty;
     }
 
-    public override string ToString() => Value ?? string.Empty;
+    extension(TenantPermission)
+    {
+        public static IReadOnlySet<TenantPermission> All => Declared;
+
+        public static bool TryParseKey(string? key, out TenantPermission permission)
+        {
+            if (key is not null && ByKey.TryGetValue(key, out permission))
+                return true;
+            permission = default;
+            return false;
+        }
+    }
 }

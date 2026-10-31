@@ -9,11 +9,9 @@ using Concertable.B2B.Concert.Infrastructure.Repositories;
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
 internal sealed class InvoiceService(
-    IInvoicePrivilegedReadRepository repository,
+    IInvoiceRepository repository,
     IInvoicePdfRenderer invoicePdfRenderer,
-    IMembershipContext membership,
-    IResourceAuthorization resources,
-    TimeProvider timeProvider) : IInvoiceService
+    IAuthorizationContext membership) : IInvoiceService
 {
     public async Task<Result<InvoiceDto, InvoiceError>> GetByConcertIdAsync(int concertId) =>
         (await GetReadableAsync(concertId)).Map(invoice => invoice.ToDto());
@@ -24,16 +22,11 @@ internal sealed class InvoiceService(
 
     private async Task<Result<InvoiceEntity, InvoiceError>> GetReadableAsync(int concertId)
     {
-        if (concertId <= 0 || membership.Membership is not { } actor)
+        if (concertId <= 0 || membership.Membership is null)
             return new InvoiceError.ConcertNotFound(concertId);
 
-        var binding = ResourcePolicyBinding.FromCatalog(
-            TenantPermission.SettlementView, ResourceKind.Invoice, ResourceFacet.Read);
-        var invoice = await repository.GetByConcertIdAsync(
-            concertId, binding, actor, timeProvider.GetUtcNow());
-        if (invoice is null || await resources.CheckAsync(new AuthorizationRequest(
-                binding.Permission, ResourceAddress.Create(ResourceKind.Invoice, invoice.Id), binding.Facet))
-            != AuthorizationDecision.Allowed)
+        var invoice = await repository.GetByConcertIdAsync(concertId);
+        if (invoice is null)
             return new InvoiceError.ConcertNotFound(concertId);
 
         return invoice;

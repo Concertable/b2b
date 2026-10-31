@@ -1,8 +1,8 @@
+using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.ValueObjects;
 using Concertable.B2B.Concert.Infrastructure.Services;
-using Concertable.B2B.DataAccess.Application;
 using Concertable.Contracts.Enums;
 
 namespace Concertable.B2B.Concert.UnitTests.Services;
@@ -41,7 +41,7 @@ public sealed class ConcertServiceSummaryShareTests
     }
 
     [Fact]
-    public void RecoverSummaryShareDuplicate_MatchingReceiptWithoutRecordedGrant_Throws()
+    public void RecoverSummaryShareDuplicate_MatchingReceiptForARemovedShare_IsSuperseded()
     {
         var recovery = CreateRecovery();
         var concert = ConcertEntity.CreateDraft(
@@ -49,14 +49,13 @@ public sealed class ConcertServiceSummaryShareTests
             new ConcertDraft("Concert", "About", [Genre.Rock]),
             DateTime.UnixEpoch);
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            ConcertService.RecoverSummaryShareDuplicate(
-                concert,
-                recovery.Receipt,
-                recovery.IdempotencyHash));
+        var result = ConcertService.RecoverSummaryShareDuplicate(
+            concert,
+            recovery.Receipt,
+            recovery.IdempotencyHash);
 
-        Assert.Contains(recovery.Receipt.Id.ToString(), exception.Message);
-        Assert.Contains(recovery.Grant.Id.ToString(), exception.Message);
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<ShareConcertSummaryError.Superseded>(error);
     }
 
     [Fact]
@@ -126,7 +125,7 @@ public sealed class ConcertServiceSummaryShareTests
 
     private sealed record Recovery(
         ConcertEntity Concert,
-        ConcertAccessGrant Grant,
+        ConcertShare Grant,
         ConcertCommandReceipt Receipt,
         IdempotencyHash IdempotencyHash);
 }

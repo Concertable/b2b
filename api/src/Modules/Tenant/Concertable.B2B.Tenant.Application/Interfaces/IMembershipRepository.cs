@@ -20,11 +20,9 @@ internal interface IMembershipRepository : IRepository<TenantMembershipEntity, G
         IReadOnlyCollection<Guid> membershipIds,
         CancellationToken ct = default);
 
-    Task<AuthoritySnapshot?> GetAuthoritySnapshotByUserIdAndTenantIdAsync(
-        Guid userId, Guid tenantId, CancellationToken ct = default);
-
-    Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
-        Guid membershipId, CancellationToken ct = default);
+    Task<bool> TryLockUnchangedAsync(
+        IReadOnlyCollection<TenantMembershipEntity> members,
+        CancellationToken ct = default);
 
     Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default);
 

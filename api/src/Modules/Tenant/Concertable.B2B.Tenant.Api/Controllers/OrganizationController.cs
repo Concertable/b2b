@@ -37,14 +37,14 @@ internal sealed class OrganizationController : ControllerBase
         (await tenantService.CreateAsync(request, ct)).ToCreatedOrProblem(tenant => $"/api/organization/{tenant.Id}");
 
     [HttpPut]
-    [HasPermission(TenantPermission.TenantSettingsEditName)]
+    [HasPermission(TenantPermission.TenantSettingsEdit)]
     public async Task<ActionResult<TenantDetails>> Update(
         UpdateTenantRequest request,
         CancellationToken ct) =>
         (await tenantService.UpdateAsync(request, ct)).ToOkOrProblem();
 
     [HttpPut("activities/{kind}")]
-    [HasPermission(TenantPermission.TenantSettingsEditName)]
+    [HasPermission(TenantPermission.TenantSettingsEdit)]
     public async Task<ActionResult<TenantDetails>> ActivateActivity(
         TenantBusinessActivityKind kind,
         ChangeBusinessActivityRequest request,
@@ -52,7 +52,7 @@ internal sealed class OrganizationController : ControllerBase
         (await tenantService.ActivateBusinessActivityAsync(kind, request, ct)).ToOkOrProblem();
 
     [HttpDelete("activities/{kind}")]
-    [HasPermission(TenantPermission.TenantSettingsEditName)]
+    [HasPermission(TenantPermission.TenantSettingsEdit)]
     public async Task<ActionResult<TenantDetails>> RetireActivity(
         TenantBusinessActivityKind kind,
         [FromBody] ChangeBusinessActivityRequest request,
@@ -60,7 +60,7 @@ internal sealed class OrganizationController : ControllerBase
         (await tenantService.RetireBusinessActivityAsync(kind, request, ct)).ToOkOrProblem();
 
     [HttpDelete]
-    [HasPermission(TenantPermission.TenantDeleteName)]
+    [HasPermission(TenantPermission.TenantDelete)]
     public async Task<IActionResult> Delete(CancellationToken ct) =>
         (await tenantService.DeleteAsync(ct)).ToNoContentOrProblem();
 }

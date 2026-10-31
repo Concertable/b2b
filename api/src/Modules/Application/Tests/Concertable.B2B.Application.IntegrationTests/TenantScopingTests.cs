@@ -1,3 +1,4 @@
+using Concertable.B2B.IntegrationTests.Fixtures;
 using System.Net;
 using Concertable.B2B.Deal.Contracts;
 using Concertable.B2B.Deal.Contracts.Enums;
@@ -40,8 +41,8 @@ public sealed class TenantScopingTests : IAsyncLifetime
         await applyResponse.ShouldBe(HttpStatusCode.Created);
         var application = await fixture.Applications
             .SingleAsync(value => value.OpportunityId == opportunity.Id);
-        Assert.Equal(TenantOf(fixture.SeedState.VenueManager1.Id), application.VenueTenantId);
-        Assert.Equal(TenantOf(fixture.SeedState.ArtistManager1.Id), application.ArtistTenantId);
+        Assert.Equal(fixture.SeedState.VenueManager1.TenantId, application.VenueTenantId);
+        Assert.Equal(fixture.SeedState.ArtistManager1.TenantId, application.ArtistTenantId);
     }
 
     [Fact]
@@ -59,9 +60,6 @@ public sealed class TenantScopingTests : IAsyncLifetime
         await (await thirdParty.GetAsync($"/api/application/{applicationId}/proposal"))
             .ShouldBe(HttpStatusCode.NotFound);
     }
-
-    private Guid TenantOf(Guid userId) =>
-        fixture.SeedState.Tenants.Single(value => value.CreatedByUserId == userId).Id;
 
     private OpportunityBoundaryRequest BuildOpportunityRequest() =>
         new(

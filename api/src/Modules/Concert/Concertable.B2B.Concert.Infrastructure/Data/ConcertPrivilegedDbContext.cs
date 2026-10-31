@@ -23,11 +23,8 @@ internal sealed class ConcertPrivilegedDbContext(
     public DbSet<ConcertImageEntity> ConcertImages => Set<ConcertImageEntity>();
     public DbSet<ArtistReadModel> ArtistReadModels => Set<ArtistReadModel>();
     public DbSet<VenueReadModel> VenueReadModels => Set<VenueReadModel>();
-    public DbSet<ConcertAccessGrant> ConcertAccessGrants => Set<ConcertAccessGrant>();
-    public DbSet<InvoiceAccessGrant> InvoiceAccessGrants => Set<InvoiceAccessGrant>();
     public DbSet<ConcertCommandReceipt> ConcertCommandReceipts => Set<ConcertCommandReceipt>();
     public DbSet<ConcertRatingProjection> ConcertRatingProjections => Set<ConcertRatingProjection>();
     public DbSet<ArtistRatingProjection> ArtistRatingProjections => Set<ArtistRatingProjection>();
     public DbSet<VenueRatingProjection> VenueRatingProjections => Set<VenueRatingProjection>();
-    public DbSet<MembershipAuthority> MembershipAuthority => Set<MembershipAuthority>();
 }

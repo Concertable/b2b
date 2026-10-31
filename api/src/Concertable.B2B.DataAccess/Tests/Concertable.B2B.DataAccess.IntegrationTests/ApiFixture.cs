@@ -71,7 +71,6 @@ internal sealed class AmbiguousCommitTransactionCommitter : ITransactionCommitte
 internal sealed class CommitProbeWriter(
     CommitProbeDbContext context,
     UnitOfWorkAccessor unitOfWorkAccessor,
-    IAuthorizationContext authorization,
     CommitProbeFlushHook flushHook)
 {
     internal async Task StageAsync(Guid id, CancellationToken ct)
@@ -81,14 +80,6 @@ internal sealed class CommitProbeWriter(
             .EnlistAsync(context, ct);
         context.Probes.Add(new CommitProbe(id));
     }
-
-    internal void RegisterAuthorityFailure() =>
-        authorization.RegisterFailure<Result<int, string>>(() => Result.Failure<int, string>("authority"));
-
-    internal void Deny() => authorization.MarkAuthorityFailed();
-
-    internal void RegisterValidator(Func<CancellationToken, Task<bool>> validator) =>
-        authorization.RegisterValidator(validator);
 
     internal void OnFlush(Action action) => flushHook.OnSaving = action;
 }

@@ -52,7 +52,7 @@ internal interface IConcertService
         int id,
         AssignConcertMemberRequest request,
         CancellationToken ct = default);
-    Task<UnitResult<AssignConcertMemberError>> RemoveMemberAssignmentAsync(
+    Task<UnitResult<AssignConcertMemberError>> UnassignMemberAsync(
         int id,
         Guid membershipId,
         long expectedAccessVersion,

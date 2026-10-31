@@ -9,11 +9,6 @@ internal sealed class InvoiceEntityConfiguration : IEntityTypeConfiguration<Invo
     public void Configure(EntityTypeBuilder<InvoiceEntity> builder)
     {
         builder.ToTable(Schema.Tables.Invoices, Schema.Name);
-        builder.HasMany(invoice => invoice.AccessGrants)
-            .WithOne()
-            .HasForeignKey(grant => grant.ResourceId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasIndex(invoice => invoice.BookingId).IsUnique();
 
         builder.Property(i => i.InvoiceNumber).HasMaxLength(64);

@@ -29,8 +29,6 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private Guid TenantOf(Guid userId) => fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
-
     private static async Task<HttpResponseMessage> CreateArtistAsync(HttpClient client)
     {
         var content = new MultipartFormDataContent
@@ -74,7 +72,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     public async Task GetPending_ShouldReturn200_WithVenueContactEnrichment()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var tenant = fixture.Tenants.Single(t => t.Id == tenantId);
         await fixture.AddPendingVerificationAsync(
             tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
@@ -93,7 +91,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     public async Task GetPending_ShouldReturn200_WithTenantContactForABusinessWithNoMarketplaceProfile()
     {
         var owner = fixture.SeedState.ArtistManagerNoArtist;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var ownerClient = fixture.CreateClient(owner);
         await (await CreateArtistAsync(ownerClient)).ShouldBe(HttpStatusCode.Created);
         await fixture.AddPendingVerificationAsync(
@@ -119,14 +117,14 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
 
         await response.ShouldBe(HttpStatusCode.OK);
         var page = await response.Content.ReadAsync<PendingVerificationPage>();
-        Assert.DoesNotContain(page!.Data, r => r.TenantId == TenantOf(fixture.SeedState.VenueManager1.Id));
+        Assert.DoesNotContain(page!.Data, r => r.TenantId == fixture.SeedState.VenueManager1.TenantId);
     }
 
     [Fact]
     public async Task GetPending_ShouldReturn200_WithEveryPendingTenantOnOnePage()
     {
-        var firstTenantId = TenantOf(fixture.SeedState.UnverifiedVenueManager.Id);
-        var secondTenantId = TenantOf(fixture.SeedState.VenueManagerNoVenue.Id);
+        var firstTenantId = fixture.SeedState.UnverifiedVenueManager.TenantId;
+        var secondTenantId = fixture.SeedState.VenueManagerNoVenue.TenantId;
         var submittedAt = fixture.SeedNow.AddDays(-1);
         await fixture.AddPendingVerificationAsync(firstTenantId, VerificationDocumentType.Licence, submittedAt);
         await fixture.AddPendingVerificationAsync(secondTenantId, VerificationDocumentType.Licence, submittedAt);
@@ -180,7 +178,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     [Fact]
     public async Task Approve_ShouldReturn409_WhenAlreadyApproved()
     {
-        var tenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
+        var tenantId = fixture.SeedState.VenueManager1.TenantId;
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
         var response = await admin.PostAsync($"/api/verification/{tenantId}/approve", null);
@@ -192,7 +190,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     public async Task Approve_ShouldReturn204_ApproveVerification_AndNotifyContact()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var venue = fixture.SeedState.Venues.Single(v => v.TenantId == tenantId);
         await fixture.AddPendingVerificationAsync(
             tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
@@ -210,7 +208,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     public async Task Approve_TenantOwnsNoMarketplaceActivity_NotifiesTenantContact()
     {
         var owner = fixture.SeedState.ArtistManagerNoArtist;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         await fixture.AddPendingVerificationAsync(
             tenantId, VerificationDocumentType.CompanyRegistration, fixture.SeedNow.AddDays(-1));
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
@@ -263,7 +261,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     [Fact]
     public async Task Reject_ShouldReturn409_WhenAlreadyApproved()
     {
-        var tenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
+        var tenantId = fixture.SeedState.VenueManager1.TenantId;
         var admin = fixture.CreateClient(fixture.SeedState.Admin);
 
         var response = await admin.PostAsJsonAsync(
@@ -276,7 +274,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     public async Task Reject_ShouldReturn204_RejectVerification_WithReason_AndNotifyContact()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var venue = fixture.SeedState.Venues.Single(v => v.TenantId == tenantId);
         await fixture.AddPendingVerificationAsync(
             tenantId, VerificationDocumentType.Licence, fixture.SeedNow.AddDays(-1));
@@ -297,7 +295,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     public async Task Review_ConcurrentApproveAndReject_RecordsOneDecisionAndNotification()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var contactEmail = fixture.Tenants.Single(tenant => tenant.Id == tenantId).ContactEmail;
         await fixture.AddPendingVerificationAsync(
             tenantId,
@@ -328,7 +326,7 @@ public sealed class VerificationAdminApiTests : IAsyncLifetime
     public async Task Review_BarrierFailure_PreservesFailureAndDrainsRequests()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         await fixture.AddPendingVerificationAsync(
             tenantId,
             VerificationDocumentType.Licence,
