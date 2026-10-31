@@ -88,7 +88,7 @@ internal sealed class ConversationsController : ControllerBase
         Guid membershipId,
         [FromQuery, BindRequired] long expectedVersion,
         CancellationToken ct) =>
-        (await conversationService.RemoveMemberAssignmentAsync(
+        (await conversationService.UnassignMemberAsync(
             conversationId, membershipId, expectedVersion, ct))
             .ToNoContentOrProblem();
 

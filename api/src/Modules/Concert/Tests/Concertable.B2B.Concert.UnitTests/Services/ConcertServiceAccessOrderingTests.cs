@@ -70,7 +70,7 @@ public sealed class ConcertServiceAccessOrderingTests
     {
         var fixture = CreateFixture<AssignConcertMemberError>();
 
-        var result = await fixture.Service.RemoveMemberAssignmentAsync(1, actor.MembershipId, 0);
+        var result = await fixture.Service.UnassignMemberAsync(1, actor.MembershipId, 0);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<AssignConcertMemberError.NotPermitted>(error);

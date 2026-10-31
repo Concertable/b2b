@@ -62,7 +62,7 @@ internal sealed class ConcertController : ControllerBase
         Guid membershipId,
         [FromQuery] long expectedVersion,
         CancellationToken ct) =>
-        (await concertService.RemoveMemberAssignmentAsync(id, membershipId, expectedVersion, ct))
+        (await concertService.UnassignMemberAsync(id, membershipId, expectedVersion, ct))
         .ToNoContentOrProblem();
 
     [HasPermission(TenantPermission.OperationsView)]

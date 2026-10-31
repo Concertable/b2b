@@ -254,48 +254,80 @@ internal sealed class ConversationService : IConversationService
         int conversationId,
         AssignConversationMemberRequest request,
         CancellationToken ct = default) =>
-        ChangeAssignmentAsync(conversationId, request.MembershipId, request.ExpectedAccessVersion, true, ct);
+        RunAssignmentCommandAsync(
+            (actor, token) => AssignMemberCoreAsync(
+                conversationId, request.MembershipId, request.ExpectedAccessVersion, actor, token),
+            ct);
 
-    public Task<UnitResult<AssignConversationMemberError>> RemoveMemberAssignmentAsync(
+    public Task<UnitResult<AssignConversationMemberError>> UnassignMemberAsync(
         int conversationId,
         Guid membershipId,
         long expectedAccessVersion,
         CancellationToken ct = default) =>
-        ChangeAssignmentAsync(conversationId, membershipId, expectedAccessVersion, false, ct);
+        RunAssignmentCommandAsync(
+            (actor, token) => UnassignMemberCoreAsync(conversationId, membershipId, expectedAccessVersion, actor, token),
+            ct);
 
-    private Task<UnitResult<AssignConversationMemberError>> ChangeAssignmentAsync(
-        int conversationId,
-        Guid membershipId,
-        long expectedAccessVersion,
-        bool assign,
+    private Task<UnitResult<AssignConversationMemberError>> RunAssignmentCommandAsync(
+        Func<MembershipSnapshot, CancellationToken, Task<UnitResult<AssignConversationMemberError>>> command,
         CancellationToken ct)
     {
         if (membership.Membership is not { } actor)
             return Task.FromResult<UnitResult<AssignConversationMemberError>>(
                 new AssignConversationMemberError.NotPermitted());
         return transactionRunner.RunAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
-            (service, token) => service.ChangeAssignmentCommandAsync(
-                conversationId, membershipId, expectedAccessVersion, assign, actor, token),
+            (service, token) => service.unitOfWork.ExecuteAsync(() => command(actor, token), token),
             ct);
     }
 
-    private Task<UnitResult<AssignConversationMemberError>> ChangeAssignmentCommandAsync(
+    private async Task<UnitResult<AssignConversationMemberError>> AssignMemberCoreAsync(
         int conversationId,
         Guid membershipId,
         long expectedAccessVersion,
-        bool assign,
         MembershipSnapshot expectedActor,
-        CancellationToken ct) =>
-        unitOfWork.ExecuteAsync(
-            () => ChangeAssignmentCoreAsync(
-                conversationId, membershipId, expectedAccessVersion, assign, expectedActor, ct),
-            ct);
+        CancellationToken ct)
+    {
+        var loaded = await LoadForAssignmentChangeAsync(conversationId, membershipId, expectedAccessVersion, expectedActor, ct);
+        if (!loaded.TryGetValue(out var change))
+        {
+            loaded.TryGetError(out var error);
+            return error!;
+        }
+        if (change.Resolution.TargetMembership is not { } target)
+            return new AssignConversationMemberError.InvalidMembership();
+        if (!change.Conversation.AssignMember(
+                change.Resolution.Actor.TenantId,
+                change.Resolution.Actor.UserId,
+                membershipId,
+                target.TenantId,
+                timeProvider.GetUtcNow().UtcDateTime))
+            return new AssignConversationMemberError.AlreadyAssigned();
+        return await SaveAssignmentChangeAsync(conversationId, ct);
+    }
 
-    private async Task<UnitResult<AssignConversationMemberError>> ChangeAssignmentCoreAsync(
+    private async Task<UnitResult<AssignConversationMemberError>> UnassignMemberCoreAsync(
         int conversationId,
         Guid membershipId,
         long expectedAccessVersion,
-        bool assign,
+        MembershipSnapshot expectedActor,
+        CancellationToken ct)
+    {
+        var loaded = await LoadForAssignmentChangeAsync(conversationId, membershipId, expectedAccessVersion, expectedActor, ct);
+        if (!loaded.TryGetValue(out var change))
+        {
+            loaded.TryGetError(out var error);
+            return error!;
+        }
+        if (change.Resolution.TargetMembership is null
+            || !change.Conversation.UnassignMember(change.Resolution.Actor.TenantId, membershipId))
+            return new AssignConversationMemberError.InvalidMembership();
+        return await SaveAssignmentChangeAsync(conversationId, ct);
+    }
+
+    private async Task<Result<AssignmentChange, AssignConversationMemberError>> LoadForAssignmentChangeAsync(
+        int conversationId,
+        Guid membershipId,
+        long expectedAccessVersion,
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
@@ -304,8 +336,6 @@ internal sealed class ConversationService : IConversationService
         if (!resolutionOption.TryGetValue(out var resolution)
             || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConversationMemberError.NotPermitted();
-        if (assign && resolution.TargetMembership is null)
-            return new AssignConversationMemberError.InvalidMembership();
         if (conversationId <= 0)
             return new AssignConversationMemberError.NotFound(conversationId);
         var conversation = await privilegedRepository.GetByIdForUpdateAsync(conversationId, ct);
@@ -313,24 +343,18 @@ internal sealed class ConversationService : IConversationService
             return new AssignConversationMemberError.NotPermitted();
         if (conversation.AccessVersion != expectedAccessVersion)
             return new AssignConversationMemberError.Superseded(conversationId);
+        return new AssignmentChange(conversation, resolution);
+    }
 
-        var changed = assign
-            ? conversation.AssignMember(
-                resolution.Actor.TenantId,
-                resolution.Actor.UserId,
-                membershipId,
-                resolution.TargetMembership!.TenantId,
-                timeProvider.GetUtcNow().UtcDateTime)
-            : resolution.TargetMembership is not null
-              && conversation.UnassignMember(resolution.Actor.TenantId, membershipId);
-        if (!changed)
-            return assign
-                ? new AssignConversationMemberError.AlreadyAssigned()
-                : new AssignConversationMemberError.InvalidMembership();
+    private async Task<UnitResult<AssignConversationMemberError>> SaveAssignmentChangeAsync(
+        int conversationId, CancellationToken ct)
+    {
         await privilegedRepository.SaveChangesAsync(ct);
         await bus.PublishAsync(new ConversationChanged(conversationId), ct);
         return new Success();
     }
+
+    private sealed record AssignmentChange(ConversationEntity Conversation, TenantResolution Resolution);
 
     public async Task<int> GetUnreadCountAsync(CancellationToken ct = default)
     {

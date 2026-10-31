@@ -698,7 +698,7 @@ internal sealed class ConcertService : IConcertService
         return new Success();
     }
 
-    public async Task<UnitResult<AssignConcertMemberError>> RemoveMemberAssignmentAsync(
+    public async Task<UnitResult<AssignConcertMemberError>> UnassignMemberAsync(
         int id,
         Guid membershipId,
         long expectedAccessVersion,
