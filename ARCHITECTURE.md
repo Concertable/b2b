@@ -103,10 +103,11 @@ No sync calls to Customer or Search. B2B and Customer communicate **exclusively 
 
 ## Authorization
 
-B2B decides every permission in-process, from data it owns. A request carries one immutable statement of
-who is acting; each module owns the rule for the resources it stores; and a write locks the rows its
-decision reads before it decides, so a concurrent role or grant change cannot slip between check and
-commit.
+B2B decides every permission in-process, from data it owns, in three layers: a generated **RBAC**
+catalog says what each role may do and how widely; **ABAC** principal rules on each aggregate give the
+venue and artist tenants access from the aggregate's own columns; **ACL** rows (member assignments and
+concert shares) extend access to named members and other tenants. Permission changes take effect from
+the member's next request; there is no authorization locking.
 
 ### Request authority
 
@@ -120,64 +121,66 @@ commit.
 | `MembershipId`, `TenantId`, `UserId` | Who is acting, in which tenant |
 | `PermissionVersion` | Bumped by the membership's role changes |
 | `RolePolicyVersion` | The tenant's role-definition version, bumped when a role's permissions change |
-| `Permissions` | `EffectivePermissions`: each held `TenantPermission` with its `ResourceAccess`: `Assigned` (only resources the member is assigned to) or `All` (everything the tenant can see) |
+| `Permissions` | `EffectivePermissions`: each held `TenantPermission` with its `ResourceAccess` |
 
-The snapshot never changes during the request and compares by value. `HasPermission` and
-`Permissions[permission]` answer tenant-level questions in memory; anything that writes re-checks the snapshot under lock (below).
+`ResourceAccess` is `None`, `Assigned` or `All`. Tenant-wide routes (being a principal, receiving a tenant
+share) need `All`; member routes (an assignment, a share to one membership) need `Assigned` or `All`.
+The snapshot never changes during the request and compares by value.
 
-### Endpoint gate
+### Generated catalog (RBAC)
 
-`[HasPermission(TenantPermission.XName)]` names a policy that `PermissionPolicyProvider` builds and
-`PermissionAuthorizationHandler` satisfies when the snapshot holds the permission at any access. It is a
-coarse filter that keeps callers without the permission out of the service; it does not decide access to
-a particular resource.
+Each module declares its permissions in `api/src/Modules/<Module>/authorization.json`: a
+`resource:action` name, a label, whether it is owner-only, and the access each system preset holds.
+`scripts/generate-authorization.py` writes the `TenantPermission` enum (`[JsonStringEnumMemberName]` keeps
+the `resource:action` key on the wire), `AuthorizationCatalog` with a content-hash `Revision`, and the
+frontend `TenantPermission` union. CI runs it with `--check`. The revision is seeded into the database
+and checked by the health check and invitation acceptance.
 
-### Per-module rules
-
-Each module that stores a shareable resource owns its rule as an `IQueryable<X>.AccessibleBy(actor,
-permission, scope, at)` extension in its `Infrastructure/Data`: Application, Booking and Contract,
-Concert and Invoice, Conversation. The rule reads the permission's catalog binding for that resource and
-scope, applies its principal policy (for example, the venue or artist tenant of a booking) and requires a
-live grant for each scope the binding names. Grant liveness and access are one expression,
-`ResourceAccessGrant<TScope>.IsLiveFor`.
-
-Reads compose `AccessibleBy` into the query, so lists and single reads share the rule. Writes go
-through the module's `XAuthorizer.AuthorizeAsync(id, permission, scope)`, which returns
-`UnitResult<AccessDenied>`; the service maps a denial to its own error. Tenant administration uses
-`TenantAuthorizer.AuthorizeAsync` / `AuthorizeOwnerAsync` for tenant-level permissions.
-
-```csharp
-if ((await authorizer.AuthorizeAsync(
-        bookingId, TenantPermission.BookingsCancel, BookingAccessScope.Operations, ct)).IsFailure)
-    return new CancelBookingError.NotPermitted();
+```json
+{ "name": "concerts:ops_edit", "label": "Edit concert operations", "ownerOnly": false,
+  "systemPresets": { "Owner": "All", "Manager": "All", "Staff": "Assigned", "Sound": "Assigned" } }
 ```
 
-### Lock before check
+`[HasPermission(TenantPermission.ConcertsOpsEdit)]` gates an endpoint when the snapshot holds the
+permission at any access. It keeps callers without the permission out of the service; it does not decide
+access to a particular resource.
 
-`XAuthorizer.AuthorizeAsync` runs inside the operation's unit of work and decides only after taking the
-locks its decision depends on:
+### Principal rules (ABAC), assignments and shares (ACL)
 
-1. `IMembershipReadRepository.LockIfUnchangedAsync(snapshot)` locks the tenant and membership rows
-   `FOR SHARE` and returns the current snapshot, or `null` when the membership, its versions, its
-   permissions or the installed catalog revision differ from the request's snapshot.
-2. The resource row and its grant rows are locked `FOR UPDATE`.
-3. `AccessibleBy(...).AnyAsync(...)` decides against the locked rows.
+Each aggregate decides what an actor may do to it, by what it decides:
 
-Role and membership changes take the tenant row `FOR UPDATE` and grant changes take the resource row
-`FOR UPDATE`, so they conflict with these locks. A concurrent change therefore either commits first and
-the write is denied, or waits until the write commits. A denial returns a failed result and the unit of
-work rolls back. The Booking and Concert integration race tests prove both orderings; the
-[transaction pattern](patterns/EF_CORE_TRANSACTIONS.md) owns the unit of work itself.
+| Aggregate | Principal access (venue and artist tenants, at `All`) | Assignments and shares |
+|---|---|---|
+| Application | read; venue decides (`IsDecidableBy`), artist withdraws (`IsWithdrawableBy`) | — |
+| Booking | read; either principal cancels (`IsCancellableBy`) | — |
+| Contract | read with `terms:read` | — |
+| Concert | summary, operations, finance; venue edits and publishes, either principal cancels | `Assignments` (summary, operations); `Shares` (summary, optional `ExpiresAt`) |
+| Invoice | read with `settlement:view` | — |
+| Conversation | participants read and send | `Assignments` (read, send) |
 
-### Generated catalog
+`MemberAssignment(MembershipId, AssignedByUserId, AssignedAt)` is one shared value object, owned by
+`ConcertEntity.Assignments` and `ConversationEntity.Assignments`; `ConcertShare` and
+`ConversationParticipant` are owned by their aggregates. Unassigning and unsharing delete the row.
 
-Each module declares its permissions in `api/src/Modules/<Module>/authorization.json`: label, resource
-bindings (resource, scope, principal policy, required grant scopes), assignable access and the access
-each system preset role holds. `scripts/generate-authorization.py` validates them and writes
-`TenantPermission`, `AuthorizationCatalog` (with the `AuthorizationResource` enum and a content-hash
-`Revision`) and the frontend `TenantPermission` union. CI runs it with `--check`, so the committed output
-cannot drift. The revision is seeded into the database; while the installed revision differs from the
-code's, `LockIfUnchangedAsync` returns `null` and authorized writes fail closed.
+```csharp
+var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+if (concert is null || !concert.IsEditableBy(expectedActor))
+    return new UpdateConcertError.NotPermitted();
+```
+
+Reads go through the module's `ResourceScopedDbContext`, whose plain-lambda query filters apply the same
+rules for the request's actor, so lists and single reads see exactly what the aggregate would allow. A
+read gated by a different permission than the filter's (terms, settlement) narrows explicitly in its
+repository.
+
+```csharp
+modelBuilder.Entity<BookingEntity>().HasQueryFilter(TenantFilters.Key, booking =>
+    OperationsAccess == ResourceAccess.All
+    && (booking.VenueTenantId == ActorTenantId || booking.ArtistTenantId == ActorTenantId));
+```
+
+Locks that protect domain invariants stay: tenant administration takes the tenant row `FOR UPDATE`
+(last owner, role changes), and aggregates keep their own concurrency tokens and row locks.
 
 ### Request flow
 
@@ -197,32 +200,13 @@ sequenceDiagram
     Gate-->>Client: 403 when the snapshot lacks the permission
     Gate->>Service: call
     alt read
-        Service->>Db: query.AccessibleBy(snapshot, permission, scope, now)
+        Service->>Db: query through ResourceScopedDbContext (principal, assignment and share filters)
     else write
-        Service->>Service: XAuthorizer.AuthorizeAsync (lock before check)
+        Service->>Db: load the aggregate
+        Service->>Service: aggregate.IsXableBy(actor)
         Service->>Db: change, commit
     end
     Service-->>Client: result or the operation's typed error
-```
-
-### Write lock sequence
-
-```mermaid
-sequenceDiagram
-    participant Service as BookingWorkflow
-    participant Authorizer as BookingAuthorizer
-    participant Memberships as IMembershipReadRepository
-    participant Db as PostgreSQL
-    Service->>Authorizer: AuthorizeAsync(bookingId, BookingsCancel, Operations)
-    Authorizer->>Memberships: LockIfUnchangedAsync(snapshot)
-    Memberships->>Db: tenant row FOR SHARE, membership row FOR SHARE
-    Memberships-->>Authorizer: locked snapshot, or null if authority changed
-    Authorizer->>Db: booking row and grant rows FOR UPDATE
-    Authorizer->>Db: Bookings.AccessibleBy(...).AnyAsync(id)
-    Authorizer-->>Service: Success or AccessDenied
-    Service->>Db: cancel booking
-    Service->>Db: commit (locks released)
-    Note over Db: a demotion or grant revocation waits on these locks, or committed before them and denied the write
 ```
 
 ---

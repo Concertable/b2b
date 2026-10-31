@@ -79,11 +79,10 @@ module-participation API. Call nested module behavior through `UnitOfWorkRunner`
 calling the root service port again would create a separate unit of work.
 
 `FlushAsync` saves participants until no tracked changes remain, selecting each current business context
-for outbox insertion; then the root commits. The coordinator runs no authority checks of its own:
-authorization is decided before the write, under row locks this unit holds until it commits or rolls back
-([lock before check](../ARCHITECTURE.md#lock-before-check)). `ReadCommitted` alone is not the
-authorization fence; those locks are. A denial is an ordinary failed result, so it rolls the unit back
-and cannot be swallowed into a successful commit by an outer delegate.
+for outbox insertion; then the root commits. The coordinator runs no authority checks of its own: the
+operation loads its aggregate and asks it ([Authorization](../ARCHITECTURE.md#authorization)). A denial is
+an ordinary failed result, so it rolls the unit back and cannot be swallowed into a successful commit by an
+outer delegate.
 
 ```csharp
 private Task<UnitResult<CancelBookingError>> CancelCommandAsync(
@@ -93,8 +92,8 @@ private Task<UnitResult<CancelBookingError>> CancelCommandAsync(
         ct);
 ```
 
-`CancelCoreAsync` calls `BookingAuthorizer.AuthorizeAsync` first; its membership `FOR SHARE` and booking
-`FOR UPDATE` locks join this unit's transaction, and returning `CancelBookingError.NotPermitted` rolls it back.
+`CancelCoreAsync` loads the booking `FOR UPDATE` in this unit's transaction and asks
+`booking.IsCancellableBy(actor)`; returning `CancelBookingError.NotPermitted` rolls the unit back.
 
 ## Failure, cancellation and unknown commit outcomes
 
