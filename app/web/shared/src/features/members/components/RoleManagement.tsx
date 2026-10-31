@@ -9,6 +9,8 @@ import { useRoleManagement } from "../hooks/useRoleManagement";
 import type { ResourceAccess } from "../types";
 import { Spinner } from "./Spinner";
 
+const resourceAccessLevels: ReadonlyArray<ResourceAccess> = ["Assigned", "All"];
+
 function accessLabel(access: ResourceAccess) {
   return access === "All" ? "All tenant resources" : "Assigned resources";
 }
@@ -75,14 +77,14 @@ export function RoleManagement() {
                   return (
                     <div key={item.permission} className="flex flex-wrap items-center gap-3 rounded-md border p-2">
                       <div className="flex min-w-48 items-center gap-2">
-                        <Checkbox id={"permission-" + item.permission} checked={selectedPermission !== undefined} disabled={item.assignableAudiences.length === 0} onCheckedChange={(checked) => togglePermission(item, checked === true)} />
+                        <Checkbox id={"permission-" + item.permission} checked={selectedPermission !== undefined} onCheckedChange={(checked) => togglePermission(item, checked === true)} />
                         <Label htmlFor={"permission-" + item.permission}>{item.label}</Label>
                       </div>
                       <span className="text-muted-foreground text-xs">{item.category}</span>
                       {selectedPermission && (
                         <Select value={selectedPermission.audience} onValueChange={(access) => changeAccess(item, access as ResourceAccess)}>
                           <SelectTrigger className="w-44" aria-label={item.label + " audience"}><SelectValue /></SelectTrigger>
-                          <SelectContent>{item.assignableAudiences.map((access) => <SelectItem key={access} value={access}>{accessLabel(access)}</SelectItem>)}</SelectContent>
+                          <SelectContent>{resourceAccessLevels.map((access) => <SelectItem key={access} value={access}>{accessLabel(access)}</SelectItem>)}</SelectContent>
                         </Select>
                       )}
                     </div>

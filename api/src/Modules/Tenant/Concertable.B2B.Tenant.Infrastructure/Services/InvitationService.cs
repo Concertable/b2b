@@ -22,8 +22,6 @@ internal sealed class InvitationService : IInvitationService
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly IRoleRepository roles;
     private readonly IAuthorizationContext authorizationContext;
-    private readonly IMembershipReadRepository memberships;
-    private readonly TenantAuthorizer authorizer;
 
     public InvitationService(
         ITenantRepository tenantRepository,
@@ -35,9 +33,7 @@ internal sealed class InvitationService : IInvitationService
         TimeProvider timeProvider,
         IOutboxUnitOfWorkBehavior unitOfWork,
         IRoleRepository roles,
-        IAuthorizationContext authorizationContext,
-        IMembershipReadRepository memberships,
-        TenantAuthorizer authorizer)
+        IAuthorizationContext authorizationContext)
     {
         this.tenantRepository = tenantRepository;
         this.membershipRepository = membershipRepository;
@@ -49,8 +45,6 @@ internal sealed class InvitationService : IInvitationService
         this.unitOfWork = unitOfWork;
         this.roles = roles;
         this.authorizationContext = authorizationContext;
-        this.memberships = memberships;
-        this.authorizer = authorizer;
     }
 
     public Task<Result<IReadOnlyList<InvitationDto>, ListInvitationsError>> ListPendingInvitationsAsync(
@@ -59,7 +53,7 @@ internal sealed class InvitationService : IInvitationService
         {
             var tenantId = tenantContext.GetTenantId();
             if (!(await tenantRepository.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
-                || await GetCurrentActorAsync(tenantId, ct) is not { } actor
+                || authorizationContext.FindActor(tenantId) is not { } actor
                 || !actor.HasPermission(TenantPermission.MembersInvite))
                 return Result.Failure<IReadOnlyList<InvitationDto>, ListInvitationsError>(
                     new ListInvitationsError.NotPermitted());
@@ -89,10 +83,10 @@ internal sealed class InvitationService : IInvitationService
         if (tenant is null)
             return new InviteMemberError.TenantNotFound();
 
-        var authorization = await authorizer.AuthorizeAsync(
-            tenantId, TenantPermission.MembersInvite, ct);
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
-        if (!authorization.TryGetValue(out var actor) || selectedRoles is null
+        if (authorizationContext.FindActor(tenantId) is not { } actor
+            || !actor.HasPermission(TenantPermission.MembersInvite)
+            || selectedRoles is null
             || !await CanAssignAsync(actor, selectedRoles, ct))
             return new InviteMemberError.NotPermitted();
 
@@ -134,8 +128,7 @@ internal sealed class InvitationService : IInvitationService
         var invitation = await repository.GetByIdForUpdateAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenantId)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
-        if ((await authorizer.AuthorizeAsync(
-                tenantId, TenantPermission.MembersInvite, ct)).IsFailure)
+        if (authorizationContext.FindActor(tenantId)?.HasPermission(TenantPermission.MembersInvite) is not true)
             return new RevokeInvitationError.NotPermitted();
         return invitation.Revoke().MapError(error => error.ToRevokeInvitationError());
     }
@@ -197,13 +190,6 @@ internal sealed class InvitationService : IInvitationService
             [.. tenant.BusinessActivities.Where(activity => activity.IsActive).Select(activity => activity.Kind)],
             [.. selectedRoles.SelectMany(role => role.Permissions.Select(grant => grant.PermissionKey))
                 .Distinct(StringComparer.Ordinal)]);
-    }
-    private async Task<MembershipSnapshot?> GetCurrentActorAsync(Guid tenantId, CancellationToken ct)
-    {
-        var expected = authorizationContext.Membership;
-        if (expected is null || expected.TenantId != tenantId)
-            return null;
-        return await memberships.LockIfUnchangedAsync(expected, ct);
     }
 
     private async Task<bool> CanAssignAsync(

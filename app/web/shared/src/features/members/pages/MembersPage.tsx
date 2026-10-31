@@ -13,9 +13,9 @@ interface MembersPageProps {
 
 export function MembersPage({ businessActivity, title, description }: MembersPageProps) {
   const { permissions } = useTenant(businessActivity);
-  const canInvite = permissions.has("members.invite");
-  const canManageRoles = permissions.has("members.manage_roles");
-  const canRemove = permissions.has("members.remove");
+  const canInvite = permissions.has("members:invite");
+  const canManageRoles = permissions.has("members:manage_roles");
+  const canRemove = permissions.has("members:remove");
   return (
     <div className="max-w-3xl space-y-8">
       <div><h2 className="text-lg font-semibold">{title}</h2><p className="text-muted-foreground text-sm">{description}</p></div>

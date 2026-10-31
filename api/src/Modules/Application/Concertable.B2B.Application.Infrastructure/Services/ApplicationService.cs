@@ -3,7 +3,6 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.Application.Application.Mappers;
-using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
@@ -35,7 +34,6 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IAuthorizationContext membership;
     private readonly ITargetTenantResolver targetTenantResolver;
-    private readonly IApplicationAuthorizer authorizer;
     private readonly ITransactionRunner transactionRunner;
 
     public ApplicationService(
@@ -55,7 +53,6 @@ internal sealed class ApplicationService : IApplicationService
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IAuthorizationContext membership,
         ITargetTenantResolver targetTenantResolver,
-        IApplicationAuthorizer authorizer,
         ITransactionRunner transactionRunner)
     {
         this.applicationRepository = applicationRepository;
@@ -74,7 +71,6 @@ internal sealed class ApplicationService : IApplicationService
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
         this.targetTenantResolver = targetTenantResolver;
-        this.authorizer = authorizer;
         this.transactionRunner = transactionRunner;
     }
 
@@ -307,8 +303,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (!(await applicationRepository.GetAllowedIdsAsync(
-                [applicationId], TenantPermission.ApplicationsSubmit, ct)).Contains(applicationId))
+        if (!(await applicationRepository.GetWithdrawableIdsAsync([applicationId], ct)).Contains(applicationId))
             return new WithdrawApplicationError.NotPermitted();
         if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Withdrawn)
             return new Success();
@@ -325,16 +320,14 @@ internal sealed class ApplicationService : IApplicationService
         if (parties.Count == 0)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
         var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!existingParties.SetEquals(parties)
-            || (await authorizer.AuthorizeAsync(
-                applicationId, TenantPermission.ApplicationsSubmit, ApplicationAccessScope.Proposal, ct)).IsFailure)
+        if (!existingParties.SetEquals(parties))
             return new WithdrawApplicationError.NotPermitted();
         var actor = expectedActor;
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
-        if (application.ArtistTenantId != actor.TenantId
+        if (!application.IsWithdrawableBy(actor)
             || !parties.ToHashSet().SetEquals([application.VenueTenantId, application.ArtistTenantId]))
             return new WithdrawApplicationError.NotPermitted();
         if (application.Withdraw().TryGetError(out var transitionError))
@@ -348,8 +341,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (!(await applicationRepository.GetAllowedIdsAsync(
-                [applicationId], TenantPermission.ApplicationsDecide, ct)).Contains(applicationId))
+        if (!(await applicationRepository.GetDecidableIdsAsync([applicationId], ct)).Contains(applicationId))
             return new RejectApplicationError.NotPermitted();
         if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Rejected)
             return new Success();
@@ -366,16 +358,14 @@ internal sealed class ApplicationService : IApplicationService
         if (parties.Count == 0)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
         var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!existingParties.SetEquals(parties)
-            || (await authorizer.AuthorizeAsync(
-                applicationId, TenantPermission.ApplicationsDecide, ApplicationAccessScope.Proposal, ct)).IsFailure)
+        if (!existingParties.SetEquals(parties))
             return new RejectApplicationError.NotPermitted();
         var actor = expectedActor;
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
-        if (application.VenueTenantId != actor.TenantId
+        if (!application.IsDecidableBy(actor)
             || !parties.ToHashSet().SetEquals([application.VenueTenantId, application.ArtistTenantId]))
             return new RejectApplicationError.NotPermitted();
         if (application.Reject().TryGetError(out var transitionError))
@@ -389,8 +379,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct)
     {
-        if (!(await applicationRepository.GetAllowedIdsAsync(
-                [applicationId], TenantPermission.ApplicationsDecide, ct)).Contains(applicationId))
+        if (!(await applicationRepository.GetDecidableIdsAsync([applicationId], ct)).Contains(applicationId))
             return new CancelApplicationError.NotPermitted();
         if (await privilegedRepository.GetStateByIdAsync(applicationId, ct) == ApplicationState.Cancelled)
             return new Success();
@@ -407,16 +396,14 @@ internal sealed class ApplicationService : IApplicationService
         if (parties.Count == 0)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
         var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!existingParties.SetEquals(parties)
-            || (await authorizer.AuthorizeAsync(
-                applicationId, TenantPermission.ApplicationsDecide, ApplicationAccessScope.Proposal, ct)).IsFailure)
+        if (!existingParties.SetEquals(parties))
             return new CancelApplicationError.NotPermitted();
         var actor = expectedActor;
 
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
-        if (application.VenueTenantId != actor.TenantId
+        if (!application.IsDecidableBy(actor)
             || !parties.ToHashSet().SetEquals([application.VenueTenantId, application.ArtistTenantId]))
             return new CancelApplicationError.NotPermitted();
         if (application.Cancel().TryGetError(out var transitionError))
@@ -488,10 +475,8 @@ internal sealed class ApplicationService : IApplicationService
             var bookings = (await bookingModule.GetByApplicationIdsAsync(ids, ct))
                 .ToDictionary(booking => booking.ApplicationId);
             var contracts = await bookingModule.GetContractIdsByApplicationIdsAsync(ids, ct);
-            var canDecide = await applicationRepository.GetAllowedIdsAsync(
-                ids, TenantPermission.ApplicationsDecide, ct);
-            var canSubmit = await applicationRepository.GetAllowedIdsAsync(
-                ids, TenantPermission.ApplicationsSubmit, ct);
+            var canDecide = await applicationRepository.GetDecidableIdsAsync(ids, ct);
+            var canSubmit = await applicationRepository.GetWithdrawableIdsAsync(ids, ct);
             result.AddRange(page.Select(proposal =>
             {
                 var status = bookings.GetValueOrDefault(proposal.Id)?.Status;

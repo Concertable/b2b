@@ -6,7 +6,6 @@ using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Strategies;
-using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure;
@@ -23,7 +22,7 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 public sealed class ConcertWorkflowTests
 {
     private readonly Mock<IConcertPrivilegedRepository> concertRepository = new();
-    private readonly Mock<IConcertAuthorizer> authorizer = new();
+    private readonly Mock<IAuthorizationContext> membership = new();
     private readonly Mock<ISettlementService> settlementService = new();
     private readonly Mock<IDealStrategyFactory<ICancelStep>> cancelFactory = new();
     private readonly Mock<IDealStrategyFactory<ICompleteStep>> completeFactory = new();
@@ -31,7 +30,7 @@ public sealed class ConcertWorkflowTests
     private readonly ConcertWorkflow workflow;
     private readonly MembershipSnapshot actor = new(
         Guid.NewGuid(),
-        Guid.NewGuid(),
+        ConfirmedBookings.VenueTenantId,
         Guid.NewGuid(),
         1,
         1,
@@ -40,12 +39,7 @@ public sealed class ConcertWorkflowTests
     public ConcertWorkflowTests()
     {
         immediateBehavior = new ImmediateBehavior();
-        var membership = new Mock<IAuthorizationContext>();
         membership.SetupGet(context => context.Membership).Returns(actor);
-        authorizer.Setup(value => value.AuthorizeAsync(
-                It.IsAny<int>(), It.IsAny<TenantPermission>(), It.IsAny<ConcertAccessScope?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(UnitResult.Success<AccessDenied>());
         var transactionRunner = new ImmediateTransactionRunner(settlementService.Object);
         workflow = new ConcertWorkflow(
             concertRepository.Object,
@@ -53,24 +47,22 @@ public sealed class ConcertWorkflowTests
             cancelFactory.Object,
             completeFactory.Object,
             immediateBehavior,
-            membership.Object,
-            authorizer.Object);
+            membership.Object);
         transactionRunner.Workflow = workflow;
     }
 
     [Fact]
-    public async Task CancelAsync_WithoutAuthority_DoesNotLoadOrCancel()
+    public async Task CancelAsync_ActorOfAnotherTenant_IsNotPermitted()
     {
-        authorizer.Setup(value => value.AuthorizeAsync(
-                42, TenantPermission.ConcertsManage, ConcertAccessScope.Operations, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AccessDenied());
+        membership.SetupGet(context => context.Membership).Returns(actor with { TenantId = Guid.NewGuid() });
+        concertRepository
+            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
+            .ReturnsAsync(CreateBooking());
 
         var result = await workflow.CancelAsync(42);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<CancelConcertError.NotPermitted>(error);
-        concertRepository.Verify(repository => repository.GetByIdForUpdateAsync(
-            It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         cancelFactory.Verify(factory => factory.Create(It.IsAny<DealType>()), Times.Never);
     }
 
@@ -89,7 +81,7 @@ public sealed class ConcertWorkflowTests
     }
 
     [Fact]
-    public async Task CancelAsync_ConcertNotFound_ReturnsTypedError()
+    public async Task CancelAsync_ConcertNotFound_IsNotPermitted()
     {
         concertRepository
             .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
@@ -98,8 +90,7 @@ public sealed class ConcertWorkflowTests
         var result = await workflow.CancelAsync(42);
 
         Assert.True(result.TryGetError(out var error));
-        var notFound = Assert.IsType<CancelConcertError.ConcertNotFound>(error);
-        Assert.Equal(42, notFound.ConcertId);
+        Assert.IsType<CancelConcertError.NotPermitted>(error);
     }
 
     [Fact]

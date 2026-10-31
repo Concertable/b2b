@@ -65,7 +65,7 @@ export function BusinessNavigator({
           }}
         />
       ) : null}
-      {permissions.has("messages.read") ? (
+      {permissions.has("messages:read") ? (
         <Tab.Screen
           name="Messages"
           component={ConversationsScreen}

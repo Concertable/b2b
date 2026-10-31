@@ -19,7 +19,7 @@ public sealed class TenantRolePermission
         {
             TenantId = tenantId,
             RoleId = roleId,
-            PermissionKey = permission.Value,
+            PermissionKey = permission.Key,
             Audience = access,
         };
 }

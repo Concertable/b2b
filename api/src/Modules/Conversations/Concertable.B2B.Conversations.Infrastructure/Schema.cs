@@ -8,7 +8,8 @@ internal static class Schema
     {
         public const string ContentReports = "ContentReports";
         public const string Conversations = "Conversations";
-        public const string ConversationAccessGrants = "ConversationAccessGrants";
+        public const string ConversationAssignments = "ConversationAssignments";
+        public const string ConversationParticipants = "ConversationParticipants";
         public const string ConversationCreationReceipts = "ConversationCreationReceipts";
         public const string Messages = "Messages";
         public const string ConversationReadPositions = "ConversationReadPositions";

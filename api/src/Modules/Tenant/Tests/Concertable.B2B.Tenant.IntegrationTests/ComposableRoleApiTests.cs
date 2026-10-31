@@ -48,8 +48,8 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
         await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
         var ownerClient = fixture.CreateClient(owner);
         var customRoleId = await CreateRoleAsync(ownerClient, "Operations assistant",
-            [new { permission = "operations.view", audience = "Assigned" },
-             new { permission = "concerts.ops_edit", audience = "Assigned" }]);
+            [new { permission = "operations:view", audience = "Assigned" },
+             new { permission = "concerts:ops_edit", audience = "Assigned" }]);
         var assigned = await ownerClient.PutAsJsonAsync($"/api/organization/members/{member.Id}/roles",
             new { roleIds = new[] { customRoleId, TenantApiFixture.RoleId(tenantId, "Finance") } });
         await assigned.ShouldBe(HttpStatusCode.NoContent);
@@ -190,7 +190,7 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
         await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
         var ownerClient = fixture.CreateClient(owner);
         var roleId = await CreateRoleAsync(ownerClient, "Messaging",
-            [new { permission = "messages.read", audience = "Assigned" }]);
+            [new { permission = "messages:read", audience = "Assigned" }]);
         var ownerRoleId = TenantApiFixture.RoleId(tenantId, "Owner");
         var assigned = await ownerClient.PutAsJsonAsync($"/api/organization/members/{member.Id}/roles",
             new { roleIds = new[] { ownerRoleId, roleId } });

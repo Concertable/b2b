@@ -3,5 +3,5 @@ import { useTenant } from "@concertable/web-b2b/features/tenant";
 
 export function useVenueInboxQuery() {
   const { session, permissions } = useTenant("venueOperator");
-  return useConversationPreviewsQuery(session, 1, permissions.has("messages.read"));
+  return useConversationPreviewsQuery(session, 1, permissions.has("messages:read"));
 }

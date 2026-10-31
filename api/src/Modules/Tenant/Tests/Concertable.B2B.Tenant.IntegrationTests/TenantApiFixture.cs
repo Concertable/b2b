@@ -41,12 +41,6 @@ public sealed class TenantApiFixture : ApiFixture
         CancellationToken ct = default) =>
         transactionRunner.RunAsync(resolve, ct);
 
-    public Task<MembershipSnapshot?> LockIfUnchangedAsync(
-        MembershipSnapshot expected,
-        CancellationToken ct = default) =>
-        transactionRunner.RunAsync<IMembershipReadRepository, MembershipSnapshot?>(
-            (memberships, token) => memberships.LockIfUnchangedAsync(expected, token), ct);
-
     internal async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
         Guid ownerUserId,
         Guid otherOwnerUserId,

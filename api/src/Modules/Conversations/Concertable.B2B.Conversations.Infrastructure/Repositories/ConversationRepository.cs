@@ -1,4 +1,3 @@
-using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,25 +26,12 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
         this.context = context;
     }
 
-    public Task<ConversationEntity?> GetWithGrantsByIdAsync(int conversationId, CancellationToken ct = default) =>
+    public Task<ConversationEntity?> GetByIdAsync(int conversationId, CancellationToken ct = default) =>
         context.Conversations
             .AsNoTracking()
-            .Include(conversation => conversation.AccessGrants)
             .SingleOrDefaultAsync(conversation => conversation.Id == conversationId, ct);
 
-    public Task<bool> IsAccessibleAsync(
-        int conversationId,
-        MembershipSnapshot actor,
-        TenantPermission permission,
-        ConversationAccessScope scope,
-        DateTime at,
-        CancellationToken ct = default) =>
-        context.Conversations
-            .AsNoTracking()
-            .AccessibleBy(actor, permission, scope, at)
-            .AnyAsync(conversation => conversation.Id == conversationId, ct);
-
-    public async Task<ConversationEntity?> GetWithGrantsByIdForUpdateAsync(
+    public async Task<ConversationEntity?> GetByIdForUpdateAsync(
         int conversationId,
         CancellationToken ct = default)
     {
@@ -56,7 +42,6 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
             FOR UPDATE
             """, ct);
         return await context.Conversations
-            .Include(conversation => conversation.AccessGrants)
             .SingleOrDefaultAsync(conversation => conversation.Id == conversationId, ct);
     }
 
@@ -119,8 +104,6 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
             .ToDictionaryAsync(display => display.TenantId, ct);
 
     public void Add(ConversationEntity conversation) => context.Conversations.Add(conversation);
-    public void AddAccessGrants(IEnumerable<ConversationAccessGrant> grants) =>
-        context.ConversationAccessGrants.AddRange(grants);
     public void Add(ConversationCreationReceipt receipt) => context.ConversationCreationReceipts.Add(receipt);
     public void Add(MessageEntity message) => context.Messages.Add(message);
 

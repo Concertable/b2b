@@ -1,26 +1,13 @@
 {
   "permissions": [
     {
-      "name": "opportunities.manage",
-      "symbol": "OpportunitiesManage",
+      "name": "opportunities:manage",
       "label": "Manage opportunities",
-      "category": "Opportunity",
-      "assignableAudiences": [
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All"
-      },
-      "resourceBindings": [
-        {
-          "resource": "tenant",
-          "facet": null,
-          "policy": "membership",
-          "requiresScopes": []
-        }
-      ]
+      }
     }
   ]
 }

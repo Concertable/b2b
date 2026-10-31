@@ -44,7 +44,7 @@ internal sealed class OpportunityController : ControllerBase
     }
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.OpportunitiesManageName)]
+    [HasPermission(TenantPermission.OpportunitiesManage)]
     [HttpPost]
     public async Task<ActionResult<OpportunityResponse>> Create(
         [FromBody] OpportunityRequest request,
@@ -55,7 +55,7 @@ internal sealed class OpportunityController : ControllerBase
                 opportunity => $"/api/opportunity/{opportunity.Id}");
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.OpportunitiesManageName)]
+    [HasPermission(TenantPermission.OpportunitiesManage)]
     [HttpPost("bulk")]
     public async Task<ActionResult> CreateMultiple([FromBody] IEnumerable<OpportunityRequest> requests)
     {
@@ -73,7 +73,7 @@ internal sealed class OpportunityController : ControllerBase
     }
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.OpportunitiesManageName)]
+    [HasPermission(TenantPermission.OpportunitiesManage)]
     [HttpPut("/api/venue/{venueId:int}/opportunities")]
     public async Task<ActionResult<IReadOnlyList<OpportunityResponse>>> Update(
         int venueId,

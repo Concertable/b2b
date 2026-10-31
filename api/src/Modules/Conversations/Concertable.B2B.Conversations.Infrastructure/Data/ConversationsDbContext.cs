@@ -1,5 +1,4 @@
-using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Conversations.Contracts.Enums;
+﻿using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Domain.ReadModels;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Kernel.Identity;
@@ -21,43 +20,30 @@ internal sealed class ConversationsDbContext(
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();
     public DbSet<ConversationEntity> Conversations => Set<ConversationEntity>();
-    public DbSet<ConversationAccessGrant> ConversationAccessGrants => Set<ConversationAccessGrant>();
     public DbSet<ConversationReadPosition> ConversationReadPositions => Set<ConversationReadPosition>();
     public DbSet<TenantDisplay> TenantDisplays => Set<TenantDisplay>();
 
-    public ResourceAccess ReadAccess =>
-        Membership?.Permissions[TenantPermission.MessagesRead] ?? ResourceAccess.None;
-    public ResourceAccess SendAccess =>
-        Membership?.Permissions[TenantPermission.MessagesSend] ?? ResourceAccess.None;
+    public ResourceAccess ReadAccess => ActorAccess(TenantPermission.MessagesRead);
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ConversationAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            IsVisibleGrant<ConversationAccessGrant, ConversationAccessScope>(
-                    () => ReadAccess,
-                    ConversationAccessScope.Read)
-                .Or(IsVisibleGrant<ConversationAccessGrant, ConversationAccessScope>(
-                    () => SendAccess,
-                    ConversationAccessScope.SendMessages)));
-
         modelBuilder.Entity<ConversationEntity>().HasQueryFilter(TenantFilters.Key, conversation =>
-            ConversationAccessGrants.Any(grant =>
-                grant.ResourceId == conversation.Id && grant.Scope == ConversationAccessScope.Read));
+            ReadAccess == ResourceAccess.All
+                && conversation.Participants.Any(participant => participant.TenantId == ActorTenantId)
+            || ReadAccess != ResourceAccess.None
+                && conversation.Assignments.Any(assignment => assignment.MembershipId == ActorMembershipId));
 
         modelBuilder.Entity<MessageEntity>().HasQueryFilter(TenantFilters.Key, message =>
-            ConversationAccessGrants.Any(grant =>
-                grant.ResourceId == message.ConversationId && grant.Scope == ConversationAccessScope.Read));
+            Conversations.Any(conversation => conversation.Id == message.ConversationId));
 
         modelBuilder.Entity<ConversationReadPosition>().HasQueryFilter(TenantFilters.Key, state =>
-            state.TenantId == ActiveTenantId
-            && state.MembershipId == ActiveMembershipId
-            && ConversationAccessGrants.Any(grant =>
-                grant.ResourceId == state.ConversationId && grant.Scope == ConversationAccessScope.Read));
+            state.TenantId == ActorTenantId
+            && state.MembershipId == ActorMembershipId
+            && Conversations.Any(conversation => conversation.Id == state.ConversationId));
 
         modelBuilder.Entity<ContentReportEntity>().HasQueryFilter(TenantFilters.Key, report =>
-            report.ReporterTenantId == ActiveTenantId
-            && report.ReporterUserId == ActiveUserId
-            && ConversationAccessGrants.Any(grant =>
-                grant.ResourceId == report.ConversationId && grant.Scope == ConversationAccessScope.Read));
+            report.ReporterTenantId == ActorTenantId
+            && report.ReporterUserId == ActorUserId
+            && Conversations.Any(conversation => conversation.Id == report.ConversationId));
     }
 }

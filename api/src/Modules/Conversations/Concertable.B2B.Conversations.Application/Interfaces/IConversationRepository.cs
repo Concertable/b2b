@@ -1,4 +1,3 @@
-using Concertable.B2B.Authorization.Contracts;
 using Concertable.DataAccess.Application;
 
 namespace Concertable.B2B.Conversations.Application.Interfaces;
@@ -8,15 +7,8 @@ internal interface IConversationRepository : IRepository<ConversationEntity>
 
 internal interface IConversationPrivilegedRepository
 {
-    Task<ConversationEntity?> GetWithGrantsByIdAsync(int conversationId, CancellationToken ct = default);
-    Task<bool> IsAccessibleAsync(
-        int conversationId,
-        MembershipSnapshot actor,
-        TenantPermission permission,
-        ConversationAccessScope scope,
-        DateTime at,
-        CancellationToken ct = default);
-    Task<ConversationEntity?> GetWithGrantsByIdForUpdateAsync(int conversationId, CancellationToken ct = default);
+    Task<ConversationEntity?> GetByIdAsync(int conversationId, CancellationToken ct = default);
+    Task<ConversationEntity?> GetByIdForUpdateAsync(int conversationId, CancellationToken ct = default);
     Task<ConversationCreationReceipt?> GetCreationReceiptForUpdateAsync(
         Guid creatorTenantId,
         Guid createdByMembershipId,
@@ -31,7 +23,6 @@ internal interface IConversationPrivilegedRepository
         IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default);
     void Add(ConversationEntity conversation);
-    void AddAccessGrants(IEnumerable<ConversationAccessGrant> grants);
     void Add(ConversationCreationReceipt receipt);
     void Add(MessageEntity message);
     Task SaveChangesAsync(CancellationToken ct = default);

@@ -1,11 +1,13 @@
 
+using Concertable.Contracts.Enums;
+using Concertable.B2B.Concert.Domain.ValueObjects;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Concert.Application.Errors;
 using Concertable.B2B.Concert.Application.Models;
 using Concertable.B2B.Concert.Application.Requests;
 using Concertable.B2B.Concert.Application.Responses;
-using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Infrastructure;
 using Concertable.B2B.Concert.Infrastructure.Repositories;
 using Concertable.B2B.Concert.Infrastructure.Services;
@@ -30,7 +32,7 @@ public sealed class ConcertServiceAccessOrderingTests
         EffectivePermissions.From([KeyValuePair.Create(TenantPermission.ResourcesShare, ResourceAccess.All)]));
 
     [Fact]
-    public async Task RevokeSummaryShare_WithoutConcertAuthority_DoesNotLoadGrants()
+    public async Task RevokeSummaryShare_OnAConcertTheActorIsNotPartyTo_IsNotPermitted()
     {
         var fixture = CreateFixture<RevokeConcertSummaryShareError>();
 
@@ -40,12 +42,11 @@ public sealed class ConcertServiceAccessOrderingTests
         Assert.IsType<RevokeConcertSummaryShareError.NotPermitted>(error);
         Assert.Equal(["tenant", "resource"], fixture.Steps);
         fixture.Repository.Verify(
-            value => value.GetWithGrantsByIdForUpdateAsync(1, It.IsAny<CancellationToken>()),
-            Times.Never);
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task AssignMember_WithoutConcertAuthority_DoesNotLoadGrants()
+    public async Task AssignMember_OnAConcertTheActorIsNotPartyTo_IsNotPermitted()
     {
         var fixture = CreateFixture<AssignConcertMemberError>();
 
@@ -61,12 +62,11 @@ public sealed class ConcertServiceAccessOrderingTests
         Assert.IsType<AssignConcertMemberError.NotPermitted>(error);
         Assert.Equal(["tenant", "resource"], fixture.Steps);
         fixture.Repository.Verify(
-            value => value.GetWithGrantsByIdForUpdateAsync(1, It.IsAny<CancellationToken>()),
-            Times.Never);
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task RemoveMemberAssignment_WithoutConcertAuthority_DoesNotLoadGrants()
+    public async Task RemoveMemberAssignment_OnAConcertTheActorIsNotPartyTo_IsNotPermitted()
     {
         var fixture = CreateFixture<AssignConcertMemberError>();
 
@@ -76,15 +76,15 @@ public sealed class ConcertServiceAccessOrderingTests
         Assert.IsType<AssignConcertMemberError.NotPermitted>(error);
         Assert.Equal(["tenant", "resource"], fixture.Steps);
         fixture.Repository.Verify(
-            value => value.GetWithGrantsByIdForUpdateAsync(1, It.IsAny<CancellationToken>()),
-            Times.Never);
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task Post_WithOpsEditOnly_DoesNotLoadConcert()
+    public async Task Post_WithOpsEditOnly_IsNotPermitted()
     {
         var editOnly = actor with
         {
+            TenantId = ConfirmedBookings.VenueTenantId,
             Permissions = EffectivePermissions.From(
             [
                 KeyValuePair.Create(TenantPermission.ConcertsOpsEdit, ResourceAccess.All),
@@ -99,13 +99,7 @@ public sealed class ConcertServiceAccessOrderingTests
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<PostConcertError.NotPermitted>(error);
         fixture.Repository.Verify(
-            value => value.GetByIdForUpdateAsync(1, It.IsAny<CancellationToken>()), Times.Never);
-        fixture.Repository.Verify(
-            value => value.GetStateByIdAsync(1, It.IsAny<CancellationToken>()), Times.Never);
-        fixture.Authorizer.Verify(
-            value => value.AuthorizeAsync(
-                1, TenantPermission.ConcertsPublish, ConcertAccessScope.Operations, It.IsAny<CancellationToken>()),
-            Times.Once);
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -125,8 +119,7 @@ public sealed class ConcertServiceAccessOrderingTests
         Assert.IsType<ShareConcertSummaryError.NotPermitted>(error);
         Assert.Equal(["tenant", "resource"], fixture.Steps);
         fixture.Repository.Verify(
-            value => value.GetWithGrantsByIdForUpdateAsync(1, It.IsAny<CancellationToken>()),
-            Times.Never);
+            value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private Fixture CreateFixture<TError>(MembershipSnapshot? principal = null, bool targetTenantExists = true)
@@ -137,19 +130,15 @@ public sealed class ConcertServiceAccessOrderingTests
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var membership = new Mock<IAuthorizationContext>();
         var resolution = new Mock<ITargetTenantResolver>();
-        var authorizer = new Mock<IConcertAuthorizer>();
         var steps = new List<string>();
         var transactionRunner = new ImmediateTransactionRunner();
-        authorizer
-            .Setup(value => value.AuthorizeAsync(
-                1, TenantPermission.ResourcesShare, null, It.IsAny<CancellationToken>()))
-            .Callback<int, TenantPermission, ConcertAccessScope?, CancellationToken>(
-                (_, _, _, _) => steps.Add("resource"))
-            .ReturnsAsync(new AccessDenied());
-        authorizer
-            .Setup(value => value.AuthorizeAsync(
-                1, TenantPermission.ConcertsPublish, ConcertAccessScope.Operations, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AccessDenied());
+        repository
+            .Setup(value => value.GetByIdForUpdateAsync(1, It.IsAny<CancellationToken>()))
+            .Callback<int, CancellationToken>((_, _) => steps.Add("resource"))
+            .ReturnsAsync(ConcertEntity.CreateDraft(
+                ConfirmedBookings.FlatFee(),
+                new ConcertDraft("Concert", "About", [Genre.Rock]),
+                DateTime.UnixEpoch));
         unitOfWork
             .Setup(value => value.ExecuteAsync(
                 It.IsAny<Func<Task<UnitResult<TError>>>>(),
@@ -175,8 +164,6 @@ public sealed class ConcertServiceAccessOrderingTests
 
         var service = new ConcertService(
             Mock.Of<IConcertRepository>(),
-            Mock.Of<IConcertPrivilegedReadRepository>(),
-            authorizer.Object,
             repository.Object,
             unitOfWork.Object,
             Mock.Of<IConcertReadRepository>(),
@@ -196,13 +183,12 @@ public sealed class ConcertServiceAccessOrderingTests
             transactionRunner,
             Mock.Of<ILogger<ConcertService>>());
         transactionRunner.Service = service;
-        return new Fixture(service, repository, authorizer, steps);
+        return new Fixture(service, repository, steps);
     }
 
     private sealed record Fixture(
         ConcertService Service,
         Mock<IConcertPrivilegedRepository> Repository,
-        Mock<IConcertAuthorizer> Authorizer,
         IReadOnlyList<string> Steps);
 
     private sealed class ImmediateTransactionRunner : ITransactionRunner

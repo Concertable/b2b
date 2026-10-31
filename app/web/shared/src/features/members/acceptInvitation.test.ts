@@ -12,7 +12,7 @@ describe("invitation acceptance", () => {
       roles: [{ id: "staff-id", name: "Staff", isProtectedOwner: false }],
       permissionVersion: 1,
       rolePolicyVersion: 1,
-      permissions: ["operations.view"],
+      permissions: ["operations:view"],
     };
     let completeSelection: (() => void) | undefined;
     const selection = new Promise<void>((resolve) => {

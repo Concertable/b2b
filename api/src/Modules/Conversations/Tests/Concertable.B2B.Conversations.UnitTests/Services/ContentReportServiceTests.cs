@@ -1,5 +1,4 @@
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Conversations.Contracts.Enums;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Interfaces;
@@ -51,14 +50,11 @@ public sealed class ContentReportServiceTests
         membership.SetupGet(context => context.Membership).Returns(actor);
 
         var conversations = new Mock<IConversationPrivilegedRepository>();
-        conversations.Setup(repository => repository.IsAccessibleAsync(
-                ConversationId,
-                actor,
-                TenantPermission.MessagesRead,
-                ConversationAccessScope.Read,
-                It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(readable);
+        var participantTenantId = readable ? VenueTenantId : Guid.NewGuid();
+        var conversation = ConversationEntity.Create(
+            [participantTenantId, Guid.NewGuid()], participantTenantId, DateTime.UtcNow);
+        conversations.Setup(repository => repository.GetByIdAsync(ConversationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversation);
 
         return new ContentReportService(messages.Object, conversations.Object, membership.Object,
             reports.Object, notifier.Object,

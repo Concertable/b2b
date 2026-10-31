@@ -1,7 +1,7 @@
-﻿using System.ComponentModel;
+﻿using Concertable.B2B.Authorization.Contracts;
+using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
-using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.Booking.Domain.Events;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.B2B.Booking.Domain.Financial;
@@ -38,8 +38,6 @@ public sealed class BookingEntity : IIdEntity, IConcurrencyVersioned, IEventRais
     internal FinancialFailure? FinancialFailure { get; private set; }
     public ContractEntity Contract { get; private set; } = null!;
 
-    private readonly List<BookingAccessGrant> accessGrants = [];
-    public IReadOnlyList<BookingAccessGrant> AccessGrants => accessGrants;
 
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
@@ -74,24 +72,11 @@ public sealed class BookingEntity : IIdEntity, IConcurrencyVersioned, IEventRais
         Genres = opportunity.Genres.ToList();
         VenueTenantId = opportunity.Venue.TenantId;
         ArtistTenantId = application.Artist.TenantId;
-
-        var acceptance = snapshot.Contract.VenueSignature;
-        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
-        {
-            foreach (var scope in new[] { BookingAccessScope.Summary, BookingAccessScope.Operations })
-            {
-                accessGrants.Add(BookingAccessGrant.Issue(
-                    Id,
-                    tenantId,
-                    membershipId: null,
-                    scope,
-                    issuedByTenantId: VenueTenantId,
-                    issuedByUserId: acceptance.UserId,
-                    ResourceGrantKind.Principal,
-                    acceptance.AtUtc));
-            }
-        }
     }
+
+    public bool IsCancellableBy(MembershipSnapshot actor) =>
+        (actor.TenantId == VenueTenantId || actor.TenantId == ArtistTenantId)
+        && actor.Permissions[TenantPermission.BookingsCancel] == ResourceAccess.All;
 
     internal UnitResult<TransitionError<BookingState, BookingTrigger>> RecordFinancialConfirmation()
     {

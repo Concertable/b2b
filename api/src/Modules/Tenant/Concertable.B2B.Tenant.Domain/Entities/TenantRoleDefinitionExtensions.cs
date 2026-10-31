@@ -10,7 +10,7 @@ public static class TenantRoleDefinitionExtensions
             EffectivePermissions.From(roles
                 .SelectMany(role => role.Permissions)
                 .Where(row => row.Audience is ResourceAccess.Assigned or ResourceAccess.All)
-                .Select(row => TenantPermission.TryParse(row.PermissionKey, out var permission)
+                .Select(row => TenantPermission.TryParseKey(row.PermissionKey, out var permission)
                     ? KeyValuePair.Create(permission, row.Audience)
                     : default)
                 .Where(grant => grant.Key != default));

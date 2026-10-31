@@ -13,11 +13,9 @@ internal sealed class MembershipService : IMembershipService
     private readonly ITenantContext tenantContext;
     private readonly IRoleRepository roles;
     private readonly IAuthorizationContext authorizationContext;
-    private readonly IMembershipReadRepository memberships;
     private readonly IUserModule userModule;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
-    private readonly TenantAuthorizer authorizer;
 
     public MembershipService(
         IMembershipRepository repository,
@@ -25,22 +23,18 @@ internal sealed class MembershipService : IMembershipService
         ITenantContext tenantContext,
         IRoleRepository roles,
         IAuthorizationContext authorizationContext,
-        IMembershipReadRepository memberships,
         IUserModule userModule,
         IOutboxUnitOfWorkBehavior unitOfWork,
-        TimeProvider timeProvider,
-        TenantAuthorizer authorizer)
+        TimeProvider timeProvider)
     {
         this.repository = repository;
         this.tenantRepository = tenantRepository;
         this.tenantContext = tenantContext;
         this.roles = roles;
         this.authorizationContext = authorizationContext;
-        this.memberships = memberships;
         this.userModule = userModule;
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
-        this.authorizer = authorizer;
     }
 
     public Task<Result<IReadOnlyList<MemberDto>, ListMembersError>> ListMembersAsync(
@@ -49,7 +43,7 @@ internal sealed class MembershipService : IMembershipService
         {
             var tenantId = tenantContext.GetTenantId();
             if (!(await tenantRepository.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
-                || await GetCurrentActorAsync(tenantId, ct) is not { } actor
+                || authorizationContext.FindActor(tenantId) is not { } actor
                 || !actor.HasPermission(TenantPermission.OperationsView))
                 return Result.Failure<IReadOnlyList<MemberDto>, ListMembersError>(
                     new ListMembersError.NotPermitted());
@@ -78,9 +72,9 @@ internal sealed class MembershipService : IMembershipService
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new ChangeMemberRolesError.NotPermitted();
-        var authorization = await authorizer.AuthorizeOwnerAsync(
-            tenantId, TenantPermission.MembersManageRoles, ct);
-        if (!authorization.TryGetValue(out var actor))
+        if (authorizationContext.FindActor(tenantId) is not { } actor
+            || !actor.HasPermission(TenantPermission.MembersManageRoles)
+            || !await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct))
             return new ChangeMemberRolesError.NotPermitted();
 
         var member = await repository.FindMembershipAsync(tenantId, userId, ct);
@@ -116,8 +110,9 @@ internal sealed class MembershipService : IMembershipService
         var tenantId = tenantContext.GetTenantId();
         if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
             return new RemoveMemberError.NotPermitted();
-        if ((await authorizer.AuthorizeOwnerAsync(
-                tenantId, TenantPermission.MembersRemove, ct)).IsFailure)
+        if (authorizationContext.FindActor(tenantId) is not { } actor
+            || !actor.HasPermission(TenantPermission.MembersRemove)
+            || !await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct))
             return new RemoveMemberError.NotPermitted();
 
         var member = await repository.FindMembershipAsync(tenantId, userId, ct);
@@ -136,12 +131,4 @@ internal sealed class MembershipService : IMembershipService
         return new Success();
     }
 
-    private async Task<MembershipSnapshot?> GetCurrentActorAsync(
-        Guid tenantId, CancellationToken ct)
-    {
-        var expected = authorizationContext.Membership;
-        if (expected is null || expected.TenantId != tenantId)
-            return null;
-        return await memberships.LockIfUnchangedAsync(expected, ct);
-    }
 }

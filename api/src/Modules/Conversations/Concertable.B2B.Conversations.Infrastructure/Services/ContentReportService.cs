@@ -53,9 +53,8 @@ internal sealed class ContentReportService : IContentReportService
     {
         if (conversationId <= 0
             || membership.Membership is not { } actor
-            || !await conversations.IsAccessibleAsync(
-                conversationId, actor, TenantPermission.MessagesRead, ConversationAccessScope.Read,
-                timeProvider.GetUtcNow().UtcDateTime))
+            || await conversations.GetByIdAsync(conversationId) is not { } conversation
+            || !conversation.IsReadableBy(actor))
             return null;
         var message = await messageRepository.GetByIdAsync(messageId);
 

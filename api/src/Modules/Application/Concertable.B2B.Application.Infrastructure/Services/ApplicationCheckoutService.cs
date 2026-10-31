@@ -1,5 +1,4 @@
 using Concertable.B2B.Application.Application.Errors;
-using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Authorization.Contracts;
@@ -20,10 +19,8 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IApplicationRepository repository;
     private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IAuthorizationContext membership;
-    private readonly IMembershipReadRepository memberships;
     private readonly ITargetTenantResolver targetTenantResolver;
     private readonly ITransactionRunner transactionRunner;
-    private readonly IApplicationAuthorizer authorizer;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
@@ -38,10 +35,8 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IApplicationRepository repository,
         IApplicationPrivilegedRepository privilegedRepository,
         IAuthorizationContext membership,
-        IMembershipReadRepository memberships,
         ITargetTenantResolver targetTenantResolver,
         ITransactionRunner transactionRunner,
-        IApplicationAuthorizer authorizer,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         IVenueModule venueModule,
@@ -55,10 +50,8 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.repository = repository;
         this.privilegedRepository = privilegedRepository;
         this.membership = membership;
-        this.memberships = memberships;
         this.targetTenantResolver = targetTenantResolver;
         this.transactionRunner = transactionRunner;
-        this.authorizer = authorizer;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
         this.venueModule = venueModule;
@@ -204,15 +197,12 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         if (opportunityId is null || parties.Count == 0)
             return new ApplicationCheckoutError.ApplicationNotFound();
         var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!existingParties.SetEquals(parties)
-            || await memberships.LockIfUnchangedAsync(expectedActor, ct) is not { } actor)
+        var actor = expectedActor;
+        if (!existingParties.SetEquals(parties))
             return new ApplicationCheckoutError.ApplicationNotFound();
         await privilegedRepository.LockOpportunityAsync(opportunityId.Value, ct);
-        if ((await authorizer.AuthorizeAsync(
-                applicationId, TenantPermission.ApplicationsDecide, ApplicationAccessScope.Proposal, ct)).IsFailure)
-            return new ApplicationCheckoutError.ApplicationNotFound();
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
-        if (application is null || application.VenueTenantId != actor.TenantId
+        if (application is null || !application.IsDecidableBy(actor)
             || !parties.ToHashSet().SetEquals([application.VenueTenantId, application.ArtistTenantId]))
             return new ApplicationCheckoutError.ApplicationNotFound();
         var operationId = application.BeginAcceptance();

@@ -9,17 +9,6 @@ ROOT = Path(__file__).resolve().parents[1]
 MODULES = ("Tenant", "Conversations", "Concert", "Opportunity", "Application", "Booking")
 ACCESS_LEVELS = {"Assigned", "All"}
 PRESETS = ("Owner", "Manager", "Finance", "Staff", "Door", "Sound")
-BINDINGS = {
-    "tenant": {"membership"},
-    "conversation": {"conversation_grant", "principal_administration"},
-    "concert": {"concert_grant", "venue_principal", "either_principal", "principal_administration"},
-    "opportunity": {"venue_principal"},
-    "application": {"application_grant", "artist_principal", "venue_principal", "principal_administration"},
-    "booking": {"booking_grant", "either_principal", "principal_administration"},
-    "invoice": {"invoice_grant"},
-    "contract": {"contract_grant"},
-}
-SCOPES = {"Read", "SendMessages", "Summary", "Operations", "Finance", "Proposal"}
 CS = ROOT / "api/src/Modules/Authorization/Concertable.B2B.Authorization.Contracts"
 TS = ROOT / "app/shared/src/features/tenant/permissions.generated.ts"
 
@@ -28,8 +17,8 @@ def quoted(value):
     return json.dumps(value, ensure_ascii=False)
 
 
-def pascal(value):
-    return "".join(part.capitalize() for part in value.split("_"))
+def symbol(name):
+    return "".join(part.capitalize() for part in re.split(r"[:_]", name))
 
 
 def load():
@@ -40,89 +29,61 @@ def load():
         if set(doc) != {"permissions"} or not isinstance(doc["permissions"], list):
             raise ValueError(f"{path}: expected permissions array")
         for item in doc["permissions"]:
-            expected = {"name", "symbol", "label", "category", "resourceBindings",
-                        "assignableAudiences", "ownerOnly", "systemPresets"}
-            if set(item) != expected:
+            if set(item) != {"name", "label", "ownerOnly", "systemPresets"}:
                 raise ValueError(f"{path}: invalid metadata fields for {item.get('name')}")
-            if item["category"] != module:
-                raise ValueError(f"{path}: category does not match owner")
-            entries.append(item)
-    keys = [item["name"] for item in entries]
-    symbols = [item["symbol"] for item in entries]
-    if len(keys) != len(set(keys)) or len(symbols) != len(set(symbols)):
+            entries.append({**item, "category": module})
+    names = [item["name"] for item in entries]
+    if len(names) != len(set(names)) or len({symbol(name) for name in names}) != len(names):
         raise ValueError("Duplicate permission name or symbol")
     for item in entries:
-        key = item["name"]
-        if not re.fullmatch(r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+", key):
-            raise ValueError(f"Invalid permission key: {key}")
-        if not re.fullmatch(r"[A-Z][A-Za-z0-9]*", item["symbol"]):
-            raise ValueError(f"Invalid symbol: {key}")
+        name = item["name"]
+        if not re.fullmatch(r"[a-z][a-z_]*:[a-z][a-z_]*", name):
+            raise ValueError(f"Invalid permission name: {name}")
         if not item["label"].strip():
-            raise ValueError(f"Missing label: {key}")
-        bindings = item["resourceBindings"]
-        if not bindings:
-            raise ValueError(f"Missing resource binding: {key}")
-        seen_bindings = set()
-        for binding in bindings:
-            if set(binding) != {"resource", "facet", "policy", "requiresScopes"}:
-                raise ValueError(f"Invalid resource binding fields: {key}")
-            resource, facet, policy = binding["resource"], binding["facet"], binding["policy"]
-            if resource not in BINDINGS or policy not in BINDINGS[resource]:
-                raise ValueError(f"Unknown resource policy binding: {key}")
-            if facet is not None and facet not in SCOPES:
-                raise ValueError(f"Unknown facet: {key}")
-            scopes = binding["requiresScopes"]
-            if set(scopes) - SCOPES or len(set(scopes)) != len(scopes):
-                raise ValueError(f"Unknown or duplicate scope: {key}")
-            binding_key = (resource, facet)
-            if binding_key in seen_bindings:
-                raise ValueError(f"Duplicate resource/facet binding: {key}")
-            seen_bindings.add(binding_key)
-        access_levels = item["assignableAudiences"]
-        if not access_levels or set(access_levels) - ACCESS_LEVELS or len(set(access_levels)) != len(access_levels):
-            raise ValueError(f"Invalid access levels: {key}")
+            raise ValueError(f"Missing label: {name}")
         grants = item["systemPresets"]
         if not isinstance(grants, dict) or "Owner" not in grants or set(grants) - set(PRESETS):
-            raise ValueError(f"Invalid preset declaration: {key}")
-        if any(access not in access_levels for access in grants.values()):
-            raise ValueError(f"Invalid preset access: {key}")
+            raise ValueError(f"Invalid preset declaration: {name}")
+        if set(grants.values()) - ACCESS_LEVELS:
+            raise ValueError(f"Invalid preset access: {name}")
         if item["ownerOnly"] and set(grants) != {"Owner"}:
-            raise ValueError(f"Owner-only permission outside Owner preset: {key}")
+            raise ValueError(f"Owner-only permission outside Owner preset: {name}")
     return sorted(entries, key=lambda item: item["name"])
 
 
 def generated(entries):
     canonical = json.dumps(entries, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     revision = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-    symbols = [item["symbol"] for item in entries]
-    lines = ["using System.Collections.Frozen;", "", "namespace Concertable.B2B.Authorization.Contracts;",
-             "", "public readonly record struct TenantPermission", "{"]
-    lines += [f'    public const string {s}Name = {quoted(item["name"])};'
-              for s, item in zip(symbols, entries)]
-    lines += [""] + [f"    public static TenantPermission {s} {{ get; }} = new({s}Name);"
-                      for s in symbols]
-    lines += ["", "    public static IReadOnlySet<TenantPermission> All { get; } = new[]",
-              "    {", "        " + ", ".join(symbols) + ",", "    }.ToFrozenSet();",
-              "", "    private static readonly FrozenDictionary<string, TenantPermission> ByValue =",
-              "        All.ToFrozenDictionary(permission => permission.Value, StringComparer.Ordinal);",
-              "", "    private TenantPermission(string value) => Value = value;",
-              "    public string Value { get; }",
-              "", "    public static bool TryParse(string? value, out TenantPermission permission)",
-              "    {", "        if (value is not null && ByValue.TryGetValue(value, out permission))",
-              "            return true;", "        permission = default;", "        return false;", "    }",
-              "", "    public override string ToString() => Value ?? string.Empty;", "}", ""]
+    symbols = [symbol(item["name"]) for item in entries]
+    lines = ["using System.Collections.Frozen;", "using System.Text.Json.Serialization;", "",
+             "namespace Concertable.B2B.Authorization.Contracts;", "",
+             "[JsonConverter(typeof(JsonStringEnumConverter<TenantPermission>))]",
+             "public enum TenantPermission", "{"]
+    for index, (name, item) in enumerate(zip(symbols, entries)):
+        lines += [f"    [JsonStringEnumMemberName({quoted(item['name'])})]",
+                  f"    {name}{' = 1' if index == 0 else ''},"]
+    lines += ["}", "", "public static class TenantPermissionExtensions", "{",
+              "    private static readonly FrozenDictionary<TenantPermission, string> Keys =",
+              "        new Dictionary<TenantPermission, string>", "        {"]
+    lines += [f"            [TenantPermission.{name}] = {quoted(item['name'])},"
+              for name, item in zip(symbols, entries)]
+    lines += ["        }.ToFrozenDictionary();", "",
+              "    private static readonly FrozenDictionary<string, TenantPermission> ByKey =",
+              "        Keys.ToFrozenDictionary(pair => pair.Value, pair => pair.Key, StringComparer.Ordinal);", "",
+              "    private static readonly FrozenSet<TenantPermission> Declared = Keys.Keys.ToFrozenSet();", "",
+              "    extension(TenantPermission permission)", "    {",
+              "        public string Key => Keys.TryGetValue(permission, out var key) ? key : string.Empty;", "    }", "",
+              "    extension(TenantPermission)", "    {",
+              "        public static IReadOnlySet<TenantPermission> All => Declared;", "",
+              "        public static bool TryParseKey(string? key, out TenantPermission permission)", "        {",
+              "            if (key is not null && ByKey.TryGetValue(key, out permission))",
+              "                return true;", "            permission = default;", "            return false;",
+              "        }", "    }", "}", ""]
     permission_code = "\n".join(lines)
-    catalog = ["#nullable enable", "using System.Collections.Frozen;", "", "namespace Concertable.B2B.Authorization.Contracts;",
-               "", "public enum AuthorizationResource", "{"]
-    catalog += [f"    {pascal(resource)}{' = 1' if index == 0 else ''}," for index, resource in enumerate(BINDINGS)]
-    catalog += ["}",
-               "", "public sealed record PermissionResourceBinding(",
-               "    AuthorizationResource Resource,", "    string? Scope,", "    ResourcePolicy Policy,",
-               "    IReadOnlyList<string> RequiresScopes);",
-               "", "public sealed record PermissionDescriptor(",
-               "    TenantPermission Permission,", "    string Label,", "    string Category,",
-               "    IReadOnlyList<PermissionResourceBinding> ResourceBindings,",
-               "    IReadOnlyList<ResourceAccess> AssignableAccess,", "    bool OwnerOnly);",
+    catalog = ["#nullable enable", "using System.Collections.Frozen;", "",
+               "namespace Concertable.B2B.Authorization.Contracts;", "",
+               "public sealed record PermissionDescriptor(",
+               "    TenantPermission Permission,", "    string Label,", "    string Category,", "    bool OwnerOnly);",
                "", "public sealed record SystemPresetDescriptor(",
                "    string Key,", "    bool IsProtectedOwner,", "    bool IsInvitationAssignable,",
                "    IReadOnlyDictionary<TenantPermission, ResourceAccess> Permissions);",
@@ -130,21 +91,10 @@ def generated(entries):
                f'    public const string Revision = "{revision}";', "",
                "    public static IReadOnlyDictionary<TenantPermission, PermissionDescriptor> Permissions { get; } =",
                "        new Dictionary<TenantPermission, PermissionDescriptor>", "        {"]
-    for item in entries:
-        sym = item["symbol"]
-        access_levels = ", ".join("ResourceAccess." + c for c in item["assignableAudiences"])
-        bindings = []
-        for binding in item["resourceBindings"]:
-            scopes = ", ".join(quoted(value) for value in binding["requiresScopes"])
-            scope = "null" if binding["facet"] is None else quoted(binding["facet"])
-            bindings.append(
-                f'new(AuthorizationResource.{pascal(binding["resource"])}, {scope}, '
-                f'ResourcePolicy.{pascal(binding["policy"])}, [{scopes}])')
-        binding_values = ", ".join(bindings)
+    for name, item in zip(symbols, entries):
         catalog.append(
-            f'            [TenantPermission.{sym}] = new(TenantPermission.{sym}, {quoted(item["label"])}, '
-            f'{quoted(item["category"])}, [{binding_values}], [{access_levels}], '
-            f'{str(item["ownerOnly"]).lower()}),')
+            f'            [TenantPermission.{name}] = new(TenantPermission.{name}, {quoted(item["label"])}, '
+            f'{quoted(item["category"])}, {str(item["ownerOnly"]).lower()}),')
     catalog += ["        }.ToFrozenDictionary();", "",
                 "    public static IReadOnlyDictionary<string, SystemPresetDescriptor> Presets { get; } =",
                 "        new Dictionary<string, SystemPresetDescriptor>(StringComparer.Ordinal)", "        {"]
@@ -154,10 +104,10 @@ def generated(entries):
                        f'{str(preset in ("Staff", "Door", "Sound")).lower()}, '
                        "new Dictionary<TenantPermission, ResourceAccess>")
         catalog.append("            {")
-        for item in entries:
+        for name, item in zip(symbols, entries):
             access = item["systemPresets"].get(preset)
             if access:
-                catalog.append(f'                [TenantPermission.{item["symbol"]}] = ResourceAccess.{access},')
+                catalog.append(f'                [TenantPermission.{name}] = ResourceAccess.{access},')
         catalog += ["            }.ToFrozenDictionary()),"]
     catalog += ["        }.ToFrozenDictionary(StringComparer.Ordinal);", "}", ""]
     union = "export type TenantPermission =\n" + "  " + " |\n  ".join(

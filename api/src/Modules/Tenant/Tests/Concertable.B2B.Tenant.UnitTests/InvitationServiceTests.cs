@@ -21,7 +21,6 @@ public sealed class InvitationServiceTests
     private readonly Mock<IAuthorizationContext> authorizationContext;
     private readonly Mock<ICurrentUser> currentUser;
     private readonly Mock<IRoleRepository> roles;
-    private readonly Mock<IMembershipReadRepository> membershipReads;
     private readonly InvitationService service;
 
     public InvitationServiceTests()
@@ -33,10 +32,6 @@ public sealed class InvitationServiceTests
         authorizationContext = new Mock<IAuthorizationContext>();
         currentUser = new Mock<ICurrentUser>();
         roles = new Mock<IRoleRepository>();
-        membershipReads = new Mock<IMembershipReadRepository>();
-        membershipReads.Setup(value => value.LockIfUnchangedAsync(
-                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
         tenantRepository.Setup(value => value.GetExistingIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
@@ -50,7 +45,6 @@ public sealed class InvitationServiceTests
                     authorizationContext.Object.Membership is { } actor
                         ? new[] { actor }
                         : Array.Empty<MembershipSnapshot>()));
-        var authorizer = new TenantAuthorizer(authorizationContext.Object, membershipReads.Object, roles.Object);
         service = new InvitationService(
             tenantRepository.Object,
             membershipRepository.Object,
@@ -61,9 +55,7 @@ public sealed class InvitationServiceTests
             TimeProvider.System,
             new ImmediateUnitOfWorkBehavior(),
             roles.Object,
-            authorizationContext.Object,
-            membershipReads.Object,
-            authorizer);
+            authorizationContext.Object);
     }
 
     [Fact]

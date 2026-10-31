@@ -27,16 +27,15 @@ like redundant synonyms; they aren't, and you **cannot** collapse them — a *fi
     words — you can't put "payee" on an invoice. Mapping: `supplier` = settlement payee, `customer` =
     settlement payer.
 
-**Neither axis is visibility.** Who may read or change a concert or its invoice is the module's own
-`AccessibleBy` rule (`ConcertQueryExtensions`, `InvoiceQueryExtensions`): the permission's catalog binding
-names a principal policy (venue, either party) and the `ConcertAccessScope` / `InvoiceAccessScope` grants
-it requires, and a live `ConcertAccessGrant` / `InvoiceAccessGrant` must cover the member. A promoter or a
-production member reaches an engagement through a grant while being neither the venue nor the act. Writes
-decide through `ConcertAuthorizer`, which locks before it checks; the design is in
+**Neither axis is visibility.** Who may read or change a concert or its invoice is decided by the
+aggregate: the venue and artist tenants are its principals, `ConcertEntity.Assignments` name members and
+`ConcertEntity.Shares` give another tenant (or one of its members) the summary. `ConcertDbContext`'s
+filters apply the same rules to reads; writes ask the loaded concert. The design is in
 [ARCHITECTURE.md § Authorization](../../../../ARCHITECTURE.md#authorization).
 
 ```csharp
-if ((await AuthorizeConcertAsync(id, TenantPermission.ConcertsOpsEdit, ConcertAccessScope.Operations, ct)).IsFailure)
+var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+if (concert is null || !concert.IsEditableBy(expectedActor))
     return new UpdateConcertError.NotPermitted();
 ```
 

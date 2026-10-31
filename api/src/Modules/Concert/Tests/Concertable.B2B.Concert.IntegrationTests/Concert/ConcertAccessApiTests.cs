@@ -5,7 +5,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Application.Responses;
-using Concertable.B2B.Concert.Contracts.Enums;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.DataAccess.Application;
 using Microsoft.AspNetCore.Mvc;
@@ -169,12 +168,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         await response.ShouldBe(HttpStatusCode.BadRequest);
         var persisted = await fixture.Concerts
             .AsNoTracking()
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(seeded.AccessVersion, persisted.AccessVersion);
-        Assert.Contains(
-            persisted.AccessGrants,
-            grant => grant.Id == seeded.GrantId && grant.RevokedAt is null);
+        Assert.Contains(persisted.Shares, share => share.Id == seeded.GrantId);
     }
 
     [Fact]
@@ -202,14 +198,11 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         Assert.All(shares, Assert.NotNull);
         Assert.Single(shares.Select(share => share!.GrantId).Distinct());
         var persisted = await fixture.Concerts
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Single(
-            persisted.AccessGrants,
-            grant => grant.Kind == ResourceGrantKind.SharedSummary
-                     && grant.IssuedByTenantId == concert.VenueTenantId
-                     && grant.TenantId == request.recipientTenantId
-                     && grant.RevokedAt is null);
+            persisted.Shares,
+            share => share.SharedByTenantId == concert.VenueTenantId
+                     && share.RecipientTenantId == request.recipientTenantId);
     }
 
     [Fact]
@@ -349,18 +342,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         await assign.ShouldBe(HttpStatusCode.NoContent);
         var assigned = await fixture.Concerts
             .AsNoTracking()
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(concert.AccessVersion + 1, assigned.AccessVersion);
-        Assert.Equal(
-            [ConcertAccessScope.Summary, ConcertAccessScope.Operations],
-            assigned.AccessGrants
-                .Where(grant => grant.Kind == ResourceGrantKind.MemberAssignment
-                                && grant.MembershipId == membership.Id
-                                && grant.RevokedAt is null)
-                .Select(grant => grant.Scope)
-                .Order()
-                .ToArray());
+        Assert.Contains(assigned.Assignments, assignment => assignment.MembershipId == membership.Id);
 
         var staleRemove = await client.DeleteAsync(
             $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={concert.AccessVersion}");
@@ -368,14 +352,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         await staleRemove.ShouldBe(HttpStatusCode.Conflict);
         var unchanged = await fixture.Concerts
             .AsNoTracking()
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(assigned.AccessVersion, unchanged.AccessVersion);
-        Assert.Contains(
-            unchanged.AccessGrants,
-            grant => grant.Kind == ResourceGrantKind.MemberAssignment
-                     && grant.MembershipId == membership.Id
-                     && grant.RevokedAt is null);
+        Assert.Contains(unchanged.Assignments, assignment => assignment.MembershipId == membership.Id);
 
         var remove = await client.DeleteAsync(
             $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={assigned.AccessVersion}");
@@ -383,14 +362,9 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
         await remove.ShouldBe(HttpStatusCode.NoContent);
         var removed = await fixture.Concerts
             .AsNoTracking()
-            .Include(value => value.AccessGrants)
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(assigned.AccessVersion + 1, removed.AccessVersion);
-        Assert.DoesNotContain(
-            removed.AccessGrants,
-            grant => grant.Kind == ResourceGrantKind.MemberAssignment
-                     && grant.MembershipId == membership.Id
-                     && grant.RevokedAt is null);
+        Assert.DoesNotContain(removed.Assignments, assignment => assignment.MembershipId == membership.Id);
 
         var repeatedRemove = await client.DeleteAsync(
             $"/api/concert/{concert.Id}/member-assignments/{membership.Id}?expectedVersion={removed.AccessVersion}");
@@ -401,108 +375,6 @@ public sealed class ConcertAccessApiTests : IAsyncLifetime
             .SingleAsync(value => value.Id == concert.Id);
         Assert.Equal(removed.AccessVersion, afterRepeatedRemove.AccessVersion);
     }
-
-    [Fact]
-    public async Task OpsEdit_WhenTheMemberAssignmentIsRevokedBeforeItLocksTheConcert_IsDenied()
-    {
-        var race = await ArrangeAssignedStaffAsync();
-        fixture.CommandPause.Arm(command => IsConcertRowLock(command, race.Concert.Id));
-        var edit = race.Staff.PutAsync(
-            $"/api/concert/{race.Concert.Id}",
-            ConcertRequestBuilders.BuildPostRequest(name: "Edited by staff"));
-        await fixture.CommandPause.WaitUntilPausedAsync();
-
-        var revocation = await RevokeAssignmentAsync(race);
-        fixture.CommandPause.Release();
-
-        await revocation.ShouldBe(HttpStatusCode.NoContent);
-        await (await edit).ShouldBe(HttpStatusCode.Forbidden);
-        var persisted = await LoadWithGrantsAsync(race.Concert.Id);
-        Assert.NotEqual("Edited by staff", persisted.Name);
-        Assert.False(HasLiveAssignment(persisted, race.MembershipId));
-    }
-
-    [Fact]
-    public async Task Revocation_WhileAnOpsEditHoldsTheConcertLock_WaitsForTheEditToCommit()
-    {
-        var race = await ArrangeAssignedStaffAsync();
-        fixture.CommandPause.Arm(command => IsConcertUpdate(command, race.Concert.Id));
-        var edit = race.Staff.PutAsync(
-            $"/api/concert/{race.Concert.Id}",
-            ConcertRequestBuilders.BuildPostRequest(name: "Edited by staff"));
-        await fixture.CommandPause.WaitUntilPausedAsync();
-
-        var revocation = RevokeAssignmentAsync(race);
-        await PostgresLockWaits.WaitForWaiterAsync(fixture.ConnectionString, """%concert."Concerts"%FOR UPDATE%""");
-        var revokedWhileLocked = revocation.IsCompleted;
-        fixture.CommandPause.Release();
-
-        await (await edit).ShouldBe(HttpStatusCode.OK);
-        await (await revocation).ShouldBe(HttpStatusCode.NoContent);
-        Assert.False(revokedWhileLocked);
-        var persisted = await LoadWithGrantsAsync(race.Concert.Id);
-        Assert.Equal("Edited by staff", persisted.Name);
-        Assert.False(HasLiveAssignment(persisted, race.MembershipId));
-    }
-
-    private async Task<AssignmentRace> ArrangeAssignedStaffAsync()
-    {
-        var concert = fixture.SeedState.ConcertFor(fixture.SeedState.ConfirmedBooking);
-        var owner = CreateOwningVenueClient(concert.VenueId);
-        var staffUser = fixture.SeedState.VenueManager3;
-
-        var invitation = await owner.PostAsync(
-            "/api/organization/invitations",
-            new { staffUser.Email, roleIds = new[] { SystemPresetIds.For(concert.VenueTenantId, "Staff") } });
-        await invitation.ShouldBe(HttpStatusCode.Created);
-        var invitationId = (await invitation.Content.ReadAsync<Invitation>())!.Id;
-        var acceptance = await fixture.CreateClient(staffUser).PostAsync($"/api/invitation/{invitationId}/accept");
-        await acceptance.ShouldBe(HttpStatusCode.OK);
-        var membershipId = (await acceptance.Content.ReadAsync<Membership>())!.MembershipId;
-
-        var assignment = await owner.PostAsync(
-            $"/api/concert/{concert.Id}/member-assignments",
-            new { membershipId, expectedAccessVersion = concert.AccessVersion });
-        await assignment.ShouldBe(HttpStatusCode.NoContent);
-
-        var staff = fixture.CreateClient(staffUser);
-        staff.DefaultRequestHeaders.Add(TenantHeaders.TenantId, concert.VenueTenantId.ToString());
-        return new AssignmentRace(concert, owner, staff, membershipId, concert.AccessVersion + 1);
-    }
-
-    private static Task<HttpResponseMessage> RevokeAssignmentAsync(AssignmentRace race) =>
-        race.Owner.DeleteAsync(
-            $"/api/concert/{race.Concert.Id}/member-assignments/{race.MembershipId}?expectedVersion={race.AssignedAccessVersion}");
-
-    private Task<ConcertEntity> LoadWithGrantsAsync(int concertId) =>
-        fixture.Concerts.AsNoTracking()
-            .Include(value => value.AccessGrants)
-            .SingleAsync(value => value.Id == concertId);
-
-    private static bool HasLiveAssignment(ConcertEntity concert, Guid membershipId) =>
-        concert.AccessGrants.Any(grant => grant.Kind == ResourceGrantKind.MemberAssignment
-                                          && grant.MembershipId == membershipId
-                                          && grant.RevokedAt is null);
-
-    private static bool IsConcertRowLock(DbCommand command, int concertId) =>
-        command.CommandText.Contains("FROM concert.\"Concerts\"", StringComparison.Ordinal)
-        && command.CommandText.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase)
-        && command.HasParameter(concertId);
-
-    private static bool IsConcertUpdate(DbCommand command, int concertId) =>
-        command.CommandText.Contains("UPDATE concert.\"Concerts\"", StringComparison.Ordinal)
-        && command.HasParameter(concertId);
-
-    private sealed record Invitation(Guid Id);
-
-    private sealed record Membership(Guid MembershipId);
-
-    private sealed record AssignmentRace(
-        ConcertEntity Concert,
-        HttpClient Owner,
-        HttpClient Staff,
-        Guid MembershipId,
-        long AssignedAccessVersion);
 
     private HttpClient CreateOwningVenueClient(int venueId) =>
         fixture.CreateClient(fixture.SeedState.VenueManagers.Single(manager =>

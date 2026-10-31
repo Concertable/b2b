@@ -23,7 +23,6 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
     private readonly IOpportunityPrivilegedReadRepository opportunityRepository;
     private readonly IVenuePrivilegedReadRepository venueRepository;
     private readonly ITenantModule tenantModule;
-    private readonly IMembershipReadRepository memberships;
     private readonly ITransactionRunner transactionRunner;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
 
@@ -35,7 +34,6 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         IOpportunityPrivilegedReadRepository opportunityRepository,
         IVenuePrivilegedReadRepository venueRepository,
         ITenantModule tenantModule,
-        IMembershipReadRepository memberships,
         ITransactionRunner transactionRunner,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork)
     {
@@ -46,7 +44,6 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
         this.opportunityRepository = opportunityRepository;
         this.venueRepository = venueRepository;
         this.tenantModule = tenantModule;
-        this.memberships = memberships;
         this.transactionRunner = transactionRunner;
         this.unitOfWork = unitOfWork;
     }
@@ -64,22 +61,16 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
 
         await unitOfWork.ExecuteAsync(async () =>
         {
-            var eligible = (await tenantModule.GetCurrentMembershipsForNotificationAsync(venueTenantId.Value))
+            var recipient = (await tenantModule.GetCurrentMembershipsForNotificationAsync(venueTenantId.Value))
                 .Where(membership => membership.HasPermission(TenantPermission.ApplicationsDecide))
                 .OrderBy(membership => membership.UserId == venueCreatorUserId.Value ? 0 : 1)
-                .ThenBy(membership => membership.UserId);
-            foreach (var candidate in eligible)
-            {
-                if (await memberships.LockIfUnchangedAsync(candidate) is not { } recipient
-                    || !recipient.HasPermission(TenantPermission.ApplicationsDecide))
-                    continue;
-
+                .ThenBy(membership => membership.UserId)
+                .FirstOrDefault();
+            if (recipient is not null)
                 await notificationClient.SendAsync(
                     recipient.UserId.ToString(),
                     "VerifyPaymentFailed",
                     new { applicationId, failureMessage });
-                return;
-            }
         });
     }
 

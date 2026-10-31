@@ -1,52 +1,22 @@
 {
   "permissions": [
     {
-      "name": "applications.decide",
-      "symbol": "ApplicationsDecide",
+      "name": "applications:decide",
       "label": "Decide applications",
-      "category": "Application",
-      "assignableAudiences": [
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All"
-      },
-      "resourceBindings": [
-        {
-          "resource": "application",
-          "facet": "Proposal",
-          "policy": "venue_principal",
-          "requiresScopes": [
-            "Proposal"
-          ]
-        }
-      ]
+      }
     },
     {
-      "name": "applications.submit",
-      "symbol": "ApplicationsSubmit",
+      "name": "applications:submit",
       "label": "Submit applications",
-      "category": "Application",
-      "assignableAudiences": [
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All"
-      },
-      "resourceBindings": [
-        {
-          "resource": "application",
-          "facet": "Proposal",
-          "policy": "artist_principal",
-          "requiresScopes": [
-            "Proposal"
-          ]
-        }
-      ]
+      }
     }
   ]
 }

@@ -30,7 +30,7 @@ internal sealed class ConcertController : ControllerBase
         (await concertService.GetPublishedAsync(id, ct))
             .ToOkOrProblem(concert => concert.ToResponse());
 
-    [HasPermission(TenantPermission.ResourcesShareName)]
+    [HasPermission(TenantPermission.ResourcesShare)]
     [HttpPost("{id:int}/summary-shares")]
     public async Task<ActionResult<ConcertSummaryShare>> ShareSummary(
         int id,
@@ -38,7 +38,7 @@ internal sealed class ConcertController : ControllerBase
         CancellationToken ct) =>
         (await concertService.ShareSummaryAsync(id, request, ct)).ToOkOrProblem();
 
-    [HasPermission(TenantPermission.ResourcesShareName)]
+    [HasPermission(TenantPermission.ResourcesShare)]
     [HttpDelete("{id:int}/summary-shares/{grantId:guid}")]
     public async Task<IActionResult> RevokeSummaryShare(
         int id,
@@ -47,7 +47,7 @@ internal sealed class ConcertController : ControllerBase
         CancellationToken ct) =>
         (await concertService.RevokeSummaryShareAsync(id, grantId, expectedVersion, ct)).ToNoContentOrProblem();
 
-    [HasPermission(TenantPermission.ResourcesShareName)]
+    [HasPermission(TenantPermission.ResourcesShare)]
     [HttpPost("{id:int}/member-assignments")]
     public async Task<IActionResult> AssignMember(
         int id,
@@ -55,7 +55,7 @@ internal sealed class ConcertController : ControllerBase
         CancellationToken ct) =>
         (await concertService.AssignMemberAsync(id, request, ct)).ToNoContentOrProblem();
 
-    [HasPermission(TenantPermission.ResourcesShareName)]
+    [HasPermission(TenantPermission.ResourcesShare)]
     [HttpDelete("{id:int}/member-assignments/{membershipId:guid}")]
     public async Task<IActionResult> RemoveMemberAssignment(
         int id,
@@ -65,32 +65,32 @@ internal sealed class ConcertController : ControllerBase
         (await concertService.RemoveMemberAssignmentAsync(id, membershipId, expectedVersion, ct))
         .ToNoContentOrProblem();
 
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("{id:int}/summary")]
     public async Task<ActionResult<ConcertSummaryResponse>> GetSummary(int id, CancellationToken ct) =>
         (await concertService.GetSummaryAsync(id, ct))
             .ToOkOrProblem(concert => concert.ToResponse());
 
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("{id:int}/operations")]
     public async Task<ActionResult<ConcertOperationsResponse>> GetOperations(int id, CancellationToken ct) =>
         (await concertService.GetOperationsAsync(id, ct))
             .ToOkOrProblem(concert => concert.ToResponse());
 
-    [HasPermission(TenantPermission.SettlementViewName)]
+    [HasPermission(TenantPermission.SettlementView)]
     [HttpGet("{id:int}/finance")]
     public async Task<ActionResult<ConcertFinanceResponse>> GetFinance(int id, CancellationToken ct) =>
         (await concertService.GetFinanceAsync(id, ct))
             .ToOkOrProblem(concert => concert.ToResponse());
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     [HttpGet("drafts/current")]
     public async Task<ActionResult<IReadOnlyList<ConcertDraftReference>>> GetDraftsForCurrentVenue(
         CancellationToken ct) =>
         (await concertService.GetDraftsForCurrentVenueAsync(ct)).ToOkOrProblem();
 
-    [HasPermission(TenantPermission.SettlementViewName)]
+    [HasPermission(TenantPermission.SettlementView)]
     [HttpGet("{id}/invoice")]
     public async Task<ActionResult<InvoiceDto>> GetInvoice(int id)
     {
@@ -98,7 +98,7 @@ internal sealed class ConcertController : ControllerBase
             .ToOkOrProblem();
     }
 
-    [HasPermission(TenantPermission.SettlementViewName)]
+    [HasPermission(TenantPermission.SettlementView)]
     [HttpGet("{id}/invoice/pdf")]
     public async Task<ActionResult<FileDownload>> GetInvoicePdf(int id)
     {
@@ -125,13 +125,13 @@ internal sealed class ConcertController : ControllerBase
 
     [HttpGet("upcoming/venue/current")]
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentVenue() =>
         (await concertService.GetUpcomingForCurrentVenueAsync()).ToOkOrProblem();
 
     [HttpGet("upcoming/artist/current")]
     [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<ManagerConcertCard>>> GetUpcomingForCurrentArtist() =>
         (await concertService.GetUpcomingForCurrentArtistAsync()).ToOkOrProblem();
 
@@ -153,7 +153,7 @@ internal sealed class ConcertController : ControllerBase
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HttpGet("unposted/venue/{id}")]
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUnpostedByVenueId(
         int id,
         CancellationToken ct)
@@ -163,7 +163,7 @@ internal sealed class ConcertController : ControllerBase
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HttpGet("unposted/artist/{id}")]
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IEnumerable<ConcertSummaryResponse>>> GetUnpostedByArtistId(
         int id,
         CancellationToken ct)
@@ -172,7 +172,7 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.ConcertsOpsEditName)]
+    [HasPermission(TenantPermission.ConcertsOpsEdit)]
     [HttpPut("{id}")]
     public async Task<ActionResult<ConcertUpdateResponse>> Update(
         int id,
@@ -183,7 +183,7 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.ConcertsPublishName)]
+    [HasPermission(TenantPermission.ConcertsPublish)]
     [HttpPut("post/{id}")]
     public async Task<IActionResult> Post(
         int id,
@@ -193,7 +193,7 @@ internal sealed class ConcertController : ControllerBase
         return (await concertService.PostAsync(id, request, ct)).ToNoContentOrProblem();
     }
 
-    [HasPermission(TenantPermission.ConcertsManageName)]
+    [HasPermission(TenantPermission.ConcertsManage)]
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
@@ -201,7 +201,7 @@ internal sealed class ConcertController : ControllerBase
     }
 
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.ConcertsDeclareDoorRevenueName)]
+    [HasPermission(TenantPermission.ConcertsDeclareDoorRevenue)]
     [HttpPost("{id}/door-revenue")]
     public async Task<IActionResult> DeclareDoorRevenue(
         int id,

@@ -1,5 +1,3 @@
-using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.Booking.Domain.Entities;
 using Concertable.B2B.Booking.Domain.Lifecycle;
 using Concertable.DataAccess.Application;
@@ -33,10 +31,5 @@ internal interface IBookingRepository : IRepository<BookingEntity, int>
     Task<int> GetAwaitingCheckoutCountByArtistTenantIdAsync(
         Guid artistTenantId,
         DateTime now,
-        CancellationToken ct = default);
-    Task<bool> IsAccessibleAsync(
-        int bookingId,
-        TenantPermission permission,
-        BookingAccessScope scope,
         CancellationToken ct = default);
 }

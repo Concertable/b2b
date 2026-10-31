@@ -3,30 +3,10 @@ using System.Collections.Frozen;
 
 namespace Concertable.B2B.Authorization.Contracts;
 
-public enum AuthorizationResource
-{
-    Tenant = 1,
-    Conversation,
-    Concert,
-    Opportunity,
-    Application,
-    Booking,
-    Invoice,
-    Contract,
-}
-
-public sealed record PermissionResourceBinding(
-    AuthorizationResource Resource,
-    string? Scope,
-    ResourcePolicy Policy,
-    IReadOnlyList<string> RequiresScopes);
-
 public sealed record PermissionDescriptor(
     TenantPermission Permission,
     string Label,
     string Category,
-    IReadOnlyList<PermissionResourceBinding> ResourceBindings,
-    IReadOnlyList<ResourceAccess> AssignableAccess,
     bool OwnerOnly);
 
 public sealed record SystemPresetDescriptor(
@@ -37,34 +17,34 @@ public sealed record SystemPresetDescriptor(
 
 public static class AuthorizationCatalog
 {
-    public const string Revision = "1af96819c91a46228e6d425e40a25610ffbdf840e1ae2d4d156287b718c9feb5";
+    public const string Revision = "43b845fd702a1b077afa0a3f23cab33d3bcdb8a7351ed53e9ea921cd9ff07b35";
 
     public static IReadOnlyDictionary<TenantPermission, PermissionDescriptor> Permissions { get; } =
         new Dictionary<TenantPermission, PermissionDescriptor>
         {
-            [TenantPermission.ApplicationsDecide] = new(TenantPermission.ApplicationsDecide, "Decide applications", "Application", [new(AuthorizationResource.Application, "Proposal", ResourcePolicy.VenuePrincipal, ["Proposal"])], [ResourceAccess.All], false),
-            [TenantPermission.ApplicationsSubmit] = new(TenantPermission.ApplicationsSubmit, "Submit applications", "Application", [new(AuthorizationResource.Application, "Proposal", ResourcePolicy.ArtistPrincipal, ["Proposal"])], [ResourceAccess.All], false),
-            [TenantPermission.BookingsCancel] = new(TenantPermission.BookingsCancel, "Cancel bookings", "Booking", [new(AuthorizationResource.Booking, "Operations", ResourcePolicy.EitherPrincipal, ["Operations"])], [ResourceAccess.All], false),
-            [TenantPermission.ConcertsCheckIn] = new(TenantPermission.ConcertsCheckIn, "Check in attendees", "Concert", [new(AuthorizationResource.Concert, "Operations", ResourcePolicy.VenuePrincipal, ["Operations"])], [ResourceAccess.Assigned, ResourceAccess.All], false),
-            [TenantPermission.ConcertsDeclareDoorRevenue] = new(TenantPermission.ConcertsDeclareDoorRevenue, "Declare door revenue", "Concert", [new(AuthorizationResource.Concert, "Finance", ResourcePolicy.VenuePrincipal, ["Operations", "Finance"])], [ResourceAccess.All], false),
-            [TenantPermission.ConcertsManage] = new(TenantPermission.ConcertsManage, "Manage concerts", "Concert", [new(AuthorizationResource.Concert, "Operations", ResourcePolicy.EitherPrincipal, ["Operations"])], [ResourceAccess.All], false),
-            [TenantPermission.ConcertsOpsEdit] = new(TenantPermission.ConcertsOpsEdit, "Edit concert operations", "Concert", [new(AuthorizationResource.Concert, "Operations", ResourcePolicy.VenuePrincipal, ["Operations"])], [ResourceAccess.Assigned, ResourceAccess.All], false),
-            [TenantPermission.ConcertsPublish] = new(TenantPermission.ConcertsPublish, "Publish concerts", "Concert", [new(AuthorizationResource.Concert, "Operations", ResourcePolicy.VenuePrincipal, ["Operations"])], [ResourceAccess.All], false),
-            [TenantPermission.MembersInvite] = new(TenantPermission.MembersInvite, "Invite members", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], false),
-            [TenantPermission.MembersManageRoles] = new(TenantPermission.MembersManageRoles, "Manage member roles", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], true),
-            [TenantPermission.MembersRemove] = new(TenantPermission.MembersRemove, "Remove members", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], true),
-            [TenantPermission.MessagesRead] = new(TenantPermission.MessagesRead, "Read messages", "Conversations", [new(AuthorizationResource.Conversation, "Read", ResourcePolicy.ConversationGrant, ["Read"])], [ResourceAccess.Assigned, ResourceAccess.All], false),
-            [TenantPermission.MessagesSend] = new(TenantPermission.MessagesSend, "Send messages", "Conversations", [new(AuthorizationResource.Conversation, "SendMessages", ResourcePolicy.ConversationGrant, ["SendMessages"]), new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.Assigned, ResourceAccess.All], false),
-            [TenantPermission.OperationsView] = new(TenantPermission.OperationsView, "View operations", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, []), new(AuthorizationResource.Application, "Summary", ResourcePolicy.ApplicationGrant, ["Summary"]), new(AuthorizationResource.Booking, "Summary", ResourcePolicy.BookingGrant, ["Summary"]), new(AuthorizationResource.Booking, "Operations", ResourcePolicy.BookingGrant, ["Operations"]), new(AuthorizationResource.Concert, "Summary", ResourcePolicy.ConcertGrant, ["Summary"]), new(AuthorizationResource.Concert, "Operations", ResourcePolicy.ConcertGrant, ["Operations"])], [ResourceAccess.Assigned, ResourceAccess.All], false),
-            [TenantPermission.OpportunitiesManage] = new(TenantPermission.OpportunitiesManage, "Manage opportunities", "Opportunity", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], false),
-            [TenantPermission.PayoutsManage] = new(TenantPermission.PayoutsManage, "Manage payouts", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], false),
-            [TenantPermission.ProfileEdit] = new(TenantPermission.ProfileEdit, "Edit business profiles", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], false),
-            [TenantPermission.ResourcesShare] = new(TenantPermission.ResourcesShare, "Share resources", "Concert", [new(AuthorizationResource.Concert, null, ResourcePolicy.PrincipalAdministration, []), new(AuthorizationResource.Conversation, null, ResourcePolicy.PrincipalAdministration, [])], [ResourceAccess.All], false),
-            [TenantPermission.SettlementTrigger] = new(TenantPermission.SettlementTrigger, "Trigger settlement", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], false),
-            [TenantPermission.SettlementView] = new(TenantPermission.SettlementView, "View settlement", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, []), new(AuthorizationResource.Concert, "Finance", ResourcePolicy.ConcertGrant, ["Finance"]), new(AuthorizationResource.Invoice, "Read", ResourcePolicy.InvoiceGrant, ["Read"])], [ResourceAccess.All], false),
-            [TenantPermission.TenantDelete] = new(TenantPermission.TenantDelete, "Delete organization", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], true),
-            [TenantPermission.TenantSettingsEdit] = new(TenantPermission.TenantSettingsEdit, "Edit organization settings", "Tenant", [new(AuthorizationResource.Tenant, null, ResourcePolicy.Membership, [])], [ResourceAccess.All], false),
-            [TenantPermission.TermsRead] = new(TenantPermission.TermsRead, "Read agreement terms", "Booking", [new(AuthorizationResource.Application, "Proposal", ResourcePolicy.ApplicationGrant, ["Proposal"]), new(AuthorizationResource.Contract, "Read", ResourcePolicy.ContractGrant, ["Read"])], [ResourceAccess.All], false),
+            [TenantPermission.ApplicationsDecide] = new(TenantPermission.ApplicationsDecide, "Decide applications", "Application", false),
+            [TenantPermission.ApplicationsSubmit] = new(TenantPermission.ApplicationsSubmit, "Submit applications", "Application", false),
+            [TenantPermission.BookingsCancel] = new(TenantPermission.BookingsCancel, "Cancel bookings", "Booking", false),
+            [TenantPermission.ConcertsCheckIn] = new(TenantPermission.ConcertsCheckIn, "Check in attendees", "Concert", false),
+            [TenantPermission.ConcertsDeclareDoorRevenue] = new(TenantPermission.ConcertsDeclareDoorRevenue, "Declare door revenue", "Concert", false),
+            [TenantPermission.ConcertsManage] = new(TenantPermission.ConcertsManage, "Manage concerts", "Concert", false),
+            [TenantPermission.ConcertsOpsEdit] = new(TenantPermission.ConcertsOpsEdit, "Edit concert operations", "Concert", false),
+            [TenantPermission.ConcertsPublish] = new(TenantPermission.ConcertsPublish, "Publish concerts", "Concert", false),
+            [TenantPermission.MembersInvite] = new(TenantPermission.MembersInvite, "Invite members", "Tenant", false),
+            [TenantPermission.MembersManageRoles] = new(TenantPermission.MembersManageRoles, "Manage member roles", "Tenant", true),
+            [TenantPermission.MembersRemove] = new(TenantPermission.MembersRemove, "Remove members", "Tenant", true),
+            [TenantPermission.MessagesRead] = new(TenantPermission.MessagesRead, "Read messages", "Conversations", false),
+            [TenantPermission.MessagesSend] = new(TenantPermission.MessagesSend, "Send messages", "Conversations", false),
+            [TenantPermission.OperationsView] = new(TenantPermission.OperationsView, "View operations", "Tenant", false),
+            [TenantPermission.OpportunitiesManage] = new(TenantPermission.OpportunitiesManage, "Manage opportunities", "Opportunity", false),
+            [TenantPermission.PayoutsManage] = new(TenantPermission.PayoutsManage, "Manage payouts", "Tenant", false),
+            [TenantPermission.ProfileEdit] = new(TenantPermission.ProfileEdit, "Edit business profiles", "Tenant", false),
+            [TenantPermission.ResourcesShare] = new(TenantPermission.ResourcesShare, "Share resources", "Concert", false),
+            [TenantPermission.SettlementTrigger] = new(TenantPermission.SettlementTrigger, "Trigger settlement", "Tenant", false),
+            [TenantPermission.SettlementView] = new(TenantPermission.SettlementView, "View settlement", "Tenant", false),
+            [TenantPermission.TenantDelete] = new(TenantPermission.TenantDelete, "Delete organization", "Tenant", true),
+            [TenantPermission.TenantSettingsEdit] = new(TenantPermission.TenantSettingsEdit, "Edit organization settings", "Tenant", false),
+            [TenantPermission.TermsRead] = new(TenantPermission.TermsRead, "Read agreement terms", "Booking", false),
         }.ToFrozenDictionary();
 
     public static IReadOnlyDictionary<string, SystemPresetDescriptor> Presets { get; } =

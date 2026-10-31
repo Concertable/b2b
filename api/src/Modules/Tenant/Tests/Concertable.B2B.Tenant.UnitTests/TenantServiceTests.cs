@@ -22,7 +22,6 @@ public sealed class TenantServiceTests
     private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<IAuthorizationContext> authorizationContext;
-    private readonly Mock<IMembershipReadRepository> membershipReads;
     private readonly Mock<IRoleRepository> roles;
     private readonly TenantService service;
 
@@ -33,15 +32,11 @@ public sealed class TenantServiceTests
         this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
         this.authorizationContext = new Mock<IAuthorizationContext>();
-        this.membershipReads = new Mock<IMembershipReadRepository>();
         var actorId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         this.authorizationContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
                 userId, 1, 1, EffectivePermissions.From(AuthorizationCatalog.Presets["Owner"].Permissions)));
-        this.membershipReads.Setup(reads => reads.LockIfUnchangedAsync(
-                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
         this.roles = new Mock<IRoleRepository>();
         this.repository.Setup(value => value.GetExistingIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
@@ -56,7 +51,6 @@ public sealed class TenantServiceTests
         this.roles.Setup(value => value.HasProtectedOwnerAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        var authorizer = new TenantAuthorizer(authorizationContext.Object, membershipReads.Object, roles.Object);
         this.service = new TenantService(
             repository.Object,
             membershipRepository.Object,
@@ -68,7 +62,7 @@ public sealed class TenantServiceTests
             TimeProvider.System,
             [],
             Mock.Of<ICurrentUser>(),
-            authorizer);
+            authorizationContext.Object);
     }
 
     private static TenantEntity Bare() =>
@@ -135,15 +129,13 @@ public sealed class TenantServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_RevokedMembershipAfterLock_IsForbidden()
+    public async Task UpdateAsync_WithoutMembership_IsForbidden()
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
-        membershipReads.Setup(reads => reads.LockIfUnchangedAsync(
-                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot?)null);
+        authorizationContext.SetupGet(context => context.Membership).Returns((MembershipSnapshot?)null);
 
         var result = await service.UpdateAsync(null!);
 
@@ -152,15 +144,13 @@ public sealed class TenantServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_RevokedMembershipAfterLock_IsForbidden()
+    public async Task DeleteAsync_WithoutMembership_IsForbidden()
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
-        membershipReads.Setup(reads => reads.LockIfUnchangedAsync(
-                It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot?)null);
+        authorizationContext.SetupGet(context => context.Membership).Returns((MembershipSnapshot?)null);
 
         var result = await service.DeleteAsync();
 
@@ -501,7 +491,7 @@ public sealed class TenantServiceTests
         var memberships = await service.GetMembershipsAsync(userId);
 
         Assert.Equal(
-            [TenantPermission.ConcertsCheckIn.Value, TenantPermission.OperationsView.Value],
+            [TenantPermission.ConcertsCheckIn.Key, TenantPermission.OperationsView.Key],
             memberships.Single().Permissions.Order());
     }
 }

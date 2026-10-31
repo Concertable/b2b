@@ -7,7 +7,4 @@ public interface IMembershipReadRepository
 
     Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByUserIdAsync(
         Guid userId, CancellationToken cancellationToken = default);
-
-    Task<MembershipSnapshot?> LockIfUnchangedAsync(
-        MembershipSnapshot expected, CancellationToken cancellationToken = default);
 }

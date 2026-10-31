@@ -1,5 +1,4 @@
 using Concertable.B2B.Application.Application.Interfaces;
-using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Domain.Entities;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
@@ -66,7 +65,6 @@ internal sealed class ApplicationPrivilegedRepository(
     {
         await LockAsync(applicationId, ct);
         return await context.Applications
-            .Include(application => application.AccessGrants)
             .SingleOrDefaultAsync(application => application.Id == applicationId, ct);
     }
 
@@ -90,7 +88,6 @@ internal sealed class ApplicationPrivilegedRepository(
             await LockAsync(id, ct);
 
         return await context.Applications
-            .Include(application => application.AccessGrants)
             .SingleOrDefaultAsync(application => application.Id == applicationId, ct);
     }
 
@@ -181,11 +178,7 @@ internal sealed class ApplicationPrivilegedRepository(
             ct);
 
     private Task LockAsync(int applicationId, CancellationToken ct) =>
-        LockResourceAndGrantsAsync(applicationId, ct);
-
-    private async Task LockResourceAndGrantsAsync(int applicationId, CancellationToken ct)
-    {
-        await context.Database.ExecuteSqlInterpolatedAsync(
+        context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
              FROM application."Applications"
@@ -193,13 +186,4 @@ internal sealed class ApplicationPrivilegedRepository(
              FOR UPDATE
              """,
             ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM application."ApplicationAccessGrants"
-             WHERE "ResourceId" = {applicationId}
-             FOR UPDATE
-             """,
-            ct);
-    }
 }

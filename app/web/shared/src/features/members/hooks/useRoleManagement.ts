@@ -84,11 +84,10 @@ export function useRoleManagement() {
   const setInvitationAssignable = (value: boolean) =>
     setDraft((current) => ({ ...current, isInvitationAssignable: value }));
   const togglePermission = (item: PermissionMetadata, checked: boolean) => {
-    const audience = item.assignableAudiences[0];
     setDraft((current) => ({
       ...current,
-      permissions: checked && audience
-        ? [...current.permissions.filter((entry) => entry.permission !== item.permission), { permission: item.permission, audience }]
+      permissions: checked
+        ? [...current.permissions.filter((entry) => entry.permission !== item.permission), { permission: item.permission, audience: "All" }]
         : current.permissions.filter((entry) => entry.permission !== item.permission),
     }));
   };

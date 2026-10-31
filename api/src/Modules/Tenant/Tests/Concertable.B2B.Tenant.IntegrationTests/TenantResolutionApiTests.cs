@@ -85,18 +85,6 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         Assert.True(existing.SetEquals([actor.TenantId, otherTenantId]));
     }
 
-    [Fact]
-    public async Task LockIfUnchanged_ActorPermissionVersionChanged_RejectsStaleAuthority()
-    {
-        var membership = fixture.Memberships.AsEnumerable().First(value => HasRole(value, "Owner"));
-        var expected = Snapshot(membership);
-        await fixture.ChangeMembershipRolesAsync(membership.TenantId, membership.UserId, "Manager");
-        var current = Snapshot(fixture.Memberships.Single(value => value.Id == membership.Id));
-
-        Assert.Null(await fixture.LockIfUnchangedAsync(expected));
-        Assert.Equal(current, await fixture.LockIfUnchangedAsync(current));
-    }
-
     private MembershipSnapshot Snapshot(TenantMembershipEntity membership)
     {
         var tenant = fixture.Tenants.Single(value => value.Id == membership.TenantId);

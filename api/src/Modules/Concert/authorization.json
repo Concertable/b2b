@@ -1,159 +1,62 @@
 {
   "permissions": [
     {
-      "name": "concerts.ops_edit",
-      "symbol": "ConcertsOpsEdit",
+      "name": "concerts:ops_edit",
       "label": "Edit concert operations",
-      "category": "Concert",
-      "assignableAudiences": [
-        "Assigned",
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All",
         "Staff": "Assigned",
         "Sound": "Assigned"
-      },
-      "resourceBindings": [
-        {
-          "resource": "concert",
-          "facet": "Operations",
-          "policy": "venue_principal",
-          "requiresScopes": [
-            "Operations"
-          ]
-        }
-      ]
+      }
     },
     {
-      "name": "concerts.check_in",
-      "symbol": "ConcertsCheckIn",
+      "name": "concerts:check_in",
       "label": "Check in attendees",
-      "category": "Concert",
-      "assignableAudiences": [
-        "Assigned",
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All",
         "Staff": "Assigned",
         "Door": "Assigned"
-      },
-      "resourceBindings": [
-        {
-          "resource": "concert",
-          "facet": "Operations",
-          "policy": "venue_principal",
-          "requiresScopes": [
-            "Operations"
-          ]
-        }
-      ]
+      }
     },
     {
-      "name": "concerts.declare_door_revenue",
-      "symbol": "ConcertsDeclareDoorRevenue",
+      "name": "concerts:declare_door_revenue",
       "label": "Declare door revenue",
-      "category": "Concert",
-      "assignableAudiences": [
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All"
-      },
-      "resourceBindings": [
-        {
-          "resource": "concert",
-          "facet": "Finance",
-          "policy": "venue_principal",
-          "requiresScopes": [
-            "Operations",
-            "Finance"
-          ]
-        }
-      ]
+      }
     },
     {
-      "name": "concerts.manage",
-      "symbol": "ConcertsManage",
+      "name": "concerts:manage",
       "label": "Manage concerts",
-      "category": "Concert",
-      "assignableAudiences": [
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All"
-      },
-      "resourceBindings": [
-        {
-          "resource": "concert",
-          "facet": "Operations",
-          "policy": "either_principal",
-          "requiresScopes": [
-            "Operations"
-          ]
-        }
-      ]
+      }
     },
     {
-      "name": "resources.share",
-      "symbol": "ResourcesShare",
+      "name": "resources:share",
       "label": "Share resources",
-      "category": "Concert",
-      "assignableAudiences": [
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All"
-      },
-      "resourceBindings": [
-        {
-          "resource": "concert",
-          "facet": null,
-          "policy": "principal_administration",
-          "requiresScopes": []
-        },
-        {
-          "resource": "conversation",
-          "facet": null,
-          "policy": "principal_administration",
-          "requiresScopes": []
-        }
-      ]
+      }
     },
     {
-      "name": "concerts.publish",
-      "symbol": "ConcertsPublish",
+      "name": "concerts:publish",
       "label": "Publish concerts",
-      "category": "Concert",
-      "assignableAudiences": [
-        "All"
-      ],
       "ownerOnly": false,
       "systemPresets": {
         "Owner": "All",
         "Manager": "All"
-      },
-      "resourceBindings": [
-        {
-          "resource": "concert",
-          "facet": "Operations",
-          "policy": "venue_principal",
-          "requiresScopes": [
-            "Operations"
-          ]
-        }
-      ]
+      }
     }
   ]
 }

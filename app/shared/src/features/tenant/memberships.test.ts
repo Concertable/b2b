@@ -16,7 +16,7 @@ const memberships: ReadonlyArray<Membership> = [
     roles: [{ id: "owner-id", name: "Owner", isProtectedOwner: true }],
     permissionVersion: 1,
     rolePolicyVersion: 1,
-    permissions: ["tenant.settings.edit"],
+    permissions: ["tenant_settings:edit"],
   },
   {
     membershipId: "membership-venue-two",
@@ -26,7 +26,7 @@ const memberships: ReadonlyArray<Membership> = [
     roles: [{ id: "manager-id", name: "Manager", isProtectedOwner: false }],
     permissionVersion: 2,
     rolePolicyVersion: 1,
-    permissions: ["operations.view"],
+    permissions: ["operations:view"],
   },
   {
     membershipId: "membership-artist-one",
@@ -36,7 +36,7 @@ const memberships: ReadonlyArray<Membership> = [
     roles: [{ id: "staff-id", name: "Staff", isProtectedOwner: false }],
     permissionVersion: 3,
     rolePolicyVersion: 1,
-    permissions: ["operations.view"],
+    permissions: ["operations:view"],
   },
 ];
 

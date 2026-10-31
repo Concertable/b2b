@@ -67,24 +67,6 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         return await MaterializeAsync(members, ct);
     }
 
-    public async Task<MembershipSnapshot?> LockIfUnchangedAsync(
-        MembershipSnapshot expected, CancellationToken cancellationToken = default)
-    {
-        var unitOfWork = unitOfWorkAccessor.Current
-            ?? throw new InvalidOperationException("Membership locking requires an active transaction.");
-        await unitOfWork.EnlistAsync(context, cancellationToken);
-        await LockTenantForShareAsync(expected.TenantId, cancellationToken);
-        var current = (await GetSnapshotsByIdsForShareAsync([expected.MembershipId], cancellationToken))
-            .SingleOrDefault();
-        if (current != expected)
-            return null;
-        var revision = await context.AuthorizationCatalogStates.AsNoTracking()
-            .Where(state => state.Id == 1)
-            .Select(state => state.Revision)
-            .SingleOrDefaultAsync(cancellationToken);
-        return revision == AuthorizationCatalog.Revision ? current : null;
-    }
-
     public async Task<bool> TryLockUnchangedAsync(
         IReadOnlyCollection<TenantMembershipEntity> members,
         CancellationToken ct = default)

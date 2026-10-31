@@ -30,14 +30,16 @@ public sealed class ComposableRoleInvariantTests
         Assert.Equal(ResourceAccess.Assigned, existingPermission.Audience);
     }
 
-    [Fact]
-    public void CustomRoleRejectsUnsupportedAccess()
+    [Theory]
+    [InlineData(ResourceAccess.None)]
+    [InlineData((ResourceAccess)99)]
+    public void CustomRoleRejectsAPermissionWithoutAccess(ResourceAccess access)
     {
         Assert.Throws<ArgumentException>(() => TenantRoleDefinition.CreateCustom(
             Guid.NewGuid(), "Door revenue", false,
             new Dictionary<TenantPermission, ResourceAccess>
             {
-                [TenantPermission.ConcertsDeclareDoorRevenue] = ResourceAccess.Assigned,
+                [TenantPermission.ConcertsDeclareDoorRevenue] = access,
             }));
     }
 

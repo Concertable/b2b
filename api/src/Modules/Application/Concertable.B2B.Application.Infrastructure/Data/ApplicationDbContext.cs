@@ -1,4 +1,3 @@
-using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Messaging.Infrastructure.Outbox;
@@ -19,25 +18,13 @@ internal sealed class ApplicationDbContext(
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<VerifyPaymentEntity> VerifyPayments => Set<VerifyPaymentEntity>();
     public DbSet<ConcertAvailabilityEntity> ConcertAvailabilities => Set<ConcertAvailabilityEntity>();
-    public DbSet<ApplicationAccessGrant> ApplicationAccessGrants => Set<ApplicationAccessGrant>();
 
-    public ResourceAccess OperationsAccess =>
-        Membership?.Permissions[TenantPermission.OperationsView] ?? ResourceAccess.None;
-    public ResourceAccess TermsAccess =>
-        Membership?.Permissions[TenantPermission.TermsRead] ?? ResourceAccess.None;
+    public ResourceAccess OperationsAccess => ActorAccess(TenantPermission.OperationsView);
 
     protected override void ApplyTenantFilters(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ApplicationAccessGrant>().HasQueryFilter(TenantFilters.Key,
-            IsVisibleGrant<ApplicationAccessGrant, ApplicationAccessScope>(
-                    () => OperationsAccess,
-                    ApplicationAccessScope.Summary)
-                .Or(IsVisibleGrant<ApplicationAccessGrant, ApplicationAccessScope>(
-                    () => TermsAccess,
-                    ApplicationAccessScope.Proposal)));
-
         modelBuilder.Entity<ApplicationEntity>().HasQueryFilter(TenantFilters.Key, application =>
-            ApplicationAccessGrants.Any(grant =>
-                grant.ResourceId == application.Id && grant.Scope == ApplicationAccessScope.Summary));
+            OperationsAccess == ResourceAccess.All
+            && (application.VenueTenantId == ActorTenantId || application.ArtistTenantId == ActorTenantId));
     }
 }
