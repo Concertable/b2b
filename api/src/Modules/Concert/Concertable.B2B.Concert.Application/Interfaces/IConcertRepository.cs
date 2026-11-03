@@ -12,7 +12,6 @@ internal interface IConcertRepository : IRepository<ConcertEntity>
     Task<ConcertSummary?> GetSummaryByIdAsync(int id, CancellationToken ct = default);
     Task<ConcertOperations?> GetOperationsByIdAsync(int id, CancellationToken ct = default);
     Task<ConcertFinance?> GetFinanceByIdAsync(int id, CancellationToken ct = default);
-    Task<bool> CanDeclareDoorRevenueByIdAsync(int id, CancellationToken ct = default);
     Task<IReadOnlyList<ConcertDraftReference>> GetDraftReferencesForVenueTenantIdAsync(
         Guid venueTenantId,
         CancellationToken ct = default);

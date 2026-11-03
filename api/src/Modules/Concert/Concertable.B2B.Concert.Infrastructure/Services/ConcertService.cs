@@ -794,13 +794,13 @@ internal sealed class ConcertService : IConcertService
         if (!membership.Membership.TryGetValue(out var actor))
             return finance with { CanDeclareDoorRevenue = false };
 
-        var canDeclareDoorRevenue = await privilegedRepository.GetByIdAsync(finance.Id, ct) is { } concert
-            && concert.IsDoorRevenueDeclarableBy(actor);
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var canDeclareDoorRevenue =
+            await privilegedRepository.GetByIdAsync(finance.Id, ct) is DoorRevenueConcert { DoorRevenue: null } concert
+            && concert.IsDoorRevenueDeclarableBy(actor)
+            && concert.Period.End < now
+            && concert.State is ConcertState.Draft or ConcertState.Posted;
 
-        return finance with
-        {
-            CanDeclareDoorRevenue = canDeclareDoorRevenue
-                && await concertRepository.CanDeclareDoorRevenueByIdAsync(finance.Id, ct),
-        };
+        return finance with { CanDeclareDoorRevenue = canDeclareDoorRevenue };
     }
 }

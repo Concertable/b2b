@@ -155,17 +155,6 @@ internal sealed class ConcertRepository : Repository<ConcertEntity>, IConcertRep
             .Select(c => c.TicketsSold * c.Price + c.DoorRevenue)
             .FirstOrDefaultAsync();
 
-    public Task<bool> CanDeclareDoorRevenueByIdAsync(int id, CancellationToken ct = default)
-    {
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        return Settleable()
-            .AnyAsync(concert => concert.Id == id
-                && (concert is DoorSplitConcert && ((DoorSplitConcert)concert).DoorRevenue == null
-                    || concert is VersusConcert && ((VersusConcert)concert).DoorRevenue == null)
-                && concert.Period.End < now
-                && (concert.State == ConcertState.Draft || concert.State == ConcertState.Posted), ct);
-    }
-
     private IQueryable<ConcertEntity> Operable()
     {
         if (context.Actor is not { } actor)
