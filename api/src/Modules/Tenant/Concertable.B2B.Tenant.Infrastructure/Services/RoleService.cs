@@ -1,9 +1,11 @@
 using Concertable.B2B.Tenant.Infrastructure.Authorization;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Domain;
 using Concertable.Kernel.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
@@ -130,9 +132,18 @@ internal sealed class RoleService : IRoleService
         return ToDto(role);
     }
 
-    public Task<UnitResult<RetireRoleError>> RetireAsync(
-        Guid roleId, RetireRoleRequest request, CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(() => RetireCoreAsync(roleId, request, ct), ct);
+    public async Task<UnitResult<RetireRoleError>> RetireAsync(
+        Guid roleId, RetireRoleRequest request, CancellationToken ct = default)
+    {
+        try
+        {
+            return await unitOfWork.ExecuteAsync(() => RetireCoreAsync(roleId, request, ct), ct);
+        }
+        catch (DbUpdateException exception) when (exception.IsMembershipConcurrencyConflict())
+        {
+            return new RetireRoleError.Superseded();
+        }
+    }
 
     private async Task<UnitResult<RetireRoleError>> RetireCoreAsync(
         Guid roleId, RetireRoleRequest request, CancellationToken ct)
@@ -164,8 +175,6 @@ internal sealed class RoleService : IRoleService
         if (affected.Count > 0 && replacement is null)
             return new RetireRoleError.ReplacementRequired();
 
-        if (!await memberships.TryLockUnchangedAsync(affected, ct))
-            return new RetireRoleError.Superseded();
         var now = timeProvider.GetUtcNow().UtcDateTime;
         foreach (var member in affected)
         {

@@ -1,8 +1,10 @@
 using Concertable.B2B.Tenant.Infrastructure.Authorization;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
 
@@ -58,11 +60,20 @@ internal sealed class MembershipService : IMembershipService
             return Result.Success<IReadOnlyList<MemberDto>, ListMembersError>(result);
         }, ct);
 
-    public Task<UnitResult<ChangeMemberRolesError>> ChangeRolesAsync(
+    public async Task<UnitResult<ChangeMemberRolesError>> ChangeRolesAsync(
         Guid userId,
         ChangeMemberRolesRequest request,
-        CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(() => ChangeRolesCoreAsync(userId, request, ct), ct);
+        CancellationToken ct = default)
+    {
+        try
+        {
+            return await unitOfWork.ExecuteAsync(() => ChangeRolesCoreAsync(userId, request, ct), ct);
+        }
+        catch (DbUpdateException exception) when (exception.IsMembershipConcurrencyConflict())
+        {
+            return new ChangeMemberRolesError.NotPermitted();
+        }
+    }
 
     private async Task<UnitResult<ChangeMemberRolesError>> ChangeRolesCoreAsync(
         Guid userId,
@@ -80,8 +91,6 @@ internal sealed class MembershipService : IMembershipService
         var member = await repository.FindMembershipAsync(tenantId, userId, ct);
         if (member is null)
             return new ChangeMemberRolesError.MemberNotFound(userId);
-        if (!await repository.TryLockUnchangedAsync([member], ct))
-            return new ChangeMemberRolesError.NotPermitted();
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
         if (selectedRoles is null)
             return new ChangeMemberRolesError.InvalidRoles();
@@ -98,10 +107,19 @@ internal sealed class MembershipService : IMembershipService
             .MapError(error => error.ToChangeMemberRolesError());
     }
 
-    public Task<UnitResult<RemoveMemberError>> RemoveMemberAsync(
+    public async Task<UnitResult<RemoveMemberError>> RemoveMemberAsync(
         Guid userId,
-        CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(() => RemoveMemberCoreAsync(userId, ct), ct);
+        CancellationToken ct = default)
+    {
+        try
+        {
+            return await unitOfWork.ExecuteAsync(() => RemoveMemberCoreAsync(userId, ct), ct);
+        }
+        catch (DbUpdateException exception) when (exception.IsMembershipConcurrencyConflict())
+        {
+            return new RemoveMemberError.NotPermitted();
+        }
+    }
 
     private async Task<UnitResult<RemoveMemberError>> RemoveMemberCoreAsync(
         Guid userId,
@@ -118,8 +136,6 @@ internal sealed class MembershipService : IMembershipService
         var member = await repository.FindMembershipAsync(tenantId, userId, ct);
         if (member is null)
             return new RemoveMemberError.MemberNotFound(userId);
-        if (!await repository.TryLockUnchangedAsync([member], ct))
-            return new RemoveMemberError.NotPermitted();
 
         await repository.SaveChangesAsync(ct);
         var isOwner = (await roles.GetSummariesForMembershipAsync(member.TenantId, member.Id, ct))

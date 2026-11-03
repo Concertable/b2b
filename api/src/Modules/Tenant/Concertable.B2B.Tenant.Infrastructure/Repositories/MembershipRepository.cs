@@ -44,41 +44,6 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         return await MaterializeAsync(members, ct);
     }
 
-    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForUpdateAsync(
-        IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
-    {
-        var unitOfWork = unitOfWorkAccessor.Current
-            ?? throw new InvalidOperationException("Membership updates require an active transaction.");
-        await unitOfWork.EnlistAsync(context, ct);
-        var distinctIds = membershipIds.Distinct().Order().ToArray();
-        foreach (var membershipId in distinctIds)
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Memberships"
-                 WHERE "Id" = {membershipId}
-                 FOR UPDATE
-                 """,
-                ct);
-        }
-        var members = await context.Memberships.AsNoTracking()
-            .Where(member => distinctIds.Contains(member.Id)).ToListAsync(ct);
-        return await MaterializeAsync(members, ct);
-    }
-
-    public async Task<bool> TryLockUnchangedAsync(
-        IReadOnlyCollection<TenantMembershipEntity> members,
-        CancellationToken ct = default)
-    {
-        var locked = await GetSnapshotsByIdsForUpdateAsync([.. members.Select(member => member.Id)], ct);
-        return members.All(member => locked.Any(snapshot =>
-            snapshot.MembershipId == member.Id
-            && snapshot.TenantId == member.TenantId
-            && snapshot.UserId == member.UserId
-            && snapshot.PermissionVersion == member.PermissionVersion));
-    }
-
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
         Guid userId, Guid tenantId, CancellationToken cancellationToken = default) =>
         ReadWithFenceAsync(async ct =>

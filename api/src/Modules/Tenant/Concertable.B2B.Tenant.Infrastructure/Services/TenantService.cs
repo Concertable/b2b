@@ -1,10 +1,12 @@
 using Concertable.B2B.Tenant.Infrastructure.Authorization;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
+using Microsoft.EntityFrameworkCore;
 using Reunion.Errors;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
@@ -219,8 +221,17 @@ internal sealed class TenantService : ITenantService
             return Result.Success<TenantDetails, ChangeBusinessActivityError>(ToDetails(tenant));
         }, ct);
 
-    public Task<UnitResult<DeleteTenantError>> DeleteAsync(CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(() => DeleteCoreAsync(ct), ct);
+    public async Task<UnitResult<DeleteTenantError>> DeleteAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            return await unitOfWork.ExecuteAsync(() => DeleteCoreAsync(ct), ct);
+        }
+        catch (DbUpdateException exception) when (exception.IsMembershipConcurrencyConflict())
+        {
+            return new DeleteTenantError.NotPermitted();
+        }
+    }
 
     private async Task<UnitResult<DeleteTenantError>> DeleteCoreAsync(CancellationToken ct)
     {
@@ -240,8 +251,6 @@ internal sealed class TenantService : ITenantService
         }
 
         var members = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);
-        if (!await membershipRepository.TryLockUnchangedAsync(members, ct))
-            return new DeleteTenantError.NotPermitted();
         foreach (var membership in members)
             membershipRepository.Remove(membership);
 
