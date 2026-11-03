@@ -37,7 +37,7 @@ const membership: Membership = {
   roles: [{ id: "owner-id", name: "Owner", isProtectedOwner: true }],
   permissionVersion: 1,
   rolePolicyVersion: 1,
-  permissions: ["tenant.settings.edit"],
+  permissions: ["tenant_settings:edit"],
 };
 
 describe("useTenant", () => {

@@ -21,7 +21,7 @@ const memberships: ReadonlyArray<Membership> = [
     permissionVersion: 1,
     rolePolicyVersion: 1,
     businessActivities: [],
-    permissions: ["tenant.settings.edit"],
+    permissions: ["tenant_settings:edit"],
   },
   {
     membershipId: "membership-two",
@@ -31,7 +31,7 @@ const memberships: ReadonlyArray<Membership> = [
     permissionVersion: 2,
     rolePolicyVersion: 1,
     businessActivities: [],
-    permissions: ["tenant.settings.edit"],
+    permissions: ["tenant_settings:edit"],
   },
 ];
 
