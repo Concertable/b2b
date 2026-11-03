@@ -14,6 +14,7 @@ internal sealed class ApplicationPrivilegedRepository(
     : IApplicationPrivilegedRepository
 {
     private const int OpportunityLockNamespace = 10241001;
+    private const int TenantApplicationsLockNamespace = 10241002;
 
     public async Task AddAsync(ApplicationEntity application, CancellationToken ct = default) =>
         await context.Applications.AddAsync(application, ct);
@@ -29,6 +30,33 @@ internal sealed class ApplicationPrivilegedRepository(
             $"SELECT pg_advisory_xact_lock({OpportunityLockNamespace}, {opportunityId})", ct);
     }
 
+    public async Task AcquireTenantApplicationsSharedLockAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default)
+    {
+        await EnlistAsync(ct);
+        foreach (var tenantId in tenantIds.Distinct().Order())
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock_shared({TenantApplicationsLockNamespace}, hashtext({tenantId.ToString()}))",
+                ct);
+        }
+    }
+
+    public async Task AcquireTenantApplicationsExclusiveLockAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        await EnlistAsync(ct);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({TenantApplicationsLockNamespace}, hashtext({tenantId.ToString()}))",
+            ct);
+    }
+
+    public Task<bool> ExistsLiveByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        context.Applications.AnyAsync(application =>
+            (application.VenueTenantId == tenantId || application.ArtistTenantId == tenantId)
+            && (application.State == ApplicationState.Applied || application.State == ApplicationState.Accepted),
+            ct);
+
     public Task<bool> ExistsByOpportunityIdAndArtistTenantIdAsync(
         int opportunityId,
         Guid artistTenantId,
@@ -38,26 +66,6 @@ internal sealed class ApplicationPrivilegedRepository(
                 application.OpportunityId == opportunityId
                 && application.ArtistTenantId == artistTenantId,
             ct);
-
-    public async Task<IReadOnlyList<Guid>> GetNotificationTenantIdsAsync(
-        int applicationId, bool includeSiblings, CancellationToken ct = default)
-    {
-        var application = await context.Applications.AsNoTracking()
-            .Where(candidate => candidate.Id == applicationId)
-            .Select(candidate => new { candidate.OpportunityId, candidate.VenueTenantId, candidate.ArtistTenantId })
-            .SingleOrDefaultAsync(ct);
-        if (application is null)
-            return [];
-
-        if (!includeSiblings)
-            return [application.VenueTenantId, application.ArtistTenantId];
-
-        var artists = await context.Applications.AsNoTracking()
-            .Where(candidate => candidate.OpportunityId == application.OpportunityId)
-            .Select(candidate => candidate.ArtistTenantId)
-            .ToListAsync(ct);
-        return [application.VenueTenantId, .. artists];
-    }
 
     public async Task<ApplicationEntity?> GetByIdForUpdateAsync(
         int applicationId,
@@ -176,6 +184,11 @@ internal sealed class ApplicationPrivilegedRepository(
                 availability.VenueId == venueId
                 && availability.StartDate.Date == date.Date,
             ct);
+
+    private Task EnlistAsync(CancellationToken ct) =>
+        (unitOfWorkAccessor.Current
+            ?? throw new InvalidOperationException("A tenant applications lock requires a unit of work."))
+            .EnlistAsync(context, ct);
 
     private Task LockAsync(int applicationId, CancellationToken ct) =>
         context.Database.ExecuteSqlInterpolatedAsync(

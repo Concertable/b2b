@@ -20,6 +20,13 @@ internal sealed class OpportunityReadRepository : IOpportunityReadRepository
         this.timeProvider = timeProvider;
     }
 
+    public Task<bool> ExistsLiveByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default) =>
+        context.Opportunities.AnyAsync(
+            opportunity => opportunity.TenantId == tenantId && opportunity.State != OpportunityState.Withdrawn,
+            ct);
+
     public Task<OpportunityEntity?> GetByIdAsync(
         int opportunityId,
         CancellationToken ct = default) =>

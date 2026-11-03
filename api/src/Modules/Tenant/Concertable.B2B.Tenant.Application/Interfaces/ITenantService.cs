@@ -7,13 +7,16 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 internal interface ITenantService
 {
     Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task RequireBookingTenantsAsync(Guid venueTenantId, Guid artistTenantId, CancellationToken ct = default);
 
     Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default);
 
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
     Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
         IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
+    Task<Option<MembershipSnapshot>> GetCurrentMembershipAsync(
+        Guid tenantId,
+        Guid membershipId,
         CancellationToken ct = default);
     Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
         Guid tenantId,

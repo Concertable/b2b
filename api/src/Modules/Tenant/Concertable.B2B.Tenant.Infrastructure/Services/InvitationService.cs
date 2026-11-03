@@ -52,7 +52,7 @@ internal sealed class InvitationService : IInvitationService
         unitOfWork.ExecuteAsync(async () =>
         {
             var tenantId = tenantContext.GetTenantId();
-            if (!(await tenantRepository.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
+            if (!(await tenantRepository.GetExistingIdsForKeyShareAsync([tenantId], ct)).Contains(tenantId)
                 || !authorizationContext.TryGetMembership(tenantId, out var actor)
                 || !actor.HasPermission(TenantPermission.MembersInvite))
                 return Result.Failure<IReadOnlyList<InvitationDto>, ListInvitationsError>(
@@ -163,7 +163,7 @@ internal sealed class InvitationService : IInvitationService
         if (timeProvider.GetUtcNow().UtcDateTime >= invitation.ExpiresAt)
             return new AcceptInvitationError.InvitationExpired();
 
-        var inviter = (await membershipRepository.GetSnapshotsByIdsForShareAsync(
+        var inviter = (await membershipRepository.GetSnapshotsByIdsForKeyShareAsync(
             [invitation.InviterMembershipId], ct)).SingleOrDefault();
         var roleIds = invitation.Assignments.Select(row => row.RoleId).ToArray();
         var selectedRoles = await roles.ResolveActiveAsync(tenant.Id, roleIds, ct);

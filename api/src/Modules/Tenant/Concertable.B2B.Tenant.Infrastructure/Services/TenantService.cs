@@ -54,18 +54,6 @@ internal sealed class TenantService : ITenantService
     public async Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         (await repository.GetByIdAsync(id, ct)).ToOption().Map(tenant => tenant.ToDto());
 
-    public async Task RequireBookingTenantsAsync(
-        Guid venueTenantId,
-        Guid artistTenantId,
-        CancellationToken ct = default)
-    {
-        foreach (var tenantId in new[] { venueTenantId, artistTenantId }.Distinct().Order())
-        {
-            if (!await repository.ExistsForBookingAsync(tenantId, ct))
-                throw new TenantUnavailableException(tenantId);
-        }
-    }
-
     public async Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default)
     {
         var memberships = await membershipRepository.GetMembershipsAsync(userId, ct);
@@ -92,6 +80,12 @@ internal sealed class TenantService : ITenantService
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default) =>
         membershipRepository.GetSnapshotsByTenantIdsAsync(tenantIds, ct);
+
+    public async Task<Option<MembershipSnapshot>> GetCurrentMembershipAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default) =>
+        await membershipRepository.GetSnapshotByTenantIdAndIdAsync(tenantId, membershipId, ct);
 
     public async Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
         Guid tenantId,

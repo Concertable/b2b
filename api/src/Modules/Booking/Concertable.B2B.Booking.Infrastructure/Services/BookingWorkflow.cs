@@ -17,7 +17,6 @@ using Concertable.B2B.Booking.Infrastructure.Specifications;
 using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Tenant.Contracts;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +28,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 {
     private readonly IBookingRepository bookingRepository;
     private readonly IBookingPrivilegedRepository privilegedRepository;
-    private readonly ITenantModule tenantModule;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
@@ -42,13 +40,11 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
     private readonly IAuthorizationContext authorizationContext;
-    private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
 
     public BookingWorkflow(
         IBookingRepository bookingRepository,
         IBookingPrivilegedRepository privilegedRepository,
-        ITenantModule tenantModule,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
@@ -61,12 +57,10 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
         IAuthorizationContext authorizationContext,
-        ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner)
     {
         this.bookingRepository = bookingRepository;
         this.privilegedRepository = privilegedRepository;
-        this.tenantModule = tenantModule;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
@@ -79,7 +73,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.authorizationContext = authorizationContext;
-        this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
     }
 
@@ -152,21 +145,13 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
     private async Task<UnitResult<CancelBookingError>> CancelCoreAsync(
         int bookingId,
-        MembershipSnapshot expectedActor,
+        MembershipSnapshot actor,
         CancellationToken ct)
     {
-        var parties = await privilegedRepository.GetPartyTenantIdsAsync(bookingId, ct);
-        if (parties.Count == 0)
-            return new CancelBookingError.BookingNotFound(bookingId);
-        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
-        if (!existingTenantIds.IsSupersetOf(parties))
-            return new CancelBookingError.NotPermitted();
-
         var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);
         if (booking is null)
             return new CancelBookingError.BookingNotFound(bookingId);
-        if (!parties.ToHashSet().SetEquals([booking.VenueTenantId, booking.ArtistTenantId])
-            || !booking.IsCancellableBy(expectedActor))
+        if (!booking.IsCancellableBy(actor))
             return new CancelBookingError.NotPermitted();
         if (booking.State is BookingState.Cancelled or BookingState.CancellationPending)
             return new Success();
@@ -215,7 +200,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
     {
         var booking = BookingEntity.Create(snapshot);
-        await tenantModule.RequireBookingTenantsAsync(booking.VenueTenantId, booking.ArtistTenantId, ct);
         await bookingRepository.AddAsync(booking, ct);
         await bookingRepository.SaveChangesAsync(ct);
 

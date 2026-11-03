@@ -38,20 +38,24 @@ public sealed class TenantServiceTests
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
                 userId, 1, 1, PermissionSet.From(AuthorizationCatalog.Presets["Owner"].Permissions)));
         this.roles = new Mock<IRoleRepository>();
-        this.repository.Setup(value => value.GetExistingIdsForShareAsync(
+        this.repository.Setup(value => value.GetExistingIdsForKeyShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
                 (IReadOnlySet<Guid>)ids.ToHashSet());
         this.repository.Setup(value => value.GetAuthorizationCatalogRevisionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(AuthorizationCatalog.Revision);
-        this.membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
+        this.membershipRepository.Setup(value => value.GetSnapshotsByIdsForKeyShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
                 Task.FromResult<IReadOnlyList<MembershipSnapshot>>(authorizationContext.Object.Membership.TryGetValue(out var actor) ? [actor] : []));
         this.roles.Setup(value => value.HasProtectedOwnerAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        this.service = new TenantService(
+        this.service = CreateService([]);
+    }
+
+    private TenantService CreateService(IEnumerable<ITenantDeletionGuard> deletionGuards) =>
+        new(
             repository.Object,
             membershipRepository.Object,
             roles.Object,
@@ -60,10 +64,9 @@ public sealed class TenantServiceTests
             new VatPolicy(new UkVatCalculator()),
             new ImmediateUnitOfWorkBehavior(),
             TimeProvider.System,
-            [],
+            deletionGuards,
             Mock.Of<ICurrentUser>(),
             authorizationContext.Object);
-    }
 
     private static TenantEntity Bare() =>
         TenantEntity.Create("Bare business", "bare@test.com", Guid.NewGuid(), DateTime.UtcNow);
@@ -141,6 +144,33 @@ public sealed class TenantServiceTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<UpdateTenantError.NotPermitted>(error);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_GuardReportsLiveObligations_ConsultsGuardsUnderTheTenantLockAndKeepsTheTenant()
+    {
+        var tenantId = Guid.NewGuid();
+        var steps = new List<string>();
+        tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
+        repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("tenant"))
+            .ReturnsAsync(Bare());
+        var clearGuard = new Mock<ITenantDeletionGuard>();
+        clearGuard.Setup(value => value.HasLiveObligationsAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("clear"))
+            .ReturnsAsync(false);
+        var blockingGuard = new Mock<ITenantDeletionGuard>();
+        blockingGuard.Setup(value => value.HasLiveObligationsAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("blocking"))
+            .ReturnsAsync(true);
+
+        var result = await CreateService([clearGuard.Object, blockingGuard.Object]).DeleteAsync();
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<DeleteTenantError.CannotDeleteWithLiveObligations>(error);
+        Assert.Equal(["tenant", "clear", "blocking"], steps);
+        repository.Verify(value => value.Remove(It.IsAny<TenantEntity>()), Times.Never);
+        membershipRepository.Verify(value => value.Remove(It.IsAny<TenantMembershipEntity>()), Times.Never);
     }
 
     [Fact]

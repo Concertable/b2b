@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Mvc;
 using Concertable.B2B.Tenant.Infrastructure.Data.Seeders;
 using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.B2B.Tenant.Infrastructure.Repositories;
-using Concertable.B2B.Tenant.Infrastructure.Lockers;
 using Concertable.B2B.Tenant.Infrastructure.Services;
 using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
@@ -69,8 +68,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantModule, TenantModule>();
 
         services.AddScoped<IMembershipReadRepository>(sp => sp.GetRequiredService<MembershipRepository>());
-        services.AddScoped<ITenantLocker, TenantLocker>();
-        services.AddScoped<IMembershipLocker, MembershipLocker>();
 
         services.Configure<MvcOptions>(options => options.Filters.Add<BusinessActivityAuthorizationFilter>());
 

@@ -10,15 +10,10 @@ namespace Concertable.B2B.Booking.Infrastructure.Repositories;
 internal sealed class BookingPrivilegedRepository(BookingPrivilegedDbContext context)
     : IBookingPrivilegedRepository
 {
-    public async Task<IReadOnlyList<Guid>> GetPartyTenantIdsAsync(
-        int bookingId, CancellationToken ct = default)
-    {
-        var booking = await context.Bookings.AsNoTracking()
-            .Where(candidate => candidate.Id == bookingId)
-            .Select(candidate => new { candidate.VenueTenantId, candidate.ArtistTenantId })
-            .SingleOrDefaultAsync(ct);
-        return booking is null ? [] : [booking.VenueTenantId, booking.ArtistTenantId];
-    }
+    public Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        context.Bookings.AnyAsync(
+            booking => booking.VenueTenantId == tenantId || booking.ArtistTenantId == tenantId,
+            ct);
 
     public Task<BookingEntity?> GetByIdAsync(int bookingId, CancellationToken ct = default) =>
         context.Bookings.SingleOrDefaultAsync(booking => booking.Id == bookingId, ct);

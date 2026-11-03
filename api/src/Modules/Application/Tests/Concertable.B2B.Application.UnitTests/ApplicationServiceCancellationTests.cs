@@ -66,7 +66,6 @@ public sealed class ApplicationServiceCancellationTests
             TimeProvider.System,
             Mock.Of<IPrivilegedUnitOfWorkBehavior>(),
             Mock.Of<IAuthorizationContext>(),
-            Mock.Of<Concertable.B2B.Tenant.Contracts.ITenantLocker>(),
             Mock.Of<ITransactionRunner>());
 
         var result = await service.GetByOpportunityIdAsync(opportunityId, ct);

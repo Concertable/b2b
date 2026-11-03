@@ -1,6 +1,5 @@
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Application.Responses;
 using Concertable.B2B.Application.Application.Strategies;
@@ -19,7 +18,6 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IApplicationRepository repository;
     private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IAuthorizationContext authorizationContext;
-    private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
@@ -35,7 +33,6 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IApplicationRepository repository,
         IApplicationPrivilegedRepository privilegedRepository,
         IAuthorizationContext authorizationContext,
-        ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
@@ -50,7 +47,6 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.repository = repository;
         this.privilegedRepository = privilegedRepository;
         this.authorizationContext = authorizationContext;
-        this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
@@ -190,20 +186,14 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     }
 
     private async Task<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>
-        PrepareAcceptCheckoutCoreAsync(int applicationId, MembershipSnapshot expectedActor, CancellationToken ct)
+        PrepareAcceptCheckoutCoreAsync(int applicationId, MembershipSnapshot actor, CancellationToken ct)
     {
         var opportunityId = await privilegedRepository.GetOpportunityIdAsync(applicationId, ct);
-        var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
-        if (opportunityId is null || parties.Count == 0)
-            return new ApplicationCheckoutError.ApplicationNotFound();
-        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
-        var actor = expectedActor;
-        if (!existingTenantIds.IsSupersetOf(parties))
+        if (opportunityId is null)
             return new ApplicationCheckoutError.ApplicationNotFound();
         await privilegedRepository.LockOpportunityAsync(opportunityId.Value, ct);
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
-        if (application is null || !application.IsDecidableBy(actor)
-            || !parties.ToHashSet().SetEquals([application.VenueTenantId, application.ArtistTenantId]))
+        if (application is null || !application.IsDecidableBy(actor))
             return new ApplicationCheckoutError.ApplicationNotFound();
         var operationId = application.BeginAcceptance();
         return new AcceptCheckoutCommitment(

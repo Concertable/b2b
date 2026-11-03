@@ -8,4 +8,6 @@ internal interface IOpportunityRepository : ITenantScopedRepository<OpportunityE
     Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId);
     Task<IReadOnlyList<OpportunityEntity>> GetByIdsAsync(IReadOnlyCollection<int> ids);
     Task<int?> GetDealIdByIdAsync(int opportunityId);
+    Task AcquireTenantOpportunitiesSharedLockAsync(Guid tenantId, CancellationToken ct = default);
+    Task AcquireTenantOpportunitiesExclusiveLockAsync(Guid tenantId, CancellationToken ct = default);
 }

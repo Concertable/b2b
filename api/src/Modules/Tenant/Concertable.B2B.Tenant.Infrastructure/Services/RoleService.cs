@@ -44,7 +44,7 @@ internal sealed class RoleService : IRoleService
         unitOfWork.ExecuteAsync(async () =>
         {
             var tenantId = tenantContext.GetTenantId();
-            if (!(await tenants.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId))
+            if (!(await tenants.GetExistingIdsForKeyShareAsync([tenantId], ct)).Contains(tenantId))
                 return Result.Failure<IReadOnlyList<RoleDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
             if (!authorizationContext.TryGetMembership(tenantId, out var actor) || !actor.HasPermission(TenantPermission.MembersInvite))
@@ -64,7 +64,7 @@ internal sealed class RoleService : IRoleService
         unitOfWork.ExecuteAsync(async () =>
         {
             var tenantId = tenantContext.GetTenantId();
-            if (!(await tenants.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
+            if (!(await tenants.GetExistingIdsForKeyShareAsync([tenantId], ct)).Contains(tenantId)
                 || !authorizationContext.TryGetMembership(tenantId, out var actor)
                 || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
                 return Result.Failure<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(

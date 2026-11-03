@@ -44,7 +44,7 @@ internal sealed class MembershipService : IMembershipService
         unitOfWork.ExecuteAsync(async () =>
         {
             var tenantId = tenantContext.GetTenantId();
-            if (!(await tenantRepository.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
+            if (!(await tenantRepository.GetExistingIdsForKeyShareAsync([tenantId], ct)).Contains(tenantId)
                 || !authorizationContext.TryGetMembership(tenantId, out var actor)
                 || !actor.HasPermission(TenantPermission.OperationsView))
                 return Result.Failure<IReadOnlyList<MemberDto>, ListMembersError>(

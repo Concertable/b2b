@@ -6,4 +6,6 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 internal interface IInvoicePrivilegedRepository : IRepository<InvoiceEntity>
 {
     Task<bool> ExistsByBookingIdAsync(int bookingId, CancellationToken ct = default);
+
+    Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 }

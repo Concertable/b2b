@@ -18,8 +18,7 @@ internal sealed class ConversationService : IConversationService
     private readonly IConversationReadPositionRepository readPositionRepository;
     private readonly IMessageRepository messageRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
-    private readonly ITenantLocker tenantLocker;
-    private readonly IMembershipLocker membershipLocker;
+    private readonly ITenantModule tenantModule;
     private readonly IAuthorizationContext authorizationContext;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
@@ -32,8 +31,7 @@ internal sealed class ConversationService : IConversationService
         IConversationReadPositionRepository readPositionRepository,
         IMessageRepository messageRepository,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
-        ITenantLocker tenantLocker,
-        IMembershipLocker membershipLocker,
+        ITenantModule tenantModule,
         IAuthorizationContext authorizationContext,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor,
@@ -45,8 +43,7 @@ internal sealed class ConversationService : IConversationService
         this.readPositionRepository = readPositionRepository;
         this.messageRepository = messageRepository;
         this.unitOfWork = unitOfWork;
-        this.tenantLocker = tenantLocker;
-        this.membershipLocker = membershipLocker;
+        this.tenantModule = tenantModule;
         this.authorizationContext = authorizationContext;
         this.transactionRunner = transactionRunner;
         this.unitOfWorkAccessor = unitOfWorkAccessor;
@@ -79,7 +76,7 @@ internal sealed class ConversationService : IConversationService
 
     private async Task<Result<ConversationDto, CreateConversationError>> CreateCoreAsync(
         CreateConversationRequest request,
-        MembershipSnapshot expectedActor,
+        MembershipSnapshot actor,
         CancellationToken ct)
     {
 
@@ -87,12 +84,10 @@ internal sealed class ConversationService : IConversationService
         if (request.RequestId == Guid.Empty
             || participants.Length < 2
             || participants.Contains(Guid.Empty)
-            || !participants.Contains(expectedActor.TenantId))
+            || !participants.Contains(actor.TenantId))
             return new CreateConversationError.InvalidParticipants();
 
-        var actor = expectedActor;
-        var existingParticipants = await tenantLocker.LockExistingAsync(participants, ct);
-        if (!existingParticipants.SetEquals(participants))
+        if (!await ParticipantsExistAsync(participants, ct))
             return new CreateConversationError.InvalidParticipants();
         if (!actor.Permissions[TenantPermission.MessagesSend].Includes(ResourceAccess.All))
             return new CreateConversationError.NotPermitted();
@@ -296,11 +291,11 @@ internal sealed class ConversationService : IConversationService
             loaded.TryGetError(out var error);
             return error!;
         }
-        if (change.Memberships.Target is not { } target)
+        if (!change.Target.TryGetValue(out var target))
             return new AssignConversationMemberError.InvalidMembership();
         if (!change.Conversation.AssignMember(
-                change.Memberships.Actor.TenantId,
-                change.Memberships.Actor.UserId,
+                change.Actor.TenantId,
+                change.Actor.UserId,
                 membershipId,
                 target.TenantId,
                 timeProvider.GetUtcNow().UtcDateTime))
@@ -321,8 +316,8 @@ internal sealed class ConversationService : IConversationService
             loaded.TryGetError(out var error);
             return error!;
         }
-        if (change.Memberships.Target is null
-            || !change.Conversation.UnassignMember(change.Memberships.Actor.TenantId, membershipId))
+        if (change.Target.IsNone
+            || !change.Conversation.UnassignMember(change.Actor.TenantId, membershipId))
             return new AssignConversationMemberError.InvalidMembership();
         return await SaveAssignmentChangeAsync(conversationId, ct);
     }
@@ -331,23 +326,31 @@ internal sealed class ConversationService : IConversationService
         int conversationId,
         Guid membershipId,
         long expectedAccessVersion,
-        MembershipSnapshot expectedActor,
+        MembershipSnapshot actor,
         CancellationToken ct)
     {
-        await tenantLocker.LockExistingAsync([expectedActor.TenantId], ct);
-        var locked = await membershipLocker.LockAsync(
-            expectedActor, expectedActor.TenantId, membershipId, ct);
-        if (!locked.TryGetValue(out var memberships)
-            || !memberships.Actor.HasPermission(TenantPermission.ResourcesShare))
+        if (!actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConversationMemberError.NotPermitted();
+        var target = await tenantModule.GetCurrentMembershipAsync(actor.TenantId, membershipId, ct);
         if (conversationId <= 0)
             return new AssignConversationMemberError.NotFound(conversationId);
         var conversation = await privilegedRepository.GetByIdForUpdateAsync(conversationId, ct);
-        if (conversation is null || !conversation.IsShareableBy(memberships.Actor))
+        if (conversation is null || !conversation.IsShareableBy(actor))
             return new AssignConversationMemberError.NotPermitted();
         if (conversation.AccessVersion != expectedAccessVersion)
             return new AssignConversationMemberError.Superseded(conversationId);
-        return new AssignmentChange(conversation, memberships);
+        return new AssignmentChange(conversation, actor, target);
+    }
+
+    private async Task<bool> ParticipantsExistAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct)
+    {
+        foreach (var tenantId in tenantIds)
+        {
+            if ((await tenantModule.GetByIdAsync(tenantId, ct)).IsNone)
+                return false;
+        }
+
+        return true;
     }
 
     private async Task<UnitResult<AssignConversationMemberError>> SaveAssignmentChangeAsync(
@@ -358,7 +361,10 @@ internal sealed class ConversationService : IConversationService
         return new Success();
     }
 
-    private sealed record AssignmentChange(ConversationEntity Conversation, LockedMemberships Memberships);
+    private sealed record AssignmentChange(
+        ConversationEntity Conversation,
+        MembershipSnapshot Actor,
+        Option<MembershipSnapshot> Target);
 
     public async Task<int> GetUnreadCountAsync(CancellationToken ct = default)
     {

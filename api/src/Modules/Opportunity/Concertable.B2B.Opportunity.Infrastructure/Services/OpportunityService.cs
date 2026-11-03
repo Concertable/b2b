@@ -51,6 +51,10 @@ internal sealed class OpportunityService : IOpportunityService
 
         var creation = await unitOfWorkBehavior.ExecuteAsync(async () =>
         {
+            var held = await HoldTenantAsync(tenantContext.GetTenantId());
+            if (held.TryGetError(out var heldError))
+                return Result.Failure<OpportunityEntity, OpportunityMutationError>(heldError);
+
             var deal = await CreateDealAsync(request.Deal);
             return await deal.BindAsync(async dealId =>
             {
@@ -127,8 +131,12 @@ internal sealed class OpportunityService : IOpportunityService
         if (validation.IsFailure)
             return validation;
 
-        await unitOfWorkBehavior.ExecuteAsync(async () =>
+        return await unitOfWorkBehavior.ExecuteAsync<UnitResult<OpportunityMutationError>>(async () =>
         {
+            var held = await HoldTenantAsync(tenantContext.GetTenantId());
+            if (held.IsFailure)
+                return held;
+
             foreach (var request in requestList)
             {
                 var dealId = await CreatePrevalidatedDealAsync(request.Deal);
@@ -139,9 +147,9 @@ internal sealed class OpportunityService : IOpportunityService
                     request.Genres.ToHashSet());
                 await repository.AddAsync(opportunity);
             }
-        });
 
-        return new Success();
+            return new Success();
+        });
     }
 
     public async Task<IPagination<OpportunityDto>> GetActiveByVenueIdAsync(int id, IPageParams pageParams)
@@ -174,7 +182,17 @@ internal sealed class OpportunityService : IOpportunityService
 
         var current = await repository.GetActiveByVenueIdAsync(venueId);
 
-        await unitOfWorkBehavior.ExecuteAsync(() => syncer.SyncAsync(venueId, current, desiredList));
+        var synced = await unitOfWorkBehavior.ExecuteAsync<UnitResult<OpportunityMutationError>>(async () =>
+        {
+            var held = await HoldTenantAsync(tenantContext.GetTenantId());
+            if (held.IsFailure)
+                return held;
+
+            await syncer.SyncAsync(venueId, current, desiredList);
+            return new Success();
+        });
+        if (synced.TryGetError(out var syncError))
+            return syncError;
 
         var updated = await readRepository.GetActiveByVenueIdAsync(venueId);
         return updated.Select(opportunity => opportunity.ToDto()).ToList();
@@ -193,6 +211,14 @@ internal sealed class OpportunityService : IOpportunityService
 
         var ownerTenantId = await repository.GetTenantIdByIdAsync(opportunityId);
         return ownerTenantId == tenant;
+    }
+
+    private async Task<UnitResult<OpportunityMutationError>> HoldTenantAsync(Guid tenantId)
+    {
+        await repository.AcquireTenantOpportunitiesSharedLockAsync(tenantId);
+        return (await tenantModule.GetByIdAsync(tenantId)).IsSome
+            ? new Success()
+            : new OpportunityMutationError.VenueNotFound();
     }
 
     private UnitResult<OpportunityMutationError> ValidateDeals(IEnumerable<DealDto> deals)

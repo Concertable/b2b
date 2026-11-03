@@ -19,9 +19,6 @@ internal sealed class TenantModule : ITenantModule
     public Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         service.GetByIdAsync(id, ct);
 
-    public Task RequireBookingTenantsAsync(Guid venueTenantId, Guid artistTenantId, CancellationToken ct = default) =>
-        service.RequireBookingTenantsAsync(venueTenantId, artistTenantId, ct);
-
     public Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default) =>
         service.GetMembershipsAsync(userId, ct);
 
@@ -32,6 +29,12 @@ internal sealed class TenantModule : ITenantModule
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default) =>
         service.GetCurrentMembershipsAsync(tenantIds, ct);
+
+    public Task<Option<MembershipSnapshot>> GetCurrentMembershipAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default) =>
+        service.GetCurrentMembershipAsync(tenantId, membershipId, ct);
 
     public Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
         Guid tenantId,

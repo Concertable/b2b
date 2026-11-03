@@ -10,6 +10,8 @@ internal interface IConcertPrivilegedRepository : IRepository<ConcertEntity>
 
     Task<ConcertEntity?> GetByBookingIdAsync(int bookingId, CancellationToken ct = default);
 
+    Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+
     Task<ConcertState?> GetStateByIdAsync(
         int concertId,
         CancellationToken ct = default);

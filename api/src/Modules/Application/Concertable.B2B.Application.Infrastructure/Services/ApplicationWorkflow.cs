@@ -40,7 +40,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IAuthorizationContext authorizationContext;
-    private readonly ITenantLocker tenantLocker;
+    private readonly ITenantModule tenantModule;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
 
@@ -58,7 +58,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IAuthorizationContext authorizationContext,
-        ITenantLocker tenantLocker,
+        ITenantModule tenantModule,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor)
     {
@@ -75,7 +75,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.authorizationContext = authorizationContext;
-        this.tenantLocker = tenantLocker;
+        this.tenantModule = tenantModule;
         this.transactionRunner = transactionRunner;
         this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
@@ -145,21 +145,21 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private async Task<Result<ApplicationProposal, ApplyApplicationError>> ApplyCoreAsync(
         int opportunityId,
         ESignatureRequest eSignature,
-        MembershipSnapshot expectedActor,
+        MembershipSnapshot actor,
         IPAddress ipAddress,
         string? userAgent,
         CancellationToken ct)
     {
-        var actor = expectedActor;
         if (!actor.HasPermission(TenantPermission.ApplicationsSubmit))
             return new ApplyApplicationError.NotPermitted();
         var proposedOpportunity = await opportunityRepository.GetByIdAsync(opportunityId, ct);
         if (proposedOpportunity is null)
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
-        var parties = new[] { expectedActor.TenantId, proposedOpportunity.VenueTenantId };
-        var existingParties = await tenantLocker.LockExistingAsync(parties, ct);
-        if (!existingParties.SetEquals(parties)
-            || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
+        if (!actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
+            return new ApplyApplicationError.NotPermitted();
+        Guid[] parties = [actor.TenantId, proposedOpportunity.VenueTenantId];
+        await privilegedRepository.AcquireTenantApplicationsSharedLockAsync(parties, ct);
+        if (!await TenantsExistAsync(parties, ct))
             return new ApplyApplicationError.NotPermitted();
         await privilegedRepository.LockOpportunityAsync(opportunityId, ct);
         if (await privilegedRepository.AnyAcceptedByOpportunityIdAsync(opportunityId, ct))
@@ -273,20 +273,12 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         {
             return await ExecuteAcceptAsync(applicationId, eSignature, actor, ct);
         }
-        catch (TenantUnavailableException)
-        {
-            return new AcceptApplicationError.PartyUnavailable();
-        }
         catch (DbUpdateException exception)
             when (exception.IsApplicationAcceptanceConflict(applicationId))
         {
             try
             {
                 return await ExecuteAcceptAsync(applicationId, eSignature, actor, ct);
-            }
-            catch (TenantUnavailableException)
-            {
-                return new AcceptApplicationError.PartyUnavailable();
             }
             catch (DbUpdateException retryException)
                 when (retryException.IsApplicationAcceptanceConflict(applicationId))
@@ -321,31 +313,21 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private async Task<UnitResult<AcceptApplicationError>> AcceptCoreAsync(
         int applicationId,
         ESignatureRequest eSignature,
-        MembershipSnapshot expectedActor,
+        MembershipSnapshot actor,
         CancellationToken ct)
     {
         var opportunityId = await privilegedRepository.GetOpportunityIdAsync(applicationId, ct);
-        var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, true, ct);
-        if (opportunityId is null || parties.Count == 0)
+        if (opportunityId is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
-        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
-        var actor = expectedActor;
-        if (!existingTenantIds.IsSupersetOf(parties))
-            return new AcceptApplicationError.NotPermitted();
         await privilegedRepository.LockOpportunityAsync(opportunityId.Value, ct);
-        var fencedParties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, true, ct);
-        if (!parties.ToHashSet().SetEquals(fencedParties))
-            return new AcceptApplicationError.Superseded(applicationId);
 
         var application = await privilegedRepository.GetDecisionByIdForUpdateAsync(applicationId, ct);
         if (application is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
 
-        var currentParties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, true, ct);
-        if (!application.IsDecidableBy(actor)
-            || !parties.ToHashSet().SetEquals(currentParties))
+        if (!application.IsDecidableBy(actor))
             return new AcceptApplicationError.NotPermitted();
 
         if (application.ValidateAccept().TryGetError(out var acceptError))
@@ -442,12 +424,21 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         application.NotifyCounterparty(ApplicationNotification.Accepted);
         var rejectedApplications = await privilegedRepository.RejectAllExceptAsync(
             application.OpportunityId, application.Id, ct);
-        if (rejectedApplications.Any(rejected => !parties.Contains(rejected.ArtistTenantId)))
-            return new AcceptApplicationError.NotPermitted();
         foreach (var rejectedApplication in rejectedApplications)
             await notifier.RejectedAsync(rejectedApplication);
         await notifier.AcceptedAsync(application);
         return new Success();
+    }
+
+    private async Task<bool> TenantsExistAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct)
+    {
+        foreach (var tenantId in tenantIds.Distinct())
+        {
+            if ((await tenantModule.GetByIdAsync(tenantId, ct)).IsNone)
+                return false;
+        }
+
+        return true;
     }
 
     private static string CalculateTermsFingerprint(DealDto deal, OpportunityDto opportunity) =>

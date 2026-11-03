@@ -25,6 +25,11 @@ internal sealed class ConcertPrivilegedRepository : PrivilegedRepository<Concert
     public Task<ConcertEntity?> GetByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         context.Concerts.SingleOrDefaultAsync(concert => concert.BookingId == bookingId, ct);
 
+    public Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        context.Concerts.AnyAsync(
+            concert => concert.VenueTenantId == tenantId || concert.ArtistTenantId == tenantId,
+            ct);
+
     public Task<ConcertState?> GetStateByIdAsync(
         int concertId,
         CancellationToken ct = default) =>

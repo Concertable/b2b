@@ -20,7 +20,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
-    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForShareAsync(
+    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForKeyShareAsync(
         IReadOnlyCollection<Guid> membershipIds,
         CancellationToken ct = default)
     {
@@ -35,7 +35,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
                  SELECT 1
                  FROM tenant."Memberships"
                  WHERE "Id" = {membershipId}
-                 FOR SHARE
+                 FOR KEY SHARE
                  """,
                 ct);
         }
@@ -44,11 +44,22 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         return await MaterializeAsync(members, ct);
     }
 
+    public async Task<MembershipSnapshot?> GetSnapshotByTenantIdAndIdAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default)
+    {
+        var members = await context.Memberships
+            .Where(member => member.TenantId == tenantId && member.Id == membershipId)
+            .ToListAsync(ct);
+        return (await MaterializeAsync(members, ct)).SingleOrDefault();
+    }
+
     public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
         Guid userId, Guid tenantId, CancellationToken cancellationToken = default) =>
         ReadWithFenceAsync(async ct =>
         {
-            await LockTenantForShareAsync(tenantId, ct);
+            await LockTenantForKeyShareAsync(tenantId, ct);
             var members = await context.Memberships.AsNoTracking()
                 .Where(member => member.UserId == userId && member.TenantId == tenantId)
                 .ToListAsync(ct);
@@ -78,7 +89,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         {
             var distinctIds = tenantIds.Distinct().Order().ToArray();
             foreach (var tenantId in distinctIds)
-                await LockTenantForShareAsync(tenantId, readCt);
+                await LockTenantForKeyShareAsync(tenantId, readCt);
             var members = await context.Memberships.AsNoTracking()
                 .Where(member => distinctIds.Contains(member.TenantId)).ToListAsync(readCt);
             return await MaterializeAsync(members, readCt);
@@ -169,7 +180,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
                 .Where(member => member.UserId == userId)
                 .Select(member => member.TenantId).Distinct().Order().ToListAsync(readCt);
             foreach (var tenantId in tenantIds)
-                await LockTenantForShareAsync(tenantId, readCt);
+                await LockTenantForKeyShareAsync(tenantId, readCt);
             var members = await context.Memberships.AsNoTracking()
                 .Where(member => member.UserId == userId && tenantIds.Contains(member.TenantId))
                 .ToListAsync(readCt);
@@ -196,12 +207,12 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         CancellationToken ct) =>
         context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
 
-    private Task<int> LockTenantForShareAsync(Guid tenantId, CancellationToken ct) =>
+    private Task<int> LockTenantForKeyShareAsync(Guid tenantId, CancellationToken ct) =>
         context.Database.ExecuteSqlInterpolatedAsync(
             $"""
              SELECT 1
              FROM tenant."Tenants"
              WHERE "Id" = {tenantId}
-             FOR SHARE
+             FOR KEY SHARE
              """, ct);
 }

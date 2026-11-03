@@ -73,9 +73,8 @@ zero selected tests.
 `MembershipSnapshot`, the `IMembershipReadRepository` port Tenant implements, the generated catalog and
 `PermissionAuthorizationHandler` ([ARCHITECTURE.md § Authorization](./ARCHITECTURE.md#authorization)).
 `ManagerClients` (registration-time client → manager and initial business activity) still sits in
-`Concertable.B2B.Infrastructure/Authorization/`, and services that lock counterparties through Tenant's
-`IMembershipLocker` check the returned actor snapshot's permissions there, so `Tenant.Contracts`
-still carries part of the authorization surface. Tracked as `b2b-authorization/authorization-module` — see
+`Concertable.B2B.Infrastructure/Authorization/`, so `Tenant.Contracts` still carries part of the
+authorization surface. Tracked as `b2b-authorization/authorization-module` — see
 [`plans/b2b-authorization/B2B_AUTHORIZATION_ROADMAP.md`](../../plans/b2b-authorization/B2B_AUTHORIZATION_ROADMAP.md).
 
 **Resolves when:** `ManagerClients` lives in the Authorization module and no B2B module outside

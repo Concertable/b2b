@@ -32,13 +32,13 @@ public sealed class InvitationServiceTests
         authorizationContext = new Mock<IAuthorizationContext>();
         currentUser = new Mock<ICurrentUser>();
         roles = new Mock<IRoleRepository>();
-        tenantRepository.Setup(value => value.GetExistingIdsForShareAsync(
+        tenantRepository.Setup(value => value.GetExistingIdsForKeyShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
                 (IReadOnlySet<Guid>)ids.ToHashSet());
         tenantRepository.Setup(value => value.GetAuthorizationCatalogRevisionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(AuthorizationCatalog.Revision);
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(
+        membershipRepository.Setup(value => value.GetSnapshotsByIdsForKeyShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
                 Task.FromResult<IReadOnlyList<MembershipSnapshot>>(
@@ -76,7 +76,7 @@ public sealed class InvitationServiceTests
         repository.Setup(value => value.GetByIdForUpdateAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
         tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
         membershipRepository.Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(inviter.Id)), It.IsAny<CancellationToken>()))
+        membershipRepository.Setup(value => value.GetSnapshotsByIdsForKeyShareAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(inviter.Id)), It.IsAny<CancellationToken>()))
             .ReturnsAsync([Snapshot(inviter, "Owner")]);
         roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([invitedRole]);
@@ -137,7 +137,7 @@ public sealed class InvitationServiceTests
         repository.Setup(value => value.GetByIdForUpdateAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
         tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
         membershipRepository.Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForShareAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(inviter.Id)), It.IsAny<CancellationToken>()))
+        membershipRepository.Setup(value => value.GetSnapshotsByIdsForKeyShareAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(inviter.Id)), It.IsAny<CancellationToken>()))
             .ReturnsAsync([Snapshot(inviter, "Staff")]);
         roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([invitedRole]);

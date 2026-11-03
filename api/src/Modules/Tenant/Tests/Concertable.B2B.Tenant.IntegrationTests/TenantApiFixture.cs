@@ -36,11 +36,11 @@ public sealed class TenantApiFixture : ApiFixture
     public IQueryable<TenantVerificationEntity> Verifications =>
         dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
 
-    public Task<TResult> ExecuteLockAsync<TLocker, TResult>(
-        Func<TLocker, CancellationToken, Task<TResult>> lockRows,
+    public Task<TResult> RunInTransactionAsync<TService, TResult>(
+        Func<TService, CancellationToken, Task<TResult>> action,
         CancellationToken ct = default)
-        where TLocker : notnull =>
-        transactionRunner.RunAsync(lockRows, ct);
+        where TService : notnull =>
+        transactionRunner.RunAsync(action, ct);
 
     internal async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
         Guid ownerUserId,
