@@ -40,7 +40,8 @@ internal sealed class ConcertService : IConcertService
     private readonly IPrivilegedUnitOfWork privilegedUnitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly IConcertCommandReceiptRepository receiptRepository;
-    private readonly ITargetTenantResolver targetTenantResolver;
+    private readonly ITenantLocker tenantLocker;
+    private readonly IMembershipLocker membershipLocker;
     private readonly ITenantContext tenantContext;
     private readonly IAuthorizationContext membership;
     private readonly ITransactionRunner transactionRunner;
@@ -61,7 +62,8 @@ internal sealed class ConcertService : IConcertService
         IPrivilegedUnitOfWork privilegedUnitOfWork,
         TimeProvider timeProvider,
         IConcertCommandReceiptRepository receiptRepository,
-        ITargetTenantResolver targetTenantResolver,
+        ITenantLocker tenantLocker,
+        IMembershipLocker membershipLocker,
         ITenantContext tenantContext,
         IAuthorizationContext membership,
         ITransactionRunner transactionRunner,
@@ -81,7 +83,8 @@ internal sealed class ConcertService : IConcertService
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.timeProvider = timeProvider;
         this.receiptRepository = receiptRepository;
-        this.targetTenantResolver = targetTenantResolver;
+        this.tenantLocker = tenantLocker;
+        this.membershipLocker = membershipLocker;
         this.tenantContext = tenantContext;
         this.membership = membership;
         this.transactionRunner = transactionRunner;
@@ -457,23 +460,25 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await targetTenantResolver.ResolveAsync(
+        var existingTenantIds = await tenantLocker.LockExistingAsync(
+            [expectedActor.TenantId, request.RecipientTenantId], ct);
+        var locked = await membershipLocker.LockAsync(
             expectedActor, request.RecipientTenantId, request.RecipientMembershipId, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
+        if (!locked.TryGetValue(out var memberships)
+            || !memberships.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
-        if (concert is null || !concert.IsShareableBy(resolution.Actor))
+        if (concert is null || !concert.IsShareableBy(memberships.Actor))
             return new ShareConcertSummaryError.NotPermitted();
-        if (!resolution.TargetTenantExists
-            || request.RecipientMembershipId is not null && resolution.TargetMembership is null)
+        if (!existingTenantIds.Contains(request.RecipientTenantId)
+            || request.RecipientMembershipId is not null && memberships.Target is null)
             return new ShareConcertSummaryError.InvalidRecipient();
 
         var idempotencyHash = IdempotencyHash.Create(
             id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
         var receipt = await receiptRepository.GetByRequestForUpdateAsync(
-            resolution.Actor.TenantId,
+            memberships.Actor.TenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);
@@ -484,7 +489,7 @@ internal sealed class ConcertService : IConcertService
 
         var decidedAt = timeProvider.GetUtcNow().UtcDateTime;
         var validation = concert.ValidateSummaryShare(
-                resolution.Actor.TenantId,
+                memberships.Actor.TenantId,
                 decidedAt,
                 request.ValidUntil)
             .MapError(static error => error.ToShareConcertSummaryError());
@@ -492,7 +497,7 @@ internal sealed class ConcertService : IConcertService
             return validationError;
 
         concert.RemoveExpiredSummaryShares(
-            resolution.Actor.TenantId,
+            memberships.Actor.TenantId,
             request.RecipientTenantId,
             request.RecipientMembershipId,
             decidedAt);
@@ -502,8 +507,8 @@ internal sealed class ConcertService : IConcertService
             return new ShareConcertSummaryError.Superseded(id);
 
         var share = concert.ShareSummary(
-            resolution.Actor.TenantId,
-            resolution.Actor.UserId,
+            memberships.Actor.TenantId,
+            memberships.Actor.UserId,
             request.RecipientTenantId,
             request.RecipientMembershipId,
             decidedAt,
@@ -516,7 +521,7 @@ internal sealed class ConcertService : IConcertService
 
         receiptRepository.Add(
             ConcertCommandReceipt.Record(
-                resolution.Actor.TenantId,
+                memberships.Actor.TenantId,
                 ConcertCommandReceipt.ShareSummaryOperation,
                 request.RequestId,
                 idempotencyHash,
@@ -548,21 +553,23 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await targetTenantResolver.ResolveAsync(
+        var existingTenantIds = await tenantLocker.LockExistingAsync(
+            [expectedActor.TenantId, request.RecipientTenantId], ct);
+        var locked = await membershipLocker.LockAsync(
             expectedActor, request.RecipientTenantId, request.RecipientMembershipId, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
+        if (!locked.TryGetValue(out var memberships)
+            || !memberships.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
-        if (concert is null || !concert.IsShareableBy(resolution.Actor))
+        if (concert is null || !concert.IsShareableBy(memberships.Actor))
             return new ShareConcertSummaryError.NotPermitted();
-        if (!resolution.TargetTenantExists
-            || request.RecipientMembershipId is not null && resolution.TargetMembership is null)
+        if (!existingTenantIds.Contains(request.RecipientTenantId)
+            || request.RecipientMembershipId is not null && memberships.Target is null)
             return new ShareConcertSummaryError.InvalidRecipient();
 
         var receipt = await receiptRepository.GetByRequestForUpdateAsync(
-            resolution.Actor.TenantId,
+            memberships.Actor.TenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);
@@ -621,17 +628,18 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await targetTenantResolver.ResolveAsync(expectedActor, expectedActor.TenantId, ct: ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
+        await tenantLocker.LockExistingAsync([expectedActor.TenantId], ct);
+        var locked = await membershipLocker.LockAsync(expectedActor, expectedActor.TenantId, ct: ct);
+        if (!locked.TryGetValue(out var memberships)
+            || !memberships.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new RevokeConcertSummaryShareError.NotPermitted();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
-        if (concert is null || !concert.IsShareableBy(resolution.Actor))
+        if (concert is null || !concert.IsShareableBy(memberships.Actor))
             return new RevokeConcertSummaryShareError.NotPermitted();
         if (concert.AccessVersion != expectedAccessVersion)
             return new RevokeConcertSummaryShareError.Superseded(id);
-        if (concert.Unshare(grantId, resolution.Actor.TenantId).TryGetError(out var revocationError))
+        if (concert.Unshare(grantId, memberships.Actor.TenantId).TryGetError(out var revocationError))
             return revocationError.ToRevokeConcertSummaryShareError();
 
         await privilegedRepository.SaveChangesAsync(ct);
@@ -673,23 +681,24 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await targetTenantResolver.ResolveAsync(
+        await tenantLocker.LockExistingAsync([expectedActor.TenantId], ct);
+        var locked = await membershipLocker.LockAsync(
             expectedActor, expectedActor.TenantId, request.MembershipId, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
+        if (!locked.TryGetValue(out var memberships)
+            || !memberships.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConcertMemberError.NotPermitted();
-        if (resolution.TargetMembership is null)
+        if (memberships.Target is null)
             return new AssignConcertMemberError.InvalidMembership();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
-        if (concert is null || !concert.IsShareableBy(resolution.Actor))
+        if (concert is null || !concert.IsShareableBy(memberships.Actor))
             return new AssignConcertMemberError.NotPermitted();
         if (concert.AccessVersion != request.ExpectedAccessVersion)
             return new AssignConcertMemberError.Superseded(id);
         if (concert.AssignMember(
-                resolution.Actor.TenantId,
-                resolution.Actor.UserId,
-                resolution.TargetMembership.MembershipId,
+                memberships.Actor.TenantId,
+                memberships.Actor.UserId,
+                memberships.Target.MembershipId,
                 timeProvider.GetUtcNow().UtcDateTime)
             .TryGetError(out var assignmentError))
             return assignmentError.ToAssignConcertMemberError();
@@ -737,20 +746,21 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await targetTenantResolver.ResolveAsync(
+        await tenantLocker.LockExistingAsync([expectedActor.TenantId], ct);
+        var locked = await membershipLocker.LockAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
+        if (!locked.TryGetValue(out var memberships)
+            || !memberships.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConcertMemberError.NotPermitted();
 
         var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
-        if (concert is null || !concert.IsShareableBy(resolution.Actor))
+        if (concert is null || !concert.IsShareableBy(memberships.Actor))
             return new AssignConcertMemberError.NotPermitted();
         if (concert.AccessVersion != expectedAccessVersion)
             return new AssignConcertMemberError.Superseded(id);
-        if (resolution.TargetMembership is null)
+        if (memberships.Target is null)
             return new ConcertMemberAssignmentError.NotAssigned().ToAssignConcertMemberError();
-        if (concert.UnassignMember(resolution.Actor.TenantId, membershipId)
+        if (concert.UnassignMember(memberships.Actor.TenantId, membershipId)
             .TryGetError(out var assignmentError))
             return assignmentError.ToAssignConcertMemberError();
 

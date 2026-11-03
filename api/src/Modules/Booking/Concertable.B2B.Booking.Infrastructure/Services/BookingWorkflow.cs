@@ -42,7 +42,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
     private readonly IAuthorizationContext membership;
-    private readonly ITargetTenantResolver targetTenantResolver;
+    private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
 
     public BookingWorkflow(
@@ -61,7 +61,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
         IAuthorizationContext membership,
-        ITargetTenantResolver targetTenantResolver,
+        ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner)
     {
         this.bookingRepository = bookingRepository;
@@ -79,7 +79,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.timeProvider = timeProvider;
         this.logger = logger;
         this.membership = membership;
-        this.targetTenantResolver = targetTenantResolver;
+        this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
     }
 
@@ -158,8 +158,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         var parties = await privilegedRepository.GetPartyTenantIdsAsync(bookingId, ct);
         if (parties.Count == 0)
             return new CancelBookingError.BookingNotFound(bookingId);
-        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!existingParties.SetEquals(parties))
+        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
+        if (!existingTenantIds.IsSupersetOf(parties))
             return new CancelBookingError.NotPermitted();
 
         var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);

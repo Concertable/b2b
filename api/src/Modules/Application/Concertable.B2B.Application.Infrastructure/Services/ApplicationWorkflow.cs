@@ -40,7 +40,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IAuthorizationContext membership;
-    private readonly ITargetTenantResolver targetTenantResolver;
+    private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
 
@@ -58,7 +58,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IAuthorizationContext membership,
-        ITargetTenantResolver targetTenantResolver,
+        ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor)
     {
@@ -75,7 +75,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
-        this.targetTenantResolver = targetTenantResolver;
+        this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
         this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
@@ -157,7 +157,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (proposedOpportunity is null)
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
         var parties = new[] { expectedActor.TenantId, proposedOpportunity.VenueTenantId };
-        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingParties = await tenantLocker.LockExistingAsync(parties, ct);
         if (!existingParties.SetEquals(parties)
             || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplyApplicationError.NotPermitted();
@@ -329,9 +329,9 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (opportunityId is null || parties.Count == 0)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
-        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
         var actor = expectedActor;
-        if (!existingParties.SetEquals(parties))
+        if (!existingTenantIds.IsSupersetOf(parties))
             return new AcceptApplicationError.NotPermitted();
         await privilegedRepository.LockOpportunityAsync(opportunityId.Value, ct);
         var fencedParties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, true, ct);

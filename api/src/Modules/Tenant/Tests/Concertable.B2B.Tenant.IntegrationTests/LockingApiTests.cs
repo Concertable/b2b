@@ -6,11 +6,11 @@ using Xunit.Abstractions;
 namespace Concertable.B2B.Tenant.IntegrationTests;
 
 [Collection("Integration")]
-public sealed class TenantResolutionApiTests : IAsyncLifetime
+public sealed class LockingApiTests : IAsyncLifetime
 {
     private readonly TenantApiFixture fixture;
 
-    public TenantResolutionApiTests(TenantApiFixture fixture, ITestOutputHelper output)
+    public LockingApiTests(TenantApiFixture fixture, ITestOutputHelper output)
     {
         this.fixture = fixture;
         fixture.AttachOutput(output);
@@ -25,62 +25,60 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Resolve_RoleChanged_RejectsOldAuthorityAndAcceptsCurrentSnapshot()
+    public async Task LockMemberships_RoleChanged_RejectsOldAuthorityAndAcceptsCurrentSnapshot()
     {
         var membership = fixture.Memberships.AsEnumerable().First(value => HasRole(value, "Owner"));
         var expected = Snapshot(membership);
         await fixture.ChangeMembershipRolesAsync(membership.TenantId, membership.UserId, "Manager");
         var current = Snapshot(fixture.Memberships.Single(value => value.Id == membership.Id));
 
-        var stale = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveAsync(expected, expected.TenantId, ct: ct));
-        var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveAsync(current, current.TenantId, current.MembershipId, ct));
+        var stale = await fixture.ExecuteLockAsync((IMembershipLocker locker, CancellationToken ct) =>
+            locker.LockAsync(expected, expected.TenantId, ct: ct));
+        var locked = await fixture.ExecuteLockAsync((IMembershipLocker locker, CancellationToken ct) =>
+            locker.LockAsync(current, current.TenantId, current.MembershipId, ct));
 
         Assert.True(stale.IsNone);
         Assert.NotEqual(expected.PermissionVersion, current.PermissionVersion);
-        Assert.True(resolved.TryGetValue(out var resolution));
-        Assert.Equal(current, resolution.Actor);
-        Assert.Equal(current, resolution.TargetMembership);
-        Assert.True(resolution.TargetTenantExists);
+        Assert.True(locked.TryGetValue(out var memberships));
+        Assert.Equal(current, memberships.Actor);
+        Assert.Equal(current, memberships.Target);
     }
 
     [Fact]
-    public async Task Resolve_MembershipBelongsToAnotherTenant_ExcludesTargetMembership()
+    public async Task LockMemberships_TargetBelongsToAnotherTenant_ExcludesTarget()
     {
         var actor = Snapshot(fixture.Memberships.First());
         var target = fixture.Memberships.First(value => value.TenantId != actor.TenantId);
 
-        var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveAsync(actor, actor.TenantId, target.Id, ct));
+        var locked = await fixture.ExecuteLockAsync((IMembershipLocker locker, CancellationToken ct) =>
+            locker.LockAsync(actor, actor.TenantId, target.Id, ct));
 
-        Assert.True(resolved.TryGetValue(out var resolution));
-        Assert.Equal(actor, resolution.Actor);
-        Assert.True(resolution.TargetTenantExists);
-        Assert.Null(resolution.TargetMembership);
+        Assert.True(locked.TryGetValue(out var memberships));
+        Assert.Equal(actor, memberships.Actor);
+        Assert.Null(memberships.Target);
     }
 
     [Fact]
-    public async Task ResolveMany_ActorTenantOutsideTargetsStillResolvesWithoutReturningActorTenant()
+    public async Task LockExistingTenants_ReturnsOnlyTheRequestedTenants()
     {
         var actor = Snapshot(fixture.Memberships.First());
         var targetTenantId = fixture.Tenants.First(tenant => tenant.Id != actor.TenantId).Id;
 
-        var existing = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveManyAsync(actor, [targetTenantId], ct));
+        var existing = await fixture.ExecuteLockAsync((ITenantLocker locker, CancellationToken ct) =>
+            locker.LockExistingAsync([targetTenantId], ct));
 
         Assert.True(existing.SetEquals([targetTenantId]));
     }
 
     [Fact]
-    public async Task ResolveMany_DuplicateAndMissingTenants_ReturnsUniqueExistingTenants()
+    public async Task LockExistingTenants_DuplicateAndMissingTenants_ReturnsUniqueExistingTenants()
     {
         var actor = Snapshot(fixture.Memberships.First());
         var otherTenantId = fixture.Tenants.First(value => value.Id != actor.TenantId).Id;
         Guid[] requested = [actor.TenantId, otherTenantId, actor.TenantId, Guid.NewGuid()];
 
-        var existing = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveManyAsync(actor, requested, ct));
+        var existing = await fixture.ExecuteLockAsync((ITenantLocker locker, CancellationToken ct) =>
+            locker.LockExistingAsync(requested, ct));
 
         Assert.True(existing.SetEquals([actor.TenantId, otherTenantId]));
     }

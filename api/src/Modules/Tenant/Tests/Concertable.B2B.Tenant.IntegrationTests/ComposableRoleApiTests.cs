@@ -61,18 +61,18 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
             .Append(KeyValuePair.Create(TenantPermission.ConcertsOpsEdit, ResourceAccess.Assigned)));
         var expected = new MembershipSnapshot(membership.Id, tenantId, member.Id,
             membership.PermissionVersion, tenant.RolePolicyVersion, expectedPermissions);
-        var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveAsync(expected, tenantId, ct: ct));
+        var locked = await fixture.ExecuteLockAsync((IMembershipLocker locker, CancellationToken ct) =>
+            locker.LockAsync(expected, tenantId, ct: ct));
 
-        Assert.True(resolved.TryGetValue(out var resolution));
+        Assert.True(locked.TryGetValue(out var memberships));
         Assert.Equal(ResourceAccess.All,
-            resolution.Actor.Permissions[TenantPermission.OperationsView]);
+            memberships.Actor.Permissions[TenantPermission.OperationsView]);
         Assert.Equal(ResourceAccess.Assigned,
-            resolution.Actor.Permissions[TenantPermission.ConcertsOpsEdit]);
+            memberships.Actor.Permissions[TenantPermission.ConcertsOpsEdit]);
         Assert.Equal(ResourceAccess.All,
-            resolution.Actor.Permissions[TenantPermission.PayoutsManage]);
+            memberships.Actor.Permissions[TenantPermission.PayoutsManage]);
         Assert.Equal(ResourceAccess.None,
-            resolution.Actor.Permissions[TenantPermission.ConcertsManage]);
+            memberships.Actor.Permissions[TenantPermission.ConcertsManage]);
     }
 
     [Fact]

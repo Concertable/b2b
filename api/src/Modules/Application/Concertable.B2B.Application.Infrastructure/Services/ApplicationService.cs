@@ -33,7 +33,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
     private readonly IAuthorizationContext membership;
-    private readonly ITargetTenantResolver targetTenantResolver;
+    private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
 
     public ApplicationService(
@@ -52,7 +52,7 @@ internal sealed class ApplicationService : IApplicationService
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
         IAuthorizationContext membership,
-        ITargetTenantResolver targetTenantResolver,
+        ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner)
     {
         this.applicationRepository = applicationRepository;
@@ -70,7 +70,7 @@ internal sealed class ApplicationService : IApplicationService
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
         this.membership = membership;
-        this.targetTenantResolver = targetTenantResolver;
+        this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
     }
 
@@ -319,8 +319,8 @@ internal sealed class ApplicationService : IApplicationService
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
-        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!existingParties.SetEquals(parties))
+        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
+        if (!existingTenantIds.IsSupersetOf(parties))
             return new WithdrawApplicationError.NotPermitted();
         var actor = expectedActor;
 
@@ -357,8 +357,8 @@ internal sealed class ApplicationService : IApplicationService
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
-        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!existingParties.SetEquals(parties))
+        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
+        if (!existingTenantIds.IsSupersetOf(parties))
             return new RejectApplicationError.NotPermitted();
         var actor = expectedActor;
 
@@ -395,8 +395,8 @@ internal sealed class ApplicationService : IApplicationService
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (parties.Count == 0)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
-        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!existingParties.SetEquals(parties))
+        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
+        if (!existingTenantIds.IsSupersetOf(parties))
             return new CancelApplicationError.NotPermitted();
         var actor = expectedActor;
 

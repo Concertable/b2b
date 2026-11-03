@@ -18,7 +18,8 @@ internal sealed class ConversationService : IConversationService
     private readonly IConversationReadPositionRepository readPositionRepository;
     private readonly IMessageRepository messageRepository;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
-    private readonly ITargetTenantResolver targetTenantResolver;
+    private readonly ITenantLocker tenantLocker;
+    private readonly IMembershipLocker membershipLocker;
     private readonly IAuthorizationContext membership;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
@@ -31,7 +32,8 @@ internal sealed class ConversationService : IConversationService
         IConversationReadPositionRepository readPositionRepository,
         IMessageRepository messageRepository,
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
-        ITargetTenantResolver targetTenantResolver,
+        ITenantLocker tenantLocker,
+        IMembershipLocker membershipLocker,
         IAuthorizationContext membership,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor,
@@ -43,7 +45,8 @@ internal sealed class ConversationService : IConversationService
         this.readPositionRepository = readPositionRepository;
         this.messageRepository = messageRepository;
         this.unitOfWork = unitOfWork;
-        this.targetTenantResolver = targetTenantResolver;
+        this.tenantLocker = tenantLocker;
+        this.membershipLocker = membershipLocker;
         this.membership = membership;
         this.transactionRunner = transactionRunner;
         this.unitOfWorkAccessor = unitOfWorkAccessor;
@@ -88,7 +91,7 @@ internal sealed class ConversationService : IConversationService
             return new CreateConversationError.InvalidParticipants();
 
         var actor = expectedActor;
-        var existingParticipants = await targetTenantResolver.ResolveManyAsync(actor, participants, ct);
+        var existingParticipants = await tenantLocker.LockExistingAsync(participants, ct);
         if (!existingParticipants.SetEquals(participants))
             return new CreateConversationError.InvalidParticipants();
         if (!actor.Permissions[TenantPermission.MessagesSend].Includes(ResourceAccess.All))
@@ -293,11 +296,11 @@ internal sealed class ConversationService : IConversationService
             loaded.TryGetError(out var error);
             return error!;
         }
-        if (change.Resolution.TargetMembership is not { } target)
+        if (change.Memberships.Target is not { } target)
             return new AssignConversationMemberError.InvalidMembership();
         if (!change.Conversation.AssignMember(
-                change.Resolution.Actor.TenantId,
-                change.Resolution.Actor.UserId,
+                change.Memberships.Actor.TenantId,
+                change.Memberships.Actor.UserId,
                 membershipId,
                 target.TenantId,
                 timeProvider.GetUtcNow().UtcDateTime))
@@ -318,8 +321,8 @@ internal sealed class ConversationService : IConversationService
             loaded.TryGetError(out var error);
             return error!;
         }
-        if (change.Resolution.TargetMembership is null
-            || !change.Conversation.UnassignMember(change.Resolution.Actor.TenantId, membershipId))
+        if (change.Memberships.Target is null
+            || !change.Conversation.UnassignMember(change.Memberships.Actor.TenantId, membershipId))
             return new AssignConversationMemberError.InvalidMembership();
         return await SaveAssignmentChangeAsync(conversationId, ct);
     }
@@ -331,19 +334,20 @@ internal sealed class ConversationService : IConversationService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var resolutionOption = await targetTenantResolver.ResolveAsync(
+        await tenantLocker.LockExistingAsync([expectedActor.TenantId], ct);
+        var locked = await membershipLocker.LockAsync(
             expectedActor, expectedActor.TenantId, membershipId, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.Actor.HasPermission(TenantPermission.ResourcesShare))
+        if (!locked.TryGetValue(out var memberships)
+            || !memberships.Actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConversationMemberError.NotPermitted();
         if (conversationId <= 0)
             return new AssignConversationMemberError.NotFound(conversationId);
         var conversation = await privilegedRepository.GetByIdForUpdateAsync(conversationId, ct);
-        if (conversation is null || !conversation.IsShareableBy(resolution.Actor))
+        if (conversation is null || !conversation.IsShareableBy(memberships.Actor))
             return new AssignConversationMemberError.NotPermitted();
         if (conversation.AccessVersion != expectedAccessVersion)
             return new AssignConversationMemberError.Superseded(conversationId);
-        return new AssignmentChange(conversation, resolution);
+        return new AssignmentChange(conversation, memberships);
     }
 
     private async Task<UnitResult<AssignConversationMemberError>> SaveAssignmentChangeAsync(
@@ -354,7 +358,7 @@ internal sealed class ConversationService : IConversationService
         return new Success();
     }
 
-    private sealed record AssignmentChange(ConversationEntity Conversation, TenantResolution Resolution);
+    private sealed record AssignmentChange(ConversationEntity Conversation, LockedMemberships Memberships);
 
     public async Task<int> GetUnreadCountAsync(CancellationToken ct = default)
     {

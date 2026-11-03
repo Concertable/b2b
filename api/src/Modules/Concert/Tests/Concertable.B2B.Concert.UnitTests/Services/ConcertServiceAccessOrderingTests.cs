@@ -40,7 +40,7 @@ public sealed class ConcertServiceAccessOrderingTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<RevokeConcertSummaryShareError.NotPermitted>(error);
-        Assert.Equal(["tenant", "resource"], fixture.Steps);
+        Assert.Equal(["tenant", "membership", "resource"], fixture.Steps);
         fixture.Repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -60,7 +60,7 @@ public sealed class ConcertServiceAccessOrderingTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<AssignConcertMemberError.NotPermitted>(error);
-        Assert.Equal(["tenant", "resource"], fixture.Steps);
+        Assert.Equal(["tenant", "membership", "resource"], fixture.Steps);
         fixture.Repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -74,7 +74,7 @@ public sealed class ConcertServiceAccessOrderingTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<AssignConcertMemberError.NotPermitted>(error);
-        Assert.Equal(["tenant", "resource"], fixture.Steps);
+        Assert.Equal(["tenant", "membership", "resource"], fixture.Steps);
         fixture.Repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -117,7 +117,7 @@ public sealed class ConcertServiceAccessOrderingTests
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<ShareConcertSummaryError.NotPermitted>(error);
-        Assert.Equal(["tenant", "resource"], fixture.Steps);
+        Assert.Equal(["tenant", "membership", "resource"], fixture.Steps);
         fixture.Repository.Verify(
             value => value.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -129,7 +129,8 @@ public sealed class ConcertServiceAccessOrderingTests
         var repository = new Mock<IConcertPrivilegedRepository>();
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
         var membership = new Mock<IAuthorizationContext>();
-        var resolution = new Mock<ITargetTenantResolver>();
+        var tenantLocker = new Mock<ITenantLocker>();
+        var membershipLocker = new Mock<IMembershipLocker>();
         var steps = new List<string>();
         var transactionRunner = new ImmediateTransactionRunner();
         repository
@@ -151,16 +152,22 @@ public sealed class ConcertServiceAccessOrderingTests
             .Returns((Func<Task<Result<ConcertSummaryShare, ShareConcertSummaryError>>> action,
                 CancellationToken _) => action());
         membership.SetupGet(value => value.Membership).Returns(currentActor);
-        resolution
-            .Setup(value => value.ResolveAsync(
+        tenantLocker
+            .Setup(value => value.LockExistingAsync(
+                It.IsAny<IReadOnlyCollection<Guid>>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<IReadOnlyCollection<Guid>, CancellationToken>((_, _) => steps.Add("tenant"))
+            .ReturnsAsync((IReadOnlyCollection<Guid> tenantIds, CancellationToken _) =>
+                tenantIds.Where(tenantId => targetTenantExists || tenantId == currentActor.TenantId).ToHashSet());
+        membershipLocker
+            .Setup(value => value.LockAsync(
                 currentActor,
                 It.IsAny<Guid>(),
                 It.IsAny<Guid?>(),
                 It.IsAny<CancellationToken>()))
             .Callback<MembershipSnapshot, Guid, Guid?, CancellationToken>(
-                (_, _, _, _) => steps.Add("tenant"))
-            .ReturnsAsync((Option<TenantResolution>)new TenantResolution(
-                currentActor, targetTenantExists, currentActor));
+                (_, _, _, _) => steps.Add("membership"))
+            .ReturnsAsync((Option<LockedMemberships>)new LockedMemberships(currentActor, currentActor));
 
         var service = new ConcertService(
             Mock.Of<IConcertRepository>(),
@@ -177,7 +184,8 @@ public sealed class ConcertServiceAccessOrderingTests
             Mock.Of<IPrivilegedUnitOfWork>(),
             TimeProvider.System,
             Mock.Of<IConcertCommandReceiptRepository>(),
-            resolution.Object,
+            tenantLocker.Object,
+            membershipLocker.Object,
             Mock.Of<ITenantContext>(),
             membership.Object,
             transactionRunner,

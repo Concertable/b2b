@@ -19,7 +19,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private readonly IApplicationRepository repository;
     private readonly IApplicationPrivilegedRepository privilegedRepository;
     private readonly IAuthorizationContext membership;
-    private readonly ITargetTenantResolver targetTenantResolver;
+    private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
@@ -35,7 +35,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         IApplicationRepository repository,
         IApplicationPrivilegedRepository privilegedRepository,
         IAuthorizationContext membership,
-        ITargetTenantResolver targetTenantResolver,
+        ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
@@ -50,7 +50,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         this.repository = repository;
         this.privilegedRepository = privilegedRepository;
         this.membership = membership;
-        this.targetTenantResolver = targetTenantResolver;
+        this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
@@ -196,9 +196,9 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
         if (opportunityId is null || parties.Count == 0)
             return new ApplicationCheckoutError.ApplicationNotFound();
-        var existingParties = await targetTenantResolver.ResolveManyAsync(expectedActor, parties, ct);
+        var existingTenantIds = await tenantLocker.LockExistingAsync([.. parties, expectedActor.TenantId], ct);
         var actor = expectedActor;
-        if (!existingParties.SetEquals(parties))
+        if (!existingTenantIds.IsSupersetOf(parties))
             return new ApplicationCheckoutError.ApplicationNotFound();
         await privilegedRepository.LockOpportunityAsync(opportunityId.Value, ct);
         var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);

@@ -74,7 +74,7 @@ zero selected tests.
 `PermissionAuthorizationHandler` ([ARCHITECTURE.md § Authorization](./ARCHITECTURE.md#authorization)).
 `ManagerClients` (registration-time client → manager and initial business activity) still sits in
 `Concertable.B2B.Infrastructure/Authorization/`, and services that lock counterparties through Tenant's
-`ITargetTenantResolver` check the returned actor snapshot's permissions there, so `Tenant.Contracts`
+`IMembershipLocker` check the returned actor snapshot's permissions there, so `Tenant.Contracts`
 still carries part of the authorization surface. Tracked as `b2b-authorization/authorization-module` — see
 [`plans/b2b-authorization/B2B_AUTHORIZATION_ROADMAP.md`](../../plans/b2b-authorization/B2B_AUTHORIZATION_ROADMAP.md).
 
