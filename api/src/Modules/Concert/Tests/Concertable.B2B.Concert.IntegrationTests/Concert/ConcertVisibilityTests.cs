@@ -62,7 +62,7 @@ public sealed class ConcertVisibilityTests : IAsyncLifetime
 
     private static MembershipSnapshot Actor(Guid tenantId, Guid membershipId, ResourceAccess access) =>
         new(membershipId, tenantId, Guid.NewGuid(), 1, 1,
-            EffectivePermissions.From([KeyValuePair.Create(TenantPermission.OperationsView, access)]));
+            PermissionSet.From([KeyValuePair.Create(TenantPermission.OperationsView, access)]));
 
     private static async Task<bool> IsVisibleAsync(IServiceProvider services, int concertId, MembershipSnapshot actor)
     {

@@ -278,7 +278,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     RoleId = table.Column<Guid>(type: "uuid", nullable: false),
                     PermissionKey = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    Audience = table.Column<int>(type: "integer", nullable: false)
+                    Access = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {

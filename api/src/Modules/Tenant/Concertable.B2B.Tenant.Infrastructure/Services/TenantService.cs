@@ -76,7 +76,7 @@ internal sealed class TenantService : ITenantService
                 m.Snapshot.PermissionVersion,
                 m.Snapshot.RolePolicyVersion,
                 m.BusinessActivities,
-                [.. m.Snapshot.Permissions.Select(grant => grant.Key.Key)]))
+                [.. m.Snapshot.Permissions.Select(grant => grant.Key.Name)]))
             .ToList();
     }
 
@@ -161,7 +161,7 @@ internal sealed class TenantService : ITenantService
         var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new UpdateTenantError.TenantNotFound(tenantId);
-        if (!(authorization.FindActor(tenantId).TryGetValue(out var actor) && actor.HasPermission(TenantPermission.TenantSettingsEdit)))
+        if (!(authorization.TryGetMembership(tenantId, out var actor) && actor.HasPermission(TenantPermission.TenantSettingsEdit)))
             return new UpdateTenantError.NotPermitted();
         if (tenant.Version != request.ExpectedVersion)
             return new UpdateTenantError.Superseded();
@@ -205,7 +205,7 @@ internal sealed class TenantService : ITenantService
             var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
             if (tenant is null)
                 return new ChangeBusinessActivityError.TenantNotFound(tenantId);
-            if (!(authorization.FindActor(tenantId).TryGetValue(out var actor) && actor.HasPermission(TenantPermission.TenantSettingsEdit)))
+            if (!(authorization.TryGetMembership(tenantId, out var actor) && actor.HasPermission(TenantPermission.TenantSettingsEdit)))
                 return new ChangeBusinessActivityError.NotPermitted();
             if (tenant.EligibilityVersion != request.ExpectedEligibilityVersion)
                 return new ChangeBusinessActivityError.Superseded();
@@ -228,7 +228,7 @@ internal sealed class TenantService : ITenantService
         var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new DeleteTenantError.TenantNotFound(tenantId);
-        if (!authorization.FindActor(tenantId).TryGetValue(out var actor)
+        if (!authorization.TryGetMembership(tenantId, out var actor)
             || !actor.HasPermission(TenantPermission.TenantDelete)
             || !await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct))
             return new DeleteTenantError.NotPermitted();

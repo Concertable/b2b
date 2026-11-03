@@ -53,7 +53,7 @@ internal sealed class InvitationService : IInvitationService
         {
             var tenantId = tenantContext.GetTenantId();
             if (!(await tenantRepository.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
-                || !authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
+                || !authorizationContext.TryGetMembership(tenantId, out var actor)
                 || !actor.HasPermission(TenantPermission.MembersInvite))
                 return Result.Failure<IReadOnlyList<InvitationDto>, ListInvitationsError>(
                     new ListInvitationsError.NotPermitted());
@@ -84,7 +84,7 @@ internal sealed class InvitationService : IInvitationService
             return new InviteMemberError.TenantNotFound();
 
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
-        if (!authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
+        if (!authorizationContext.TryGetMembership(tenantId, out var actor)
             || !actor.HasPermission(TenantPermission.MembersInvite)
             || selectedRoles is null
             || !await CanAssignAsync(actor, selectedRoles, ct))
@@ -128,7 +128,7 @@ internal sealed class InvitationService : IInvitationService
         var invitation = await repository.GetByIdForUpdateAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenantId)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
-        if (!(authorizationContext.FindActor(tenantId).TryGetValue(out var actor) && actor.HasPermission(TenantPermission.MembersInvite)))
+        if (!(authorizationContext.TryGetMembership(tenantId, out var actor) && actor.HasPermission(TenantPermission.MembersInvite)))
             return new RevokeInvitationError.NotPermitted();
         return invitation.Revoke().MapError(error => error.ToRevokeInvitationError());
     }

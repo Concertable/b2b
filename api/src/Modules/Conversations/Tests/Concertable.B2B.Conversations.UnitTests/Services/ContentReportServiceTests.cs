@@ -45,7 +45,7 @@ public sealed class ContentReportServiceTests
 
         var actor = new MembershipSnapshot(
             Guid.NewGuid(), VenueTenantId, ReportingUserId, 1, 1,
-            EffectivePermissions.From([KeyValuePair.Create(TenantPermission.MessagesRead, ResourceAccess.All)]));
+            PermissionSet.From([KeyValuePair.Create(TenantPermission.MessagesRead, ResourceAccess.All)]));
         var membership = new Mock<IAuthorizationContext>();
         membership.SetupGet(context => context.Membership).Returns(actor);
 

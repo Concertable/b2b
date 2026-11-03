@@ -125,7 +125,7 @@ public abstract class ConcertEntity : IIdEntity, IHasName, IHasDateRange, IConcu
                 share.SharedByTenantId == issuerTenantId
                 && share.RecipientTenantId == recipientTenantId
                 && share.RecipientMembershipId == recipientMembershipId
-                && !share.IsLiveAt(at)) > 0)
+                && share.IsExpiredAt(at)) > 0)
             AccessVersion++;
     }
 

@@ -5,25 +5,25 @@ namespace Concertable.B2B.Authorization.UnitTests;
 public sealed class TenantPermissionTests
 {
     [Fact]
-    public void TryParseKey_EveryDeclaredKey_RoundTrips()
+    public void TryParseName_EveryDeclaredName_RoundTrips()
     {
         Assert.All(TenantPermission.All, permission =>
         {
-            Assert.True(TenantPermission.TryParseKey(permission.Key, out var parsed));
+            Assert.True(TenantPermission.TryParseName(permission.Name, out var parsed));
             Assert.Equal(permission, parsed);
         });
     }
 
     [Fact]
-    public void Key_IsResourceColonAction()
+    public void Name_IsResourceColonAction()
     {
-        Assert.Equal("concerts:ops_edit", TenantPermission.ConcertsOpsEdit.Key);
-        Assert.Equal("tenant_settings:edit", TenantPermission.TenantSettingsEdit.Key);
-        Assert.All(TenantPermission.All, permission => Assert.Matches("^[a-z_]+:[a-z_]+$", permission.Key));
+        Assert.Equal("concerts:ops_edit", TenantPermission.ConcertsOpsEdit.Name);
+        Assert.Equal("tenant_settings:edit", TenantPermission.TenantSettingsEdit.Name);
+        Assert.All(TenantPermission.All, permission => Assert.Matches("^[a-z_]+:[a-z_]+$", permission.Name));
     }
 
     [Fact]
-    public void Json_UsesTheKey()
+    public void Json_UsesTheName()
     {
         Assert.Equal("\"messages:read\"", JsonSerializer.Serialize(TenantPermission.MessagesRead));
         Assert.Equal(TenantPermission.MessagesRead, JsonSerializer.Deserialize<TenantPermission>("\"messages:read\""));
@@ -35,9 +35,9 @@ public sealed class TenantPermissionTests
     [InlineData("operations.view")]
     [InlineData("OperationsView")]
     [InlineData("unknown")]
-    public void TryParseKey_UndeclaredValue_ReturnsFalse(string? value)
+    public void TryParseName_UndeclaredValue_ReturnsFalse(string? value)
     {
-        var parsed = TenantPermission.TryParseKey(value, out var permission);
+        var parsed = TenantPermission.TryParseName(value, out var permission);
 
         Assert.False(parsed);
         Assert.Equal(default, permission);

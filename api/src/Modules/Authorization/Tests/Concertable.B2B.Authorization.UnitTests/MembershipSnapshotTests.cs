@@ -91,7 +91,7 @@ public sealed class MembershipSnapshotTests
         Assert.True(actor == rebuilt);
     }
 
-    private static EffectivePermissions Permissions(
+    private static PermissionSet Permissions(
         params (TenantPermission Permission, ResourceAccess Access)[] grants) =>
-        EffectivePermissions.From(grants.Select(grant => KeyValuePair.Create(grant.Permission, grant.Access)));
+        PermissionSet.From(grants.Select(grant => KeyValuePair.Create(grant.Permission, grant.Access)));
 }

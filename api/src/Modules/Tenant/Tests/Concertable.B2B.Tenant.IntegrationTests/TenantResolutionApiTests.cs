@@ -90,7 +90,7 @@ public sealed class TenantResolutionApiTests : IAsyncLifetime
         var tenant = fixture.Tenants.Single(value => value.Id == membership.TenantId);
         var presetKeys = AuthorizationCatalog.Presets.Keys.Where(key =>
             membership.Assignments.Any(assignment => assignment.RoleId == TenantApiFixture.RoleId(membership.TenantId, key)));
-        var permissions = EffectivePermissions.From(
+        var permissions = PermissionSet.From(
             presetKeys.SelectMany(key => AuthorizationCatalog.Presets[key].Permissions));
         return new MembershipSnapshot(
             membership.Id,

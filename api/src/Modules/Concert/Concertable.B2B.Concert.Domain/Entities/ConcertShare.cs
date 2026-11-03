@@ -12,7 +12,7 @@ public sealed class ConcertShare
     public DateTime SharedAt { get; private set; }
     public DateTime? ExpiresAt { get; private set; }
 
-    public bool IsLiveAt(DateTime at) => ExpiresAt is null || ExpiresAt > at;
+    public bool IsExpiredAt(DateTime at) => ExpiresAt <= at;
 
     internal static ConcertShare Create(
         Guid recipientTenantId,

@@ -85,7 +85,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
             var invitedRoles = roles.Where(role => invitedRoleIds.Contains(role.Id)).ToArray();
             var snapshot = inviter is null ? null : new MembershipSnapshot(
                 inviter.Id, inviter.TenantId, inviter.UserId, inviter.PermissionVersion,
-                tenant.RolePolicyVersion, inviterRoles.ToEffectivePermissions());
+                tenant.RolePolicyVersion, inviterRoles.ToPermissionSet());
             if (snapshot is null
                 || snapshot.PermissionVersion != invitation.InviterPermissionVersion
                 || tenant.RolePolicyVersion != invitation.InviterRolePolicyVersion

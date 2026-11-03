@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(TenantDbContext))]
-    [Migration("20261031004822_InitialCreate")]
+    [Migration("20261103204349_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -326,7 +326,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("Audience")
+                    b.Property<int>("Access")
                         .HasColumnType("integer");
 
                     b.HasKey("TenantId", "RoleId", "PermissionKey");

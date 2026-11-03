@@ -6,7 +6,7 @@ public static class PermissionPolicy
 
     public static string Name(TenantPermission permission) =>
         TenantPermission.All.Contains(permission)
-            ? $"{Prefix}{permission.Key}"
+            ? $"{Prefix}{permission.Name}"
             : throw new ArgumentOutOfRangeException(nameof(permission));
 
     public static bool TryParse(string? policyName, out TenantPermission permission)
@@ -16,6 +16,6 @@ public static class PermissionPolicy
         if (policyName is null || !policyName.StartsWith(Prefix, StringComparison.Ordinal))
             return false;
 
-        return TenantPermission.TryParseKey(policyName[Prefix.Length..], out permission);
+        return TenantPermission.TryParseName(policyName[Prefix.Length..], out permission);
     }
 }

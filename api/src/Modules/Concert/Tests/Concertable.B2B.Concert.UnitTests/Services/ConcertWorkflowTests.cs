@@ -34,7 +34,7 @@ public sealed class ConcertWorkflowTests
         Guid.NewGuid(),
         1,
         1,
-        EffectivePermissions.From([KeyValuePair.Create(TenantPermission.ConcertsManage, ResourceAccess.All)]));
+        PermissionSet.From([KeyValuePair.Create(TenantPermission.ConcertsManage, ResourceAccess.All)]));
 
     public ConcertWorkflowTests()
     {

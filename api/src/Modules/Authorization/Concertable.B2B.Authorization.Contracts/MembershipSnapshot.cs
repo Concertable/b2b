@@ -6,7 +6,7 @@ public sealed record MembershipSnapshot(
     Guid UserId,
     long PermissionVersion,
     long RolePolicyVersion,
-    EffectivePermissions Permissions)
+    PermissionSet Permissions)
 {
     public bool HasPermission(TenantPermission permission) => Permissions[permission] != ResourceAccess.None;
 }

@@ -161,7 +161,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             var permissions = member.Assignments
                 .Where(row => roles.TryGetValue(row.RoleId, out var role) && role.TenantId == member.TenantId)
                 .Select(row => roles[row.RoleId])
-                .ToEffectivePermissions();
+                .ToPermissionSet();
             return new MembershipSnapshot(
                 member.Id, member.TenantId, member.UserId, member.PermissionVersion,
                 tenants[member.TenantId].RolePolicyVersion, permissions);

@@ -56,7 +56,7 @@ public enum TenantPermission
 
 public static class TenantPermissionExtensions
 {
-    private static readonly FrozenDictionary<TenantPermission, string> Keys =
+    private static readonly FrozenDictionary<TenantPermission, string> Names =
         new Dictionary<TenantPermission, string>
         {
             [TenantPermission.ApplicationsDecide] = "applications:decide",
@@ -84,23 +84,23 @@ public static class TenantPermissionExtensions
             [TenantPermission.TermsRead] = "terms:read",
         }.ToFrozenDictionary();
 
-    private static readonly FrozenDictionary<string, TenantPermission> ByKey =
-        Keys.ToFrozenDictionary(pair => pair.Value, pair => pair.Key, StringComparer.Ordinal);
+    private static readonly FrozenDictionary<string, TenantPermission> ByName =
+        Names.ToFrozenDictionary(pair => pair.Value, pair => pair.Key, StringComparer.Ordinal);
 
-    private static readonly FrozenSet<TenantPermission> Declared = Keys.Keys.ToFrozenSet();
+    private static readonly FrozenSet<TenantPermission> Declared = Names.Keys.ToFrozenSet();
 
     extension(TenantPermission permission)
     {
-        public string Key => Keys.TryGetValue(permission, out var key) ? key : string.Empty;
+        public string Name => Names.TryGetValue(permission, out var name) ? name : string.Empty;
     }
 
     extension(TenantPermission)
     {
         public static IReadOnlySet<TenantPermission> All => Declared;
 
-        public static bool TryParseKey(string? key, out TenantPermission permission)
+        public static bool TryParseName(string? name, out TenantPermission permission)
         {
-            if (key is not null && ByKey.TryGetValue(key, out permission))
+            if (name is not null && ByName.TryGetValue(name, out permission))
                 return true;
             permission = default;
             return false;

@@ -2,19 +2,19 @@ using Concertable.B2B.Authorization.Contracts;
 
 namespace Concertable.B2B.Authorization.UnitTests;
 
-public sealed class EffectivePermissionsTests
+public sealed class PermissionSetTests
 {
     [Fact]
     public void Indexer_DefaultValue_HoldsNoPermissions()
     {
-        Assert.Equal(ResourceAccess.None, default(EffectivePermissions)[TenantPermission.OperationsView]);
-        Assert.Empty(default(EffectivePermissions));
+        Assert.Equal(ResourceAccess.None, default(PermissionSet)[TenantPermission.OperationsView]);
+        Assert.Empty(default(PermissionSet));
     }
 
     [Fact]
     public void From_SamePermissionFromSeveralRoles_KeepsTheBroadestAccess()
     {
-        var permissions = EffectivePermissions.From(
+        var permissions = PermissionSet.From(
         [
             KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.Assigned),
             KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.All),
@@ -27,21 +27,21 @@ public sealed class EffectivePermissionsTests
     [Fact]
     public void Equality_DefaultAndEmpty_AreEqual()
     {
-        var empty = EffectivePermissions.From([]);
+        var empty = PermissionSet.From([]);
 
-        Assert.True(default(EffectivePermissions) == empty);
-        Assert.Equal(default(EffectivePermissions).GetHashCode(), empty.GetHashCode());
+        Assert.True(default(PermissionSet) == empty);
+        Assert.Equal(default(PermissionSet).GetHashCode(), empty.GetHashCode());
     }
 
     [Fact]
     public void Equality_SameEntriesInAnotherOrder_AreEqual()
     {
-        var first = EffectivePermissions.From(
+        var first = PermissionSet.From(
         [
             KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.All),
             KeyValuePair.Create(TenantPermission.TermsRead, ResourceAccess.Assigned),
         ]);
-        var second = EffectivePermissions.From(
+        var second = PermissionSet.From(
         [
             KeyValuePair.Create(TenantPermission.TermsRead, ResourceAccess.Assigned),
             KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.All),
@@ -54,9 +54,9 @@ public sealed class EffectivePermissionsTests
     [Fact]
     public void Equality_DifferentAccess_AreNotEqual()
     {
-        var all = EffectivePermissions.From(
+        var all = PermissionSet.From(
             [KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.All)]);
-        var assigned = EffectivePermissions.From(
+        var assigned = PermissionSet.From(
             [KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.Assigned)]);
 
         Assert.True(all != assigned);

@@ -121,7 +121,7 @@ the member's next request; there is no authorization locking.
 | `MembershipId`, `TenantId`, `UserId` | Who is acting, in which tenant |
 | `PermissionVersion` | Bumped by the membership's role changes |
 | `RolePolicyVersion` | The tenant's role-definition version, bumped when a role's permissions change |
-| `Permissions` | `EffectivePermissions`: each held `TenantPermission` with its `ResourceAccess` |
+| `Permissions` | `PermissionSet`: each held `TenantPermission` with its `ResourceAccess` |
 
 `ResourceAccess` is `None`, `Assigned` or `All`. Tenant-wide routes (being a principal, receiving a tenant
 share) need `All`; member routes (an assignment, a share to one membership) need `Assigned` or `All`.

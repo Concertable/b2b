@@ -29,7 +29,7 @@ public sealed class ConcertServiceAccessOrderingTests
         Guid.NewGuid(),
         1,
         1,
-        EffectivePermissions.From([KeyValuePair.Create(TenantPermission.ResourcesShare, ResourceAccess.All)]));
+        PermissionSet.From([KeyValuePair.Create(TenantPermission.ResourcesShare, ResourceAccess.All)]));
 
     [Fact]
     public async Task RevokeSummaryShare_OnAConcertTheActorIsNotPartyTo_IsNotPermitted()
@@ -85,7 +85,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var editOnly = actor with
         {
             TenantId = ConfirmedBookings.VenueTenantId,
-            Permissions = EffectivePermissions.From(
+            Permissions = PermissionSet.From(
             [
                 KeyValuePair.Create(TenantPermission.ConcertsOpsEdit, ResourceAccess.All),
             ]),

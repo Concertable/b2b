@@ -323,7 +323,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("Audience")
+                    b.Property<int>("Access")
                         .HasColumnType("integer");
 
                     b.HasKey("TenantId", "RoleId", "PermissionKey");

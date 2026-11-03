@@ -60,7 +60,7 @@ public sealed class TenantRoleAssignmentPolicyTests
             Guid.NewGuid(),
             1,
             1,
-            EffectivePermissions.From(preset.Permissions));
+            PermissionSet.From(preset.Permissions));
     }
 
     private static TenantRoleDefinition Preset(Guid tenantId, string key)

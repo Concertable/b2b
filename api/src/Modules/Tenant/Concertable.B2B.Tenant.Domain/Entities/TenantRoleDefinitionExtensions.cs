@@ -6,12 +6,12 @@ public static class TenantRoleDefinitionExtensions
 {
     extension(IEnumerable<TenantRoleDefinition> roles)
     {
-        public EffectivePermissions ToEffectivePermissions() =>
-            EffectivePermissions.From(roles
+        public PermissionSet ToPermissionSet() =>
+            PermissionSet.From(roles
                 .SelectMany(role => role.Permissions)
-                .Where(row => row.Audience is ResourceAccess.Assigned or ResourceAccess.All)
-                .Select(row => TenantPermission.TryParseKey(row.PermissionKey, out var permission)
-                    ? KeyValuePair.Create(permission, row.Audience)
+                .Where(row => row.Access is ResourceAccess.Assigned or ResourceAccess.All)
+                .Select(row => TenantPermission.TryParseName(row.PermissionKey, out var permission)
+                    ? KeyValuePair.Create(permission, row.Access)
                     : default)
                 .Where(grant => grant.Key != default));
     }

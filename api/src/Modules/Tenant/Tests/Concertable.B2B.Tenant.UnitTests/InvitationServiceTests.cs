@@ -177,5 +177,5 @@ public sealed class InvitationServiceTests
             membership.UserId,
             membership.PermissionVersion,
             1,
-            EffectivePermissions.From(AuthorizationCatalog.Presets[key].Permissions));
+            PermissionSet.From(AuthorizationCatalog.Presets[key].Permissions));
 }

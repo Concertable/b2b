@@ -27,7 +27,7 @@ public sealed class ComposableRoleInvariantTests
         Assert.True(role.IsInvitationAssignable);
         Assert.Equal(version, role.Version);
         Assert.Same(existingPermission, Assert.Single(role.Permissions));
-        Assert.Equal(ResourceAccess.Assigned, existingPermission.Audience);
+        Assert.Equal(ResourceAccess.Assigned, existingPermission.Access);
     }
 
     [Theory]
@@ -78,13 +78,13 @@ public sealed class ComposableRoleInvariantTests
         var tenantId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var first = new MembershipSnapshot(membershipId, tenantId, userId, 2, 3,
-            EffectivePermissions.From(
+            PermissionSet.From(
             [
                 KeyValuePair.Create(TenantPermission.MessagesRead, ResourceAccess.Assigned),
                 KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.All),
             ]));
         var second = new MembershipSnapshot(membershipId, tenantId, userId, 2, 3,
-            EffectivePermissions.From(
+            PermissionSet.From(
             [
                 KeyValuePair.Create(TenantPermission.OperationsView, ResourceAccess.All),
                 KeyValuePair.Create(TenantPermission.MessagesRead, ResourceAccess.Assigned),

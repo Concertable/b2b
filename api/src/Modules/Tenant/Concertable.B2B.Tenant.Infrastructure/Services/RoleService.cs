@@ -45,7 +45,7 @@ internal sealed class RoleService : IRoleService
             if (!(await tenants.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId))
                 return Result.Failure<IReadOnlyList<RoleDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
-            if (!authorizationContext.FindActor(tenantId).TryGetValue(out var actor) || !actor.HasPermission(TenantPermission.MembersInvite))
+            if (!authorizationContext.TryGetMembership(tenantId, out var actor) || !actor.HasPermission(TenantPermission.MembersInvite))
                 return Result.Failure<IReadOnlyList<RoleDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
 
@@ -63,7 +63,7 @@ internal sealed class RoleService : IRoleService
         {
             var tenantId = tenantContext.GetTenantId();
             if (!(await tenants.GetExistingIdsForShareAsync([tenantId], ct)).Contains(tenantId)
-                || !authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
+                || !authorizationContext.TryGetMembership(tenantId, out var actor)
                 || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
                 return Result.Failure<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
@@ -71,7 +71,7 @@ internal sealed class RoleService : IRoleService
             IReadOnlyList<PermissionMetadataDto> metadata = AuthorizationCatalog.Permissions.Values
                 .OrderBy(item => item.Category).ThenBy(item => item.Label)
                 .Select(item => new PermissionMetadataDto(
-                    item.Permission.Key, item.Label, item.Category, item.OwnerOnly))
+                    item.Permission.Name, item.Label, item.Category, item.OwnerOnly))
                 .ToArray();
             return Result.Success<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(metadata);
         }, ct);
@@ -141,7 +141,7 @@ internal sealed class RoleService : IRoleService
         var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
         if (tenant is null)
             return new RetireRoleError.NotPermitted();
-        if (!authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
+        if (!authorizationContext.TryGetMembership(tenantId, out var actor)
             || !await IsRoleManagerAsync(tenantId, ct))
             return new RetireRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
@@ -184,7 +184,7 @@ internal sealed class RoleService : IRoleService
     }
 
     private async Task<bool> IsRoleManagerAsync(Guid tenantId, CancellationToken ct) =>
-        authorizationContext.FindActor(tenantId).TryGetValue(out var actor)
+        authorizationContext.TryGetMembership(tenantId, out var actor)
         && actor.HasPermission(TenantPermission.MembersManageRoles)
         && await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct);
 
@@ -198,7 +198,7 @@ internal sealed class RoleService : IRoleService
         var parsed = new Dictionary<TenantPermission, ResourceAccess>();
         foreach (var item in items)
         {
-            if (!TenantPermission.TryParseKey(item.Permission, out var permission)
+            if (!TenantPermission.TryParseName(item.Permission, out var permission)
                 || !Enum.TryParse<ResourceAccess>(item.Audience, false, out var access)
                 || access is not (ResourceAccess.Assigned or ResourceAccess.All)
                 || AuthorizationCatalog.Permissions[permission].OwnerOnly
@@ -216,5 +216,5 @@ internal sealed class RoleService : IRoleService
         new(role.Id, role.Name, role.Version, role.SystemPresetKey is not null,
             role.IsProtectedOwner, role.IsInvitationAssignable,
             [.. role.Permissions.OrderBy(row => row.PermissionKey, StringComparer.Ordinal)
-                .Select(row => new RolePermissionDto(row.PermissionKey, row.Audience.ToString()))]);
+                .Select(row => new RolePermissionDto(row.PermissionKey, row.Access.ToString()))]);
 }

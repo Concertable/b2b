@@ -36,7 +36,7 @@ public sealed class TenantServiceTests
         var userId = Guid.NewGuid();
         this.authorizationContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
-                userId, 1, 1, EffectivePermissions.From(AuthorizationCatalog.Presets["Owner"].Permissions)));
+                userId, 1, 1, PermissionSet.From(AuthorizationCatalog.Presets["Owner"].Permissions)));
         this.roles = new Mock<IRoleRepository>();
         this.repository.Setup(value => value.GetExistingIdsForShareAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
@@ -485,13 +485,13 @@ public sealed class TenantServiceTests
             .ReturnsAsync([new UserMembership(
                 new MembershipSnapshot(
                     Guid.NewGuid(), tenantId, userId, 1, 1,
-                    EffectivePermissions.From(AuthorizationCatalog.Presets["Door"].Permissions)),
+                    PermissionSet.From(AuthorizationCatalog.Presets["Door"].Permissions)),
                 "Bare Ltd", [new RoleSummary(Guid.NewGuid(), "Door", false)], [])]);
 
         var memberships = await service.GetMembershipsAsync(userId);
 
         Assert.Equal(
-            [TenantPermission.ConcertsCheckIn.Key, TenantPermission.OperationsView.Key],
+            [TenantPermission.ConcertsCheckIn.Name, TenantPermission.OperationsView.Name],
             memberships.Single().Permissions.Order());
     }
 }

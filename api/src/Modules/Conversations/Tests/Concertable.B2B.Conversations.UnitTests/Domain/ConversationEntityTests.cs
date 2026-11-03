@@ -108,5 +108,5 @@ public sealed class ConversationEntityTests
 
     private static MembershipSnapshot Actor(Guid tenantId, TenantPermission permission, ResourceAccess access) =>
         new(Guid.NewGuid(), tenantId, Guid.NewGuid(), 1, 1,
-            EffectivePermissions.From([KeyValuePair.Create(permission, access)]));
+            PermissionSet.From([KeyValuePair.Create(permission, access)]));
 }

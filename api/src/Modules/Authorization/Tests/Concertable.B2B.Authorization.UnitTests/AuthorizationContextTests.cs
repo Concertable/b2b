@@ -42,7 +42,7 @@ public sealed class AuthorizationContextTests
             Guid.NewGuid(),
             3,
             4,
-            EffectivePermissions.From(permissions ?? new Dictionary<TenantPermission, ResourceAccess>()));
+            PermissionSet.From(permissions ?? new Dictionary<TenantPermission, ResourceAccess>()));
 
     [Fact]
     public async Task ResolveAsync_SingleMembershipNoHeader_DefaultsToIt()

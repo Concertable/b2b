@@ -9,9 +9,9 @@ public sealed class TenantRolePermission
     public Guid TenantId { get; private set; }
     public Guid RoleId { get; private set; }
     public string PermissionKey { get; private set; } = null!;
-    public ResourceAccess Audience { get; private set; }
+    public ResourceAccess Access { get; private set; }
 
-    internal void ChangeAudience(ResourceAccess access) => Audience = access;
+    internal void ChangeAccess(ResourceAccess access) => Access = access;
 
     internal static TenantRolePermission Create(
         Guid tenantId, Guid roleId, TenantPermission permission, ResourceAccess access) =>
@@ -19,7 +19,7 @@ public sealed class TenantRolePermission
         {
             TenantId = tenantId,
             RoleId = roleId,
-            PermissionKey = permission.Key,
-            Audience = access,
+            PermissionKey = permission.Name,
+            Access = access,
         };
 }

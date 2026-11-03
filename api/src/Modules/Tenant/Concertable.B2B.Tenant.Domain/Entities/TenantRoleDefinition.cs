@@ -83,7 +83,7 @@ public sealed class TenantRoleDefinition
     }
 
     public bool Has(TenantPermission permission) =>
-        permissions.Any(row => row.PermissionKey == permission.Key);
+        permissions.Any(row => row.PermissionKey == permission.Name);
 
     private void SetPermissions(IReadOnlyDictionary<TenantPermission, ResourceAccess> grants, bool systemPreset)
     {
@@ -94,14 +94,14 @@ public sealed class TenantRoleDefinition
                 || descriptor.OwnerOnly && !systemPreset)
                 throw new ArgumentException("Invalid role permission or access.");
         }
-        permissions.RemoveAll(row => !grants.Keys.Any(key => key.Key == row.PermissionKey));
+        permissions.RemoveAll(row => !grants.Keys.Any(permission => permission.Name == row.PermissionKey));
         foreach (var (permission, access) in grants)
         {
-            var existing = permissions.Find(row => row.PermissionKey == permission.Key);
+            var existing = permissions.Find(row => row.PermissionKey == permission.Name);
             if (existing is null)
                 permissions.Add(TenantRolePermission.Create(TenantId, Id, permission, access));
             else
-                existing.ChangeAudience(access);
+                existing.ChangeAccess(access);
         }
     }
 
