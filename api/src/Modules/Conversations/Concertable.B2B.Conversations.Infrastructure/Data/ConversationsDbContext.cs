@@ -13,9 +13,9 @@ internal sealed class ConversationsDbContext(
     IOptions<OutboxOptions> outboxOptions,
     ConversationsConfigurationProvider provider,
     ITenantContext tenantContext,
-    IAuthorizationContext authorization,
+    IAuthorizationContext authorizationContext,
     TimeProvider timeProvider)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorizationContext, timeProvider, Schema.Name)
 {
     public DbSet<ContentReportEntity> ContentReports => Set<ContentReportEntity>();
     public DbSet<MessageEntity> Messages => Set<MessageEntity>();

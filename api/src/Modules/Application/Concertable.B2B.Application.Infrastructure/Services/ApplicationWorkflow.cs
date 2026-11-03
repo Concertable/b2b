@@ -39,7 +39,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
     private readonly LegalSettings legal;
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
-    private readonly IAuthorizationContext membership;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
@@ -57,7 +57,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         IOptions<LegalSettings> legal,
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
-        IAuthorizationContext membership,
+        IAuthorizationContext authorizationContext,
         ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor)
@@ -74,7 +74,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         this.legal = legal.Value;
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
-        this.membership = membership;
+        this.authorizationContext = authorizationContext;
         this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
         this.unitOfWorkAccessor = unitOfWorkAccessor;
@@ -85,7 +85,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return new ApplyApplicationError.NotPermitted();
 
         var ipAddress = clientContext.IpAddress;
@@ -266,7 +266,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         ESignatureRequest eSignature,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return new AcceptApplicationError.NotPermitted();
 
         try

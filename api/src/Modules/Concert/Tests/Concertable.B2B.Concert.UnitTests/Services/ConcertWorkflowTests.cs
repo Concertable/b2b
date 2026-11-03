@@ -22,7 +22,7 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 public sealed class ConcertWorkflowTests
 {
     private readonly Mock<IConcertPrivilegedRepository> concertRepository = new();
-    private readonly Mock<IAuthorizationContext> membership = new();
+    private readonly Mock<IAuthorizationContext> authorizationContext = new();
     private readonly Mock<ISettlementService> settlementService = new();
     private readonly Mock<IDealStrategyFactory<ICancelStep>> cancelFactory = new();
     private readonly Mock<IDealStrategyFactory<ICompleteStep>> completeFactory = new();
@@ -39,7 +39,7 @@ public sealed class ConcertWorkflowTests
     public ConcertWorkflowTests()
     {
         immediateBehavior = new ImmediateBehavior();
-        membership.SetupGet(context => context.Membership).Returns(actor);
+        authorizationContext.SetupGet(context => context.Membership).Returns(actor);
         var transactionRunner = new ImmediateTransactionRunner(settlementService.Object);
         workflow = new ConcertWorkflow(
             concertRepository.Object,
@@ -47,14 +47,14 @@ public sealed class ConcertWorkflowTests
             cancelFactory.Object,
             completeFactory.Object,
             immediateBehavior,
-            membership.Object);
+            authorizationContext.Object);
         transactionRunner.Workflow = workflow;
     }
 
     [Fact]
     public async Task CancelAsync_ActorOfAnotherTenant_IsNotPermitted()
     {
-        membership.SetupGet(context => context.Membership).Returns(actor with { TenantId = Guid.NewGuid() });
+        authorizationContext.SetupGet(context => context.Membership).Returns(actor with { TenantId = Guid.NewGuid() });
         concertRepository
             .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
             .ReturnsAsync(CreateBooking());

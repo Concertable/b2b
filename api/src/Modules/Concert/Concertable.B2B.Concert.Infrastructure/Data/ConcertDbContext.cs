@@ -16,9 +16,9 @@ internal sealed class ConcertDbContext(
     IOptions<OutboxOptions> outboxOptions,
     ConcertConfigurationProvider provider,
     ITenantContext tenantContext,
-    IAuthorizationContext authorization,
+    IAuthorizationContext authorizationContext,
     TimeProvider timeProvider)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorizationContext, timeProvider, Schema.Name)
 {
     public DbSet<ConcertEntity> Concerts => Set<ConcertEntity>();
     public DbSet<InvoiceEntity> Invoices => Set<InvoiceEntity>();

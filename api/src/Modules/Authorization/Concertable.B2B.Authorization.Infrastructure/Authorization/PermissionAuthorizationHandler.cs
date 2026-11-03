@@ -6,19 +6,19 @@ namespace Concertable.B2B.Authorization.Infrastructure.Authorization;
 internal sealed class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
     private readonly ITenantResolver resolver;
-    private readonly IAuthorizationContext authorization;
+    private readonly IAuthorizationContext authorizationContext;
 
-    public PermissionAuthorizationHandler(ITenantResolver resolver, IAuthorizationContext authorization)
+    public PermissionAuthorizationHandler(ITenantResolver resolver, IAuthorizationContext authorizationContext)
     {
         this.resolver = resolver;
-        this.authorization = authorization;
+        this.authorizationContext = authorizationContext;
     }
 
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
     {
         await resolver.ResolveAsync();
 
-        if (authorization.Membership.TryGetValue(out var actor) && actor.HasPermission(requirement.Permission))
+        if (authorizationContext.Membership.TryGetValue(out var actor) && actor.HasPermission(requirement.Permission))
             context.Succeed(requirement);
     }
 }

@@ -11,9 +11,9 @@ internal sealed class ApplicationDbContext(
     IOptions<OutboxOptions> outboxOptions,
     ApplicationConfigurationProvider provider,
     ITenantContext tenantContext,
-    IAuthorizationContext authorization,
+    IAuthorizationContext authorizationContext,
     TimeProvider timeProvider)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorizationContext, timeProvider, Schema.Name)
 {
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<VerifyPaymentEntity> VerifyPayments => Set<VerifyPaymentEntity>();

@@ -32,7 +32,7 @@ internal sealed class ApplicationService : IApplicationService
     private readonly IApplicationResolver resolver;
     private readonly TimeProvider timeProvider;
     private readonly IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork;
-    private readonly IAuthorizationContext membership;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
 
@@ -51,7 +51,7 @@ internal sealed class ApplicationService : IApplicationService
         IApplicationResolver resolver,
         TimeProvider timeProvider,
         IPrivilegedUnitOfWorkBehavior privilegedUnitOfWork,
-        IAuthorizationContext membership,
+        IAuthorizationContext authorizationContext,
         ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner)
     {
@@ -69,7 +69,7 @@ internal sealed class ApplicationService : IApplicationService
         this.resolver = resolver;
         this.timeProvider = timeProvider;
         this.privilegedUnitOfWork = privilegedUnitOfWork;
-        this.membership = membership;
+        this.authorizationContext = authorizationContext;
         this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
     }
@@ -219,7 +219,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return new WithdrawApplicationError.NotPermitted();
 
         try
@@ -241,7 +241,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return new RejectApplicationError.NotPermitted();
 
         try
@@ -263,7 +263,7 @@ internal sealed class ApplicationService : IApplicationService
         int applicationId,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return new CancelApplicationError.NotPermitted();
 
         try
@@ -415,7 +415,7 @@ internal sealed class ApplicationService : IApplicationService
 
     private async Task<UnitResult<ApplicationEligibilityError>> CheckCanApplyAsync(int opportunityId)
     {
-        if (!membership.Membership.TryGetValue(out var actor)
+        if (!authorizationContext.Membership.TryGetValue(out var actor)
             || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplicationEligibilityError.MissingArtist();
         var artistOption = await artistModule.GetCurrentProfileAsync();

@@ -11,7 +11,7 @@ internal sealed class ContentReportService : IContentReportService
 {
     private readonly IMessageRepository messageRepository;
     private readonly IConversationPrivilegedRepository conversations;
-    private readonly IAuthorizationContext membership;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly IContentReportRepository reportRepository;
     private readonly IContentReportNotifier notifier;
     private readonly ICurrentUser currentUser;
@@ -22,7 +22,7 @@ internal sealed class ContentReportService : IContentReportService
     public ContentReportService(
         IMessageRepository messageRepository,
         IConversationPrivilegedRepository conversations,
-        IAuthorizationContext membership,
+        IAuthorizationContext authorizationContext,
         IContentReportRepository reportRepository,
         IContentReportNotifier notifier,
         ICurrentUser currentUser,
@@ -32,7 +32,7 @@ internal sealed class ContentReportService : IContentReportService
     {
         this.messageRepository = messageRepository;
         this.conversations = conversations;
-        this.membership = membership;
+        this.authorizationContext = authorizationContext;
         this.reportRepository = reportRepository;
         this.notifier = notifier;
         this.currentUser = currentUser;
@@ -52,7 +52,7 @@ internal sealed class ContentReportService : IContentReportService
     private async Task<Option<MessageEntity>> FindMessageAsync(int conversationId, int messageId)
     {
         if (conversationId <= 0
-            || !membership.Membership.TryGetValue(out var actor)
+            || !authorizationContext.Membership.TryGetValue(out var actor)
             || await conversations.GetByIdAsync(conversationId) is not { } conversation
             || !conversation.IsReadableBy(actor))
             return null;

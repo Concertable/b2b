@@ -20,7 +20,7 @@ internal sealed class ConversationService : IConversationService
     private readonly IPrivilegedOutboxUnitOfWorkBehavior unitOfWork;
     private readonly ITenantLocker tenantLocker;
     private readonly IMembershipLocker membershipLocker;
-    private readonly IAuthorizationContext membership;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITransactionRunner transactionRunner;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
     private readonly ITenantContext tenantContext;
@@ -34,7 +34,7 @@ internal sealed class ConversationService : IConversationService
         IPrivilegedOutboxUnitOfWorkBehavior unitOfWork,
         ITenantLocker tenantLocker,
         IMembershipLocker membershipLocker,
-        IAuthorizationContext membership,
+        IAuthorizationContext authorizationContext,
         ITransactionRunner transactionRunner,
         UnitOfWorkAccessor unitOfWorkAccessor,
         ITenantContext tenantContext,
@@ -47,7 +47,7 @@ internal sealed class ConversationService : IConversationService
         this.unitOfWork = unitOfWork;
         this.tenantLocker = tenantLocker;
         this.membershipLocker = membershipLocker;
-        this.membership = membership;
+        this.authorizationContext = authorizationContext;
         this.transactionRunner = transactionRunner;
         this.unitOfWorkAccessor = unitOfWorkAccessor;
         this.tenantContext = tenantContext;
@@ -59,7 +59,7 @@ internal sealed class ConversationService : IConversationService
         CreateConversationRequest request,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return Task.FromResult<Result<ConversationDto, CreateConversationError>>(
                 new CreateConversationError.NotPermitted());
 
@@ -153,7 +153,7 @@ internal sealed class ConversationService : IConversationService
         MessageAction? action = null,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return Task.FromResult<Result<MessageDto, SendMessageError>>(new SendMessageError.NotPermitted());
         if (unitOfWorkAccessor.Current is not null)
             return unitOfWork.ExecuteAsync(
@@ -216,7 +216,7 @@ internal sealed class ConversationService : IConversationService
         AdvanceConversationReadPositionRequest request,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return Task.FromResult<UnitResult<ConversationAccessError>>(
                 new ConversationAccessError.NotPermitted());
         return transactionRunner.RunAsync<ConversationService, UnitResult<ConversationAccessError>>(
@@ -275,7 +275,7 @@ internal sealed class ConversationService : IConversationService
         Func<ConversationService, MembershipSnapshot, CancellationToken, Task<UnitResult<AssignConversationMemberError>>> command,
         CancellationToken ct)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return Task.FromResult<UnitResult<AssignConversationMemberError>>(
                 new AssignConversationMemberError.NotPermitted());
         return transactionRunner.RunAsync<ConversationService, UnitResult<AssignConversationMemberError>>(
@@ -393,13 +393,13 @@ internal sealed class ConversationService : IConversationService
     }
 
     private MembershipSnapshot? ReadActor() =>
-        membership.Membership.TryGetValue(out var actor) && actor.HasPermission(TenantPermission.MessagesRead)
+        authorizationContext.Membership.TryGetValue(out var actor) && actor.HasPermission(TenantPermission.MessagesRead)
             ? actor
             : null;
 
     private async Task<ConversationEntity?> FindReadableAsync(int conversationId, CancellationToken ct) =>
         conversationId > 0
-        && membership.Membership.TryGetValue(out var actor)
+        && authorizationContext.Membership.TryGetValue(out var actor)
         && await privilegedRepository.GetByIdAsync(conversationId, ct) is { } conversation
         && conversation.IsReadableBy(actor)
             ? conversation

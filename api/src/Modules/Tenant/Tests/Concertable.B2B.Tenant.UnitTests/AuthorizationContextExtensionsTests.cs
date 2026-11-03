@@ -11,11 +11,11 @@ public sealed class AuthorizationContextExtensionsTests
     {
         var tenantId = Guid.NewGuid();
         var actor = new MembershipSnapshot(Guid.NewGuid(), tenantId, Guid.NewGuid(), 1, 1, default);
-        var context = Mock.Of<IAuthorizationContext>(value => value.Membership == actor);
+        var authorizationContext = Mock.Of<IAuthorizationContext>(value => value.Membership == actor);
 
-        Assert.True(context.TryGetMembership(tenantId, out var found));
+        Assert.True(authorizationContext.TryGetMembership(tenantId, out var found));
         Assert.Same(actor, found);
-        Assert.False(context.TryGetMembership(Guid.NewGuid(), out _));
+        Assert.False(authorizationContext.TryGetMembership(Guid.NewGuid(), out _));
         Assert.False(Mock.Of<IAuthorizationContext>().TryGetMembership(tenantId, out _));
     }
 }

@@ -18,7 +18,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
     private readonly IDealStrategyFactory<ICancelStep> cancelFactory;
     private readonly IDealStrategyFactory<ICompleteStep> completeFactory;
     private readonly IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior;
-    private readonly IAuthorizationContext membership;
+    private readonly IAuthorizationContext authorizationContext;
 
     public ConcertWorkflow(
         IConcertPrivilegedRepository privilegedRepository,
@@ -26,21 +26,21 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         IDealStrategyFactory<ICancelStep> cancelFactory,
         IDealStrategyFactory<ICompleteStep> completeFactory,
         IPrivilegedOutboxUnitOfWorkBehavior privilegedOutboxUnitOfWorkBehavior,
-        IAuthorizationContext membership)
+        IAuthorizationContext authorizationContext)
     {
         this.privilegedRepository = privilegedRepository;
         this.transactionRunner = transactionRunner;
         this.cancelFactory = cancelFactory;
         this.completeFactory = completeFactory;
         this.privilegedOutboxUnitOfWorkBehavior = privilegedOutboxUnitOfWorkBehavior;
-        this.membership = membership;
+        this.authorizationContext = authorizationContext;
     }
 
     public async Task<UnitResult<CancelConcertError>> CancelAsync(
         int concertId,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return new CancelConcertError.NotPermitted();
 
         try

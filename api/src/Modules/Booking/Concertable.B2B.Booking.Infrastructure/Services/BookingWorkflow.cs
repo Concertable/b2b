@@ -41,7 +41,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly IDealStrategyFactory<IContractFactory> contractFactory;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
-    private readonly IAuthorizationContext membership;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
 
@@ -60,7 +60,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         IDealStrategyFactory<IContractFactory> contractFactory,
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
-        IAuthorizationContext membership,
+        IAuthorizationContext authorizationContext,
         ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner)
     {
@@ -78,7 +78,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.contractFactory = contractFactory;
         this.timeProvider = timeProvider;
         this.logger = logger;
-        this.membership = membership;
+        this.authorizationContext = authorizationContext;
         this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
     }
@@ -92,7 +92,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         int bookingId,
         CancellationToken ct = default)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return new CancelBookingError.NotPermitted();
 
         try

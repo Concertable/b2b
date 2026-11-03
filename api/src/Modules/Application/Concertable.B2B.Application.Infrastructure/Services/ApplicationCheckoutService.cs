@@ -18,7 +18,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 {
     private readonly IApplicationRepository repository;
     private readonly IApplicationPrivilegedRepository privilegedRepository;
-    private readonly IAuthorizationContext membership;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly ITenantLocker tenantLocker;
     private readonly ITransactionRunner transactionRunner;
     private readonly IArtistModule artistModule;
@@ -34,7 +34,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     public ApplicationCheckoutService(
         IApplicationRepository repository,
         IApplicationPrivilegedRepository privilegedRepository,
-        IAuthorizationContext membership,
+        IAuthorizationContext authorizationContext,
         ITenantLocker tenantLocker,
         ITransactionRunner transactionRunner,
         IArtistModule artistModule,
@@ -49,7 +49,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     {
         this.repository = repository;
         this.privilegedRepository = privilegedRepository;
-        this.membership = membership;
+        this.authorizationContext = authorizationContext;
         this.tenantLocker = tenantLocker;
         this.transactionRunner = transactionRunner;
         this.artistModule = artistModule;
@@ -66,7 +66,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateApplyCheckoutAsync(
         int opportunityId)
     {
-        if (!membership.Membership.TryGetValue(out var actor)
+        if (!authorizationContext.Membership.TryGetValue(out var actor)
             || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplicationCheckoutError.Ineligible(
                 new ApplicationEligibilityError.MissingArtist());
@@ -181,7 +181,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private Task<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>> PrepareAcceptCheckoutAsync(
         int applicationId)
     {
-        if (!membership.Membership.TryGetValue(out var actor))
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return Task.FromResult<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>(
                 new ApplicationCheckoutError.ApplicationNotFound());
         return transactionRunner.RunAsync<ApplicationCheckoutService,

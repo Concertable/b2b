@@ -9,7 +9,7 @@ namespace Concertable.B2B.DataAccess.Infrastructure;
 
 public abstract class ResourceScopedDbContext : TenantScopedDbContext
 {
-    private readonly IAuthorizationContext authorization;
+    private readonly IAuthorizationContext authorizationContext;
     private readonly TimeProvider timeProvider;
 
     protected ResourceScopedDbContext(
@@ -17,16 +17,16 @@ public abstract class ResourceScopedDbContext : TenantScopedDbContext
         IOptions<OutboxOptions> outboxOptions,
         IEntityTypeConfigurationProvider provider,
         ITenantContext tenantContext,
-        IAuthorizationContext authorization,
+        IAuthorizationContext authorizationContext,
         TimeProvider timeProvider,
         string defaultSchema)
         : base(options, outboxOptions, provider, tenantContext, defaultSchema)
     {
-        this.authorization = authorization;
+        this.authorizationContext = authorizationContext;
         this.timeProvider = timeProvider;
     }
 
-    public MembershipSnapshot? Actor => authorization.Membership.TryGetValue(out var actor) ? actor : null;
+    public MembershipSnapshot? Actor => authorizationContext.Membership.TryGetValue(out var actor) ? actor : null;
 
     public DateTime Now => timeProvider.GetUtcNow().UtcDateTime;
 

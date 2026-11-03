@@ -11,7 +11,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Services;
 internal sealed class InvoiceService(
     IInvoiceRepository repository,
     IInvoicePdfRenderer invoicePdfRenderer,
-    IAuthorizationContext membership) : IInvoiceService
+    IAuthorizationContext authorizationContext) : IInvoiceService
 {
     public async Task<Result<InvoiceDto, InvoiceError>> GetByConcertIdAsync(int concertId) =>
         (await GetReadableAsync(concertId)).Map(invoice => invoice.ToDto());
@@ -22,7 +22,7 @@ internal sealed class InvoiceService(
 
     private async Task<Result<InvoiceEntity, InvoiceError>> GetReadableAsync(int concertId)
     {
-        if (concertId <= 0 || !membership.Membership.TryGetValue(out _))
+        if (concertId <= 0 || !authorizationContext.Membership.TryGetValue(out _))
             return new InvoiceError.ConcertNotFound(concertId);
 
         var invoice = await repository.GetByConcertIdAsync(concertId);

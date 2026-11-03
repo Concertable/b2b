@@ -46,8 +46,8 @@ public sealed class ContentReportServiceTests
         var actor = new MembershipSnapshot(
             Guid.NewGuid(), VenueTenantId, ReportingUserId, 1, 1,
             PermissionSet.From([KeyValuePair.Create(TenantPermission.MessagesRead, ResourceAccess.All)]));
-        var membership = new Mock<IAuthorizationContext>();
-        membership.SetupGet(context => context.Membership).Returns(actor);
+        var authorizationContext = new Mock<IAuthorizationContext>();
+        authorizationContext.SetupGet(context => context.Membership).Returns(actor);
 
         var conversations = new Mock<IConversationPrivilegedRepository>();
         var participantTenantId = readable ? VenueTenantId : Guid.NewGuid();
@@ -56,7 +56,7 @@ public sealed class ContentReportServiceTests
         conversations.Setup(repository => repository.GetByIdAsync(ConversationId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(conversation);
 
-        return new ContentReportService(messages.Object, conversations.Object, membership.Object,
+        return new ContentReportService(messages.Object, conversations.Object, authorizationContext.Object,
             reports.Object, notifier.Object,
             currentUser.Object, tenantContext.Object, TimeProvider.System,
             NullLogger<ContentReportService>.Instance);

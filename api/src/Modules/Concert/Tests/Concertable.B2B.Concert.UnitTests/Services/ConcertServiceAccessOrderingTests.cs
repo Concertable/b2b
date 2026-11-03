@@ -128,7 +128,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var currentActor = principal ?? actor;
         var repository = new Mock<IConcertPrivilegedRepository>();
         var unitOfWork = new Mock<IPrivilegedOutboxUnitOfWorkBehavior>();
-        var membership = new Mock<IAuthorizationContext>();
+        var authorizationContext = new Mock<IAuthorizationContext>();
         var tenantLocker = new Mock<ITenantLocker>();
         var membershipLocker = new Mock<IMembershipLocker>();
         var steps = new List<string>();
@@ -151,7 +151,7 @@ public sealed class ConcertServiceAccessOrderingTests
                 It.IsAny<CancellationToken>()))
             .Returns((Func<Task<Result<ConcertSummaryShare, ShareConcertSummaryError>>> action,
                 CancellationToken _) => action());
-        membership.SetupGet(value => value.Membership).Returns(currentActor);
+        authorizationContext.SetupGet(value => value.Membership).Returns(currentActor);
         tenantLocker
             .Setup(value => value.LockExistingAsync(
                 It.IsAny<IReadOnlyCollection<Guid>>(),
@@ -187,7 +187,7 @@ public sealed class ConcertServiceAccessOrderingTests
             tenantLocker.Object,
             membershipLocker.Object,
             Mock.Of<ITenantContext>(),
-            membership.Object,
+            authorizationContext.Object,
             transactionRunner,
             Mock.Of<ILogger<ConcertService>>());
         transactionRunner.Service = service;

@@ -11,9 +11,9 @@ internal sealed class BookingDbContext(
     IOptions<OutboxOptions> outboxOptions,
     BookingConfigurationProvider provider,
     ITenantContext tenantContext,
-    IAuthorizationContext authorization,
+    IAuthorizationContext authorizationContext,
     TimeProvider timeProvider)
-    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorization, timeProvider, Schema.Name)
+    : ResourceScopedDbContext(options, outboxOptions, provider, tenantContext, authorizationContext, timeProvider, Schema.Name)
 {
     public DbSet<BookingEntity> Bookings => Set<BookingEntity>();
     public DbSet<ContractEntity> Contracts => Set<ContractEntity>();
