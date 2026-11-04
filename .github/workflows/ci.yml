@@ -55,6 +55,9 @@ jobs:
           -ReleaseTag $env:RELEASE_TAG
           -ExpectedCommit $env:EXPECTED_COMMIT
 
+      - name: Check generated authorization catalog
+        run: python3 scripts/generate-authorization.py --check
+
       - name: Restore backend
         run: dotnet restore Concertable.B2B.slnx
 

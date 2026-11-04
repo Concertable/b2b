@@ -24,8 +24,8 @@ public sealed class MemberManagementTests : IAsyncLifetime
 
     private Guid TenantOf(Guid userId) => fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
 
-    private static Task<HttpResponseMessage> PutRole(HttpClient client, Guid userId, TenantRole role) =>
-        client.PutAsJsonAsync($"/api/organization/members/{userId}/role", new { role = role.ToString() });
+    private static Task<HttpResponseMessage> PutRole(HttpClient client, Guid tenantId, Guid userId, string presetKey) =>
+        client.PutAsJsonAsync($"/api/organization/members/{userId}/roles", new { roleIds = new[] { TenantApiFixture.RoleId(tenantId, presetKey) } });
 
     // A member who owns another tenant must name the acting tenant explicitly, or resolution fails closed.
     private HttpClient ClientInTenant(Guid userId, string email, Guid tenantId)
@@ -42,14 +42,14 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.VenueManager1; // founding Owner, sole membership → default tenant
         var second = fixture.SeedState.VenueManagerNoVenue;
-        await fixture.AddMembershipAsync(TenantOf(owner.Id), second.Id, TenantRole.Staff);
+        await fixture.AddMembershipAsync(TenantOf(owner.Id), second.Id, "Staff");
 
         var response = await fixture.CreateClient(owner).GetAsync("/api/organization/members");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var members = await response.Content.ReadAsync<List<MemberDto>>();
-        Assert.Contains(members!, m => m.UserId == owner.Id && m.Email == owner.Email && m.Role == TenantRole.Owner);
-        Assert.Contains(members!, m => m.UserId == second.Id && m.Email == second.Email && m.Role == TenantRole.Staff);
+        Assert.Contains(members!, m => m.UserId == owner.Id && m.Email == owner.Email && m.Roles.Any(role => role.Name == "Owner"));
+        Assert.Contains(members!, m => m.UserId == second.Id && m.Email == second.Email && m.Roles.Any(role => role.Name == "Staff"));
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         // Manager holds OperationsView, so viewing the roster is allowed (only mutations are Owner-gated).
         var manager = fixture.SeedState.VenueManagerNoVenue;
         var tenantId = TenantOf(fixture.SeedState.VenueManager1.Id);
-        await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
+        await fixture.AddMembershipAsync(tenantId, manager.Id, "Manager");
 
         var response = await ClientInTenant(manager.Id, manager.Email, tenantId).GetAsync("/api/organization/members");
 
@@ -75,12 +75,12 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var owner = fixture.SeedState.VenueManager1;
         var tenantId = TenantOf(owner.Id);
         var member = fixture.SeedState.VenueManagerNoVenue;
-        await fixture.AddMembershipAsync(tenantId, member.Id, TenantRole.Staff);
+        await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
 
-        var response = await PutRole(fixture.CreateClient(owner), member.Id, TenantRole.Finance);
+        var response = await PutRole(fixture.CreateClient(owner), tenantId, member.Id, "Finance");
 
         await response.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(TenantRole.Finance, fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == member.Id).Role);
+        Assert.Equal(TenantApiFixture.RoleId(tenantId, "Finance"), Assert.Single(fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == member.Id).Assignments).RoleId);
     }
 
     [Fact]
@@ -90,12 +90,13 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var owner = fixture.SeedState.VenueManager1;
         var manager = fixture.SeedState.VenueManagerNoVenue;
         var tenantId = TenantOf(owner.Id);
-        await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
+        await fixture.AddMembershipAsync(tenantId, manager.Id, "Manager");
 
         var response = await PutRole(
             ClientInTenant(manager.Id, manager.Email, tenantId),
+            tenantId,
             owner.Id,
-            TenantRole.Staff);
+            "Staff");
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -105,7 +106,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.VenueManager1;
 
-        var response = await PutRole(fixture.CreateClient(owner), fixture.SeedState.VenueManagerNoVenue.Id, TenantRole.Manager);
+        var response = await PutRole(fixture.CreateClient(owner), TenantOf(owner.Id), fixture.SeedState.VenueManagerNoVenue.Id, "Manager");
 
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -116,10 +117,10 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var owner = fixture.SeedState.VenueManager1; // sole Owner of their tenant
         var tenantId = TenantOf(owner.Id);
 
-        var response = await PutRole(fixture.CreateClient(owner), owner.Id, TenantRole.Manager);
+        var response = await PutRole(fixture.CreateClient(owner), tenantId, owner.Id, "Manager");
 
         await response.ShouldBe(HttpStatusCode.Conflict);
-        Assert.Equal(TenantRole.Owner, fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == owner.Id).Role);
+        Assert.Equal(TenantApiFixture.RoleId(tenantId, "Owner"), Assert.Single(fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == owner.Id).Assignments).RoleId);
     }
 
     #endregion
@@ -132,7 +133,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var owner = fixture.SeedState.VenueManager1;
         var tenantId = TenantOf(owner.Id);
         var member = fixture.SeedState.VenueManagerNoVenue;
-        await fixture.AddMembershipAsync(tenantId, member.Id, TenantRole.Staff);
+        await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
 
         var response = await fixture.CreateClient(owner).DeleteAsync($"/api/organization/members/{member.Id}");
 
@@ -146,7 +147,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var owner = fixture.SeedState.VenueManager1;
         var manager = fixture.SeedState.VenueManagerNoVenue;
         var tenantId = TenantOf(owner.Id);
-        await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
+        await fixture.AddMembershipAsync(tenantId, manager.Id, "Manager");
 
         var response = await ClientInTenant(manager.Id, manager.Email, tenantId)
             .DeleteAsync($"/api/organization/members/{owner.Id}");
@@ -191,7 +192,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
     {
         var owner = fixture.SeedState.VenueManagerNoVenue;
         var tenantId = TenantOf(owner.Id);
-        await fixture.AddMembershipAsync(tenantId, fixture.SeedState.ArtistManagerNoArtist.Id, TenantRole.Staff);
+        await fixture.AddMembershipAsync(tenantId, fixture.SeedState.ArtistManagerNoArtist.Id, "Staff");
 
         var response = await fixture.CreateClient(owner).DeleteAsync("/api/organization");
 
@@ -206,7 +207,7 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var owner = fixture.SeedState.VenueManager1;
         var manager = fixture.SeedState.VenueManagerNoVenue;
         var tenantId = TenantOf(owner.Id);
-        await fixture.AddMembershipAsync(tenantId, manager.Id, TenantRole.Manager);
+        await fixture.AddMembershipAsync(tenantId, manager.Id, "Manager");
 
         var response = await ClientInTenant(manager.Id, manager.Email, tenantId)
             .DeleteAsync("/api/organization");
@@ -224,15 +225,15 @@ public sealed class MemberManagementTests : IAsyncLifetime
         var owner = fixture.SeedState.ArtistManager1; // founding Owner of an artist tenant
         var tenantId = TenantOf(owner.Id);
         var member = fixture.SeedState.ArtistManagerNoArtist;
-        await fixture.AddMembershipAsync(tenantId, member.Id, TenantRole.Staff);
+        await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
 
         var list = await fixture.CreateClient(owner).GetAsync("/api/organization/members");
         await list.ShouldBe(HttpStatusCode.OK);
         Assert.Contains(await list.Content.ReadAsync<List<MemberDto>>() ?? [], m => m.UserId == member.Id);
 
-        var promote = await PutRole(fixture.CreateClient(owner), member.Id, TenantRole.Manager);
+        var promote = await PutRole(fixture.CreateClient(owner), tenantId, member.Id, "Manager");
         await promote.ShouldBe(HttpStatusCode.NoContent);
-        Assert.Equal(TenantRole.Manager, fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == member.Id).Role);
+        Assert.Equal(TenantApiFixture.RoleId(tenantId, "Manager"), Assert.Single(fixture.Memberships.Single(m => m.TenantId == tenantId && m.UserId == member.Id).Assignments).RoleId);
     }
 
     #endregion

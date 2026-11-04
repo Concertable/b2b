@@ -366,7 +366,7 @@ public sealed class SeedState
         memberships.Add(MembershipFactory.FoundingOwner(UnverifiedTenant.Id, UnverifiedTenantUserId, now));
         // VenueManager3 is also a member of VenueManager1's tenant, giving one tenant two members for the group-inbox tests.
         memberships.Add(MembershipFactory.Member(
-            TenantSeedIds.For(VenueManager1.Id), VenueManager3.Id, TenantRole.Manager, invitedBy: VenueManager1.Id, now));
+            TenantSeedIds.For(VenueManager1.Id), VenueManager3.Id, "Manager", invitedBy: VenueManager1.Id, now));
         Memberships = memberships;
         var tenantByVenueId = Venues.ToDictionary(v => v.Id, v => TenantSeedIds.For(v.UserId));
         foreach (var venue in Venues)

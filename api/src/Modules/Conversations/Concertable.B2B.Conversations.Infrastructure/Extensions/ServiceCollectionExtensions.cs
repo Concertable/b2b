@@ -1,4 +1,5 @@
 ﻿using System.Data.Common;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.DataAccess;
 using Concertable.Seed.Shared;
@@ -62,6 +63,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IContentReportRepository, ContentReportRepository>();
         services.AddScoped<IMessagePrivilegedRepository, MessagePrivilegedRepository>();
         services.AddScoped<IContentReportPrivilegedRepository, ContentReportPrivilegedRepository>();
+        services.AddScoped<IResourceAuthorizationEvaluator, ConversationResourceAuthorizationEvaluator>();
         services.AddScoped<IConversationsNotifier, ConversationsNotifier>();
         services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
         services.AddScoped<ConversationService>();

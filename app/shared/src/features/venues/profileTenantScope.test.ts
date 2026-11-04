@@ -25,6 +25,7 @@ describe("venue tenant scope", () => {
       "unselected",
       "unselected",
       0,
+      0,
       "venue",
       "my",
       "tenant-a",

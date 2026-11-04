@@ -4,6 +4,7 @@ using Concertable.B2B.Infrastructure.Services.Strategies;
 using Concertable.B2B.Booking.Contracts;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Application.Interfaces;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Booking.Application.Strategies;
 using Concertable.B2B.Booking.Infrastructure.Events;
 using Concertable.B2B.Booking.Infrastructure.Data;
@@ -62,6 +63,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IOutboxUnitOfWorkBehavior, OutboxUnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedUnitOfWorkBehavior, PrivilegedUnitOfWorkBehavior>();
             services.AddScoped<IPrivilegedOutboxUnitOfWorkBehavior, PrivilegedOutboxUnitOfWorkBehavior>();
+            services.AddScoped<IResourceAuthorizationEvaluator, BookingResourceAuthorizationEvaluator>();
+            services.AddScoped<IResourceAuthorizationEvaluator, ContractResourceAuthorizationEvaluator>();
             services.AddScoped<IBookingRepository, BookingRepository>();
             services.AddScoped<IBookingPrivilegedRepository, BookingPrivilegedRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();

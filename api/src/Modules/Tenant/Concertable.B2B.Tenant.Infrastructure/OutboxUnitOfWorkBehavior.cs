@@ -10,9 +10,9 @@ internal interface IOutboxUnitOfWorkBehavior : IOutboxUnitOfWorkBehavior<TenantD
 
 internal sealed class OutboxUnitOfWorkBehavior(
     TenantDbContext context,
-    CommandTransactionFactory transactions,
-    CommandTransactionAccessor commandAccessor,
+    UnitOfWorkRunner unitOfWorkRunner,
+    UnitOfWorkAccessor unitOfWorkAccessor,
     IDbContextAccessor outboxAccessor)
-    : CommandOutboxUnitOfWorkBehavior<TenantDbContext>(
-        context, transactions, commandAccessor, outboxAccessor),
+    : Concertable.B2B.DataAccess.Infrastructure.OutboxUnitOfWorkBehavior<TenantDbContext>(
+        context, unitOfWorkRunner, unitOfWorkAccessor, outboxAccessor),
         IOutboxUnitOfWorkBehavior;

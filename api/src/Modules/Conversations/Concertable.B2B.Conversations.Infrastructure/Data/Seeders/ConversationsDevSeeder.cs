@@ -77,7 +77,7 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
             conversation.Id,
             conversation.AllocateMessageSequence(),
             Guid.NewGuid(),
-            CommandPayloadHash.Create(content, action),
+            IdempotencyHash.Create(content, action),
             tenantId,
             membershipId,
             userId,

@@ -10,9 +10,9 @@ internal interface IOutboxUnitOfWorkBehavior : IOutboxUnitOfWorkBehavior<ArtistD
 
 internal sealed class OutboxUnitOfWorkBehavior(
     ArtistDbContext context,
-    CommandTransactionFactory transactions,
-    CommandTransactionAccessor commandAccessor,
+    UnitOfWorkRunner unitOfWorkRunner,
+    UnitOfWorkAccessor unitOfWorkAccessor,
     IDbContextAccessor outboxAccessor)
-    : CommandOutboxUnitOfWorkBehavior<ArtistDbContext>(
-        context, transactions, commandAccessor, outboxAccessor),
+    : Concertable.B2B.DataAccess.Infrastructure.OutboxUnitOfWorkBehavior<ArtistDbContext>(
+        context, unitOfWorkRunner, unitOfWorkAccessor, outboxAccessor),
         IOutboxUnitOfWorkBehavior;

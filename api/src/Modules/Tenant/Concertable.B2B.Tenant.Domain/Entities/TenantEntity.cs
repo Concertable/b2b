@@ -20,6 +20,7 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
     public DateTime CreatedAt { get; private set; }
 
     public long EligibilityVersion { get; private set; }
+    public long RolePolicyVersion { get; private set; }
 
     /// <summary>
     /// The legal/tax identity backing settlement and tax reporting (<c>LEGAL_REQUIREMENTS.md</c> item 3).
@@ -52,6 +53,7 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
             CreatedByUserId = createdByUserId,
             CreatedAt = createdAt,
             EligibilityVersion = 1,
+            RolePolicyVersion = 1,
         };
         tenant.events.Raise(new TenantCreatedDomainEvent(tenant.Id, createdByUserId, contactEmail));
         tenant.events.Raise(new TenantDisplayChangedDomainEvent(tenant));
@@ -111,6 +113,8 @@ public sealed class TenantEntity : IGuidEntity, IEventRaiser
         }
         return new Success();
     }
+
+    public void AdvanceRolePolicyVersion() => RolePolicyVersion++;
 
     public bool HasActiveActivity(TenantBusinessActivityKind kind) =>
         businessActivities.Exists(activity => activity.Kind == kind && activity.IsActive);

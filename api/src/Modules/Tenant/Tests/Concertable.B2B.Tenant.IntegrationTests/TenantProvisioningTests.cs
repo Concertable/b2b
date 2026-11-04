@@ -33,7 +33,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
 
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == userId);
         Assert.NotNull(membership);
-        Assert.Equal(TenantRole.Owner, membership!.Role);
+        Assert.Equal(TenantApiFixture.RoleId(membership!.TenantId, "Owner"), Assert.Single(membership.Assignments).RoleId);
         Assert.Null(membership.InvitedByMembershipId);
 
         var tenant = await fixture.Tenants.SingleOrDefaultAsync(t => t.Id == membership.TenantId);
@@ -79,14 +79,14 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == inviter.Id).Id;
         var newUserId = Guid.NewGuid();
         var newEmail = $"{Guid.NewGuid():N}@invited.test";
-        await fixture.AddInvitationAsync(tenantId, newEmail, TenantRole.Manager, inviter.Id, DateTime.UtcNow.AddDays(7));
+        await fixture.AddInvitationAsync(tenantId, newEmail, "Manager", inviter.Id, DateTime.UtcNow.AddDays(7));
 
         await fixture.ProvisionAsync(new CredentialRegisteredEvent(newUserId, newEmail, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id));
 
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == newUserId);
         Assert.NotNull(membership);
         Assert.Equal(tenantId, membership!.TenantId);
-        Assert.Equal(TenantRole.Manager, membership.Role);
+        Assert.Equal(TenantApiFixture.RoleId(tenantId, "Manager"), Assert.Single(membership.Assignments).RoleId);
         var inviterMembership = await fixture.Memberships.SingleAsync(
             candidate => candidate.TenantId == tenantId && candidate.UserId == inviter.Id);
         Assert.Equal(inviterMembership.Id, membership.InvitedByMembershipId);
@@ -105,7 +105,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var inviter = fixture.SeedState.VenueManager1;
         var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == inviter.Id).Id;
         var newUserId = Guid.NewGuid();
-        await fixture.AddInvitationAsync(tenantId, "invitee@casing.test", TenantRole.Staff, inviter.Id, DateTime.UtcNow.AddDays(7));
+        await fixture.AddInvitationAsync(tenantId, "invitee@casing.test", "Staff", inviter.Id, DateTime.UtcNow.AddDays(7));
 
         // Auth carries the email verbatim; the handler normalizes it before matching the stored (normalized) invite.
         await fixture.ProvisionAsync(new CredentialRegisteredEvent(newUserId, "  Invitee@Casing.TEST ", InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id));
@@ -113,7 +113,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var membership = await fixture.Memberships.SingleOrDefaultAsync(m => m.UserId == newUserId);
         Assert.NotNull(membership);
         Assert.Equal(tenantId, membership!.TenantId);
-        Assert.Equal(TenantRole.Staff, membership.Role);
+        Assert.Equal(TenantApiFixture.RoleId(tenantId, "Staff"), Assert.Single(membership.Assignments).RoleId);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var tenantId = fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == inviter.Id).Id;
         var newUserId = Guid.NewGuid();
         var newEmail = $"{Guid.NewGuid():N}@invited.test";
-        await fixture.AddInvitationAsync(tenantId, newEmail, TenantRole.Manager, inviter.Id, DateTime.UtcNow.AddDays(7));
+        await fixture.AddInvitationAsync(tenantId, newEmail, "Manager", inviter.Id, DateTime.UtcNow.AddDays(7));
 
         // Same envelope → same MessageId → the inbox dedup swallows the redelivery.
         var envelope = MessageEnvelope.Create<CredentialRegisteredEvent>(DateTimeOffset.UtcNow);
@@ -144,10 +144,10 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         var invitation = await fixture.AddInvitationAsync(
             inviterTenantId,
             newEmail,
-            TenantRole.Manager,
+            "Manager",
             inviter.Id,
             DateTime.UtcNow.AddDays(7));
-        await fixture.ChangeMembershipRoleAsync(inviterTenantId, inviter.Id, TenantRole.Owner);
+        await fixture.ChangeMembershipRolesAsync(inviterTenantId, inviter.Id, "Owner", "Manager");
 
         await fixture.ProvisionAsync(new CredentialRegisteredEvent(
             newUserId,
@@ -155,7 +155,7 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
             InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id));
 
         var membership = await fixture.Memberships.SingleAsync(candidate => candidate.UserId == newUserId);
-        Assert.Equal(TenantRole.Owner, membership.Role);
+        Assert.Equal(TenantApiFixture.RoleId(membership.TenantId, "Owner"), Assert.Single(membership.Assignments).RoleId);
         Assert.NotEqual(inviterTenantId, membership.TenantId);
         Assert.Equal(
             InvitationStatus.Revoked,
@@ -172,7 +172,8 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
            UserId) index would throw on a duplicate insert, so a clean run is itself the dedup assertion. */
         await fixture.ProvisionAsync(new CredentialRegisteredEvent(manager.Id, manager.Email, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id));
 
-        var ownerCount = await fixture.Memberships.CountAsync(m => m.UserId == manager.Id && m.Role == TenantRole.Owner);
+        var memberships = await fixture.Memberships.Where(m => m.UserId == manager.Id).ToListAsync();
+        var ownerCount = memberships.Count(m => m.Assignments.Any(assignment => assignment.RoleId == TenantApiFixture.RoleId(m.TenantId, "Owner")));
         var tenantCount = await fixture.Tenants.CountAsync(t => t.CreatedByUserId == manager.Id);
 
         Assert.Equal(1, ownerCount);

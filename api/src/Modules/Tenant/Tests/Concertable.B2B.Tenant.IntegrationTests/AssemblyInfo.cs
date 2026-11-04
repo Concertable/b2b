@@ -1,4 +1,3 @@
-﻿using Xunit;
+using Xunit;
 
 [assembly: AssemblyTrait("Category", "Integration")]
-

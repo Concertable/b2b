@@ -7,11 +7,15 @@ namespace Concertable.B2B.Application.Application.Interfaces;
 internal interface IApplicationPrivilegedRepository
 {
     Task AddAsync(ApplicationEntity application, CancellationToken ct = default);
+    Task LockOpportunityAsync(int opportunityId, CancellationToken ct = default);
 
     Task<bool> ExistsByOpportunityIdAndArtistTenantIdAsync(
         int opportunityId,
         Guid artistTenantId,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<Guid>> GetNotificationTenantIdsAsync(
+        int applicationId, bool includeSiblings, CancellationToken ct = default);
 
     Task<ApplicationEntity?> GetByIdForUpdateAsync(
         int applicationId,
@@ -56,17 +60,4 @@ internal interface IApplicationPrivilegedRepository
         DateTime date,
         CancellationToken ct = default);
 
-    Task<bool> CanSubmitAsync(
-        int applicationId,
-        MembershipSnapshot actor,
-        ResourceAudience audience,
-        DateTime at,
-        CancellationToken ct = default);
-
-    Task<bool> CanDecideAsync(
-        int applicationId,
-        MembershipSnapshot actor,
-        ResourceAudience audience,
-        DateTime at,
-        CancellationToken ct = default);
 }

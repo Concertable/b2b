@@ -5,6 +5,8 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 
 internal interface IContractService
 {
+    Task<IReadOnlyDictionary<int, int>> GetIdsByApplicationIdsAsync(
+        IReadOnlyCollection<int> applicationIds, CancellationToken ct = default);
     Task<int?> GetIdByApplicationIdAsync(
         int applicationId,
         CancellationToken ct = default);

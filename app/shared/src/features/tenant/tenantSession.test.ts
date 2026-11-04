@@ -12,8 +12,9 @@ const venueMemberships: ReadonlyArray<Membership> = [
     tenantId: "venue-one",
     legalName: "Venue One",
     businessActivities: ["venueOperator"],
-    role: "owner",
+    roles: [{ id: "owner-id", name: "Owner", isProtectedOwner: true }],
     permissionVersion: 1,
+    rolePolicyVersion: 1,
     permissions: ["tenant.settings.edit"],
   },
   {
@@ -21,8 +22,9 @@ const venueMemberships: ReadonlyArray<Membership> = [
     tenantId: "venue-two",
     legalName: "Venue Two",
     businessActivities: ["venueOperator"],
-    role: "staff",
+    roles: [{ id: "staff-id", name: "Staff", isProtectedOwner: false }],
     permissionVersion: 2,
+    rolePolicyVersion: 1,
     permissions: ["operations.view"],
   },
 ];
@@ -62,6 +64,15 @@ describe("tenant session", () => {
     const { session } = await createSession(venueMemberships, "venue-two");
 
     expect(session.tenantIdForRequest()).toBe("venue-two");
+  });
+
+  it("invalidates a captured session when the role policy changes", async () => {
+    const memberships = [...venueMemberships];
+    const { session } = await createSession(memberships, "venue-one");
+    const captured = session.current();
+    expect(captured).toBeDefined();
+    memberships[0] = { ...memberships[0], rolePolicyVersion: 2 };
+    if (captured) expect(session.isCurrent(captured)).toBe(false);
   });
 
   it("rejects a tenant outside the current memberships", async () => {
@@ -216,8 +227,9 @@ describe("tenant session", () => {
         tenantId: "artist-one",
         legalName: "Artist One",
         businessActivities: ["artist"],
-        role: "manager",
+        roles: [{ id: "manager-id", name: "Manager", isProtectedOwner: false }],
         permissionVersion: 3,
+        rolePolicyVersion: 1,
         permissions: ["operations.view"],
       },
     ];
@@ -266,6 +278,7 @@ describe("tenant session", () => {
       tenantId: "venue-two",
       membershipId: "membership-venue-two",
       permissionVersion: 2,
+      rolePolicyVersion: 1,
     });
   });
 });

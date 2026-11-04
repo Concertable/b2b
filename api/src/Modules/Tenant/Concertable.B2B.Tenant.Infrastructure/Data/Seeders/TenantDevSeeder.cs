@@ -34,6 +34,7 @@ internal sealed class TenantDevSeeder : IDevSeeder
             context.Tenants.AddRange(seed.Tenants);
             // Founding Owner memberships ride alongside tenants (same direct-insert exception). The provisioning
             // handler re-announces idempotently over both — it finds these rows and skips re-creating them.
+            context.RoleDefinitions.AddRange(seed.Tenants.SelectMany(tenant => TenantRoleProvisioning.CreatePresets(tenant.Id)));
             context.Memberships.AddRange(seed.Memberships);
             foreach (var verification in seed.Verifications)
                 verification.ClearDomainEvents();

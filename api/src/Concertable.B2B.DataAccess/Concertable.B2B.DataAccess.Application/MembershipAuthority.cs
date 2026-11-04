@@ -6,4 +6,5 @@ public sealed class MembershipAuthority
     public Guid TenantId { get; private set; }
     public Guid UserId { get; private set; }
     public long PermissionVersion { get; private set; }
+    public long RolePolicyVersion { get; private set; }
 }

@@ -17,6 +17,8 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
     public int DealId { get; private set; }
     public EfSet<Genre> Genres { get; private set; } = [];
     public OpportunityState State { get; private set; } = OpportunityState.Open;
+    public int? FilledByApplicationId { get; private set; }
+    public List<int> CancelledApplicationIds { get; private set; } = [];
 
     public static OpportunityEntity Create(
         int venueId,
@@ -38,16 +40,28 @@ public sealed class OpportunityEntity : IIdEntity, IHasDateRange, IEquatable<Opp
         Genres = genres.ToEfSet();
     }
 
-    public void MarkFilled()
+    public void MarkFilled(int applicationId)
     {
-        if (State == OpportunityState.Open)
+        if (State == OpportunityState.Open && !CancelledApplicationIds.Contains(applicationId))
+        {
             State = OpportunityState.Filled;
+            FilledByApplicationId = applicationId;
+        }
     }
-    public void Withdraw() => State = OpportunityState.Withdrawn;
-    public void Reopen()
+    public void Withdraw()
     {
-        if (State == OpportunityState.Filled)
+        State = OpportunityState.Withdrawn;
+        FilledByApplicationId = null;
+    }
+    public void CancelApplication(int applicationId)
+    {
+        if (!CancelledApplicationIds.Contains(applicationId))
+            CancelledApplicationIds.Add(applicationId);
+        if (State == OpportunityState.Filled && FilledByApplicationId == applicationId)
+        {
             State = OpportunityState.Open;
+            FilledByApplicationId = null;
+        }
     }
 
     public bool Equals(OpportunityEntity? other) => other is not null && Id == other.Id;

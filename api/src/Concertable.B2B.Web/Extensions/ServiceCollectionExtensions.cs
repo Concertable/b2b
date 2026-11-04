@@ -90,10 +90,9 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSharedInfrastructure(configuration);
-        services.AddCommandTransactions();
+        services.AddUnitOfWork();
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
-        services.AddScoped<VenueArtistTenantInterceptor>();
         services.AddScoped<IResourceAccessContext, ResourceAccessContext>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 

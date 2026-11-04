@@ -9,7 +9,7 @@ internal interface IPrivilegedUnitOfWorkBehavior
 
 internal sealed class PrivilegedUnitOfWorkBehavior(
     ConcertPrivilegedDbContext context,
-    CommandTransactionFactory transactions,
-    CommandTransactionAccessor accessor)
-    : CommandUnitOfWorkBehavior<ConcertPrivilegedDbContext>(context, transactions, accessor),
+    UnitOfWorkRunner unitOfWorkRunner,
+    UnitOfWorkAccessor accessor)
+    : Concertable.B2B.DataAccess.Infrastructure.UnitOfWorkBehavior<ConcertPrivilegedDbContext>(context, unitOfWorkRunner, accessor),
         IPrivilegedUnitOfWorkBehavior;
