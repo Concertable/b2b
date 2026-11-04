@@ -1,7 +1,7 @@
 import { apiClient } from "@concertable/shared/lib/apiClient";
 import type { ConcertFinance, ConcertOperations } from "../types";
 
-const myConcertApi = {
+const concertApi = {
   getOperations: async (id: number): Promise<ConcertOperations> => {
     const { data } = await apiClient.get<ConcertOperations>(
       `/concert/${id}/operations`,
@@ -17,4 +17,4 @@ const myConcertApi = {
   },
 };
 
-export default myConcertApi;
+export default concertApi;
