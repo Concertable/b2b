@@ -21,7 +21,8 @@ public sealed class ApplicationEntityLifecycleTests
             2,
             DealType.FlatFee,
             Guid.NewGuid(),
-            Guid.NewGuid());
+            Guid.NewGuid(),
+            DateTime.UnixEpoch);
 
         var result = application.Cancel();
 
@@ -37,7 +38,8 @@ public sealed class ApplicationEntityLifecycleTests
             2,
             DealType.FlatFee,
             Guid.NewGuid(),
-            Guid.NewGuid());
+            Guid.NewGuid(),
+            DateTime.UnixEpoch);
         Assert.False(application.Cancel().TryGetError(out _));
         var events = application.DomainEvents.ToArray();
 
@@ -57,7 +59,8 @@ public sealed class ApplicationEntityLifecycleTests
             2,
             DealType.FlatFee,
             Guid.NewGuid(),
-            Guid.NewGuid());
+            Guid.NewGuid(),
+            DateTime.UnixEpoch);
         var operationId = application.BeginAcceptance();
         var accepted = CreateAcceptedApplication(application, operationId);
         Assert.False(application.Accept(accepted).TryGetError(out _));

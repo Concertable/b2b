@@ -33,7 +33,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var before = await (await client.GetAsync($"/api/concert/{concertId}/finance"))
-            .Content.ReadAsync<FinanceResponse>();
+            .Content.ReadAsync<ConcertFinanceResponse>();
         Assert.NotNull(before!.Actions.DeclareDoorRevenue);
 
         // Act
@@ -42,7 +42,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
         // Assert — persisted; the action clears now the take is declared.
         await response.ShouldBe(HttpStatusCode.NoContent);
         var after = await (await client.GetAsync($"/api/concert/{concertId}/finance"))
-            .Content.ReadAsync<FinanceResponse>();
+            .Content.ReadAsync<ConcertFinanceResponse>();
         Assert.Equal(DoorRevenue, after!.DoorRevenue);
         Assert.Null(after.Actions.DeclareDoorRevenue);
 
@@ -66,7 +66,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
             .Select(concert => concert.Id)
             .SingleAsync();
         var concert = await (await client.GetAsync($"/api/concert/{concertId}/finance"))
-            .Content.ReadAsync<FinanceResponse>();
+            .Content.ReadAsync<ConcertFinanceResponse>();
         Assert.Null(concert!.Actions.DeclareDoorRevenue);
     }
 

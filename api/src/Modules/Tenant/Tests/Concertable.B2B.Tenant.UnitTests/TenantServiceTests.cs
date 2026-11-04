@@ -21,7 +21,7 @@ public sealed class TenantServiceTests
     private readonly Mock<IInvitationRepository> invitationRepository;
     private readonly Mock<ITenantContext> tenantContext;
     private readonly Mock<IMembershipContext> membershipContext;
-    private readonly Mock<IMembershipAuthorityFence> authorityFence;
+    private readonly Mock<IMembershipResolver> membershipResolver;
     private readonly Mock<IPermissionCatalog> permissionCatalog;
     private readonly TenantService service;
 
@@ -32,13 +32,13 @@ public sealed class TenantServiceTests
         this.invitationRepository = new Mock<IInvitationRepository>();
         this.tenantContext = new Mock<ITenantContext>();
         this.membershipContext = new Mock<IMembershipContext>();
-        this.authorityFence = new Mock<IMembershipAuthorityFence>();
+        this.membershipResolver = new Mock<IMembershipResolver>();
         this.membershipContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(Guid.NewGuid(), tenantContext.Object.TenantId ?? Guid.Empty,
                 Guid.NewGuid(), TenantRole.Owner, 1));
-        this.authorityFence.Setup(fence => fence.RequireCurrentAsync(
+        this.membershipResolver.Setup(resolver => resolver.ResolveSnapshotAsync(
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => expected);
+            .ReturnsAsync((MembershipSnapshot expected, CancellationToken _) => (Option<MembershipSnapshot>)expected);
         this.permissionCatalog = new Mock<IPermissionCatalog>();
         this.permissionCatalog.Setup(catalog => catalog.Grants(
                 TenantRole.Owner, It.IsAny<TenantPermission>()))
@@ -49,7 +49,7 @@ public sealed class TenantServiceTests
             invitationRepository.Object,
             tenantContext.Object,
             membershipContext.Object,
-            authorityFence.Object,
+            membershipResolver.Object,
             new VatPolicy(new UkVatCalculator()),
             permissionCatalog.Object,
             new ImmediateUnitOfWorkBehavior(),
@@ -128,9 +128,9 @@ public sealed class TenantServiceTests
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
-        authorityFence.Setup(fence => fence.RequireCurrentAsync(
+        membershipResolver.Setup(resolver => resolver.ResolveSnapshotAsync(
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot?)null);
+            .ReturnsAsync((Option<MembershipSnapshot>)null);
 
         var result = await service.UpdateAsync(null!);
 
@@ -145,9 +145,9 @@ public sealed class TenantServiceTests
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
-        authorityFence.Setup(fence => fence.RequireCurrentAsync(
+        membershipResolver.Setup(resolver => resolver.ResolveSnapshotAsync(
                 It.IsAny<MembershipSnapshot>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((MembershipSnapshot?)null);
+            .ReturnsAsync((Option<MembershipSnapshot>)null);
 
         var result = await service.DeleteAsync();
 

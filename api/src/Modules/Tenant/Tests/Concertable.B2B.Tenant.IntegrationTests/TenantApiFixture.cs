@@ -1,3 +1,4 @@
+using Concertable.B2B.DataAccess.Infrastructure;
 using System.Runtime.ExceptionServices;
 using Concertable.Auth.Contracts.Events;
 using Concertable.B2B.IntegrationTests.Fixtures;
@@ -17,6 +18,7 @@ public sealed class TenantApiFixture : ApiFixture
 {
     private const long TenantCreationLockSeed = 638457220;
     private TenantDbContext dbContext = null!;
+    private ICommandExecutor commandExecutor = null!;
     private TenantProvisioningHandler provisioningHandler = null!;
     internal VerificationReviewRaceInterceptor VerificationReviewRace { get; } = new();
 
@@ -26,6 +28,11 @@ public sealed class TenantApiFixture : ApiFixture
     public IQueryable<TenantInvitationEntity> Invitations => dbContext.Invitations.AsNoTracking();
     public IQueryable<TenantVerificationEntity> Verifications =>
         dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
+
+    public Task<TResult> ExecuteResolutionAsync<TResult>(
+        Func<ITenantResolver, CancellationToken, Task<TResult>> resolve,
+        CancellationToken ct = default) =>
+        commandExecutor.ExecuteAsync(resolve, ct);
 
     public Task ProvisionAsync(CredentialRegisteredEvent @event, MessageEnvelope? envelope = null) =>
         provisioningHandler.HandleAsync(
@@ -271,6 +278,7 @@ public sealed class TenantApiFixture : ApiFixture
     protected override void OnReset(IServiceScope scope)
     {
         dbContext = scope.ServiceProvider.GetRequiredService<TenantDbContext>();
+        commandExecutor = scope.ServiceProvider.GetRequiredService<ICommandExecutor>();
         VerificationReviewRace.UseDataSource(scope.ServiceProvider.GetRequiredService<NpgsqlDataSource>());
         provisioningHandler = scope.ServiceProvider
             .GetServices<IIntegrationEventHandler<CredentialRegisteredEvent>>()

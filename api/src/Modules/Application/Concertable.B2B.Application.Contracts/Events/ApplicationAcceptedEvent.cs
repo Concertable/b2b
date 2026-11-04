@@ -4,5 +4,6 @@ namespace Concertable.B2B.Application.Contracts.Events;
 
 [MessageType("concertable.b2b.application-accepted.v1")]
 public sealed record ApplicationAcceptedEvent(
+    int ApplicationId,
     int OpportunityId,
     Guid VenueTenantId) : IIntegrationEvent;

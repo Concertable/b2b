@@ -21,6 +21,7 @@ internal sealed class VenueHireApplyStep : IApplyStep
         DealType dealType,
         Guid venueTenantId,
         Guid artistTenantId,
+        DateTime createdAtUtc,
         CancellationToken ct = default)
     {
         var reference = PaymentOperationReferences.MethodSetup(opportunityId, artistTenantId);
@@ -29,6 +30,12 @@ internal sealed class VenueHireApplyStep : IApplyStep
         if (validation.IsFailure)
             return new ApplyApplicationError.PaymentCommitmentMissing();
 
-        return ApplicationEntity.Create(artistId, opportunityId, dealType, venueTenantId, artistTenantId);
+        return ApplicationEntity.Create(
+            artistId,
+            opportunityId,
+            dealType,
+            venueTenantId,
+            artistTenantId,
+            createdAtUtc);
     }
 }

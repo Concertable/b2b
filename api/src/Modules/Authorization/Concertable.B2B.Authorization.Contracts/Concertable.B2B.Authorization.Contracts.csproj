@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <Description>Concertable B2B Authorization contracts: membership role, permission catalog surface, request-authority attributes and the membership-fact port implemented by the Tenant module.</Description>
+    <Description>Concertable B2B Authorization contracts: membership role, permission catalog surface, request-authority attributes and the membership snapshot resolution implemented by the Tenant module.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +15,7 @@
   <!-- Keep as PackageReference, never a ProjectReference: a cross-folder escape from api/Concertable.B2B/ breaks the standalone carve (see Directory.Build.props). -->
   <ItemGroup>
     <PackageReference Include="Concertable.Kernel" />
+    <PackageReference Include="Reunion" />
   </ItemGroup>
 
 </Project>

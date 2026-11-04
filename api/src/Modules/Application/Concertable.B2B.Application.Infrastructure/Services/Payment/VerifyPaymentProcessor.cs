@@ -13,7 +13,7 @@ namespace Concertable.B2B.Application.Infrastructure.Services.Payment;
 internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentSucceededEvent>
 {
     private readonly IPaymentVerificationRecorder paymentVerificationRecorder;
-    private readonly IApplicationReadDbContext readDbContext;
+    private readonly IApplicationPrivilegedRepository applicationRepository;
     private readonly IPaymentSessionOperationsClient paymentSessions;
     private readonly ApplicationPrivilegedDbContext context;
     private readonly IPrivilegedUnitOfWorkBehavior unitOfWork;
@@ -21,14 +21,14 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
 
     public VerifyPaymentProcessor(
         IPaymentVerificationRecorder paymentVerificationRecorder,
-        IApplicationReadDbContext readDbContext,
+        IApplicationPrivilegedRepository applicationRepository,
         IPaymentSessionOperationsClient paymentSessions,
         ApplicationPrivilegedDbContext context,
         IPrivilegedUnitOfWorkBehavior unitOfWork,
         ILogger<VerifyPaymentProcessor> logger)
     {
         this.paymentVerificationRecorder = paymentVerificationRecorder;
-        this.readDbContext = readDbContext;
+        this.applicationRepository = applicationRepository;
         this.paymentSessions = paymentSessions;
         this.context = context;
         this.unitOfWork = unitOfWork;
@@ -46,10 +46,7 @@ internal sealed class VerifyPaymentProcessor : IIntegrationEventHandler<PaymentS
         if (await context.IsInboxMessageProcessedAsync(envelope.MessageId, nameof(VerifyPaymentProcessor), ct))
             return;
 
-        var venueTenantId = await readDbContext.Applications
-            .Where(application => application.Id == applicationId)
-            .Select(application => (Guid?)application.VenueTenantId)
-            .SingleOrDefaultAsync(ct);
+        var venueTenantId = await applicationRepository.GetVenueTenantIdAsync(applicationId, ct);
         var owned = venueTenantId is { } payerOwnerId
             && (await paymentSessions.ValidatePaymentMethodAsync(
                 new PaymentMethodValidationRequest(@event.Reference, payerOwnerId), ct)).IsSuccess;
