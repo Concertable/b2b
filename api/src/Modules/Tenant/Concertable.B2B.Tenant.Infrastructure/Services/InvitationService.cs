@@ -52,7 +52,7 @@ internal sealed class InvitationService : IInvitationService
         unitOfWork.ExecuteAsync(async () =>
         {
             var tenantId = tenantContext.GetTenantId();
-            if (!(await tenantRepository.GetExistingIdsForKeyShareAsync([tenantId], ct)).Contains(tenantId)
+            if (!await tenantRepository.ExistsByIdWithKeyShareLockAsync(tenantId, ct)
                 || !authorizationContext.TryGetMembership(tenantId, out var actor)
                 || !actor.HasPermission(TenantPermission.MembersInvite))
                 return Result.Failure<IReadOnlyList<InvitationDto>, ListInvitationsError>(
@@ -79,7 +79,7 @@ internal sealed class InvitationService : IInvitationService
         CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct);
+        var tenant = await tenantRepository.GetByIdWithUpdateLockAsync(tenantId, ct);
         if (tenant is null)
             return new InviteMemberError.TenantNotFound();
 
@@ -123,9 +123,9 @@ internal sealed class InvitationService : IInvitationService
         Guid invitationId, CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
+        if (await tenantRepository.GetByIdWithUpdateLockAsync(tenantId, ct) is null)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
-        var invitation = await repository.GetByIdForUpdateAsync(invitationId, ct);
+        var invitation = await repository.GetByIdWithRowLockAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenantId)
             return new RevokeInvitationError.InvitationNotFound(invitationId);
         if (!(authorizationContext.TryGetMembership(tenantId, out var actor) && actor.HasPermission(TenantPermission.MembersInvite)))
@@ -147,10 +147,10 @@ internal sealed class InvitationService : IInvitationService
         var invitationSnapshot = await repository.GetByIdAsync(invitationId, ct);
         if (invitationSnapshot is null)
             return new AcceptInvitationError.InvitationNotFound(invitationId);
-        var tenant = await tenantRepository.GetByIdForAdministrationAsync(invitationSnapshot.TenantId, ct);
+        var tenant = await tenantRepository.GetByIdWithUpdateLockAsync(invitationSnapshot.TenantId, ct);
         if (tenant is null)
             return new AcceptInvitationError.TenantNotFound();
-        var invitation = await repository.GetByIdForUpdateAsync(invitationId, ct);
+        var invitation = await repository.GetByIdWithRowLockAsync(invitationId, ct);
         if (invitation is null || invitation.TenantId != tenant.Id)
             return new AcceptInvitationError.InvitationNotFound(invitationId);
         if (string.IsNullOrWhiteSpace(currentUser.Email)
@@ -163,8 +163,7 @@ internal sealed class InvitationService : IInvitationService
         if (timeProvider.GetUtcNow().UtcDateTime >= invitation.ExpiresAt)
             return new AcceptInvitationError.InvitationExpired();
 
-        var inviter = (await membershipRepository.GetSnapshotsByIdsForKeyShareAsync(
-            [invitation.InviterMembershipId], ct)).SingleOrDefault();
+        var inviter = await membershipRepository.GetSnapshotByIdWithKeyShareLockAsync(invitation.InviterMembershipId, ct);
         var roleIds = invitation.Assignments.Select(row => row.RoleId).ToArray();
         var selectedRoles = await roles.ResolveActiveAsync(tenant.Id, roleIds, ct);
         if (inviter is null || selectedRoles is null

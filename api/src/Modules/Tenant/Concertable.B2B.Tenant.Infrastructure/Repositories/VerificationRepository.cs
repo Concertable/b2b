@@ -3,6 +3,7 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.DataAccess.Infrastructure.Specifications;
 using Concertable.Kernel.Specifications;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
@@ -24,24 +25,15 @@ internal sealed class VerificationRepository : Repository<TenantVerificationEnti
         Context.Query<TenantVerificationEntity>()
             .FirstOrDefaultAsync(v => v.TenantId == tenantId, ct);
 
-    public async Task<TenantVerificationEntity?> GetByTenantIdForReviewAsync(
+    public async Task<TenantVerificationEntity?> GetByTenantIdWithRowLockAsync(
         Guid tenantId,
         CancellationToken ct = default)
     {
         var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Verification review requires an active unit of work.");
         await unitOfWork.EnlistAsync(context, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Verifications"
-             WHERE "TenantId" = {tenantId}
-             FOR UPDATE
-             """,
-            ct);
-        return await context.Verifications.SingleOrDefaultAsync(
-            verification => verification.TenantId == tenantId,
-            ct);
+        await context.Verifications.LockRowsAsync(verification => verification.TenantId == tenantId, RowLock.NoKeyUpdate, ct);
+        return await context.Verifications.SingleOrDefaultAsync(verification => verification.TenantId == tenantId, ct);
     }
 
     public Task<TenantVerificationEntity?> GetByTenantIdAsync(

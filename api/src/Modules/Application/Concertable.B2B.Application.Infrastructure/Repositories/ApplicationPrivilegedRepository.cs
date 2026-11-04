@@ -5,6 +5,7 @@ using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Infrastructure.Data;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Application.Infrastructure.Repositories;
@@ -13,9 +14,6 @@ internal sealed class ApplicationPrivilegedRepository(
     ApplicationPrivilegedDbContext context, UnitOfWorkAccessor unitOfWorkAccessor)
     : IApplicationPrivilegedRepository
 {
-    private const int OpportunityLockNamespace = 10241001;
-    private const int TenantApplicationsLockNamespace = 10241002;
-
     public async Task AddAsync(ApplicationEntity application, CancellationToken ct = default) =>
         await context.Applications.AddAsync(application, ct);
 
@@ -26,29 +24,22 @@ internal sealed class ApplicationPrivilegedRepository(
         var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("An opportunity lock requires a unit of work.");
         await unitOfWork.EnlistAsync(context, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({OpportunityLockNamespace}, {opportunityId})", ct);
+        await context.Database.AcquireAdvisoryLockAsync(AdvisoryLock.Opportunity, opportunityId, ct);
     }
 
     public async Task AcquireTenantApplicationsSharedLockAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default)
     {
         await EnlistAsync(ct);
-        foreach (var tenantId in tenantIds.Distinct().Order())
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"SELECT pg_advisory_xact_lock_shared({TenantApplicationsLockNamespace}, hashtext({tenantId.ToString()}))",
-                ct);
-        }
+        foreach (var tenantId in tenantIds.Order())
+            await context.Database.AcquireSharedAdvisoryLockAsync(AdvisoryLock.TenantApplications, tenantId, ct);
     }
 
     public async Task AcquireTenantApplicationsExclusiveLockAsync(Guid tenantId, CancellationToken ct = default)
     {
         await EnlistAsync(ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({TenantApplicationsLockNamespace}, hashtext({tenantId.ToString()}))",
-            ct);
+        await context.Database.AcquireAdvisoryLockAsync(AdvisoryLock.TenantApplications, tenantId, ct);
     }
 
     public Task<bool> ExistsLiveByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
@@ -67,16 +58,15 @@ internal sealed class ApplicationPrivilegedRepository(
                 && application.ArtistTenantId == artistTenantId,
             ct);
 
-    public async Task<ApplicationEntity?> GetByIdForUpdateAsync(
+    public async Task<ApplicationEntity?> GetByIdWithRowLockAsync(
         int applicationId,
         CancellationToken ct = default)
     {
-        await LockAsync(applicationId, ct);
-        return await context.Applications
-            .SingleOrDefaultAsync(application => application.Id == applicationId, ct);
+        await context.Applications.LockRowsAsync(application => application.Id == applicationId, RowLock.NoKeyUpdate, ct);
+        return await context.Applications.SingleOrDefaultAsync(application => application.Id == applicationId, ct);
     }
 
-    public async Task<ApplicationEntity?> GetDecisionByIdForUpdateAsync(
+    public async Task<ApplicationEntity?> GetDecisionByIdWithRowLockAsync(
         int applicationId,
         CancellationToken ct = default)
     {
@@ -87,13 +77,8 @@ internal sealed class ApplicationPrivilegedRepository(
         if (opportunityId is null)
             return null;
 
-        var applicationIds = await context.Applications
-            .Where(application => application.OpportunityId == opportunityId)
-            .OrderBy(application => application.Id)
-            .Select(application => application.Id)
-            .ToListAsync(ct);
-        foreach (var id in applicationIds)
-            await LockAsync(id, ct);
+        await context.Applications.LockRowsAsync(
+            application => application.OpportunityId == opportunityId, RowLock.NoKeyUpdate, ct);
 
         return await context.Applications
             .SingleOrDefaultAsync(application => application.Id == applicationId, ct);
@@ -189,14 +174,4 @@ internal sealed class ApplicationPrivilegedRepository(
         (unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("A tenant applications lock requires a unit of work."))
             .EnlistAsync(context, ct);
-
-    private Task LockAsync(int applicationId, CancellationToken ct) =>
-        context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM application."Applications"
-             WHERE "Id" = {applicationId}
-             FOR UPDATE
-             """,
-            ct);
 }

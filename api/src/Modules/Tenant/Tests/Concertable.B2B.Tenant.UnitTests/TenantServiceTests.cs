@@ -38,16 +38,14 @@ public sealed class TenantServiceTests
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
                 userId, 1, 1, PermissionSet.From(AuthorizationCatalog.Presets["Owner"].Permissions)));
         this.roles = new Mock<IRoleRepository>();
-        this.repository.Setup(value => value.GetExistingIdsForKeyShareAsync(
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
-                (IReadOnlySet<Guid>)ids.ToHashSet());
+        this.repository.Setup(value => value.ExistsByIdWithKeyShareLockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         this.repository.Setup(value => value.GetAuthorizationCatalogRevisionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(AuthorizationCatalog.Revision);
-        this.membershipRepository.Setup(value => value.GetSnapshotsByIdsForKeyShareAsync(
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
-                Task.FromResult<IReadOnlyList<MembershipSnapshot>>(authorizationContext.Object.Membership.TryGetValue(out var actor) ? [actor] : []));
+        this.membershipRepository.Setup(value => value.GetSnapshotByIdWithKeyShareLockAsync(
+                It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Returns((Guid _, CancellationToken _) => Task.FromResult(
+                authorizationContext.Object.Membership.TryGetValue(out var actor) ? actor : (MembershipSnapshot?)null));
         this.roles.Setup(value => value.HasProtectedOwnerAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -121,7 +119,7 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(r => r.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((TenantEntity?)null);
 
         var result = await service.UpdateAsync(null!);
@@ -136,7 +134,7 @@ public sealed class TenantServiceTests
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
-        repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+        repository.Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         authorizationContext.SetupGet(context => context.Membership).Returns((MembershipSnapshot?)null);
 
@@ -152,7 +150,7 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         var steps = new List<string>();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
-        repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+        repository.Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .Callback(() => steps.Add("tenant"))
             .ReturnsAsync(Bare());
         var clearGuard = new Mock<ITenantDeletionGuard>();
@@ -178,7 +176,7 @@ public sealed class TenantServiceTests
     {
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
-        repository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+        repository.Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         authorizationContext.SetupGet(context => context.Membership).Returns((MembershipSnapshot?)null);
 
@@ -195,7 +193,7 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
@@ -236,7 +234,7 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
@@ -267,7 +265,7 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
@@ -293,7 +291,7 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
@@ -324,7 +322,7 @@ public sealed class TenantServiceTests
         var tenantId = Guid.NewGuid();
         tenantContext.SetupGet(context => context.TenantId).Returns(tenantId);
         repository
-            .Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Bare());
         var request = new UpdateTenantRequest
         {
@@ -359,7 +357,7 @@ public sealed class TenantServiceTests
         var invalid = Assert.IsType<ChangeBusinessActivityError.Invalid>(error);
         Assert.Equal(["The organization activity is invalid."], invalid.Errors.Errors["kind"]);
         repository.Verify(
-            value => value.GetByIdForAdministrationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            value => value.GetByIdWithUpdateLockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

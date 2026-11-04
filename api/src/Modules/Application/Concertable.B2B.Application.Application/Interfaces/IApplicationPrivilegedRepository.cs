@@ -10,7 +10,7 @@ internal interface IApplicationPrivilegedRepository
     Task LockOpportunityAsync(int opportunityId, CancellationToken ct = default);
 
     Task AcquireTenantApplicationsSharedLockAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default);
 
     Task AcquireTenantApplicationsExclusiveLockAsync(Guid tenantId, CancellationToken ct = default);
@@ -22,11 +22,11 @@ internal interface IApplicationPrivilegedRepository
         Guid artistTenantId,
         CancellationToken ct = default);
 
-    Task<ApplicationEntity?> GetByIdForUpdateAsync(
+    Task<ApplicationEntity?> GetByIdWithRowLockAsync(
         int applicationId,
         CancellationToken ct = default);
 
-    Task<ApplicationEntity?> GetDecisionByIdForUpdateAsync(
+    Task<ApplicationEntity?> GetDecisionByIdWithRowLockAsync(
         int applicationId,
         CancellationToken ct = default);
 

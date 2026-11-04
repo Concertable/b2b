@@ -12,7 +12,7 @@ internal interface ITenantService
 
     Task<IReadOnlyList<Guid>> GetMemberUserIdsAsync(Guid tenantId, CancellationToken ct = default);
     Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default);
     Task<Option<MembershipSnapshot>> GetCurrentMembershipAsync(
         Guid tenantId,
@@ -24,7 +24,7 @@ internal interface ITenantService
     Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default);
 
     Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default);
 
     Task<bool> HasBusinessActivityAsync(

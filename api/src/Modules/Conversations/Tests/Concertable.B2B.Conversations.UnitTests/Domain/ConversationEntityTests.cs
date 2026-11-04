@@ -7,14 +7,15 @@ public sealed class ConversationEntityTests
     private static readonly DateTime At = new(2026, 10, 31, 12, 0, 0, DateTimeKind.Utc);
 
     [Fact]
-    public void Create_RecordsEachTenantOnceAsAParticipant()
+    public void Create_TwoTenantsIncludingTheCreator_RecordsEachAsAParticipant()
     {
         var creatorTenantId = Guid.NewGuid();
         var otherTenantId = Guid.NewGuid();
 
-        var conversation = ConversationEntity.Create([creatorTenantId, otherTenantId, otherTenantId], creatorTenantId, At);
+        var conversation = ConversationEntity.Create(new HashSet<Guid> { creatorTenantId, otherTenantId }, creatorTenantId, At);
 
-        Assert.Equal([creatorTenantId, otherTenantId], conversation.Participants.Select(participant => participant.TenantId));
+        Assert.True(conversation.Participants.Select(participant => participant.TenantId).ToHashSet()
+            .SetEquals([creatorTenantId, otherTenantId]));
         Assert.Empty(conversation.Assignments);
     }
 
@@ -23,16 +24,16 @@ public sealed class ConversationEntityTests
     {
         var creatorTenantId = Guid.NewGuid();
 
-        Assert.Throws<ArgumentException>(() => ConversationEntity.Create([creatorTenantId], creatorTenantId, At));
+        Assert.Throws<ArgumentException>(() => ConversationEntity.Create(new HashSet<Guid> { creatorTenantId }, creatorTenantId, At));
         Assert.Throws<ArgumentException>(() => ConversationEntity.Create(
-            [Guid.NewGuid(), Guid.NewGuid()], creatorTenantId, At));
+            new HashSet<Guid> { Guid.NewGuid(), Guid.NewGuid() }, creatorTenantId, At));
     }
 
     [Fact]
     public void AllocateMessageSequence_IsMonotonic()
     {
         var creatorTenantId = Guid.NewGuid();
-        var conversation = ConversationEntity.Create([creatorTenantId, Guid.NewGuid()], creatorTenantId, At);
+        var conversation = ConversationEntity.Create(new HashSet<Guid> { creatorTenantId, Guid.NewGuid() }, creatorTenantId, At);
 
         Assert.Equal(1, conversation.AllocateMessageSequence());
         Assert.Equal(2, conversation.AllocateMessageSequence());
@@ -43,7 +44,7 @@ public sealed class ConversationEntityTests
     {
         var creatorTenantId = Guid.NewGuid();
         var membershipId = Guid.NewGuid();
-        var conversation = ConversationEntity.Create([creatorTenantId, Guid.NewGuid()], creatorTenantId, At);
+        var conversation = ConversationEntity.Create(new HashSet<Guid> { creatorTenantId, Guid.NewGuid() }, creatorTenantId, At);
 
         Assert.False(conversation.AssignMember(creatorTenantId, Guid.NewGuid(), membershipId, Guid.NewGuid(), At));
         Assert.False(conversation.AssignMember(Guid.NewGuid(), Guid.NewGuid(), membershipId, Guid.NewGuid(), At));
@@ -58,7 +59,7 @@ public sealed class ConversationEntityTests
     {
         var creatorTenantId = Guid.NewGuid();
         var membershipId = Guid.NewGuid();
-        var conversation = ConversationEntity.Create([creatorTenantId, Guid.NewGuid()], creatorTenantId, At);
+        var conversation = ConversationEntity.Create(new HashSet<Guid> { creatorTenantId, Guid.NewGuid() }, creatorTenantId, At);
         conversation.AssignMember(creatorTenantId, Guid.NewGuid(), membershipId, creatorTenantId, At);
 
         Assert.True(conversation.UnassignMember(creatorTenantId, membershipId));
@@ -76,7 +77,7 @@ public sealed class ConversationEntityTests
         ResourceAccess access, bool participant, bool assigned, bool expected)
     {
         var participantTenantId = Guid.NewGuid();
-        var conversation = ConversationEntity.Create([participantTenantId, Guid.NewGuid()], participantTenantId, At);
+        var conversation = ConversationEntity.Create(new HashSet<Guid> { participantTenantId, Guid.NewGuid() }, participantTenantId, At);
         var actor = Actor(participant ? participantTenantId : Guid.NewGuid(), TenantPermission.MessagesRead, access);
         if (assigned)
             conversation.AssignMember(participantTenantId, Guid.NewGuid(), actor.MembershipId, participantTenantId, At);
@@ -88,7 +89,7 @@ public sealed class ConversationEntityTests
     public void AcceptsMessagesFrom_UsesTheSendPermission()
     {
         var tenantId = Guid.NewGuid();
-        var conversation = ConversationEntity.Create([tenantId, Guid.NewGuid()], tenantId, At);
+        var conversation = ConversationEntity.Create(new HashSet<Guid> { tenantId, Guid.NewGuid() }, tenantId, At);
 
         Assert.True(conversation.AcceptsMessagesFrom(Actor(tenantId, TenantPermission.MessagesSend, ResourceAccess.All)));
         Assert.False(conversation.AcceptsMessagesFrom(Actor(tenantId, TenantPermission.MessagesRead, ResourceAccess.All)));
@@ -100,7 +101,7 @@ public sealed class ConversationEntityTests
     public void IsShareableBy_RequiresAParticipantWithShareAtAll(ResourceAccess access, bool expected)
     {
         var tenantId = Guid.NewGuid();
-        var conversation = ConversationEntity.Create([tenantId, Guid.NewGuid()], tenantId, At);
+        var conversation = ConversationEntity.Create(new HashSet<Guid> { tenantId, Guid.NewGuid() }, tenantId, At);
 
         Assert.Equal(expected, conversation.IsShareableBy(Actor(tenantId, TenantPermission.ResourcesShare, access)));
         Assert.False(conversation.IsShareableBy(Actor(Guid.NewGuid(), TenantPermission.ResourcesShare, ResourceAccess.All)));

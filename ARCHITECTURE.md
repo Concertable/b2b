@@ -163,7 +163,7 @@ Each aggregate decides what an actor may do to it, by what it decides:
 `ConversationParticipant` are owned by their aggregates. Unassigning and unsharing delete the row.
 
 ```csharp
-var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
 if (concert is null || !concert.IsEditableBy(expectedActor))
     return new UpdateConcertError.NotPermitted();
 ```

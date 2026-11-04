@@ -26,7 +26,7 @@ internal sealed class TenantModule : ITenantModule
         service.GetMemberUserIdsAsync(tenantId, ct);
 
     public Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default) =>
         service.GetCurrentMembershipsAsync(tenantIds, ct);
 
@@ -45,7 +45,7 @@ internal sealed class TenantModule : ITenantModule
         service.GetTenantBusinessDetailsAsync(tenantId, ct);
 
     public Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default) =>
         service.GetTenantBusinessDetailsAsync(tenantIds, ct);
 

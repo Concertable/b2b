@@ -133,7 +133,7 @@ public sealed class ConcertServiceAccessOrderingTests
         var steps = new List<string>();
         var transactionRunner = new ImmediateTransactionRunner();
         repository
-            .Setup(value => value.GetByIdForUpdateAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(value => value.GetByIdWithRowLockAsync(1, It.IsAny<CancellationToken>()))
             .Callback<int, CancellationToken>((_, _) => steps.Add("resource"))
             .ReturnsAsync(ConcertEntity.CreateDraft(
                 ConfirmedBookings.FlatFee(),

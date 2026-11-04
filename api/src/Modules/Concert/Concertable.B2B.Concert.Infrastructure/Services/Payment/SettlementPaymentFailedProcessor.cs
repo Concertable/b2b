@@ -48,7 +48,7 @@ internal sealed class SettlementPaymentFailedProcessor : IIntegrationEventHandle
                         ct))
                     return;
 
-                var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
+                var concert = await concertRepository.GetByIdWithRowLockAsync(concertId, ct);
                 if (concert is null)
                 {
                     logger.SettlementOutcomeForUnknownConcert(concertId);

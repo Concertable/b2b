@@ -278,8 +278,9 @@ public sealed class ConcertApiFixture : ApiFixture
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();
         command.CommandText =
-            "SELECT pg_try_advisory_lock(hashtextextended(CAST(@tenantId AS text), 0))";
-        command.Parameters.AddWithValue("tenantId", supplierTenantId);
+            "SELECT pg_try_advisory_lock(@lockNamespace, @key)";
+        command.Parameters.AddWithValue("lockNamespace", (int)AdvisoryLock.InvoiceSequence);
+        command.Parameters.AddWithValue("key", supplierTenantId.GetHashCode());
         var acquired = (bool)(await command.ExecuteScalarAsync() ?? false);
         if (acquired)
             await SetInvoiceSequenceLockAsync(connection, supplierTenantId, acquire: false);
@@ -476,9 +477,10 @@ public sealed class ConcertApiFixture : ApiFixture
     {
         await using var command = connection.CreateCommand();
         command.CommandText = acquire
-            ? "SELECT pg_advisory_lock(hashtextextended(CAST(@tenantId AS text), 0))"
-            : "SELECT pg_advisory_unlock(hashtextextended(CAST(@tenantId AS text), 0))";
-        command.Parameters.AddWithValue("tenantId", supplierTenantId);
+            ? "SELECT pg_advisory_lock(@lockNamespace, @key)"
+            : "SELECT pg_advisory_unlock(@lockNamespace, @key)";
+        command.Parameters.AddWithValue("lockNamespace", (int)AdvisoryLock.InvoiceSequence);
+        command.Parameters.AddWithValue("key", supplierTenantId.GetHashCode());
         await command.ExecuteNonQueryAsync();
     }
 

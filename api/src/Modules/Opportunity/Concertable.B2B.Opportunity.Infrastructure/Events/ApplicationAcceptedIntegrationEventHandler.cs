@@ -1,6 +1,7 @@
 using Concertable.B2B.Application.Contracts.Events;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Events;
@@ -29,7 +30,8 @@ internal sealed class ApplicationAcceptedIntegrationEventHandler : IIntegrationE
                 return;
 
             context.AddInboxMessage(envelope, handler);
-            await LockOpportunityAsync(@event.OpportunityId, ct);
+            await context.Opportunities.LockRowsAsync(
+                value => value.Id == @event.OpportunityId, RowLock.NoKeyUpdate, ct);
             var opportunity = await context.Opportunities
                 .SingleOrDefaultAsync(
                     value => value.Id == @event.OpportunityId
@@ -37,14 +39,4 @@ internal sealed class ApplicationAcceptedIntegrationEventHandler : IIntegrationE
                     ct);
             opportunity?.MarkFilled(@event.ApplicationId);
         }, ct);
-
-    private Task LockOpportunityAsync(int opportunityId, CancellationToken ct) =>
-        context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM opportunity."Opportunities"
-             WHERE "Id" = {opportunityId}
-             FOR UPDATE
-             """,
-            ct);
 }

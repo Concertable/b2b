@@ -96,7 +96,7 @@ internal sealed class SettlementService : ISettlementService
         int concertId,
         CancellationToken ct)
     {
-        var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
+        var concert = await concertRepository.GetByIdWithRowLockAsync(concertId, ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
 
@@ -167,7 +167,7 @@ internal sealed class SettlementService : ISettlementService
         Guid operationId,
         CancellationToken ct)
     {
-        var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct);
+        var concert = await concertRepository.GetByIdWithRowLockAsync(concertId, ct);
         if (concert is null)
             return new FinishConcertError.ConcertNotFound(concertId);
 
@@ -187,7 +187,7 @@ internal sealed class SettlementService : ISettlementService
         string message,
         CancellationToken ct)
     {
-        var concert = await concertRepository.GetByIdForUpdateAsync(concertId, ct)
+        var concert = await concertRepository.GetByIdWithRowLockAsync(concertId, ct)
             ?? throw new InvalidOperationException($"Settlement concert {concertId} was not found.");
         concert.EnsureSettlementOperation(operationId);
 

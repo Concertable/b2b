@@ -52,7 +52,7 @@ public sealed class ContentReportServiceTests
         var conversations = new Mock<IConversationPrivilegedRepository>();
         var participantTenantId = readable ? VenueTenantId : Guid.NewGuid();
         var conversation = ConversationEntity.Create(
-            [participantTenantId, Guid.NewGuid()], participantTenantId, DateTime.UtcNow);
+            new HashSet<Guid> { participantTenantId, Guid.NewGuid() }, participantTenantId, DateTime.UtcNow);
         conversations.Setup(repository => repository.GetByIdAsync(ConversationId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(conversation);
 

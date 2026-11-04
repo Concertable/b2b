@@ -46,7 +46,7 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
             {
                 var artistTenantId = TenantSeedIds.For(artists[pair].Id);
                 conversations.Add(ConversationEntity.Create(
-                    [TenantSeedIds.For(venues[pair].Id), artistTenantId],
+                    new HashSet<Guid> { TenantSeedIds.For(venues[pair].Id), artistTenantId },
                     artistTenantId,
                     now.AddDays(-7)));
             }

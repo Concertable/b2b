@@ -54,27 +54,23 @@ public sealed class TenantReadApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetExistingIdsForKeyShare_ReturnsOnlyTheRequestedTenants()
+    public async Task ExistsByIdForKeyShareAsync_SeededTenant_IsTrue()
     {
-        var tenantIds = fixture.Tenants.Select(tenant => tenant.Id).Take(2).ToArray();
-        var targetTenantId = tenantIds[1];
+        var tenantId = fixture.Tenants.First().Id;
 
-        var existing = await fixture.RunInTransactionAsync((ITenantRepository tenantRepository, CancellationToken ct) =>
-            tenantRepository.GetExistingIdsForKeyShareAsync([targetTenantId], ct));
+        var exists = await fixture.RunInTransactionAsync((ITenantRepository tenantRepository, CancellationToken ct) =>
+            tenantRepository.ExistsByIdWithKeyShareLockAsync(tenantId, ct));
 
-        Assert.True(existing.SetEquals([targetTenantId]));
+        Assert.True(exists);
     }
 
     [Fact]
-    public async Task GetExistingIdsForKeyShare_DuplicateAndMissingTenants_ReturnsUniqueExistingTenants()
+    public async Task ExistsByIdForKeyShareAsync_UnknownTenant_IsFalse()
     {
-        var tenantIds = fixture.Tenants.Select(tenant => tenant.Id).Take(2).ToArray();
-        Guid[] requested = [tenantIds[0], tenantIds[1], tenantIds[0], Guid.NewGuid()];
+        var exists = await fixture.RunInTransactionAsync((ITenantRepository tenantRepository, CancellationToken ct) =>
+            tenantRepository.ExistsByIdWithKeyShareLockAsync(Guid.NewGuid(), ct));
 
-        var existing = await fixture.RunInTransactionAsync((ITenantRepository tenantRepository, CancellationToken ct) =>
-            tenantRepository.GetExistingIdsForKeyShareAsync(requested, ct));
-
-        Assert.True(existing.SetEquals(tenantIds));
+        Assert.False(exists);
     }
 
     private MembershipSnapshot Snapshot(TenantMembershipEntity membership)

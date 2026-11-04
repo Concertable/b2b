@@ -30,7 +30,7 @@ internal sealed class ConversationChangedHandler : IIntegrationEventHandler<Conv
         var conversation = await repository.GetByIdAsync(e.ConversationId, ct);
         if (conversation is null)
             return;
-        var tenantIds = conversation.Participants.Select(participant => participant.TenantId).ToArray();
+        var tenantIds = conversation.Participants.Select(participant => participant.TenantId).ToHashSet();
         var memberships = await tenantModule.GetCurrentMembershipsAsync(tenantIds, ct);
         foreach (var recipient in memberships
                      .Where(conversation.IsReadableBy)

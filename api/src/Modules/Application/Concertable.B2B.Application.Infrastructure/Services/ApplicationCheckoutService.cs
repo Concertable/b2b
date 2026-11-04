@@ -192,7 +192,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
         if (opportunityId is null)
             return new ApplicationCheckoutError.ApplicationNotFound();
         await privilegedRepository.LockOpportunityAsync(opportunityId.Value, ct);
-        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
+        var application = await privilegedRepository.GetByIdWithRowLockAsync(applicationId, ct);
         if (application is null || !application.IsDecidableBy(actor))
             return new ApplicationCheckoutError.ApplicationNotFound();
         var operationId = application.BeginAcceptance();

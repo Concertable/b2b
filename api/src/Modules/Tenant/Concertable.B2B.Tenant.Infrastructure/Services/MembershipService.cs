@@ -44,7 +44,7 @@ internal sealed class MembershipService : IMembershipService
         unitOfWork.ExecuteAsync(async () =>
         {
             var tenantId = tenantContext.GetTenantId();
-            if (!(await tenantRepository.GetExistingIdsForKeyShareAsync([tenantId], ct)).Contains(tenantId)
+            if (!await tenantRepository.ExistsByIdWithKeyShareLockAsync(tenantId, ct)
                 || !authorizationContext.TryGetMembership(tenantId, out var actor)
                 || !actor.HasPermission(TenantPermission.OperationsView))
                 return Result.Failure<IReadOnlyList<MemberDto>, ListMembersError>(
@@ -81,7 +81,7 @@ internal sealed class MembershipService : IMembershipService
         CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
+        if (await tenantRepository.GetByIdWithUpdateLockAsync(tenantId, ct) is null)
             return new ChangeMemberRolesError.NotPermitted();
         if (!authorizationContext.TryGetMembership(tenantId, out var actor)
             || !actor.HasPermission(TenantPermission.MembersManageRoles)
@@ -126,7 +126,7 @@ internal sealed class MembershipService : IMembershipService
         CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        if (await tenantRepository.GetByIdForAdministrationAsync(tenantId, ct) is null)
+        if (await tenantRepository.GetByIdWithUpdateLockAsync(tenantId, ct) is null)
             return new RemoveMemberError.NotPermitted();
         if (!authorizationContext.TryGetMembership(tenantId, out var actor)
             || !actor.HasPermission(TenantPermission.MembersRemove)

@@ -20,13 +20,14 @@ public sealed class ConversationEntity : IIdEntity
     public IReadOnlyList<MemberAssignment> Assignments => assignments;
 
     public static ConversationEntity Create(
-        IReadOnlyCollection<Guid> participantTenantIds,
+        IReadOnlySet<Guid> participantTenantIds,
         Guid creatorTenantId,
         DateTime at)
     {
         ArgumentNullException.ThrowIfNull(participantTenantIds);
-        var tenantIds = participantTenantIds.Distinct().ToList();
-        if (tenantIds.Count < 2 || tenantIds.Contains(Guid.Empty) || !tenantIds.Contains(creatorTenantId))
+        if (participantTenantIds.Count < 2
+            || participantTenantIds.Contains(Guid.Empty)
+            || !participantTenantIds.Contains(creatorTenantId))
             throw new ArgumentException("A conversation requires the creator and at least one other tenant.", nameof(participantTenantIds));
 
         var conversation = new ConversationEntity
@@ -34,7 +35,8 @@ public sealed class ConversationEntity : IIdEntity
             CreatedAt = at,
             AccessVersion = 1
         };
-        conversation.participants.AddRange(tenantIds.Select(tenantId => new ConversationParticipant(tenantId, at)));
+        conversation.participants.AddRange(
+            participantTenantIds.Select(tenantId => new ConversationParticipant(tenantId, at)));
         return conversation;
     }
 

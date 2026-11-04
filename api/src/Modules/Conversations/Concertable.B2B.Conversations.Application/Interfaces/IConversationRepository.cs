@@ -8,13 +8,13 @@ internal interface IConversationRepository : IRepository<ConversationEntity>
 internal interface IConversationPrivilegedRepository
 {
     Task<ConversationEntity?> GetByIdAsync(int conversationId, CancellationToken ct = default);
-    Task<ConversationEntity?> GetByIdForUpdateAsync(int conversationId, CancellationToken ct = default);
-    Task<ConversationCreationReceipt?> GetCreationReceiptForUpdateAsync(
+    Task<ConversationEntity?> GetByIdWithRowLockAsync(int conversationId, CancellationToken ct = default);
+    Task<ConversationCreationReceipt?> GetCreationReceiptWithRowLockAsync(
         Guid creatorTenantId,
         Guid createdByMembershipId,
         Guid requestId,
         CancellationToken ct = default);
-    Task<MessageEntity?> GetMessageReceiptForUpdateAsync(
+    Task<MessageEntity?> GetMessageReceiptWithRowLockAsync(
         int conversationId,
         Guid sentByMembershipId,
         Guid requestId,

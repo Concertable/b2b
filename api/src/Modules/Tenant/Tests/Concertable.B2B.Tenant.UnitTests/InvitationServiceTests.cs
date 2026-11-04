@@ -32,19 +32,14 @@ public sealed class InvitationServiceTests
         authorizationContext = new Mock<IAuthorizationContext>();
         currentUser = new Mock<ICurrentUser>();
         roles = new Mock<IRoleRepository>();
-        tenantRepository.Setup(value => value.GetExistingIdsForKeyShareAsync(
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
-                (IReadOnlySet<Guid>)ids.ToHashSet());
+        tenantRepository.Setup(value => value.ExistsByIdWithKeyShareLockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         tenantRepository.Setup(value => value.GetAuthorizationCatalogRevisionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(AuthorizationCatalog.Revision);
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForKeyShareAsync(
-                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
-            .Returns((IReadOnlyCollection<Guid> _, CancellationToken _) =>
-                Task.FromResult<IReadOnlyList<MembershipSnapshot>>(
-                    authorizationContext.Object.Membership.TryGetValue(out var actor)
-                        ? new[] { actor }
-                        : Array.Empty<MembershipSnapshot>()));
+        membershipRepository.Setup(value => value.GetSnapshotByIdWithKeyShareLockAsync(
+                It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Returns((Guid _, CancellationToken _) => Task.FromResult(
+                authorizationContext.Object.Membership.TryGetValue(out var actor) ? actor : (MembershipSnapshot?)null));
         service = new InvitationService(
             tenantRepository.Object,
             membershipRepository.Object,
@@ -73,11 +68,11 @@ public sealed class InvitationServiceTests
         currentUser.SetupGet(value => value.Id).Returns(userId);
         currentUser.SetupGet(value => value.Email).Returns(invitation.Email);
         repository.Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
-        repository.Setup(value => value.GetByIdForUpdateAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
-        tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        repository.Setup(value => value.GetByIdWithRowLockAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
+        tenantRepository.Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
         membershipRepository.Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForKeyShareAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(inviter.Id)), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([Snapshot(inviter, "Owner")]);
+        membershipRepository.Setup(value => value.GetSnapshotByIdWithKeyShareLockAsync(inviter.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Snapshot(inviter, "Owner"));
         roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([invitedRole]);
         roles.Setup(value => value.HasProtectedOwnerAsync(tenantId, inviter.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -101,7 +96,7 @@ public sealed class InvitationServiceTests
         var tenant = TenantEntity.Create("Acme Ltd", "contact@acme.test", Guid.NewGuid(), DateTime.UtcNow, tenantId);
         tenantContext.SetupGet(value => value.TenantId).Returns(tenantId);
         authorizationContext.SetupGet(value => value.Membership).Returns(actor);
-        tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        tenantRepository.Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
         roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([targetRole]);
         roles.Setup(value => value.HasProtectedOwnerAsync(tenantId, actor.MembershipId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
@@ -134,11 +129,11 @@ public sealed class InvitationServiceTests
         currentUser.SetupGet(value => value.Id).Returns(userId);
         currentUser.SetupGet(value => value.Email).Returns(invitation.Email);
         repository.Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
-        repository.Setup(value => value.GetByIdForUpdateAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
-        tenantRepository.Setup(value => value.GetByIdForAdministrationAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        repository.Setup(value => value.GetByIdWithRowLockAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
+        tenantRepository.Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
         membershipRepository.Setup(value => value.IsMemberAsync(tenantId, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        membershipRepository.Setup(value => value.GetSnapshotsByIdsForKeyShareAsync(It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(inviter.Id)), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([Snapshot(inviter, "Staff")]);
+        membershipRepository.Setup(value => value.GetSnapshotByIdWithKeyShareLockAsync(inviter.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Snapshot(inviter, "Staff"));
         roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([invitedRole]);
         roles.Setup(value => value.HasProtectedOwnerAsync(tenantId, inviter.Id, It.IsAny<CancellationToken>())).ReturnsAsync(false);

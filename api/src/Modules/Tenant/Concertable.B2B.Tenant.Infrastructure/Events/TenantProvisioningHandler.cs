@@ -5,6 +5,7 @@ using Concertable.B2B.Infrastructure.Authorization;
 using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Events;
@@ -45,17 +46,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
             .Order()
             .ToListAsync(ct);
 
-        foreach (var tenantId in candidateTenantIds)
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Tenants"
-                 WHERE "Id" = {tenantId}
-                 FOR UPDATE
-                 """,
-                ct);
-        }
+        await context.Tenants.LockRowsAsync(tenant => candidateTenantIds.Contains(tenant.Id), RowLock.Update, ct);
 
         var pendingInvitations = await context.Invitations
             .Where(invitation =>

@@ -312,7 +312,7 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot actor,
         CancellationToken ct)
     {
-        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
+        var application = await privilegedRepository.GetByIdWithRowLockAsync(applicationId, ct);
         if (application is null)
             return new WithdrawApplicationError.ApplicationNotFound(applicationId);
         if (!application.IsWithdrawableBy(actor))
@@ -341,7 +341,7 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot actor,
         CancellationToken ct)
     {
-        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
+        var application = await privilegedRepository.GetByIdWithRowLockAsync(applicationId, ct);
         if (application is null)
             return new RejectApplicationError.ApplicationNotFound(applicationId);
         if (!application.IsDecidableBy(actor))
@@ -370,7 +370,7 @@ internal sealed class ApplicationService : IApplicationService
         MembershipSnapshot actor,
         CancellationToken ct)
     {
-        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
+        var application = await privilegedRepository.GetByIdWithRowLockAsync(applicationId, ct);
         if (application is null)
             return new CancelApplicationError.ApplicationNotFound(applicationId);
         if (!application.IsDecidableBy(actor))

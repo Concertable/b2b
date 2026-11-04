@@ -8,7 +8,6 @@ namespace Concertable.B2B.Conversations.IntegrationTests;
 
 public sealed class ConversationsApiFixture : ApiFixture
 {
-    private const long ConversationCreationLockSeed = 638457221;
     private string connectionString = null!;
 
     internal async Task<T[]> RunWithConversationCreationBarrierAsync<T>(
@@ -152,26 +151,10 @@ public sealed class ConversationsApiFixture : ApiFixture
     {
         await using var command = connection.CreateCommand();
         command.CommandText = acquire
-            ? """
-              SELECT pg_advisory_lock(
-                  hashtextextended(
-                      CAST(@creatorTenantId AS text)
-                      || ':' || CAST(@createdByMembershipId AS text)
-                      || ':' || CAST(@requestId AS text),
-                      @seed))
-              """
-            : """
-              SELECT pg_advisory_unlock(
-                  hashtextextended(
-                      CAST(@creatorTenantId AS text)
-                      || ':' || CAST(@createdByMembershipId AS text)
-                      || ':' || CAST(@requestId AS text),
-                      @seed))
-              """;
-        command.Parameters.AddWithValue("creatorTenantId", creatorTenantId);
-        command.Parameters.AddWithValue("createdByMembershipId", createdByMembershipId);
-        command.Parameters.AddWithValue("requestId", requestId);
-        command.Parameters.AddWithValue("seed", ConversationCreationLockSeed);
+            ? "SELECT pg_advisory_lock(@lockNamespace, @key)"
+            : "SELECT pg_advisory_unlock(@lockNamespace, @key)";
+        command.Parameters.AddWithValue("lockNamespace", (int)AdvisoryLock.ConversationCreation);
+        command.Parameters.AddWithValue("key", requestId.GetHashCode());
         await command.ExecuteNonQueryAsync();
     }
 

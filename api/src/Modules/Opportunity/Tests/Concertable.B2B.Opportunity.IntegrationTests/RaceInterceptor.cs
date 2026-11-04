@@ -120,7 +120,7 @@ internal sealed class RaceInterceptor : DbCommandInterceptor, IResettable
 
     private static bool IsUpdateLock(DbCommand command) =>
         command.CommandText.Contains("FROM opportunity.\"Opportunities\"", StringComparison.Ordinal)
-        && command.CommandText.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase);
+        && command.CommandText.Contains("-- concertable:row-lock:", StringComparison.Ordinal);
 
     private void CaptureCompetingBackend(DbCommand command)
     {

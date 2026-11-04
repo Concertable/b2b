@@ -2,13 +2,13 @@ using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Opportunity.Domain.Entities;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
 using Concertable.B2B.Opportunity.Infrastructure.Extensions;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Repositories;
 
 internal sealed class OpportunityRepository : TenantScopedRepository<OpportunityEntity>, IOpportunityRepository
 {
-    private const int TenantOpportunitiesLockNamespace = 10241003;
     private readonly OpportunityDbContext context;
     private readonly TimeProvider timeProvider;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
@@ -28,17 +28,13 @@ internal sealed class OpportunityRepository : TenantScopedRepository<Opportunity
     public async Task AcquireTenantOpportunitiesSharedLockAsync(Guid tenantId, CancellationToken ct = default)
     {
         await EnlistAsync(ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock_shared({TenantOpportunitiesLockNamespace}, hashtext({tenantId.ToString()}))",
-            ct);
+        await context.Database.AcquireSharedAdvisoryLockAsync(AdvisoryLock.TenantOpportunities, tenantId, ct);
     }
 
     public async Task AcquireTenantOpportunitiesExclusiveLockAsync(Guid tenantId, CancellationToken ct = default)
     {
         await EnlistAsync(ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({TenantOpportunitiesLockNamespace}, hashtext({tenantId.ToString()}))",
-            ct);
+        await context.Database.AcquireAdvisoryLockAsync(AdvisoryLock.TenantOpportunities, tenantId, ct);
     }
 
     public async Task<IEnumerable<OpportunityEntity>> GetActiveByVenueIdAsync(int venueId) =>

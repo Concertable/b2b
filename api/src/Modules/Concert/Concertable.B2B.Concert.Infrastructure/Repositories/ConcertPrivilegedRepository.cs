@@ -1,6 +1,7 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
@@ -14,11 +15,11 @@ internal sealed class ConcertPrivilegedRepository : PrivilegedRepository<Concert
         this.context = context;
     }
 
-    public async Task<ConcertEntity?> GetByIdForUpdateAsync(
+    public async Task<ConcertEntity?> GetByIdWithRowLockAsync(
         int concertId,
         CancellationToken ct = default)
     {
-        await this.AcquireUpdateLockAsync(concertId, ct);
+        await context.Concerts.LockRowsAsync(concert => concert.Id == concertId, RowLock.NoKeyUpdate, ct);
         return await context.Concerts.SingleOrDefaultAsync(concert => concert.Id == concertId, ct);
     }
 
@@ -37,12 +38,4 @@ internal sealed class ConcertPrivilegedRepository : PrivilegedRepository<Concert
             .Where(concert => concert.Id == concertId)
             .Select(concert => (ConcertState?)concert.State)
             .SingleOrDefaultAsync(ct);
-
-    private Task<int> AcquireUpdateLockAsync(int concertId, CancellationToken ct) =>
-        context.Database.ExecuteSqlInterpolatedAsync($"""
-            SELECT 1
-            FROM concert."Concerts"
-            WHERE "Id" = {concertId}
-            FOR UPDATE
-            """, ct);
 }

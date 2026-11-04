@@ -70,10 +70,10 @@ internal sealed class VerificationReviewRaceInterceptor : DbCommandInterceptor, 
         }
     }
 
-    public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+    public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
         DbCommand command,
         CommandEventData eventData,
-        InterceptionResult<int> result,
+        InterceptionResult<DbDataReader> result,
         CancellationToken cancellationToken = default)
     {
         lock (gate)
@@ -94,7 +94,7 @@ internal sealed class VerificationReviewRaceInterceptor : DbCommandInterceptor, 
 
     private static bool IsVerificationLock(DbCommand command) =>
         command.CommandText.Contains("FROM tenant.\"Verifications\"", StringComparison.Ordinal)
-        && command.CommandText.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase);
+        && command.CommandText.Contains("-- concertable:row-lock:", StringComparison.Ordinal);
 
     private static TaskCompletionSource<int[]> NewSignal() =>
         new(TaskCreationOptions.RunContinuationsAsynchronously);

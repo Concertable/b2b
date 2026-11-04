@@ -4,11 +4,9 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal interface ITenantRepository : IRepository<TenantEntity, Guid>
 {
-    Task<IReadOnlySet<Guid>> GetExistingIdsForKeyShareAsync(
-        IReadOnlyCollection<Guid> tenantIds,
-        CancellationToken ct = default);
+    Task<bool> ExistsByIdWithKeyShareLockAsync(Guid tenantId, CancellationToken ct = default);
 
-    Task<TenantEntity?> GetByIdForAdministrationAsync(Guid tenantId, CancellationToken ct = default);
+    Task<TenantEntity?> GetByIdWithUpdateLockAsync(Guid tenantId, CancellationToken ct = default);
 
     Task<string?> GetAuthorizationCatalogRevisionAsync(CancellationToken ct = default);
 
@@ -17,7 +15,7 @@ internal interface ITenantRepository : IRepository<TenantEntity, Guid>
     Task<TenantBusinessDetails?> GetTenantBusinessDetailsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 
     Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsByTenantIdsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default);
 
     Task<bool> HasActiveBusinessActivityAsync(

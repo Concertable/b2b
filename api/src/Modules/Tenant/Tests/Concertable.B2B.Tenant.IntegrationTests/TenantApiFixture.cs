@@ -23,7 +23,6 @@ namespace Concertable.B2B.Tenant.IntegrationTests;
 
 public sealed class TenantApiFixture : ApiFixture
 {
-    private const long TenantCreationLockSeed = 638457220;
     private TenantDbContext dbContext = null!;
     private ITransactionRunner transactionRunner = null!;
     private TenantProvisioningHandler provisioningHandler = null!;
@@ -169,7 +168,7 @@ public sealed class TenantApiFixture : ApiFixture
         await control.OpenAsync();
         await ExecuteScalarAsync(
             control,
-            "SELECT pg_advisory_lock(hashtextextended(CAST(@userId AS text), @seed))",
+            "SELECT pg_advisory_lock(@lockNamespace, @key)",
             userId);
         var lockHeld = true;
         var result = action();
@@ -183,7 +182,7 @@ public sealed class TenantApiFixture : ApiFixture
             await WaitForTenantCreationWaitersAsync(control, 2);
             await ExecuteScalarAsync(
                 control,
-                "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
+                "SELECT pg_advisory_unlock(@lockNamespace, @key)",
                 userId);
             lockHeld = false;
             return await result;
@@ -193,7 +192,7 @@ public sealed class TenantApiFixture : ApiFixture
             if (lockHeld)
                 await ExecuteScalarAsync(
                     control,
-                    "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
+                    "SELECT pg_advisory_unlock(@lockNamespace, @key)",
                     userId);
         }
     }
@@ -228,7 +227,7 @@ public sealed class TenantApiFixture : ApiFixture
             deletionResult = deletion();
             await WaitForLockWaiterAsync(monitor, """%DELETE FROM tenant."Invitations"%""");
             contenderResult = contender();
-            await WaitForLockWaiterAsync(monitor, """%tenant."Tenants"%FOR UPDATE%""");
+            await WaitForLockWaiterAsync(monitor, "%concertable:row-lock:Update%");
         }
         finally
         {
@@ -345,7 +344,7 @@ public sealed class TenantApiFixture : ApiFixture
                 WHERE datname = current_database()
                   AND pid <> pg_backend_pid()
                   AND wait_event = 'advisory'
-                  AND query LIKE '%pg_advisory_xact_lock(hashtextextended%'
+                  AND query LIKE '%pg_advisory_xact_lock%'
                 """;
             if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) >= count)
                 return;
@@ -378,8 +377,8 @@ public sealed class TenantApiFixture : ApiFixture
     {
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
-        command.Parameters.AddWithValue("userId", userId);
-        command.Parameters.AddWithValue("seed", TenantCreationLockSeed);
+        command.Parameters.AddWithValue("lockNamespace", (int)AdvisoryLock.TenantCreation);
+        command.Parameters.AddWithValue("key", userId.GetHashCode());
         await command.ExecuteScalarAsync();
     }
 

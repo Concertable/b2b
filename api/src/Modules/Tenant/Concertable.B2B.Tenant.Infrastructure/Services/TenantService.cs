@@ -77,7 +77,7 @@ internal sealed class TenantService : ITenantService
     }
 
     public Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default) =>
         membershipRepository.GetSnapshotsByTenantIdsAsync(tenantIds, ct);
 
@@ -90,15 +90,15 @@ internal sealed class TenantService : ITenantService
     public async Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
         Guid tenantId,
         CancellationToken ct = default) =>
-        await repository.GetByIdForAdministrationAsync(tenantId, ct) is null
+        await repository.GetByIdWithUpdateLockAsync(tenantId, ct) is null
             ? []
-            : await membershipRepository.GetSnapshotsByTenantIdsAsync([tenantId], ct);
+            : await membershipRepository.GetSnapshotsByTenantIdAsync(tenantId, ct);
 
     public async Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default) =>
         (await repository.GetTenantBusinessDetailsByTenantIdAsync(tenantId, ct)).ToOption();
 
     public Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default) =>
         repository.GetTenantBusinessDetailsByTenantIdsAsync(tenantIds, ct);
 
@@ -154,7 +154,7 @@ internal sealed class TenantService : ITenantService
         CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
+        var tenant = await repository.GetByIdWithUpdateLockAsync(tenantId, ct);
         if (tenant is null)
             return new UpdateTenantError.TenantNotFound(tenantId);
         if (!(authorizationContext.TryGetMembership(tenantId, out var actor) && actor.HasPermission(TenantPermission.TenantSettingsEdit)))
@@ -198,7 +198,7 @@ internal sealed class TenantService : ITenantService
             }
 
             var tenantId = tenantContext.GetTenantId();
-            var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
+            var tenant = await repository.GetByIdWithUpdateLockAsync(tenantId, ct);
             if (tenant is null)
                 return new ChangeBusinessActivityError.TenantNotFound(tenantId);
             if (!(authorizationContext.TryGetMembership(tenantId, out var actor) && actor.HasPermission(TenantPermission.TenantSettingsEdit)))
@@ -230,7 +230,7 @@ internal sealed class TenantService : ITenantService
     private async Task<UnitResult<DeleteTenantError>> DeleteCoreAsync(CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
+        var tenant = await repository.GetByIdWithUpdateLockAsync(tenantId, ct);
         if (tenant is null)
             return new DeleteTenantError.TenantNotFound(tenantId);
         if (!authorizationContext.TryGetMembership(tenantId, out var actor)

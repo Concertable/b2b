@@ -8,9 +8,9 @@ internal interface IBookingPrivilegedRepository
 {
     Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
     Task<BookingEntity?> GetByIdAsync(int bookingId, CancellationToken ct = default);
-    Task<BookingEntity?> GetByIdForUpdateAsync(int bookingId, CancellationToken ct = default);
+    Task<BookingEntity?> GetByIdWithRowLockAsync(int bookingId, CancellationToken ct = default);
     Task<BookingEntity?> GetWithContractByIdAsync(int bookingId, CancellationToken ct = default);
-    Task<BookingEntity?> GetWithContractByIdForUpdateAsync(int bookingId, CancellationToken ct = default);
+    Task<BookingEntity?> GetWithContractByIdWithRowLockAsync(int bookingId, CancellationToken ct = default);
     Task<int?> GetIdByApplicationIdAsync(int applicationId, CancellationToken ct = default);
     Task<BookingState?> GetStateByIdAsync(int bookingId, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);

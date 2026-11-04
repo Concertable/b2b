@@ -44,7 +44,7 @@ internal sealed class RoleService : IRoleService
         unitOfWork.ExecuteAsync(async () =>
         {
             var tenantId = tenantContext.GetTenantId();
-            if (!(await tenants.GetExistingIdsForKeyShareAsync([tenantId], ct)).Contains(tenantId))
+            if (!await tenants.ExistsByIdWithKeyShareLockAsync(tenantId, ct))
                 return Result.Failure<IReadOnlyList<RoleDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
             if (!authorizationContext.TryGetMembership(tenantId, out var actor) || !actor.HasPermission(TenantPermission.MembersInvite))
@@ -64,7 +64,7 @@ internal sealed class RoleService : IRoleService
         unitOfWork.ExecuteAsync(async () =>
         {
             var tenantId = tenantContext.GetTenantId();
-            if (!(await tenants.GetExistingIdsForKeyShareAsync([tenantId], ct)).Contains(tenantId)
+            if (!await tenants.ExistsByIdWithKeyShareLockAsync(tenantId, ct)
                 || !authorizationContext.TryGetMembership(tenantId, out var actor)
                 || !await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct))
                 return Result.Failure<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(
@@ -86,7 +86,7 @@ internal sealed class RoleService : IRoleService
         CreateRoleRequest request, CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
+        var tenant = await tenants.GetByIdWithUpdateLockAsync(tenantId, ct);
         if (tenant is null || !await IsRoleManagerAsync(tenantId, ct))
             return new CreateRoleError.NotPermitted();
         if (!TryParseGrants(request.Permissions, out var grants)
@@ -111,7 +111,7 @@ internal sealed class RoleService : IRoleService
         Guid roleId, UpdateRoleRequest request, CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
+        var tenant = await tenants.GetByIdWithUpdateLockAsync(tenantId, ct);
         if (tenant is null || !await IsRoleManagerAsync(tenantId, ct))
             return new UpdateRoleError.NotPermitted();
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
@@ -149,7 +149,7 @@ internal sealed class RoleService : IRoleService
         Guid roleId, RetireRoleRequest request, CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await tenants.GetByIdForAdministrationAsync(tenantId, ct);
+        var tenant = await tenants.GetByIdWithUpdateLockAsync(tenantId, ct);
         if (tenant is null)
             return new RetireRoleError.NotPermitted();
         if (!authorizationContext.TryGetMembership(tenantId, out var actor)

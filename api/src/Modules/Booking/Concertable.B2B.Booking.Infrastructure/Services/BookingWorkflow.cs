@@ -148,7 +148,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         MembershipSnapshot actor,
         CancellationToken ct)
     {
-        var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);
+        var booking = await privilegedRepository.GetByIdWithRowLockAsync(bookingId, ct);
         if (booking is null)
             return new CancelBookingError.BookingNotFound(bookingId);
         if (!booking.IsCancellableBy(actor))
@@ -215,7 +215,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationSucceeded operation,
         CancellationToken ct)
     {
-        var booking = await privilegedRepository.GetWithContractByIdForUpdateAsync(bookingId, ct);
+        var booking = await privilegedRepository.GetWithContractByIdWithRowLockAsync(bookingId, ct);
         if (booking is null || !Matches(bookingId, booking, operation))
         {
             logger.FinancialOutcomeSkipped(operation.Operation, bookingId);
@@ -245,7 +245,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationFailed operation,
         CancellationToken ct)
     {
-        var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);
+        var booking = await privilegedRepository.GetByIdWithRowLockAsync(bookingId, ct);
         if (booking is null || !Matches(bookingId, booking, operation))
         {
             logger.FinancialOutcomeSkipped(operation.Operation, bookingId);

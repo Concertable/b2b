@@ -1,6 +1,7 @@
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
@@ -19,28 +20,18 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
-    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForKeyShareAsync(
-        IReadOnlyCollection<Guid> membershipIds,
+    public async Task<MembershipSnapshot?> GetSnapshotByIdWithKeyShareLockAsync(
+        Guid membershipId,
         CancellationToken ct = default)
     {
         var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Membership locking requires an active transaction.");
         await unitOfWork.EnlistAsync(context, ct);
-        var distinctIds = membershipIds.Distinct().Order().ToArray();
-        foreach (var membershipId in distinctIds)
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Memberships"
-                 WHERE "Id" = {membershipId}
-                 FOR KEY SHARE
-                 """,
-                ct);
-        }
+        await context.Memberships.LockRowsAsync(member => member.Id == membershipId, RowLock.KeyShare, ct);
         var members = await context.Memberships.AsNoTracking()
-            .Where(member => distinctIds.Contains(member.Id)).ToListAsync(ct);
-        return await MaterializeAsync(members, ct);
+            .Where(member => member.Id == membershipId)
+            .ToListAsync(ct);
+        return (await MaterializeAsync(members, ct)).SingleOrDefault();
     }
 
     public async Task<MembershipSnapshot?> GetSnapshotByTenantIdAndIdAsync(
@@ -58,7 +49,7 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         Guid userId, Guid tenantId, CancellationToken ct = default)
     {
         if (await EnlistInActiveUnitOfWorkAsync(ct))
-            await FenceTenantDeletionAsync([tenantId], ct);
+            await FenceTenantDeletionAsync(new HashSet<Guid> { tenantId }, ct);
         var members = await context.Memberships.AsNoTracking()
             .Where(member => member.UserId == userId && member.TenantId == tenantId)
             .ToListAsync(ct);
@@ -82,14 +73,17 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         Guid tenantId, CancellationToken ct = default) =>
         await context.Memberships.Where(member => member.TenantId == tenantId).ToListAsync(ct);
 
+    public Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdAsync(
+        Guid tenantId, CancellationToken ct = default) =>
+        GetSnapshotsByTenantIdsAsync(new HashSet<Guid> { tenantId }, ct);
+
     public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
-        IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default)
+        IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
     {
-        var distinctIds = tenantIds.Distinct().Order().ToArray();
         if (await EnlistInActiveUnitOfWorkAsync(ct))
-            await FenceTenantDeletionAsync(distinctIds, ct);
+            await FenceTenantDeletionAsync(tenantIds, ct);
         var members = await context.Memberships.AsNoTracking()
-            .Where(member => distinctIds.Contains(member.TenantId)).ToListAsync(ct);
+            .Where(member => tenantIds.Contains(member.TenantId)).ToListAsync(ct);
         return await MaterializeAsync(members, ct);
     }
 
@@ -176,7 +170,8 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         var fenced = await EnlistInActiveUnitOfWorkAsync(ct);
         var tenantIds = await context.Memberships.AsNoTracking()
             .Where(member => member.UserId == userId)
-            .Select(member => member.TenantId).Distinct().Order().ToListAsync(ct);
+            .Select(member => member.TenantId)
+            .ToHashSetAsync(ct);
         if (fenced)
             await FenceTenantDeletionAsync(tenantIds, ct);
         var members = await context.Memberships.AsNoTracking()
@@ -195,17 +190,6 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         return true;
     }
 
-    private async Task FenceTenantDeletionAsync(IReadOnlyList<Guid> orderedTenantIds, CancellationToken ct)
-    {
-        foreach (var tenantId in orderedTenantIds)
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Tenants"
-                 WHERE "Id" = {tenantId}
-                 FOR KEY SHARE
-                 """, ct);
-        }
-    }
+    private Task FenceTenantDeletionAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct) =>
+        context.Tenants.LockRowsAsync(tenant => tenantIds.Contains(tenant.Id), RowLock.KeyShare, ct);
 }

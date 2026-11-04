@@ -113,7 +113,7 @@ internal sealed class ConcertWorkflow : IConcertWorkflow
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var concert = concertId > 0 ? await privilegedRepository.GetByIdForUpdateAsync(concertId, ct) : null;
+        var concert = concertId > 0 ? await privilegedRepository.GetByIdWithRowLockAsync(concertId, ct) : null;
         if (concert is null || !concert.IsCancellableBy(expectedActor))
             return new CancelConcertError.NotPermitted();
         if (concert.State is ConcertState.Cancelled or ConcertState.CancellationPending)

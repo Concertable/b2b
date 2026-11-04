@@ -157,7 +157,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
             return new ApplyApplicationError.OpportunityNotFound(opportunityId);
         if (!actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplyApplicationError.NotPermitted();
-        Guid[] parties = [actor.TenantId, proposedOpportunity.VenueTenantId];
+        HashSet<Guid> parties = [actor.TenantId, proposedOpportunity.VenueTenantId];
         await privilegedRepository.AcquireTenantApplicationsSharedLockAsync(parties, ct);
         if (!await TenantsExistAsync(parties, ct))
             return new ApplyApplicationError.NotPermitted();
@@ -322,7 +322,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
                 new ApplicationEligibilityError.ApplicationNotFound());
         await privilegedRepository.LockOpportunityAsync(opportunityId.Value, ct);
 
-        var application = await privilegedRepository.GetDecisionByIdForUpdateAsync(applicationId, ct);
+        var application = await privilegedRepository.GetDecisionByIdWithRowLockAsync(applicationId, ct);
         if (application is null)
             return new AcceptApplicationError.Ineligible(
                 new ApplicationEligibilityError.ApplicationNotFound());
@@ -430,9 +430,9 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         return new Success();
     }
 
-    private async Task<bool> TenantsExistAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct)
+    private async Task<bool> TenantsExistAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct)
     {
-        foreach (var tenantId in tenantIds.Distinct())
+        foreach (var tenantId in tenantIds)
         {
             if ((await tenantModule.GetByIdAsync(tenantId, ct)).IsNone)
                 return false;

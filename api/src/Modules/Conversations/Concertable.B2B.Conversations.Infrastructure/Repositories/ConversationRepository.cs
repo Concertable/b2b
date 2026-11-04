@@ -1,4 +1,6 @@
 using Concertable.B2B.Conversations.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Repositories;
@@ -18,7 +20,6 @@ internal sealed class ConversationRepository : Repository<ConversationEntity>, I
 
 internal sealed class ConversationPrivilegedRepository : IConversationPrivilegedRepository
 {
-    private const long ConversationCreationLockSeed = 638457221;
     private readonly ConversationsPrivilegedDbContext context;
 
     public ConversationPrivilegedRepository(ConversationsPrivilegedDbContext context)
@@ -31,42 +32,27 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
             .AsNoTracking()
             .SingleOrDefaultAsync(conversation => conversation.Id == conversationId, ct);
 
-    public async Task<ConversationEntity?> GetByIdForUpdateAsync(
+    public async Task<ConversationEntity?> GetByIdWithRowLockAsync(
         int conversationId,
         CancellationToken ct = default)
     {
-        await context.Database.ExecuteSqlInterpolatedAsync($"""
-            SELECT 1
-            FROM conversations."Conversations"
-            WHERE "Id" = {conversationId}
-            FOR UPDATE
-            """, ct);
-        return await context.Conversations
-            .SingleOrDefaultAsync(conversation => conversation.Id == conversationId, ct);
+        await context.Conversations.LockRowsAsync(conversation => conversation.Id == conversationId, RowLock.NoKeyUpdate, ct);
+        return await context.Conversations.SingleOrDefaultAsync(conversation => conversation.Id == conversationId, ct);
     }
 
-    public async Task<ConversationCreationReceipt?> GetCreationReceiptForUpdateAsync(
+    public async Task<ConversationCreationReceipt?> GetCreationReceiptWithRowLockAsync(
         Guid creatorTenantId,
         Guid createdByMembershipId,
         Guid requestId,
         CancellationToken ct = default)
     {
-        await context.Database.ExecuteSqlInterpolatedAsync($"""
-            SELECT pg_advisory_xact_lock(
-                hashtextextended(
-                    CAST({creatorTenantId} AS text)
-                    || ':' || CAST({createdByMembershipId} AS text)
-                    || ':' || CAST({requestId} AS text),
-                    {ConversationCreationLockSeed}))
-            """, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync($"""
-            SELECT 1
-            FROM conversations."ConversationCreationReceipts"
-            WHERE "CreatorTenantId" = {creatorTenantId}
-              AND "CreatedByMembershipId" = {createdByMembershipId}
-              AND "RequestId" = {requestId}
-            FOR UPDATE
-            """, ct);
+        await context.Database.AcquireAdvisoryLockAsync(AdvisoryLock.ConversationCreation, requestId, ct);
+        await context.ConversationCreationReceipts.LockRowsAsync(
+            receipt => receipt.CreatorTenantId == creatorTenantId
+                       && receipt.CreatedByMembershipId == createdByMembershipId
+                       && receipt.RequestId == requestId,
+            RowLock.NoKeyUpdate,
+            ct);
         return await context.ConversationCreationReceipts.SingleOrDefaultAsync(
             receipt => receipt.CreatorTenantId == creatorTenantId
                        && receipt.CreatedByMembershipId == createdByMembershipId
@@ -74,20 +60,18 @@ internal sealed class ConversationPrivilegedRepository : IConversationPrivileged
             ct);
     }
 
-    public async Task<MessageEntity?> GetMessageReceiptForUpdateAsync(
+    public async Task<MessageEntity?> GetMessageReceiptWithRowLockAsync(
         int conversationId,
         Guid sentByMembershipId,
         Guid requestId,
         CancellationToken ct = default)
     {
-        await context.Database.ExecuteSqlInterpolatedAsync($"""
-            SELECT 1
-            FROM conversations."Messages"
-            WHERE "ConversationId" = {conversationId}
-              AND "SentByMembershipId" = {sentByMembershipId}
-              AND "RequestId" = {requestId}
-            FOR UPDATE
-            """, ct);
+        await context.Messages.LockRowsAsync(
+            message => message.ConversationId == conversationId
+                       && message.SentByMembershipId == sentByMembershipId
+                       && message.RequestId == requestId,
+            RowLock.NoKeyUpdate,
+            ct);
         return await context.Messages.SingleOrDefaultAsync(
             message => message.ConversationId == conversationId
                        && message.SentByMembershipId == sentByMembershipId

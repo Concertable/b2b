@@ -308,7 +308,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+        var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
         if (concert is null || !concert.IsEditableBy(expectedActor))
             return new UpdateConcertError.NotPermitted();
 
@@ -345,7 +345,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+        var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
         if (concert is null || !concert.IsPublishableBy(expectedActor))
             return new PostConcertError.NotPermitted();
 
@@ -396,7 +396,7 @@ internal sealed class ConcertService : IConcertService
         MembershipSnapshot expectedActor,
         CancellationToken ct)
     {
-        var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+        var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
         if (concert is null || !concert.IsDoorRevenueDeclarableBy(expectedActor))
             return new DeclareDoorRevenueError.VenueForbidden();
 
@@ -460,7 +460,7 @@ internal sealed class ConcertService : IConcertService
         if (!actor.HasPermission(TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
-        var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+        var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
         if (concert is null || !concert.IsShareableBy(actor))
             return new ShareConcertSummaryError.NotPermitted();
         if (!await IsValidRecipientAsync(request.RecipientTenantId, request.RecipientMembershipId, ct))
@@ -468,7 +468,7 @@ internal sealed class ConcertService : IConcertService
 
         var idempotencyHash = IdempotencyHash.Create(
             id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
-        var receipt = await receiptRepository.GetByRequestForUpdateAsync(
+        var receipt = await receiptRepository.GetByRequestWithRowLockAsync(
             actor.TenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
@@ -547,13 +547,13 @@ internal sealed class ConcertService : IConcertService
         if (!actor.HasPermission(TenantPermission.ResourcesShare))
             return new ShareConcertSummaryError.NotPermitted();
 
-        var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+        var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
         if (concert is null || !concert.IsShareableBy(actor))
             return new ShareConcertSummaryError.NotPermitted();
         if (!await IsValidRecipientAsync(request.RecipientTenantId, request.RecipientMembershipId, ct))
             return new ShareConcertSummaryError.InvalidRecipient();
 
-        var receipt = await receiptRepository.GetByRequestForUpdateAsync(
+        var receipt = await receiptRepository.GetByRequestWithRowLockAsync(
             actor.TenantId,
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
@@ -624,7 +624,7 @@ internal sealed class ConcertService : IConcertService
         if (!actor.HasPermission(TenantPermission.ResourcesShare))
             return new RevokeConcertSummaryShareError.NotPermitted();
 
-        var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+        var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
         if (concert is null || !concert.IsShareableBy(actor))
             return new RevokeConcertSummaryShareError.NotPermitted();
         if (concert.AccessVersion != expectedAccessVersion)
@@ -677,7 +677,7 @@ internal sealed class ConcertService : IConcertService
         if (!target.TryGetValue(out var targetMembership))
             return new AssignConcertMemberError.InvalidMembership();
 
-        var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+        var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
         if (concert is null || !concert.IsShareableBy(actor))
             return new AssignConcertMemberError.NotPermitted();
         if (concert.AccessVersion != request.ExpectedAccessVersion)
@@ -736,7 +736,7 @@ internal sealed class ConcertService : IConcertService
         if (!actor.HasPermission(TenantPermission.ResourcesShare))
             return new AssignConcertMemberError.NotPermitted();
 
-        var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+        var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
         if (concert is null || !concert.IsShareableBy(actor))
             return new AssignConcertMemberError.NotPermitted();
         if (concert.AccessVersion != expectedAccessVersion)

@@ -34,7 +34,7 @@ filters apply the same rules to reads; writes ask the loaded concert. The design
 [ARCHITECTURE.md § Authorization](../../../../ARCHITECTURE.md#authorization).
 
 ```csharp
-var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+var concert = await privilegedRepository.GetByIdWithRowLockAsync(id, ct);
 if (concert is null || !concert.IsEditableBy(expectedActor))
     return new UpdateConcertError.NotPermitted();
 ```

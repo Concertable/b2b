@@ -24,11 +24,12 @@ internal sealed class TenantTestSeeder : ITestSeeder
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        await context.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO tenant."AuthorizationCatalogState" ("Id", "Revision")
-            VALUES (1, {AuthorizationCatalog.Revision})
-            ON CONFLICT ("Id") DO UPDATE SET "Revision" = EXCLUDED."Revision"
-            """, ct);
+        var catalogState = await context.AuthorizationCatalogStates.SingleOrDefaultAsync(ct);
+        if (catalogState is null)
+            context.AuthorizationCatalogStates.Add(AuthorizationCatalogState.Create(AuthorizationCatalog.Revision));
+        else
+            catalogState.Install(AuthorizationCatalog.Revision);
+        await context.SaveChangesAsync(ct);
         await context.Tenants.SeedIfEmptyAsync(async () =>
         {
             context.Tenants.AddRange(seed.Tenants);

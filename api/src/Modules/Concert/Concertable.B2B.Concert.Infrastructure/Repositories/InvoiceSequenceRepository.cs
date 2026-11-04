@@ -1,5 +1,7 @@
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
+using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Repositories;
@@ -17,10 +19,7 @@ internal sealed class InvoiceSequenceRepository : IInvoiceSequenceRepository
         Guid tenantId,
         CancellationToken ct = default)
     {
-        await context.Database.ExecuteSqlInterpolatedAsync($"""
-            SELECT pg_advisory_xact_lock(
-                hashtextextended(CAST({tenantId} AS text), 0))
-            """, ct);
+        await context.Database.AcquireAdvisoryLockAsync(AdvisoryLock.InvoiceSequence, tenantId, ct);
         return await context.InvoiceSequences.SingleOrDefaultAsync(
             sequence => sequence.TenantId == tenantId,
             ct);

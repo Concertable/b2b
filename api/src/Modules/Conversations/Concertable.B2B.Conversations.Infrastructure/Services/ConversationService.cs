@@ -2,6 +2,7 @@ using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Requests;
 using Concertable.B2B.Conversations.Contracts.Events;
+using Concertable.B2B.Conversations.Domain.Entities;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
@@ -80,9 +81,9 @@ internal sealed class ConversationService : IConversationService
         CancellationToken ct)
     {
 
-        var participants = request.ParticipantTenantIds.Distinct().Order().ToArray();
+        var participants = request.ParticipantTenantIds.ToHashSet();
         if (request.RequestId == Guid.Empty
-            || participants.Length < 2
+            || participants.Count < 2
             || participants.Contains(Guid.Empty)
             || !participants.Contains(actor.TenantId))
             return new CreateConversationError.InvalidParticipants();
@@ -92,8 +93,8 @@ internal sealed class ConversationService : IConversationService
         if (!actor.Permissions[TenantPermission.MessagesSend].Includes(ResourceAccess.All))
             return new CreateConversationError.NotPermitted();
 
-        var idempotencyHash = IdempotencyHash.Create(string.Join(",", participants));
-        var receipt = await privilegedRepository.GetCreationReceiptForUpdateAsync(
+        var idempotencyHash = IdempotencyHash.Create(string.Join(",", participants.Order()));
+        var receipt = await privilegedRepository.GetCreationReceiptWithRowLockAsync(
             actor.TenantId,
             actor.MembershipId,
             request.RequestId,
@@ -180,11 +181,11 @@ internal sealed class ConversationService : IConversationService
             return new SendMessageError.NotPermitted();
         if (conversationId <= 0)
             return new SendMessageError.NotFound(conversationId);
-        var conversation = await privilegedRepository.GetByIdForUpdateAsync(conversationId, ct);
+        var conversation = await privilegedRepository.GetByIdWithRowLockAsync(conversationId, ct);
         if (conversation is null || !conversation.AcceptsMessagesFrom(actor))
             return new SendMessageError.NotPermitted();
         var idempotencyHash = IdempotencyHash.Create(request.Content, action);
-        var replay = await privilegedRepository.GetMessageReceiptForUpdateAsync(
+        var replay = await privilegedRepository.GetMessageReceiptWithRowLockAsync(
             conversationId, actor.MembershipId, request.RequestId, ct);
         if (replay is not null)
             return replay.IdempotencyHash == idempotencyHash ? replay.ToMessageDto() : new SendMessageError.RequestConflict();
@@ -237,14 +238,20 @@ internal sealed class ConversationService : IConversationService
             return new ConversationAccessError.NotPermitted();
         if (conversationId <= 0)
             return new ConversationAccessError.NotFound(conversationId);
-        var conversation = await privilegedRepository.GetByIdForUpdateAsync(conversationId, ct);
+        var conversation = await privilegedRepository.GetByIdWithRowLockAsync(conversationId, ct);
         if (conversation is null || !conversation.IsReadableBy(actor))
             return new ConversationAccessError.NotPermitted();
         if (request.ThroughSequence <= 0
             || !await messageRepository.ContainsSequenceAsync(conversationId, request.ThroughSequence, ct))
             return new ConversationAccessError.InvalidSequence();
-        await readPositionRepository.AdvanceAsync(
-            conversationId, actor.TenantId, actor.MembershipId, request.ThroughSequence, ct);
+        var position = await readPositionRepository.GetByConversationIdAndMembershipIdAsync(
+            conversationId, actor.MembershipId, ct);
+        if (position is null)
+            readPositionRepository.Add(ConversationReadPosition.Create(
+                conversationId, actor.TenantId, actor.MembershipId, request.ThroughSequence));
+        else
+            position.Advance(request.ThroughSequence);
+        await readPositionRepository.SaveChangesAsync(ct);
         return new Success();
     }
 
@@ -334,7 +341,7 @@ internal sealed class ConversationService : IConversationService
         var target = await tenantModule.GetCurrentMembershipAsync(actor.TenantId, membershipId, ct);
         if (conversationId <= 0)
             return new AssignConversationMemberError.NotFound(conversationId);
-        var conversation = await privilegedRepository.GetByIdForUpdateAsync(conversationId, ct);
+        var conversation = await privilegedRepository.GetByIdWithRowLockAsync(conversationId, ct);
         if (conversation is null || !conversation.IsShareableBy(actor))
             return new AssignConversationMemberError.NotPermitted();
         if (conversation.AccessVersion != expectedAccessVersion)
@@ -342,7 +349,7 @@ internal sealed class ConversationService : IConversationService
         return new AssignmentChange(conversation, actor, target);
     }
 
-    private async Task<bool> ParticipantsExistAsync(IReadOnlyCollection<Guid> tenantIds, CancellationToken ct)
+    private async Task<bool> ParticipantsExistAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct)
     {
         foreach (var tenantId in tenantIds)
         {

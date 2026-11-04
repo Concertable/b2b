@@ -6,7 +6,7 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface IConcertPrivilegedRepository : IRepository<ConcertEntity>
 {
-    Task<ConcertEntity?> GetByIdForUpdateAsync(int concertId, CancellationToken ct = default);
+    Task<ConcertEntity?> GetByIdWithRowLockAsync(int concertId, CancellationToken ct = default);
 
     Task<ConcertEntity?> GetByBookingIdAsync(int bookingId, CancellationToken ct = default);
 

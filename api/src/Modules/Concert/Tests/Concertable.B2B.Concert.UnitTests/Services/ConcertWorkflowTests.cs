@@ -56,7 +56,7 @@ public sealed class ConcertWorkflowTests
     {
         authorizationContext.SetupGet(context => context.Membership).Returns(actor with { TenantId = Guid.NewGuid() });
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(42, default))
             .ReturnsAsync(CreateBooking());
 
         var result = await workflow.CancelAsync(42);
@@ -73,7 +73,7 @@ public sealed class ConcertWorkflowTests
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(It.IsAny<int>(), cancellationToken))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(It.IsAny<int>(), cancellationToken))
             .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
@@ -84,7 +84,7 @@ public sealed class ConcertWorkflowTests
     public async Task CancelAsync_ConcertNotFound_IsNotPermitted()
     {
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(42, default))
             .ReturnsAsync((ConcertEntity?)null);
 
         var result = await workflow.CancelAsync(42);
@@ -99,7 +99,7 @@ public sealed class ConcertWorkflowTests
         var concert = CreateBooking();
         Assert.True(concert.BeginSettlement().TryGetValue(out _));
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(42, default))
             .ReturnsAsync(concert);
 
         var result = await workflow.CancelAsync(42);
@@ -119,7 +119,7 @@ public sealed class ConcertWorkflowTests
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(42, default))
             .ReturnsAsync(concert);
         var result = await workflow.CancelAsync(42);
 
