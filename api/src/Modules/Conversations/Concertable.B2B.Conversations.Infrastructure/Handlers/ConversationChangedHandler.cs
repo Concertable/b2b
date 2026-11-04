@@ -11,18 +11,15 @@ internal sealed class ConversationChangedHandler : IIntegrationEventHandler<Conv
     private readonly IConversationPrivilegedRepository repository;
     private readonly ITenantModule tenantModule;
     private readonly IConversationsNotifier notifier;
-    private readonly TimeProvider timeProvider;
 
     public ConversationChangedHandler(
         IConversationPrivilegedRepository repository,
         ITenantModule tenantModule,
-        IConversationsNotifier notifier,
-        TimeProvider timeProvider)
+        IConversationsNotifier notifier)
     {
         this.repository = repository;
         this.tenantModule = tenantModule;
         this.notifier = notifier;
-        this.timeProvider = timeProvider;
     }
 
     public async Task HandleAsync(
@@ -30,25 +27,13 @@ internal sealed class ConversationChangedHandler : IIntegrationEventHandler<Conv
         MessageEnvelope envelope,
         CancellationToken ct = default)
     {
-        var conversation = await repository.GetWithGrantsByIdAsync(e.ConversationId, ct);
+        var conversation = await repository.GetByIdAsync(e.ConversationId, ct);
         if (conversation is null)
             return;
-        var tenantIds = conversation.AccessGrants
-            .Where(grant => grant.Scope == ConversationAccessScope.Read && grant.RevokedAt is null)
-            .Select(grant => grant.TenantId)
-            .Distinct()
-            .ToArray();
+        var tenantIds = conversation.Participants.Select(participant => participant.TenantId).ToArray();
         var memberships = await tenantModule.GetCurrentMembershipsAsync(tenantIds, ct);
-        var at = timeProvider.GetUtcNow().UtcDateTime;
         foreach (var recipient in memberships
-                     .Where(actor =>
-                         actor.HasPermission(TenantPermission.MessagesRead)
-                         && ResourceGrantPolicy.Allows(
-                             conversation.AccessGrants,
-                             ConversationAccessScope.Read,
-                             actor,
-                             actor.AudienceFor(TenantPermission.MessagesRead),
-                             at))
+                     .Where(conversation.IsReadableBy)
                      .DistinctBy(actor => actor.UserId))
             await notifier.ConversationChangedAsync(recipient.UserId, e.ConversationId, ct);
     }

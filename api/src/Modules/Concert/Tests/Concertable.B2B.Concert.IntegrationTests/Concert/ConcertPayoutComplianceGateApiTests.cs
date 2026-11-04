@@ -1,3 +1,4 @@
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Domain.Lifecycle;
@@ -23,9 +24,6 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private Guid TenantOf(Guid userId) =>
-        fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
-
     private async Task RepointTenantAsync(int concertId, Guid? artistTenantId = null, Guid? venueTenantId = null)
     {
         await fixture.RepointConcertTenantsAsync(concertId, artistTenantId, venueTenantId);
@@ -38,7 +36,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
     public async Task Finish_RevenueShare_Defers_WhenPayeeArtistTaxComplianceIncomplete()
     {
         var concert = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking);
-        await RepointTenantAsync(concert.Id, artistTenantId: TenantOf(fixture.SeedState.ArtistManagerNoArtist.Id));
+        await RepointTenantAsync(concert.Id, artistTenantId: fixture.SeedState.ArtistManagerNoArtist.TenantId);
         await fixture.DeclareDoorRevenueAsync(concert.Id, DoorRevenue);
 
         await fixture.FinishConcertAsync(concert.Id);
@@ -66,7 +64,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
     public async Task Finish_FixedFee_Defers_WhenPayeeArtistTaxComplianceIncomplete()
     {
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastFlatFeeBooking).Id;
-        await RepointTenantAsync(concertId, artistTenantId: TenantOf(fixture.SeedState.ArtistManagerNoArtist.Id));
+        await RepointTenantAsync(concertId, artistTenantId: fixture.SeedState.ArtistManagerNoArtist.TenantId);
 
         await fixture.FinishConcertAsync(concertId);
 
@@ -89,7 +87,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
     public async Task Finish_VenueHire_Defers_WhenPayeeVenueTaxComplianceIncomplete()
     {
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastVenueHireBooking).Id;
-        await RepointTenantAsync(concertId, venueTenantId: TenantOf(fixture.SeedState.VenueManagerNoVenue.Id));
+        await RepointTenantAsync(concertId, venueTenantId: fixture.SeedState.VenueManagerNoVenue.TenantId);
 
         await fixture.FinishConcertAsync(concertId);
 

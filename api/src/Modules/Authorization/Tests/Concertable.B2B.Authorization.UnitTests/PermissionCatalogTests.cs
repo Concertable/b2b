@@ -32,8 +32,7 @@ public sealed class PermissionCatalogTests
     [Fact]
     public void Permissions_ExactlyMatchDeclaredPermissions()
     {
-        Assert.Equal(TenantPermission.All.OrderBy(value => value.Value),
-            AuthorizationCatalog.Permissions.Keys.OrderBy(value => value.Value));
+        Assert.Equal(TenantPermission.All.Order(), AuthorizationCatalog.Permissions.Keys.Order());
     }
 
     [Fact]

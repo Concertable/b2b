@@ -48,7 +48,6 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
                 conversations.Add(ConversationEntity.Create(
                     [TenantSeedIds.For(venues[pair].Id), artistTenantId],
                     artistTenantId,
-                    artists[pair].Id,
                     now.AddDays(-7)));
             }
             context.Conversations.AddRange(conversations);

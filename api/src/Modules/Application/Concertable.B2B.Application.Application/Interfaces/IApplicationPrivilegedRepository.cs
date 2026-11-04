@@ -9,13 +9,18 @@ internal interface IApplicationPrivilegedRepository
     Task AddAsync(ApplicationEntity application, CancellationToken ct = default);
     Task LockOpportunityAsync(int opportunityId, CancellationToken ct = default);
 
+    Task AcquireTenantApplicationsSharedLockAsync(
+        IReadOnlyCollection<Guid> tenantIds,
+        CancellationToken ct = default);
+
+    Task AcquireTenantApplicationsExclusiveLockAsync(Guid tenantId, CancellationToken ct = default);
+
+    Task<bool> ExistsLiveByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+
     Task<bool> ExistsByOpportunityIdAndArtistTenantIdAsync(
         int opportunityId,
         Guid artistTenantId,
         CancellationToken ct = default);
-
-    Task<IReadOnlyList<Guid>> GetNotificationTenantIdsAsync(
-        int applicationId, bool includeSiblings, CancellationToken ct = default);
 
     Task<ApplicationEntity?> GetByIdForUpdateAsync(
         int applicationId,

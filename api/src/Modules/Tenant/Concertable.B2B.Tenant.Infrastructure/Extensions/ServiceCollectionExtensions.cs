@@ -1,4 +1,3 @@
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using System.Data.Common;
 using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.Auth.Contracts.Events;
@@ -16,7 +15,6 @@ using Microsoft.AspNetCore.Mvc;
 using Concertable.B2B.Tenant.Infrastructure.Data.Seeders;
 using Concertable.B2B.Tenant.Infrastructure.Events;
 using Concertable.B2B.Tenant.Infrastructure.Repositories;
-using Concertable.B2B.Tenant.Infrastructure.Resolvers;
 using Concertable.B2B.Tenant.Infrastructure.Services;
 using Concertable.Messaging.Contracts;
 using Concertable.Seed.Shared;
@@ -70,10 +68,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITenantModule, TenantModule>();
 
         services.AddScoped<IMembershipReadRepository>(sp => sp.GetRequiredService<MembershipRepository>());
-        services.AddScoped<IMembershipResolver, MembershipResolver>();
-        services.AddScoped<TenantAuthorityResolver>();
-        services.AddScoped<IAuthorityResolver>(sp => sp.GetRequiredService<TenantAuthorityResolver>());
-        services.AddScoped<ITenantResolver, TenantResolver>();
 
         services.Configure<MvcOptions>(options => options.Filters.Add<BusinessActivityAuthorizationFilter>());
 

@@ -14,6 +14,7 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
 {
     private static readonly TimeSpan RenewalWindow = TimeSpan.FromDays(30);
     private readonly ISelfBillingAgreementRepository repository;
+    private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly ITenantModule tenantModule;
     private readonly ICurrentUser currentUser;
     private readonly IClientContext clientContext;
@@ -25,6 +26,7 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
 
     public SelfBillingAgreementService(
         ISelfBillingAgreementRepository repository,
+        IUnitOfWorkBehavior unitOfWorkBehavior,
         ITenantModule tenantModule,
         ICurrentUser currentUser,
         IClientContext clientContext,
@@ -35,6 +37,7 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
         ILogger<SelfBillingAgreementService> logger)
     {
         this.repository = repository;
+        this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.tenantModule = tenantModule;
         this.currentUser = currentUser;
         this.clientContext = clientContext;
@@ -65,6 +68,17 @@ internal sealed class SelfBillingAgreementService : ISelfBillingAgreementService
         if (tenantContext.TenantId is not { } supplierTenantId)
             return new GrantSelfBillingAgreementError.MissingTenant();
 
+        return await unitOfWorkBehavior.ExecuteAsync(
+            () => GrantCoreAsync(supplierTenantId, eSignature, ct),
+            ct);
+    }
+
+    private async Task<UnitResult<GrantSelfBillingAgreementError>> GrantCoreAsync(
+        Guid supplierTenantId,
+        ESignatureRequest eSignature,
+        CancellationToken ct)
+    {
+        await repository.AcquireTenantAgreementsSharedLockAsync(supplierTenantId, ct);
         var tenantOption = await tenantModule.GetByIdAsync(supplierTenantId, ct);
         if (!tenantOption.TryGetValue(out var tenant))
             return new GrantSelfBillingAgreementError.TenantNotFound(supplierTenantId);

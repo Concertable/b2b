@@ -13,5 +13,6 @@ internal sealed class ConversationsDbContextFactory : B2BDesignTimeDbContextFact
             DefaultOutboxOptions,
             new ConversationsConfigurationProvider(),
             DesignTimeTenantContext.Instance,
-            DesignTimeResourceAccessContext.Instance);
+            DesignTimeAuthorizationContext.Instance,
+            TimeProvider.System);
 }

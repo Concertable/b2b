@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Conversations.Contracts.Enums;
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.DataAccess.Application;
 using Concertable.Kernel;
 
@@ -13,18 +13,20 @@ public sealed class ConversationEntity : IIdEntity
     public long LastMessageSequence { get; private set; }
     public long AccessVersion { get; private set; }
 
-    private readonly List<ConversationAccessGrant> accessGrants = [];
-    public IReadOnlyList<ConversationAccessGrant> AccessGrants => accessGrants;
+    private readonly List<ConversationParticipant> participants = [];
+    public IReadOnlyList<ConversationParticipant> Participants => participants;
+
+    private readonly List<MemberAssignment> assignments = [];
+    public IReadOnlyList<MemberAssignment> Assignments => assignments;
 
     public static ConversationEntity Create(
         IReadOnlyCollection<Guid> participantTenantIds,
         Guid creatorTenantId,
-        Guid createdByUserId,
         DateTime at)
     {
         ArgumentNullException.ThrowIfNull(participantTenantIds);
-        var participants = participantTenantIds.Distinct().ToList();
-        if (participants.Count < 2 || participants.Contains(Guid.Empty) || !participants.Contains(creatorTenantId))
+        var tenantIds = participantTenantIds.Distinct().ToList();
+        if (tenantIds.Count < 2 || tenantIds.Contains(Guid.Empty) || !tenantIds.Contains(creatorTenantId))
             throw new ArgumentException("A conversation requires the creator and at least one other tenant.", nameof(participantTenantIds));
 
         var conversation = new ConversationEntity
@@ -32,97 +34,61 @@ public sealed class ConversationEntity : IIdEntity
             CreatedAt = at,
             AccessVersion = 1
         };
-        foreach (var tenantId in participants)
-            conversation.AdmitPrincipal(tenantId, creatorTenantId, createdByUserId, at);
-
+        conversation.participants.AddRange(tenantIds.Select(tenantId => new ConversationParticipant(tenantId, at)));
         return conversation;
     }
 
     public long AllocateMessageSequence() => ++LastMessageSequence;
 
-    public IReadOnlyList<ConversationAccessGrant> AssignMember(
+    public bool AssignMember(
         Guid actorTenantId,
+        Guid assignedByUserId,
         Guid membershipId,
         Guid membershipTenantId,
         DateTime at)
     {
         if (membershipId == Guid.Empty
             || membershipTenantId != actorTenantId
-            || !IsPrincipal(actorTenantId, at))
-            return [];
-
-        var grants = new List<ConversationAccessGrant>();
-        foreach (var scope in new[] { ConversationAccessScope.Read, ConversationAccessScope.SendMessages })
-        {
-            if (accessGrants.Exists(grant =>
-                    grant.TenantId == actorTenantId
-                    && grant.MembershipId == membershipId
-                    && grant.Scope == scope
-                    && grant.IsLiveAt(at)))
-                continue;
-
-            var grant = ConversationAccessGrant.Issue(
-                Id,
-                actorTenantId,
-                membershipId,
-                scope,
-                issuedByTenantId: actorTenantId,
-                issuedByUserId: null,
-                ResourceGrantKind.MemberAssignment,
-                at);
-            accessGrants.Add(grant);
-            grants.Add(grant);
-        }
-
-        if (grants.Count > 0)
-            AccessVersion++;
-        return grants;
-    }
-
-    public bool RemoveMemberAssignment(Guid actorTenantId, Guid membershipId, DateTime at)
-    {
-        if (!IsPrincipal(actorTenantId, at))
+            || !HasParticipant(actorTenantId)
+            || IsAssigned(membershipId))
             return false;
 
-        var grants = accessGrants
-            .Where(grant =>
-                grant.TenantId == actorTenantId
-                && grant.MembershipId == membershipId
-                && grant.Kind == ResourceGrantKind.MemberAssignment
-                && grant.IsLiveAt(at))
-            .ToList();
-        foreach (var grant in grants)
-            grant.Revoke(at);
-
-        if (grants.Count > 0)
-            AccessVersion++;
-        return grants.Count > 0;
+        assignments.Add(new MemberAssignment(membershipId, assignedByUserId, at));
+        AccessVersion++;
+        return true;
     }
 
-    public bool Admits(Guid tenantId, ConversationAccessScope scope, DateTime at) =>
-        accessGrants.Exists(grant =>
-            grant.TenantId == tenantId && grant.Scope == scope && grant.IsLiveAt(at));
-
-    private void AdmitPrincipal(Guid tenantId, Guid issuedByTenantId, Guid issuedByUserId, DateTime at)
+    public bool UnassignMember(Guid actorTenantId, Guid membershipId)
     {
-        foreach (var scope in new[] { ConversationAccessScope.Read, ConversationAccessScope.SendMessages })
-        {
-            accessGrants.Add(ConversationAccessGrant.Issue(
-                Id,
-                tenantId,
-                membershipId: null,
-                scope,
-                issuedByTenantId,
-                issuedByUserId,
-                ResourceGrantKind.Principal,
-                at));
-        }
+        if (!HasParticipant(actorTenantId)
+            || assignments.RemoveAll(assignment => assignment.MembershipId == membershipId) == 0)
+            return false;
+
+        AccessVersion++;
+        return true;
     }
 
-    private bool IsPrincipal(Guid tenantId, DateTime at) =>
-        accessGrants.Exists(grant =>
-            grant.TenantId == tenantId
-            && grant.Kind == ResourceGrantKind.Principal
-            && grant.Scope == ConversationAccessScope.Read
-            && grant.IsLiveAt(at));
+    public bool HasParticipant(Guid tenantId) =>
+        participants.Exists(participant => participant.TenantId == tenantId);
+
+    public bool IsReadableBy(MembershipSnapshot actor) =>
+        Grants(actor, TenantPermission.MessagesRead);
+
+    public bool AcceptsMessagesFrom(MembershipSnapshot actor) =>
+        Grants(actor, TenantPermission.MessagesSend);
+
+    public bool IsShareableBy(MembershipSnapshot actor) =>
+        HasParticipant(actor.TenantId)
+        && actor.Permissions[TenantPermission.ResourcesShare] == ResourceAccess.All;
+
+    private bool Grants(MembershipSnapshot actor, TenantPermission permission) =>
+        actor.Permissions[permission] switch
+        {
+            ResourceAccess.All => HasParticipant(actor.TenantId) || IsAssigned(actor.MembershipId),
+            ResourceAccess.Assigned => IsAssigned(actor.MembershipId),
+            _ => false,
+        };
+
+    private bool IsAssigned(Guid membershipId) =>
+        assignments.Exists(assignment => assignment.MembershipId == membershipId);
 }

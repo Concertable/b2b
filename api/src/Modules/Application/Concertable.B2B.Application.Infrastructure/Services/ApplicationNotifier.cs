@@ -61,23 +61,16 @@ internal sealed class ApplicationNotifier : IApplicationNotifier
 
         await unitOfWork.ExecuteAsync(async () =>
         {
-            var eligible = (await tenantModule.GetCurrentMembershipsForNotificationAsync(venueTenantId.Value))
+            var recipient = (await tenantModule.GetCurrentMembershipsForNotificationAsync(venueTenantId.Value))
                 .Where(membership => membership.HasPermission(TenantPermission.ApplicationsDecide))
                 .OrderBy(membership => membership.UserId == venueCreatorUserId.Value ? 0 : 1)
-                .ThenBy(membership => membership.UserId);
-            foreach (var candidate in eligible)
-            {
-                var recipientOption = await tenantModule.ResolveMembershipSnapshotAsync(candidate);
-                if (!recipientOption.TryGetValue(out var recipient)
-                    || !recipient.HasPermission(TenantPermission.ApplicationsDecide))
-                    continue;
-
+                .ThenBy(membership => membership.UserId)
+                .FirstOrDefault();
+            if (recipient is not null)
                 await notificationClient.SendAsync(
                     recipient.UserId.ToString(),
                     "VerifyPaymentFailed",
                     new { applicationId, failureMessage });
-                return;
-            }
         });
     }
 

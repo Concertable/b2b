@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { usePermissionsQuery, useRolesQuery } from "./useRolesQuery";
 import { useRoleMutations } from "./useRoleMutations";
 import { roleRequestSchema, retireRoleRequestSchema, updateRoleRequestSchema } from "../schemas/roleRequestSchema";
-import type { PermissionMetadata, ResourceAudience, Role, RolePermission } from "../types";
+import type { PermissionMetadata, ResourceAccess, Role, RolePermission } from "../types";
 
 interface Draft {
   name: string;
@@ -84,19 +84,18 @@ export function useRoleManagement() {
   const setInvitationAssignable = (value: boolean) =>
     setDraft((current) => ({ ...current, isInvitationAssignable: value }));
   const togglePermission = (item: PermissionMetadata, checked: boolean) => {
-    const audience = item.assignableAudiences[0];
     setDraft((current) => ({
       ...current,
-      permissions: checked && audience
-        ? [...current.permissions.filter((entry) => entry.permission !== item.permission), { permission: item.permission, audience }]
+      permissions: checked
+        ? [...current.permissions.filter((entry) => entry.permission !== item.permission), { permission: item.permission, audience: "All" }]
         : current.permissions.filter((entry) => entry.permission !== item.permission),
     }));
   };
-  const changeAudience = (item: PermissionMetadata, audience: ResourceAudience) =>
+  const changeAccess = (item: PermissionMetadata, access: ResourceAccess) =>
     setDraft((current) => ({
       ...current,
       permissions: current.permissions.map((entry) =>
-        entry.permission === item.permission ? { ...entry, audience } : entry),
+        entry.permission === item.permission ? { ...entry, audience: access } : entry),
     }));
   const save = () => {
     if (!parsed.success) return;
@@ -131,6 +130,6 @@ export function useRoleManagement() {
     saveError: create.isError || update.isError,
     retireError: retireMutation.isError,
     openNew, openRole, clone, startEditing, setName, setInvitationAssignable,
-    togglePermission, changeAudience, save, setReplacementRoleId, retire,
+    togglePermission, changeAccess, save, setReplacementRoleId, retire,
   };
 }

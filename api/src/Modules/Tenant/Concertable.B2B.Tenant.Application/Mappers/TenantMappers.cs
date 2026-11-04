@@ -61,4 +61,16 @@ internal static class TenantMappers
         {
             InvitationRevocationError.NotPending => new RevokeInvitationError.InvitationNotPending()
         };
+
+    public static ChangeMemberRolesError ToChangeMemberRolesError(
+        this MembershipRoleError error) => error switch
+        {
+            MembershipRoleError.NoRoles => new ChangeMemberRolesError.InvalidRoles()
+        };
+
+    public static RetireRoleError ToRetireRoleError(
+        this MembershipRoleError error) => error switch
+        {
+            MembershipRoleError.NoRoles => new RetireRoleError.InvalidReplacement()
+        };
 }

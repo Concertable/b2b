@@ -27,11 +27,17 @@ like redundant synonyms; they aren't, and you **cannot** collapse them — a *fi
     words — you can't put "payee" on an invoice. Mapping: `supplier` = settlement payee, `customer` =
     settlement payer.
 
-**Neither axis is visibility.** Who may read a concert, its invoice or its booking is a
-`ConcertAccessGrant` / `InvoiceAccessGrant` / `BookingAccessGrant` at a named scope — the roster is in
-[`CODE_PATTERNS.md`](../../../CODE_PATTERNS.md). A promoter or a production member reaches an engagement
-through a grant while being neither the venue nor the act, which is exactly what the old
-`venue == me || artist == me` filter could not express.
+**Neither axis is visibility.** Who may read or change a concert or its invoice is decided by the
+aggregate: the venue and artist tenants are its principals, `ConcertEntity.Assignments` name members and
+`ConcertEntity.Shares` give another tenant (or one of its members) the summary. `ConcertDbContext`'s
+filters apply the same rules to reads; writes ask the loaded concert. The design is in
+[ARCHITECTURE.md § Authorization](../../../../ARCHITECTURE.md#authorization).
+
+```csharp
+var concert = await privilegedRepository.GetByIdForUpdateAsync(id, ct);
+if (concert is null || !concert.IsEditableBy(expectedActor))
+    return new UpdateConcertError.NotPermitted();
+```
 
 **`Party`** is the abstract "one side," and is **reserved for the invoice snapshot VO** (`InvoiceParty`:
 a side's legal identity frozen at settlement). It is **not** a synonym for `tenant` — don't use the bare

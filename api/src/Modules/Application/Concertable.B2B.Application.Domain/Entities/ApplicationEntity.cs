@@ -1,6 +1,6 @@
-﻿using System.ComponentModel;
+﻿using Concertable.B2B.Authorization.Contracts;
+using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
-using Concertable.B2B.Application.Contracts.Enums;
 using Concertable.B2B.Application.Domain.Events;
 using Concertable.B2B.Application.Domain.Lifecycle;
 using Concertable.B2B.Application.Domain.ValueObjects;
@@ -28,9 +28,6 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
     public DealType DealType { get; private set; }
     public Guid? AcceptanceOperationId { get; private set; }
 
-    private readonly List<ApplicationAccessGrant> accessGrants = [];
-    public IReadOnlyList<ApplicationAccessGrant> AccessGrants => accessGrants;
-
     internal ContractSignature ArtistESignature { get; private set; } = null!;
     public string TermsFingerprint { get; private set; } = null!;
 
@@ -52,31 +49,16 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
         DealType = dealType;
         VenueTenantId = venueTenantId;
         ArtistTenantId = artistTenantId;
-
-        InitializePrincipalAccess(createdAtUtc);
     }
 
-    internal void InitializePrincipalAccess(DateTime createdAtUtc)
-    {
-        if (accessGrants.Count != 0)
-            throw new InvalidOperationException("Application access has already been initialized.");
+    public bool IsDecidableBy(MembershipSnapshot actor) =>
+        actor.TenantId == VenueTenantId
+        && actor.Permissions[TenantPermission.ApplicationsDecide] == ResourceAccess.All;
 
-        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
-        {
-            foreach (var scope in new[] { ApplicationAccessScope.Summary, ApplicationAccessScope.Proposal })
-            {
-                accessGrants.Add(ApplicationAccessGrant.Issue(
-                    Id,
-                    tenantId,
-                    membershipId: null,
-                    scope,
-                    issuedByTenantId: ArtistTenantId,
-                    issuedByUserId: null,
-                    ResourceGrantKind.Principal,
-                    createdAtUtc));
-            }
-        }
-    }
+    public bool IsWithdrawableBy(MembershipSnapshot actor) =>
+        actor.TenantId == ArtistTenantId
+        && actor.Permissions[TenantPermission.ApplicationsSubmit] == ResourceAccess.All;
+
 
     public Guid BeginAcceptance() => AcceptanceOperationId ??= Guid.NewGuid();
 

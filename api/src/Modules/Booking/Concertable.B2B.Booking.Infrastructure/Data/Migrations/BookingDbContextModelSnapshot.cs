@@ -19,71 +19,10 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("booking")
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingAccessGrant", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("IssuedByTenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("IssuedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("MembershipId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("ResourceId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Scope")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("ValidFrom")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ValidUntil")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResourceId", "TenantId", "Scope", "MembershipId")
-                        .HasFilter("\"RevokedAt\" IS NULL");
-
-                    b.HasIndex("TenantId", "Scope", "ResourceId", "MembershipId")
-                        .HasFilter("\"RevokedAt\" IS NULL");
-
-                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_BookingAccessGrants_Tenant")
-                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
-
-                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_BookingAccessGrants_Membership")
-                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
-
-                    b.ToTable("BookingAccessGrants", "booking");
-                });
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingEntity", b =>
                 {
@@ -171,67 +110,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Bookings", "booking");
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractAccessGrant", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("IssuedByTenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("IssuedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("MembershipId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("ResourceId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Scope")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("ValidFrom")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ValidUntil")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ResourceId", "TenantId", "Scope", "MembershipId")
-                        .HasFilter("\"RevokedAt\" IS NULL");
-
-                    b.HasIndex("TenantId", "Scope", "ResourceId", "MembershipId")
-                        .HasFilter("\"RevokedAt\" IS NULL");
-
-                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ContractAccessGrants_Tenant")
-                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NULL");
-
-                    b.HasIndex("ResourceId", "TenantId", "Scope", "Kind", "IssuedByTenantId", "MembershipId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ContractAccessGrants_Membership")
-                        .HasFilter("\"RevokedAt\" IS NULL AND \"MembershipId\" IS NOT NULL");
-
-                    b.ToTable("ContractAccessGrants", "booking");
                 });
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
@@ -384,28 +262,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("Concertable.B2B.DataAccess.Application.MembershipAuthority", b =>
-                {
-                    b.Property<Guid>("MembershipId")
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("PermissionVersion")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("RolePolicyVersion")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.ToTable((string)null);
-
-                    b.ToView("MembershipAuthority", "tenant");
-                });
-
             modelBuilder.Entity("Concertable.Messaging.Domain.InboxMessageEntity", b =>
                 {
                     b.Property<Guid>("MessageId")
@@ -528,24 +384,6 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
                     b.HasDiscriminator().HasValue(2);
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingAccessGrant", b =>
-                {
-                    b.HasOne("Concertable.B2B.Booking.Domain.Entities.BookingEntity", null)
-                        .WithMany("AccessGrants")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractAccessGrant", b =>
-                {
-                    b.HasOne("Concertable.B2B.Booking.Domain.Entities.ContractEntity", null)
-                        .WithMany("AccessGrants")
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
                 {
                     b.HasOne("Concertable.B2B.Booking.Domain.Entities.BookingEntity", null)
@@ -557,15 +395,8 @@ namespace Concertable.B2B.Booking.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.BookingEntity", b =>
                 {
-                    b.Navigation("AccessGrants");
-
                     b.Navigation("Contract")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Concertable.B2B.Booking.Domain.Entities.ContractEntity", b =>
-                {
-                    b.Navigation("AccessGrants");
                 });
 #pragma warning restore 612, 618
         }

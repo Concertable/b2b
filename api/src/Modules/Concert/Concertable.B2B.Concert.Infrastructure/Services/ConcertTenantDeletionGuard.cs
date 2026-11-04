@@ -1,25 +1,28 @@
-using Concertable.B2B.Concert.Infrastructure.Data;
-using Concertable.B2B.DataAccess.Infrastructure;
 using Concertable.B2B.Tenant.Contracts;
-using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Concert.Infrastructure.Services;
 
-internal sealed class ConcertTenantDeletionGuard(
-    ConcertPrivilegedDbContext context,
-    UnitOfWorkAccessor unitOfWorkAccessor) : ITenantDeletionGuard
+internal sealed class ConcertTenantDeletionGuard : ITenantDeletionGuard
 {
+    private readonly IConcertPrivilegedRepository concertPrivilegedRepository;
+    private readonly IInvoicePrivilegedRepository invoicePrivilegedRepository;
+    private readonly ISelfBillingAgreementRepository selfBillingAgreementRepository;
+
+    public ConcertTenantDeletionGuard(
+        IConcertPrivilegedRepository concertPrivilegedRepository,
+        IInvoicePrivilegedRepository invoicePrivilegedRepository,
+        ISelfBillingAgreementRepository selfBillingAgreementRepository)
+    {
+        this.concertPrivilegedRepository = concertPrivilegedRepository;
+        this.invoicePrivilegedRepository = invoicePrivilegedRepository;
+        this.selfBillingAgreementRepository = selfBillingAgreementRepository;
+    }
+
     public async Task<bool> HasLiveObligationsAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var unitOfWork = unitOfWorkAccessor.Current
-            ?? throw new InvalidOperationException("Tenant deletion requires an active unit of work.");
-        await unitOfWork.EnlistAsync(context, ct);
-        return await context.Concerts.AnyAsync(concert =>
-                   concert.VenueTenantId == tenantId || concert.ArtistTenantId == tenantId,
-                   ct)
-               || await context.Invoices.AnyAsync(invoice =>
-                   invoice.VenueTenantId == tenantId || invoice.ArtistTenantId == tenantId,
-                   ct)
-               || await context.SelfBillingAgreements.AnyAsync(agreement => agreement.TenantId == tenantId, ct);
+        await selfBillingAgreementRepository.AcquireTenantAgreementsExclusiveLockAsync(tenantId, ct);
+        return await concertPrivilegedRepository.ExistsByTenantIdAsync(tenantId, ct)
+            || await invoicePrivilegedRepository.ExistsByTenantIdAsync(tenantId, ct)
+            || await selfBillingAgreementRepository.ExistsByTenantIdAsync(tenantId, ct);
     }
 }

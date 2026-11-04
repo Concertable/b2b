@@ -15,4 +15,9 @@ internal sealed class InvoicePrivilegedRepository : PrivilegedRepository<Invoice
 
     public Task<bool> ExistsByBookingIdAsync(int bookingId, CancellationToken ct = default) =>
         context.Invoices.AnyAsync(invoice => invoice.BookingId == bookingId, ct);
+
+    public Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default) =>
+        context.Invoices.AnyAsync(
+            invoice => invoice.VenueTenantId == tenantId || invoice.ArtistTenantId == tenantId,
+            ct);
 }

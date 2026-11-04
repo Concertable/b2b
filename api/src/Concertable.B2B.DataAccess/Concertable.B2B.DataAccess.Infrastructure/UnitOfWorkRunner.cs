@@ -67,19 +67,6 @@ public sealed class UnitOfWorkRunner
             }
 
             await unitOfWork.FlushAsync(ct);
-            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None);
-                return unitOfWork.FailedResult(result);
-            }
-
-            await unitOfWork.ValidateAuthorityAsync(ct);
-            if (unitOfWork.IsAuthorityManaged && unitOfWork.HasFailed)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None);
-                return unitOfWork.FailedResult(result);
-            }
-
             await unitOfWork.CommitAsync(ct);
             return result;
         }

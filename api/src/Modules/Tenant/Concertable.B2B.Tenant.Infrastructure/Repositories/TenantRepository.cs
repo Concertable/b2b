@@ -19,7 +19,7 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
-    public async Task<IReadOnlySet<Guid>> GetExistingIdsForShareAsync(
+    public async Task<IReadOnlySet<Guid>> GetExistingIdsForKeyShareAsync(
         IReadOnlyCollection<Guid> tenantIds,
         CancellationToken ct = default)
     {
@@ -34,7 +34,7 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
                  SELECT 1
                  FROM tenant."Tenants"
                  WHERE "Id" = {tenantId}
-                 FOR SHARE
+                 FOR KEY SHARE
                  """,
                 ct);
         }
@@ -67,22 +67,6 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
              """,
             ct);
         return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.Id == tenantId, ct);
-    }
-
-    public async Task<bool> ExistsForBookingAsync(Guid tenantId, CancellationToken ct = default)
-    {
-        var unitOfWork = unitOfWorkAccessor.Current
-            ?? throw new InvalidOperationException("Booking tenant validation requires an active unit of work.");
-        await unitOfWork.EnlistAsync(context, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Tenants"
-             WHERE "Id" = {tenantId}
-             FOR SHARE
-             """,
-            ct);
-        return await context.Tenants.AnyAsync(tenant => tenant.Id == tenantId, ct);
     }
 
     public async Task<TenantEntity?> GetByCreatedByUserIdForCreationAsync(

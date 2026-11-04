@@ -10,7 +10,7 @@ internal sealed record MessagePreview(
 internal sealed record MessagePreviewDto(
     int Id,
     int ConversationId,
-    IReadOnlyList<ConversationParticipant> Participants,
+    IReadOnlyList<ConversationParticipantDto> Participants,
     string Preview,
     DateTime At,
     bool Unread,

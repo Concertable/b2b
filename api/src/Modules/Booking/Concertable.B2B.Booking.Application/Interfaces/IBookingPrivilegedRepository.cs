@@ -6,7 +6,7 @@ namespace Concertable.B2B.Booking.Application.Interfaces;
 
 internal interface IBookingPrivilegedRepository
 {
-    Task<IReadOnlyList<Guid>> GetPartyTenantIdsAsync(int bookingId, CancellationToken ct = default);
+    Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
     Task<BookingEntity?> GetByIdAsync(int bookingId, CancellationToken ct = default);
     Task<BookingEntity?> GetByIdForUpdateAsync(int bookingId, CancellationToken ct = default);
     Task<BookingEntity?> GetWithContractByIdAsync(int bookingId, CancellationToken ct = default);

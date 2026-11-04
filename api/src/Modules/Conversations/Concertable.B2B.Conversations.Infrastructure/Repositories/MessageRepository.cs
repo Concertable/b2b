@@ -11,12 +11,12 @@ internal sealed class MessageRepository : IMessageRepository
     private static readonly Expression<Func<MessageEntity, bool>> NotHidden =
         message => message.HiddenAt == null || message.RestoredAt != null && message.RestoredAt > message.HiddenAt;
     private readonly ConversationsPrivilegedDbContext context;
-    private readonly TimeProvider clock;
+    private readonly ConversationsDbContext scoped;
 
-    public MessageRepository(ConversationsPrivilegedDbContext context, TimeProvider clock)
+    public MessageRepository(ConversationsPrivilegedDbContext context, ConversationsDbContext scoped)
     {
         this.context = context;
-        this.clock = clock;
+        this.scoped = scoped;
     }
 
     public Task<MessageEntity?> GetByIdAsync(int messageId, CancellationToken ct = default) =>
@@ -45,7 +45,7 @@ internal sealed class MessageRepository : IMessageRepository
         MembershipSnapshot actor,
         CancellationToken ct = default) =>
         (from message in ReadableMessages(actor)
-         join position in context.ConversationReadPositions.Where(position =>
+         join position in scoped.ConversationReadPositions.Where(position =>
                  position.TenantId == actor.TenantId && position.MembershipId == actor.MembershipId)
              on message.ConversationId equals position.ConversationId into positions
          from position in positions.DefaultIfEmpty()
@@ -78,7 +78,7 @@ internal sealed class MessageRepository : IMessageRepository
                 visible.Any(inbound =>
                     inbound.ConversationId == message.ConversationId
                     && inbound.SenderTenantId != actor.TenantId
-                    && !context.ConversationReadPositions.Any(position =>
+                    && !scoped.ConversationReadPositions.Any(position =>
                         position.ConversationId == inbound.ConversationId
                         && position.TenantId == actor.TenantId
                         && position.MembershipId == actor.MembershipId
@@ -86,26 +86,6 @@ internal sealed class MessageRepository : IMessageRepository
             .ToListAsync(ct);
     }
 
-    private IQueryable<MessageEntity> ReadableMessages(MembershipSnapshot actor)
-    {
-        var binding = ResourcePolicyBinding.FromCatalog(
-            TenantPermission.MessagesRead, ResourceKind.Conversation, ResourceFacet.Read);
-        if (binding.Policy != ResourcePolicy.ConversationGrant || binding.RequiredScopes.IsDefaultOrEmpty)
-            throw new InvalidOperationException("Conversation Read binding is unsupported.");
-        var now = clock.GetUtcNow().UtcDateTime;
-        var visible = context.Messages.Where(NotHidden);
-        foreach (var requiredScope in binding.RequiredScopes)
-        {
-            var scope = Enum.Parse<ConversationAccessScope>(requiredScope);
-            var readable = ConversationGrantPolicy.Eligible(
-                context.ConversationAccessGrants.AsNoTracking(),
-                actor,
-                binding.Permission,
-                scope,
-                now);
-            visible = visible.Where(message =>
-                readable.Any(grant => grant.ResourceId == message.ConversationId));
-        }
-        return visible;
-    }
+    private IQueryable<MessageEntity> ReadableMessages(MembershipSnapshot actor) =>
+        scoped.Messages.AsNoTracking().Where(NotHidden);
 }

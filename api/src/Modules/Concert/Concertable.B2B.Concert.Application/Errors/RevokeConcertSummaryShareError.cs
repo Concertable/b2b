@@ -13,8 +13,6 @@ internal abstract partial record RevokeConcertSummaryShareError : IError
             $"Concert {concertId} was not found."),
         GrantNotFound => ErrorDefinition.NotFound<GrantNotFound>(
             "No such grant on this concert."),
-        NotAShare => ErrorDefinition.Invalid<NotAShare>(
-            "A principal's own access and a member's assignment are not shares, and are not revoked here."),
         NotTheIssuer => ErrorDefinition.Forbidden<NotTheIssuer>(
             "Only the business that issued a share can revoke it."),
         Superseded(var concertId) => ErrorDefinition.Conflict<Superseded>(
@@ -29,9 +27,6 @@ internal abstract partial record RevokeConcertSummaryShareError : IError
 
     [ErrorCode("concert.summary_share.revoke.grant_not_found")]
     public partial record GrantNotFound;
-
-    [ErrorCode("concert.summary_share.revoke.not_a_share")]
-    public partial record NotAShare;
 
     [ErrorCode("concert.summary_share.revoke.not_the_issuer")]
     public partial record NotTheIssuer;
