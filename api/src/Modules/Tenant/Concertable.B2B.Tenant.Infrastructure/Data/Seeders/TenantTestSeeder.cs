@@ -1,4 +1,3 @@
-using Concertable.B2B.Authorization.Contracts;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
 using Concertable.B2B.Seed.Infrastructure;
@@ -24,16 +23,17 @@ internal sealed class TenantTestSeeder : ITestSeeder
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        var catalogState = await context.AuthorizationCatalogStates.SingleOrDefaultAsync(ct);
-        if (catalogState is null)
-            context.AuthorizationCatalogStates.Add(AuthorizationCatalogState.Create(AuthorizationCatalog.Revision));
+        var fingerprintState = await context.SystemRolesFingerprints.SingleOrDefaultAsync(ct);
+        if (fingerprintState is null)
+            context.SystemRolesFingerprints.Add(SystemRolesFingerprint.Create(SystemRoles.Fingerprint));
         else
-            catalogState.Install(AuthorizationCatalog.Revision);
+            fingerprintState.Replace(SystemRoles.Fingerprint);
         await context.SaveChangesAsync(ct);
         await context.Tenants.SeedIfEmptyAsync(async () =>
         {
             context.Tenants.AddRange(seed.Tenants);
-            context.RoleDefinitions.AddRange(seed.Tenants.SelectMany(tenant => TenantRoleProvisioning.CreatePresets(tenant.Id)));
+            context.RoleDefinitions.AddRange(seed.Tenants.SelectMany(tenant => TenantRoleProvisioning.CreatePresets(
+                tenant.Id, tenant.BusinessActivities.Where(activity => activity.IsActive).Select(activity => activity.Kind))));
             context.Memberships.AddRange(seed.Memberships);
             context.Verifications.AddRange(seed.Verifications);
             await context.SaveChangesAsync(ct);

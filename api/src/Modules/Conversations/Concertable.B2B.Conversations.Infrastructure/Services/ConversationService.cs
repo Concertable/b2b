@@ -93,7 +93,7 @@ internal sealed class ConversationService : IConversationService
         if (!actor.Permissions[TenantPermission.MessagesSend].Includes(ResourceAccess.All))
             return new CreateConversationError.NotPermitted();
 
-        var idempotencyHash = IdempotencyHash.Create(string.Join(",", participants.Order()));
+        var fingerprint = Sha256Digest.Of(string.Join(",", participants.Order()));
         var receipt = await privilegedRepository.GetCreationReceiptWithRowLockAsync(
             actor.TenantId,
             actor.MembershipId,
@@ -101,7 +101,7 @@ internal sealed class ConversationService : IConversationService
             ct);
         if (receipt is not null)
         {
-            if (!receipt.Matches(idempotencyHash))
+            if (!receipt.Matches(fingerprint))
                 return new CreateConversationError.RequestConflict();
             var replay = await privilegedRepository.GetByIdAsync(receipt.ConversationId, ct)
                 ?? throw new InvalidOperationException("A conversation creation receipt referenced a missing conversation.");
@@ -117,7 +117,7 @@ internal sealed class ConversationService : IConversationService
             actor.TenantId,
             actor.MembershipId,
             request.RequestId,
-            idempotencyHash,
+            fingerprint,
             at));
         await privilegedRepository.SaveChangesAsync(ct);
         return await ToDtoAsync(conversation, ct);
@@ -184,17 +184,17 @@ internal sealed class ConversationService : IConversationService
         var conversation = await privilegedRepository.GetByIdWithRowLockAsync(conversationId, ct);
         if (conversation is null || !conversation.AcceptsMessagesFrom(actor))
             return new SendMessageError.NotPermitted();
-        var idempotencyHash = IdempotencyHash.Create(request.Content, action);
+        var fingerprint = Sha256Digest.Of(request.Content, action);
         var replay = await privilegedRepository.GetMessageReceiptWithRowLockAsync(
             conversationId, actor.MembershipId, request.RequestId, ct);
         if (replay is not null)
-            return replay.IdempotencyHash == idempotencyHash ? replay.ToMessageDto() : new SendMessageError.RequestConflict();
+            return replay.Fingerprint == fingerprint ? replay.ToMessageDto() : new SendMessageError.RequestConflict();
 
         var message = MessageEntity.Create(
             conversationId,
             conversation.AllocateMessageSequence(),
             request.RequestId,
-            idempotencyHash,
+            fingerprint,
             actor.TenantId,
             actor.MembershipId,
             actor.UserId,

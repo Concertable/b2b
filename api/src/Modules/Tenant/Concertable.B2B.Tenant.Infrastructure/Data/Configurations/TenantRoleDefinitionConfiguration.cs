@@ -11,11 +11,11 @@ internal sealed class TenantRoleDefinitionConfiguration : IEntityTypeConfigurati
         builder.HasKey(role => role.Id);
         builder.HasAlternateKey(role => new { role.TenantId, role.Id });
         builder.Property(role => role.Name).IsRequired().HasMaxLength(100);
-        builder.Property(role => role.SystemPresetKey).HasMaxLength(50);
+        builder.Property(role => role.SystemRole).HasConversion<string>().HasMaxLength(50);
         builder.Property(role => role.Version).IsConcurrencyToken();
         builder.HasIndex(role => new { role.TenantId, role.Name }).IsUnique();
-        builder.HasIndex(role => new { role.TenantId, role.SystemPresetKey })
-            .IsUnique().HasFilter("\"SystemPresetKey\" IS NOT NULL");
+        builder.HasIndex(role => new { role.TenantId, role.SystemRole })
+            .IsUnique().HasFilter("\"SystemRole\" IS NOT NULL");
         builder.HasOne<TenantEntity>().WithMany().HasForeignKey(role => role.TenantId)
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(role => role.Permissions).WithOne()

@@ -134,13 +134,16 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
         var hasPresets = await context.RoleDefinitions
             .AnyAsync(role => role.TenantId == tenant.Id, ct);
         if (!hasPresets)
-            context.RoleDefinitions.AddRange(TenantRoleProvisioning.CreatePresets(tenant.Id));
+        {
+            var activities = tenant.BusinessActivities.Where(activity => activity.IsActive).Select(activity => activity.Kind);
+            context.RoleDefinitions.AddRange(TenantRoleProvisioning.CreatePresets(tenant.Id, activities));
+        }
         var hasOwnerMembership = await context.Memberships
             .AnyAsync(membership => membership.TenantId == tenant.Id && membership.UserId == e.UserId, ct);
         if (!hasOwnerMembership)
         {
             context.Memberships.Add(TenantMembershipEntity.Create(
-                tenant.Id, e.UserId, [SystemPresetIds.For(tenant.Id, "Owner")], null, now));
+                tenant.Id, e.UserId, [SystemRole.Owner.IdFor(tenant.Id)], null, now));
         }
     }
 }

@@ -1,4 +1,12 @@
 {
+  "systemRoles": {
+    "Owner": { "protected": true, "invitationAssignable": false, "requiredActivity": null },
+    "Manager": { "protected": false, "invitationAssignable": false, "requiredActivity": null },
+    "Finance": { "protected": false, "invitationAssignable": false, "requiredActivity": null },
+    "Staff": { "protected": false, "invitationAssignable": true, "requiredActivity": null },
+    "Door": { "protected": false, "invitationAssignable": true, "requiredActivity": "VenueOperator" },
+    "Sound": { "protected": false, "invitationAssignable": true, "requiredActivity": "VenueOperator" }
+  },
   "permissions": [
     {
       "name": "operations:view",

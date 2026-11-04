@@ -1,4 +1,4 @@
-using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.Tenant.Domain.Entities;
 
@@ -7,17 +7,17 @@ namespace Concertable.B2B.Tenant.UnitTests;
 public sealed class TenantRoleAssignmentPolicyTests
 {
     [Theory]
-    [InlineData("Staff", true)]
-    [InlineData("Door", true)]
-    [InlineData("Sound", true)]
-    [InlineData("Finance", false)]
-    [InlineData("Owner", false)]
-    [InlineData("Manager", false)]
-    public void CanAssign_Manager_AssignsOnlyInvitationAssignablePresets(string targetPreset, bool expected)
+    [InlineData(SystemRole.Staff, true)]
+    [InlineData(SystemRole.Door, true)]
+    [InlineData(SystemRole.Sound, true)]
+    [InlineData(SystemRole.Finance, false)]
+    [InlineData(SystemRole.Owner, false)]
+    [InlineData(SystemRole.Manager, false)]
+    public void CanAssign_Manager_AssignsOnlyInvitationAssignablePresets(SystemRole targetRole, bool expected)
     {
         var tenantId = Guid.NewGuid();
-        var actor = Snapshot(tenantId, "Manager");
-        var role = Preset(tenantId, targetPreset);
+        var actor = Snapshot(tenantId, SystemRole.Manager);
+        var role = Preset(tenantId, targetRole);
 
         var result = TenantRoleAssignmentPolicy.CanAssign(actor, false, [role]);
 
@@ -28,8 +28,8 @@ public sealed class TenantRoleAssignmentPolicyTests
     public void CanAssign_ActorWithoutInvitePermission_DeniesAssignableRole()
     {
         var tenantId = Guid.NewGuid();
-        var actor = Snapshot(tenantId, "Staff");
-        var role = Preset(tenantId, "Door");
+        var actor = Snapshot(tenantId, SystemRole.Staff);
+        var role = Preset(tenantId, SystemRole.Door);
 
         var result = TenantRoleAssignmentPolicy.CanAssign(actor, false, [role]);
 
@@ -40,7 +40,7 @@ public sealed class TenantRoleAssignmentPolicyTests
     public void CanAssign_ManagerCannotDelegateCustomInvitationAdministration()
     {
         var tenantId = Guid.NewGuid();
-        var actor = Snapshot(tenantId, "Manager");
+        var actor = Snapshot(tenantId, SystemRole.Manager);
         var role = TenantRoleDefinition.CreateCustom(tenantId, "Inviter", true,
             new Dictionary<TenantPermission, ResourceAccess>
             {
@@ -51,21 +51,15 @@ public sealed class TenantRoleAssignmentPolicyTests
         Assert.True(TenantRoleAssignmentPolicy.CanAssign(actor, true, [role]));
     }
 
-    private static MembershipSnapshot Snapshot(Guid tenantId, string presetKey)
-    {
-        var preset = AuthorizationCatalog.Presets[presetKey];
-        return new MembershipSnapshot(
+    private static MembershipSnapshot Snapshot(Guid tenantId, SystemRole role) =>
+        new(
             Guid.NewGuid(),
             tenantId,
             Guid.NewGuid(),
             1,
             1,
-            PermissionSet.From(preset.Permissions));
-    }
+            PermissionSet.From(role.Grants));
 
-    private static TenantRoleDefinition Preset(Guid tenantId, string key)
-    {
-        var preset = AuthorizationCatalog.Presets[key];
-        return TenantRoleDefinition.CreateSystemPreset(tenantId, key);
-    }
+    private static TenantRoleDefinition Preset(Guid tenantId, SystemRole role) =>
+        TenantRoleDefinition.CreateSystemRole(tenantId, role);
 }

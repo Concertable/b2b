@@ -130,11 +130,18 @@ The snapshot never changes during the request and compares by value.
 ### Generated catalog (RBAC)
 
 Each module declares its permissions in `api/src/Modules/<Module>/authorization.json`: a
-`resource:action` name, a label, whether it is owner-only, and the access each system preset holds.
-`scripts/generate-authorization.py` writes the `TenantPermission` enum (`[JsonStringEnumMemberName]` keeps
-the `resource:action` key on the wire), `AuthorizationCatalog` with a content-hash `Revision`, and the
-frontend `TenantPermission` union. CI runs it with `--check`. The revision is seeded into the database
-and checked by the health check and invitation acceptance.
+`resource:action` name, a label, whether it is owner-only, and the access each system role holds. The
+Tenant module's `authorization.json` additionally declares the `systemRoles` roster (protected,
+invitation-assignable, required business activity). `scripts/generate-authorization.py` writes the
+`TenantPermission` enum (`[JsonStringEnumMemberName]` keeps the `resource:action` key on the wire) with
+`Label`/`Category`/`IsOwnerOnly` extension members, the `SystemRole` enum and its `Grants`/`IsProtected`/
+`IsInvitationAssignable`/`RequiredActivity`/`IdFor` extension members and the static `SystemRoles` class
+(generated into `Concertable.B2B.Tenant.Contracts`, since it needs `TenantBusinessActivityKind`), and the
+frontend `TenantPermission` union. CI runs it with `--check`. `SystemRoles.Fingerprint`
+(a `Sha256Digest` over the canonical permissions and systemRoles declarations) is seeded into the database
+and checked by `SystemRolesHealthCheck` and invitation acceptance. Door and Sound only provision for
+tenants with the `VenueOperator` business activity (`SystemRoles.AvailableTo`); assigning or inviting a
+role a tenant's activities don't support is rejected.
 
 ```json
 { "name": "concerts:ops_edit", "label": "Edit concert operations", "ownerOnly": false,

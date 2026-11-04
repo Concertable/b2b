@@ -81,7 +81,8 @@ internal sealed class MembershipService : IMembershipService
         CancellationToken ct)
     {
         var tenantId = tenantContext.GetTenantId();
-        if (await tenantRepository.GetByIdWithUpdateLockAsync(tenantId, ct) is null)
+        var tenant = await tenantRepository.GetByIdWithUpdateLockAsync(tenantId, ct);
+        if (tenant is null)
             return new ChangeMemberRolesError.NotPermitted();
         if (!authorizationContext.TryGetMembership(tenantId, out var actor)
             || !actor.HasPermission(TenantPermission.MembersManageRoles)
@@ -94,6 +95,15 @@ internal sealed class MembershipService : IMembershipService
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
         if (selectedRoles is null)
             return new ChangeMemberRolesError.InvalidRoles();
+        var activeActivities = tenant.BusinessActivities
+            .Where(activity => activity.IsActive)
+            .Select(activity => activity.Kind)
+            .ToHashSet();
+        if (!selectedRoles.All(role =>
+                role.SystemRole is not { } systemRole
+                || systemRole.RequiredActivity is not { } required
+                || activeActivities.Contains(required)))
+            return new ChangeMemberRolesError.RoleNotAvailableForTenant();
 
         await repository.SaveChangesAsync(ct);
         var wasOwner = (await roles.GetSummariesForMembershipAsync(member.TenantId, member.Id, ct))

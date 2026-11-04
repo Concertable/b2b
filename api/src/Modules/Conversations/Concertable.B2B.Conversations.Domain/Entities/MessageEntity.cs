@@ -1,5 +1,3 @@
-using Concertable.B2B.DataAccess.Application;
-
 namespace Concertable.B2B.Conversations.Domain.Entities;
 
 public sealed class MessageEntity : IIdEntity
@@ -10,7 +8,7 @@ public sealed class MessageEntity : IIdEntity
     public int ConversationId { get; private set; }
     public long Sequence { get; private set; }
     public Guid RequestId { get; private set; }
-    public IdempotencyHash IdempotencyHash { get; private set; }
+    public Sha256Digest Fingerprint { get; private set; } = null!;
     public string Content { get; private set; } = null!;
     public Guid SenderTenantId { get; private set; }
     public Guid SentByMembershipId { get; private set; }
@@ -28,7 +26,7 @@ public sealed class MessageEntity : IIdEntity
         int conversationId,
         long sequence,
         Guid requestId,
-        IdempotencyHash idempotencyHash,
+        Sha256Digest fingerprint,
         Guid senderTenantId,
         Guid sentByMembershipId,
         Guid sentByUserId,
@@ -39,9 +37,7 @@ public sealed class MessageEntity : IIdEntity
             ConversationId = conversationId,
             Sequence = sequence,
             RequestId = requestId,
-            IdempotencyHash = idempotencyHash != default
-                ? idempotencyHash
-                : throw new ArgumentException("An idempotency hash is required.", nameof(idempotencyHash)),
+            Fingerprint = fingerprint,
             SenderTenantId = senderTenantId,
             SentByMembershipId = sentByMembershipId,
             SentByUserId = sentByUserId,

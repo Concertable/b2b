@@ -466,7 +466,7 @@ internal sealed class ConcertService : IConcertService
         if (!await IsValidRecipientAsync(request.RecipientTenantId, request.RecipientMembershipId, ct))
             return new ShareConcertSummaryError.InvalidRecipient();
 
-        var idempotencyHash = IdempotencyHash.Create(
+        var fingerprint = Sha256Digest.Of(
             id, request.RecipientTenantId, request.RecipientMembershipId, request.ValidUntil);
         var receipt = await receiptRepository.GetByRequestWithRowLockAsync(
             actor.TenantId,
@@ -474,7 +474,7 @@ internal sealed class ConcertService : IConcertService
             request.RequestId,
             ct);
         if (receipt is not null)
-            return ReplaySummaryShare(concert, receipt, idempotencyHash);
+            return ReplaySummaryShare(concert, receipt, fingerprint);
         if (concert.AccessVersion != request.ExpectedAccessVersion)
             return new ShareConcertSummaryError.Superseded(id);
 
@@ -515,7 +515,7 @@ internal sealed class ConcertService : IConcertService
                 actor.TenantId,
                 ConcertCommandReceipt.ShareSummaryOperation,
                 request.RequestId,
-                idempotencyHash,
+                fingerprint,
                 issued.Id.ToString(),
                 decidedAt));
         await privilegedRepository.SaveChangesAsync(ct);
@@ -525,9 +525,9 @@ internal sealed class ConcertService : IConcertService
     private static Result<ConcertSummaryShare, ShareConcertSummaryError> ReplaySummaryShare(
         ConcertEntity concert,
         ConcertCommandReceipt receipt,
-        IdempotencyHash idempotencyHash)
+        Sha256Digest fingerprint)
     {
-        if (!receipt.Matches(idempotencyHash))
+        if (!receipt.Matches(fingerprint))
             return new ShareConcertSummaryError.RequestConflict();
         if (!Guid.TryParse(receipt.Outcome, out var grantId))
             throw new InvalidOperationException(
@@ -558,12 +558,12 @@ internal sealed class ConcertService : IConcertService
             ConcertCommandReceipt.ShareSummaryOperation,
             request.RequestId,
             ct);
-        var idempotencyHash = IdempotencyHash.Create(
+        var fingerprint = Sha256Digest.Of(
             id,
             request.RecipientTenantId,
             request.RecipientMembershipId,
             request.ValidUntil);
-        return RecoverSummaryShareDuplicate(concert, receipt, idempotencyHash);
+        return RecoverSummaryShareDuplicate(concert, receipt, fingerprint);
     }
 
     private async Task<bool> IsValidRecipientAsync(
@@ -577,10 +577,10 @@ internal sealed class ConcertService : IConcertService
     internal static Result<ConcertSummaryShare, ShareConcertSummaryError> RecoverSummaryShareDuplicate(
         ConcertEntity concert,
         ConcertCommandReceipt? receipt,
-        IdempotencyHash idempotencyHash) =>
+        Sha256Digest fingerprint) =>
         receipt is null
             ? new ShareConcertSummaryError.AlreadyShared()
-            : ReplaySummaryShare(concert, receipt, idempotencyHash);
+            : ReplaySummaryShare(concert, receipt, fingerprint);
 
     public async Task<UnitResult<RevokeConcertSummaryShareError>> RevokeSummaryShareAsync(
         int id,

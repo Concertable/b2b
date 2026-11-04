@@ -38,7 +38,7 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<AuditInterceptor>(),
                     sp.GetRequiredService<IDomainEventDispatchInterceptor>()));
 
-        services.AddHealthChecks().AddCheck<TenantAuthorizationCatalogHealthCheck>("authorization-catalog");
+        services.AddHealthChecks().AddCheck<SystemRolesHealthCheck>("authorization-catalog");
         services.AddSingleton<TenantConfigurationProvider>();
         services.AddSingleton<IEntityTypeConfigurationProvider>(sp => sp.GetRequiredService<TenantConfigurationProvider>());
 

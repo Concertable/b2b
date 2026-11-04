@@ -17,7 +17,10 @@ internal abstract partial record ChangeMemberRolesError : IError
             ErrorDefinition.Invalid<InvalidRoles>("Select active roles in this organization."),
         NotPermitted =>
             ErrorDefinition.Forbidden<NotPermitted>(
-                "Only an owner can change member roles.")
+                "Only an owner can change member roles."),
+        RoleNotAvailableForTenant =>
+            ErrorDefinition.Invalid<RoleNotAvailableForTenant>(
+                "This role is not available for your organization's activities.")
     };
 
     [ErrorCode("tenant.change_role_member_not_found")]
@@ -31,4 +34,7 @@ internal abstract partial record ChangeMemberRolesError : IError
 
     [ErrorCode("tenant.change_role_not_permitted")]
     public partial record NotPermitted;
+
+    [ErrorCode("tenant.change_role_role_not_available_for_tenant")]
+    public partial record RoleNotAvailableForTenant;
 }

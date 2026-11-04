@@ -8,7 +8,7 @@ internal interface ITenantRepository : IRepository<TenantEntity, Guid>
 
     Task<TenantEntity?> GetByIdWithUpdateLockAsync(Guid tenantId, CancellationToken ct = default);
 
-    Task<string?> GetAuthorizationCatalogRevisionAsync(CancellationToken ct = default);
+    Task<Sha256Digest?> GetSystemRolesFingerprintAsync(CancellationToken ct = default);
 
     Task<TenantEntity?> GetByCreatedByUserIdForCreationAsync(Guid userId, CancellationToken ct = default);
 

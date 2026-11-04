@@ -136,10 +136,10 @@ internal sealed class TenantService : ITenantService
             tenant.ActivateBusinessActivity(activity, now);
 
         await repository.InsertAsync(tenant, ct);
-        await roles.InsertPresetsAsync(tenant.Id, ct);
+        await roles.InsertPresetsAsync(tenant.Id, request.Activities, ct);
         await membershipRepository.InsertAsync(
             TenantMembershipEntity.Create(
-                tenant.Id, userId, [SystemPresetIds.For(tenant.Id, "Owner")], null, now),
+                tenant.Id, userId, [SystemRole.Owner.IdFor(tenant.Id)], null, now),
             ct);
         return ToDetails(tenant);
     }
@@ -208,7 +208,11 @@ internal sealed class TenantService : ITenantService
 
             var now = timeProvider.GetUtcNow().UtcDateTime;
             if (activate)
+            {
                 tenant.ActivateBusinessActivity(kind, now);
+                await roles.ProvisionMissingSystemRolesAsync(
+                    tenantId, [.. tenant.BusinessActivities.Where(activity => activity.IsActive).Select(activity => activity.Kind)], ct);
+            }
             else
                 tenant.RetireBusinessActivity(kind, now);
 

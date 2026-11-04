@@ -125,7 +125,8 @@ public sealed class TenantApiFixture : ApiFixture
         await dbContext.SaveChangesAsync();
         return invitation;
     }
-    internal static Guid RoleId(Guid tenantId, string presetKey) => SystemPresetIds.For(tenantId, presetKey);
+    internal static Guid RoleId(Guid tenantId, string presetKey) =>
+        Enum.Parse<SystemRole>(presetKey).IdFor(tenantId);
 
     public async Task<TenantVerificationEntity> AddRejectedVerificationAsync(
         Guid tenantId,

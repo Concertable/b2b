@@ -27,10 +27,10 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         return await context.Tenants.LockRowsAsync(tenant => tenant.Id == tenantId, RowLock.KeyShare, ct);
     }
 
-    public Task<string?> GetAuthorizationCatalogRevisionAsync(CancellationToken ct = default) =>
-        context.AuthorizationCatalogStates.AsNoTracking()
+    public Task<Sha256Digest?> GetSystemRolesFingerprintAsync(CancellationToken ct = default) =>
+        context.SystemRolesFingerprints.AsNoTracking()
             .Where(state => state.Id == 1)
-            .Select(state => state.Revision)
+            .Select(state => (Sha256Digest?)state.Value)
             .SingleOrDefaultAsync(ct);
 
     public async Task<TenantEntity?> GetByIdWithUpdateLockAsync(

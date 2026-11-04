@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.Seed.Identity;
 using Xunit.Abstractions;
 
@@ -265,7 +266,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
 
         await (await ownerClient.PutAsync(
                 $"/api/organization/members/{staff.Id}/roles",
-                new { roleIds = new[] { SystemPresetIds.For(tenantId, "Staff") } }))
+                new { roleIds = new[] { SystemRole.Staff.IdFor(tenantId) } }))
             .ShouldBe(HttpStatusCode.NoContent);
 
         await (await staffClient.PostAsync("/api/conversations", new
@@ -351,7 +352,7 @@ public sealed class MessagingInboxTests : IAsyncLifetime
             .ShouldBe(HttpStatusCode.NoContent);
         var invitationResponse = await ownerClient.PostAsync(
             "/api/organization/invitations",
-            new { staff.Email, roleIds = new[] { SystemPresetIds.For(tenantId, "Staff") } });
+            new { staff.Email, roleIds = new[] { SystemRole.Staff.IdFor(tenantId) } });
         await invitationResponse.ShouldBe(HttpStatusCode.Created);
         var invitation = (await invitationResponse.Content.ReadAsync<Invitation>())!;
         var acceptanceResponse = await fixture.CreateClient(staff)

@@ -89,6 +89,8 @@ internal sealed class InvitationService : IInvitationService
             || selectedRoles is null
             || !await CanAssignAsync(actor, selectedRoles, ct))
             return new InviteMemberError.NotPermitted();
+        if (!RolesAvailableForTenant(tenant, selectedRoles))
+            return new InviteMemberError.RoleNotAvailableForTenant();
 
         var email = request.Email.Trim().ToLowerInvariant();
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -170,7 +172,7 @@ internal sealed class InvitationService : IInvitationService
             || inviter.TenantId != invitation.TenantId
             || inviter.PermissionVersion != invitation.InviterPermissionVersion
             || inviter.RolePolicyVersion != invitation.InviterRolePolicyVersion
-            || await tenantRepository.GetAuthorizationCatalogRevisionAsync(ct) != AuthorizationCatalog.Revision
+            || await tenantRepository.GetSystemRolesFingerprintAsync(ct) != SystemRoles.Fingerprint
             || !await CanAssignAsync(inviter, selectedRoles, ct))
             return new AcceptInvitationError.InviterNotAuthorized();
 
@@ -199,6 +201,19 @@ internal sealed class InvitationService : IInvitationService
             actor,
             await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct),
             selectedRoles);
+
+    private static bool RolesAvailableForTenant(
+        TenantEntity tenant, IReadOnlyCollection<TenantRoleDefinition> selectedRoles)
+    {
+        var activeActivities = tenant.BusinessActivities
+            .Where(activity => activity.IsActive)
+            .Select(activity => activity.Kind)
+            .ToHashSet();
+        return selectedRoles.All(role =>
+            role.SystemRole is not { } systemRole
+            || systemRole.RequiredActivity is not { } required
+            || activeActivities.Contains(required));
+    }
 
     private static IReadOnlyList<RoleSummary> Summaries(
         IEnumerable<TenantRoleDefinition> selectedRoles) =>

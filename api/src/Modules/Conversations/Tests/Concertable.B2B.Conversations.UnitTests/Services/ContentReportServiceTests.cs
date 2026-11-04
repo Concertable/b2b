@@ -1,5 +1,5 @@
 using Concertable.B2B.Authorization.Contracts;
-using Concertable.B2B.DataAccess.Application;
+using Concertable.Kernel.ValueObjects;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
@@ -24,7 +24,7 @@ public sealed class ContentReportServiceTests
             ConversationId,
             1,
             Guid.NewGuid(),
-            IdempotencyHash.Create("payload"),
+            Sha256Digest.Of("payload"),
             ArtistTenantId,
             Guid.NewGuid(),
             Guid.NewGuid(),
@@ -118,7 +118,7 @@ public sealed class ContentReportServiceTests
             ConversationId,
             1,
             Guid.NewGuid(),
-            IdempotencyHash.Create("payload"),
+            Sha256Digest.Of("payload"),
             VenueTenantId,
             Guid.NewGuid(),
             ReportingUserId,

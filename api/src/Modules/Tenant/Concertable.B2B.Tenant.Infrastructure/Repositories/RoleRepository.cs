@@ -3,12 +3,32 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
-internal sealed class RoleRepository(TenantDbContext context) : IRoleRepository
+internal sealed class RoleRepository : IRoleRepository
 {
-    public Task InsertPresetsAsync(Guid tenantId, CancellationToken ct = default)
+    private readonly TenantDbContext context;
+
+    public RoleRepository(TenantDbContext context)
     {
-        context.RoleDefinitions.AddRange(TenantRoleProvisioning.CreatePresets(tenantId));
+        this.context = context;
+    }
+
+    public Task InsertPresetsAsync(
+        Guid tenantId, IReadOnlyCollection<TenantBusinessActivityKind> activities, CancellationToken ct = default)
+    {
+        context.RoleDefinitions.AddRange(TenantRoleProvisioning.CreatePresets(tenantId, activities));
         return Task.CompletedTask;
+    }
+
+    public async Task ProvisionMissingSystemRolesAsync(
+        Guid tenantId, IReadOnlyCollection<TenantBusinessActivityKind> activities, CancellationToken ct = default)
+    {
+        var existing = await context.RoleDefinitions.AsNoTracking()
+            .Where(role => role.TenantId == tenantId && role.SystemRole != null)
+            .Select(role => role.SystemRole!.Value)
+            .ToListAsync(ct);
+        var missing = SystemRoles.AvailableTo(activities).Except(existing);
+        context.RoleDefinitions.AddRange(
+            missing.Select(systemRole => TenantRoleDefinition.CreateSystemRole(tenantId, systemRole)));
     }
 
     public void Insert(TenantRoleDefinition role) => context.RoleDefinitions.Add(role);

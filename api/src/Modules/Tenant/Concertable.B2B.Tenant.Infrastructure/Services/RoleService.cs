@@ -70,10 +70,10 @@ internal sealed class RoleService : IRoleService
                 return Result.Failure<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(
                     new ListRolesError.NotPermitted());
 
-            IReadOnlyList<PermissionMetadataDto> metadata = AuthorizationCatalog.Permissions.Values
-                .OrderBy(item => item.Category).ThenBy(item => item.Label)
-                .Select(item => new PermissionMetadataDto(
-                    item.Permission.Name, item.Label, item.Category, item.OwnerOnly))
+            IReadOnlyList<PermissionMetadataDto> metadata = TenantPermission.All
+                .OrderBy(permission => permission.Category).ThenBy(permission => permission.Label)
+                .Select(permission => new PermissionMetadataDto(
+                    permission.Name, permission.Label, permission.Category, permission.IsOwnerOnly))
                 .ToArray();
             return Result.Success<IReadOnlyList<PermissionMetadataDto>, ListRolesError>(metadata);
         }, ct);
@@ -117,7 +117,7 @@ internal sealed class RoleService : IRoleService
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
         if (role is null)
             return new UpdateRoleError.NotFound();
-        if (role.SystemPresetKey is not null || role.IsProtectedOwner)
+        if (role.SystemRole is not null || role.IsProtectedOwner)
             return new UpdateRoleError.Protected();
         if (role.Version != request.ExpectedVersion)
             return new UpdateRoleError.Superseded();
@@ -158,7 +158,7 @@ internal sealed class RoleService : IRoleService
         var role = await roles.GetActiveByIdAsync(tenantId, roleId, ct);
         if (role is null)
             return new RetireRoleError.NotFound();
-        if (role.SystemPresetKey is not null || role.IsProtectedOwner)
+        if (role.SystemRole is not null || role.IsProtectedOwner)
             return new RetireRoleError.Protected();
         if (role.Version != request.ExpectedVersion)
             return new RetireRoleError.Superseded();
@@ -210,7 +210,7 @@ internal sealed class RoleService : IRoleService
             if (!TenantPermission.TryParseName(item.Permission, out var permission)
                 || !Enum.TryParse<ResourceAccess>(item.Audience, false, out var access)
                 || access is not (ResourceAccess.Assigned or ResourceAccess.All)
-                || AuthorizationCatalog.Permissions[permission].OwnerOnly
+                || permission.IsOwnerOnly
                 || !parsed.TryAdd(permission, access))
             {
                 grants = parsed;
@@ -222,7 +222,7 @@ internal sealed class RoleService : IRoleService
     }
 
     private static RoleDto ToDto(TenantRoleDefinition role) =>
-        new(role.Id, role.Name, role.Version, role.SystemPresetKey is not null,
+        new(role.Id, role.Name, role.Version, role.SystemRole is not null,
             role.IsProtectedOwner, role.IsInvitationAssignable,
             [.. role.Permissions.OrderBy(row => row.PermissionKey, StringComparer.Ordinal)
                 .Select(row => new RolePermissionDto(row.PermissionKey, row.Access.ToString()))]);

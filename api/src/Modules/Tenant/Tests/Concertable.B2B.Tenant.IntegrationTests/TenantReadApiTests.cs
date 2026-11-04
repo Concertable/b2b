@@ -76,10 +76,10 @@ public sealed class TenantReadApiTests : IAsyncLifetime
     private MembershipSnapshot Snapshot(TenantMembershipEntity membership)
     {
         var tenant = fixture.Tenants.Single(value => value.Id == membership.TenantId);
-        var presetKeys = AuthorizationCatalog.Presets.Keys.Where(key =>
-            membership.Assignments.Any(assignment => assignment.RoleId == TenantApiFixture.RoleId(membership.TenantId, key)));
+        var systemRoles = SystemRoles.All.Where(role =>
+            membership.Assignments.Any(assignment => assignment.RoleId == role.IdFor(membership.TenantId)));
         var permissions = PermissionSet.From(
-            presetKeys.SelectMany(key => AuthorizationCatalog.Presets[key].Permissions));
+            systemRoles.SelectMany(role => role.Grants));
         return new MembershipSnapshot(
             membership.Id,
             membership.TenantId,

@@ -56,7 +56,7 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
 
         var membership = fixture.Memberships.Single(value => value.TenantId == tenantId && value.UserId == member.Id);
         var tenant = fixture.Tenants.Single(value => value.Id == tenantId);
-        var expectedPermissions = PermissionSet.From(AuthorizationCatalog.Presets["Finance"].Permissions
+        var expectedPermissions = PermissionSet.From(SystemRole.Finance.Grants
             .Where(grant => grant.Key != TenantPermission.ConcertsOpsEdit)
             .Append(KeyValuePair.Create(TenantPermission.ConcertsOpsEdit, ResourceAccess.Assigned)));
         var expected = new MembershipSnapshot(membership.Id, tenantId, member.Id,

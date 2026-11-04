@@ -89,9 +89,76 @@ public static class TenantPermissionExtensions
 
     private static readonly FrozenSet<TenantPermission> Declared = Names.Keys.ToFrozenSet();
 
+    private static readonly FrozenDictionary<TenantPermission, string> Labels =
+        new Dictionary<TenantPermission, string>
+        {
+            [TenantPermission.ApplicationsDecide] = "Decide applications",
+            [TenantPermission.ApplicationsSubmit] = "Submit applications",
+            [TenantPermission.BookingsCancel] = "Cancel bookings",
+            [TenantPermission.ConcertsCheckIn] = "Check in attendees",
+            [TenantPermission.ConcertsDeclareDoorRevenue] = "Declare door revenue",
+            [TenantPermission.ConcertsManage] = "Manage concerts",
+            [TenantPermission.ConcertsOpsEdit] = "Edit concert operations",
+            [TenantPermission.ConcertsPublish] = "Publish concerts",
+            [TenantPermission.MembersInvite] = "Invite members",
+            [TenantPermission.MembersManageRoles] = "Manage member roles",
+            [TenantPermission.MembersRemove] = "Remove members",
+            [TenantPermission.MessagesRead] = "Read messages",
+            [TenantPermission.MessagesSend] = "Send messages",
+            [TenantPermission.OperationsView] = "View operations",
+            [TenantPermission.OpportunitiesManage] = "Manage opportunities",
+            [TenantPermission.PayoutsManage] = "Manage payouts",
+            [TenantPermission.ProfileEdit] = "Edit business profiles",
+            [TenantPermission.ResourcesShare] = "Share resources",
+            [TenantPermission.SettlementTrigger] = "Trigger settlement",
+            [TenantPermission.SettlementView] = "View settlement",
+            [TenantPermission.TenantDelete] = "Delete organization",
+            [TenantPermission.TenantSettingsEdit] = "Edit organization settings",
+            [TenantPermission.TermsRead] = "Read agreement terms",
+        }.ToFrozenDictionary();
+
+    private static readonly FrozenDictionary<TenantPermission, string> Categories =
+        new Dictionary<TenantPermission, string>
+        {
+            [TenantPermission.ApplicationsDecide] = "Application",
+            [TenantPermission.ApplicationsSubmit] = "Application",
+            [TenantPermission.BookingsCancel] = "Booking",
+            [TenantPermission.ConcertsCheckIn] = "Concert",
+            [TenantPermission.ConcertsDeclareDoorRevenue] = "Concert",
+            [TenantPermission.ConcertsManage] = "Concert",
+            [TenantPermission.ConcertsOpsEdit] = "Concert",
+            [TenantPermission.ConcertsPublish] = "Concert",
+            [TenantPermission.MembersInvite] = "Tenant",
+            [TenantPermission.MembersManageRoles] = "Tenant",
+            [TenantPermission.MembersRemove] = "Tenant",
+            [TenantPermission.MessagesRead] = "Conversations",
+            [TenantPermission.MessagesSend] = "Conversations",
+            [TenantPermission.OperationsView] = "Tenant",
+            [TenantPermission.OpportunitiesManage] = "Opportunity",
+            [TenantPermission.PayoutsManage] = "Tenant",
+            [TenantPermission.ProfileEdit] = "Tenant",
+            [TenantPermission.ResourcesShare] = "Concert",
+            [TenantPermission.SettlementTrigger] = "Tenant",
+            [TenantPermission.SettlementView] = "Tenant",
+            [TenantPermission.TenantDelete] = "Tenant",
+            [TenantPermission.TenantSettingsEdit] = "Tenant",
+            [TenantPermission.TermsRead] = "Booking",
+        }.ToFrozenDictionary();
+
+    private static readonly FrozenSet<TenantPermission> OwnerOnlyPermissions =
+        new HashSet<TenantPermission>
+        {
+            TenantPermission.MembersManageRoles,
+            TenantPermission.MembersRemove,
+            TenantPermission.TenantDelete,
+        }.ToFrozenSet();
+
     extension(TenantPermission permission)
     {
         public string Name => Names.TryGetValue(permission, out var name) ? name : string.Empty;
+        public string Label => Labels.TryGetValue(permission, out var label) ? label : string.Empty;
+        public string Category => Categories.TryGetValue(permission, out var category) ? category : string.Empty;
+        public bool IsOwnerOnly => OwnerOnlyPermissions.Contains(permission);
     }
 
     extension(TenantPermission)

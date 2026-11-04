@@ -1,4 +1,4 @@
-using Concertable.B2B.DataAccess.Application;
+using Concertable.Kernel.ValueObjects;
 using Concertable.B2B.Conversations.Application.Errors;
 using Concertable.B2B.Conversations.Application.Interfaces;
 using Concertable.B2B.Conversations.Application.Requests;
@@ -20,7 +20,7 @@ public sealed class ModerationServiceTests
             ConversationId,
             1,
             Guid.NewGuid(),
-            IdempotencyHash.Create("payload"),
+            Sha256Digest.Of("payload"),
             Guid.NewGuid(),
             Guid.NewGuid(),
             Guid.NewGuid(),

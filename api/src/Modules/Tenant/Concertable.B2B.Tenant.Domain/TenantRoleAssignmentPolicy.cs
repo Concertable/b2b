@@ -23,7 +23,7 @@ public static class TenantRoleAssignmentPolicy
             && role.Permissions.All(grant =>
                 TenantPermission.TryParseName(grant.PermissionKey, out var permission)
                 && permission != TenantPermission.MembersInvite
-                && !AuthorizationCatalog.Permissions[permission].OwnerOnly
+                && !permission.IsOwnerOnly
                 && actor.Permissions[permission] >= grant.Access));
     }
 }

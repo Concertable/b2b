@@ -1,4 +1,3 @@
-using Concertable.B2B.DataAccess.Application;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -76,7 +75,7 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
             conversation.Id,
             conversation.AllocateMessageSequence(),
             Guid.NewGuid(),
-            IdempotencyHash.Create(content, action),
+            Sha256Digest.Of(content, action),
             tenantId,
             membershipId,
             userId,

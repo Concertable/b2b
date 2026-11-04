@@ -36,12 +36,12 @@ public sealed class TenantServiceTests
         var userId = Guid.NewGuid();
         this.authorizationContext.SetupGet(context => context.Membership).Returns(() =>
             new MembershipSnapshot(actorId, tenantContext.Object.TenantId ?? Guid.Empty,
-                userId, 1, 1, PermissionSet.From(AuthorizationCatalog.Presets["Owner"].Permissions)));
+                userId, 1, 1, PermissionSet.From(SystemRole.Owner.Grants)));
         this.roles = new Mock<IRoleRepository>();
         this.repository.Setup(value => value.ExistsByIdWithKeyShareLockAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        this.repository.Setup(value => value.GetAuthorizationCatalogRevisionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(AuthorizationCatalog.Revision);
+        this.repository.Setup(value => value.GetSystemRolesFingerprintAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(SystemRoles.Fingerprint);
         this.membershipRepository.Setup(value => value.GetSnapshotByIdWithKeyShareLockAsync(
                 It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns((Guid _, CancellationToken _) => Task.FromResult(
@@ -513,7 +513,7 @@ public sealed class TenantServiceTests
             .ReturnsAsync([new UserMembership(
                 new MembershipSnapshot(
                     Guid.NewGuid(), tenantId, userId, 1, 1,
-                    PermissionSet.From(AuthorizationCatalog.Presets["Door"].Permissions)),
+                    PermissionSet.From(SystemRole.Door.Grants)),
                 "Bare Ltd", [new RoleSummary(Guid.NewGuid(), "Door", false)], [])]);
 
         var memberships = await service.GetMembershipsAsync(userId);
