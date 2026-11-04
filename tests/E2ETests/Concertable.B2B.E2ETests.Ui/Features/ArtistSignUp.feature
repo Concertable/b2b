@@ -1,11 +1,10 @@
 ﻿Feature: Artist manager sign-up
-  A new artist manager registers via the business gateway, signs in, creates their artist profile.
+  A new artist manager registers from the artist surface, signs in, creates their artist profile.
 
   @SignUp @ArtistManager
   Scenario: New artist manager registers, signs in, creates their artist profile
-    Given a visitor is on the business gateway
-    When they click get started as an artist
-    And they click the sign up link
+    Given a visitor starts sign-up on the artist surface
+    When they click the sign up link
     And they register as ArtistManager
     And their email verification completes
     And they sign in with their new credentials

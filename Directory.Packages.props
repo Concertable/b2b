@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <ConcertableDotNetPlatformVersion>0.2.0-alpha.0.14</ConcertableDotNetPlatformVersion>
+    <ConcertableDotNetPlatformVersion>0.2.0-alpha.0.20</ConcertableDotNetPlatformVersion>
     <!-- Each service publishes on its own train, so a service package cannot track the platform
          version; a shared literal here silently ships a stale client for whichever service moved. -->
     <ConcertableAuthVersion>0.2.0-alpha.0.305</ConcertableAuthVersion>
@@ -120,6 +120,7 @@
     <PackageVersion Include="Concertable.Messaging.Application" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Messaging.Infrastructure" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Messaging.AzureServiceBus" Version="$(ConcertableDotNetPlatformVersion)" />
+    <PackageVersion Include="Concertable.Messaging.AspNetCore" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Shared" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Identity" Version="$(ConcertableDotNetPlatformVersion)" />
     <PackageVersion Include="Concertable.Seed.Infrastructure" Version="$(ConcertableDotNetPlatformVersion)" />

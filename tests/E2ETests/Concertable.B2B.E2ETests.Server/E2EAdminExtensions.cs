@@ -6,6 +6,9 @@ using Concertable.B2B.Infrastructure.Payments;
 using Concertable.B2B.Seed.Infrastructure;
 using Concertable.DataAccess.Application;
 using Concertable.Kernel;
+using Concertable.Messaging.AspNetCore.Extensions;
+using Concertable.Messaging.Infrastructure;
+using Concertable.Messaging.Infrastructure.Extensions;
 using Concertable.Payment.Client;
 using Concertable.Payment.Contracts;
 using Dapper;
@@ -39,6 +42,14 @@ public static class E2EAdminExtensions
                 configuration.GetConnectionString(B2BDb.Name)
                     ?? throw new InvalidOperationException($"Connection string '{B2BDb.Name}' is required by the B2B E2E host.")));
             services.AddHttpContextAccessor();
+            services.AddHostPauser();
+            services.AddGate(options =>
+            {
+                options.ExemptPathPrefixes.Add("/_e2e");
+                options.ExemptPathPrefixes.Add("/health");
+                options.ExemptPathPrefixes.Add("/alive");
+                options.ExemptPathPrefixes.Add("/hub");
+            });
             services.AddScoped<B2BDatabaseResetter>();
             services.AddScoped<B2BHostInitializer>();
             return services;
@@ -47,9 +58,10 @@ public static class E2EAdminExtensions
 
     extension(WebApplication app)
     {
-        public WebApplication MapB2BE2EAdmin()
+        public WebApplication UseB2BE2EAdmin()
         {
             E2EAdminSecurity.RequireE2EEnvironment(app.Environment);
+            app.UseGate();
             var group = app.MapGroup("/_e2e")
                 .AddEndpointFilter(AuthorizeAsync);
 
@@ -58,6 +70,7 @@ public static class E2EAdminExtensions
             group.MapGet("/applications/{applicationId:int}/booking-id", GetBookingIdAsync);
             group.MapGet("/applications/{applicationId:int}/state", GetApplicationStateAsync);
             group.MapGet("/applications/{applicationId:int}/concert-state", GetConcertStateAsync);
+            group.MapGet("/applications/{applicationId:int}/concert-id", GetConcertIdAsync);
             group.MapGet("/venues/{venueId:int}/opportunities/newest-id", GetNewestOpportunityIdAsync);
             group.MapPost("/applications/{applicationId:int}/method-verification", OpenMethodVerificationAsync);
             group.MapPost("/concerts/{concertId:int}/door-revenue", DeclareDoorRevenueAsync);
@@ -81,10 +94,20 @@ public static class E2EAdminExtensions
     private static async Task<IResult> ResetAsync(
         B2BDatabaseResetter resetter,
         B2BHostInitializer initializer,
+        HostPauser pauser,
         CancellationToken cancellationToken)
     {
-        await resetter.ResetAsync(cancellationToken);
-        await initializer.InitializeAsync();
+        try
+        {
+            await pauser.PauseAsync(cancellationToken);
+            await resetter.ResetAsync(cancellationToken);
+            await initializer.InitializeAsync();
+        }
+        finally
+        {
+            await pauser.ResumeAsync();
+        }
+
         return Results.NoContent();
     }
 
@@ -170,6 +193,13 @@ public static class E2EAdminExtensions
             INNER JOIN booking."Bookings" AS bookings ON bookings."Id" = concerts."BookingId"
             WHERE bookings."ApplicationId" = @applicationId
             """,
+            new { applicationId }));
+
+    private static async Task<IResult> GetConcertIdAsync(
+        int applicationId,
+        IDbConnection connection) =>
+        Results.Ok(await connection.QuerySingleAsync<int>(
+            "SELECT \"Id\" FROM concert.\"Concerts\" WHERE \"ApplicationId\" = @applicationId",
             new { applicationId }));
 
     // Accept checkout is closed once the opportunity has passed, so a seeded past application cannot be

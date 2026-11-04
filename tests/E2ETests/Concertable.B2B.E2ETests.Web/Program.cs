@@ -16,7 +16,7 @@ public static class Program
         builder.Services.AddB2BE2EAdmin(builder.Configuration, builder.Environment);
 
         var app = builder.Build();
-        app.MapB2BE2EAdmin();
+        app.UseB2BE2EAdmin();
         await app.UseB2BWebHost();
         app.Run();
     }

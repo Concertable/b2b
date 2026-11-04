@@ -1,11 +1,10 @@
 ﻿Feature: Venue manager sign-up
-  A new venue manager registers via the business gateway, signs in, creates their venue.
+  A new venue manager registers from the venue surface, signs in, creates their venue.
 
   @SignUp @VenueManager
   Scenario: New venue manager registers, signs in, creates their venue
-    Given a visitor is on the business gateway
-    When they click get started as a venue
-    And they click the sign up link
+    Given a visitor starts sign-up on the venue surface
+    When they click the sign up link
     And they register as VenueManager
     And their email verification completes
     And they sign in with their new credentials
