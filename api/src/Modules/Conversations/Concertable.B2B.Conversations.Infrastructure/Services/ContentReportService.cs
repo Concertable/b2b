@@ -34,18 +34,23 @@ internal sealed class ContentReportService : IContentReportService
         this.logger = logger;
     }
 
-    public Task<UnitResult<ReportMessageError>> SubmitAsync(int messageId, ReportMessageRequest request) =>
-        FindMessageAsync(messageId)
+    public Task<UnitResult<ReportMessageError>> SubmitAsync(
+        int conversationId,
+        int messageId,
+        ReportMessageRequest request) =>
+        FindMessageAsync(conversationId, messageId)
             .OrFailure<MessageEntity, ReportMessageError>(new ReportMessageError.MessageNotFound())
             .BindAsync(message => RecordAndNotifyAsync(message, request));
 
-    private async Task<Option<MessageEntity>> FindMessageAsync(int messageId)
+    private async Task<Option<MessageEntity>> FindMessageAsync(int conversationId, int messageId)
     {
         var message = await messageRepository.GetByIdAsync(messageId);
 
-        // Your own tenant's message is not reportable. The inbox never offers the link, but the rule has
-        // to hold server-side too — and "not yours" reads as absent, exactly like a foreign thread does.
-        return message is null || message.SenderTenantId == tenantContext.GetTenantId() ? null : message;
+        return message is null
+            || message.ConversationId != conversationId
+            || message.SenderTenantId == tenantContext.GetTenantId()
+                ? null
+                : message;
     }
 
     private async Task<UnitResult<ReportMessageError>> RecordAndNotifyAsync(MessageEntity message, ReportMessageRequest request)
@@ -67,8 +72,6 @@ internal sealed class ContentReportService : IContentReportService
         }
         catch (Exception exception)
         {
-            // The persisted report is the record the duty turns on; a transport failure must not fail a
-            // request whose write already committed, or the retry just files a duplicate.
             logger.ContentReportNotificationFailed(report.Reference, exception);
         }
 

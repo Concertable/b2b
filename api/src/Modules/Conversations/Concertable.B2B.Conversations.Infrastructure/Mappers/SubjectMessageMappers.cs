@@ -8,7 +8,7 @@ internal static class SubjectMessageMappers
         {
             Content = message.Content,
             SenderTenantId = message.SenderTenantId,
-            SentDate = message.SentDate,
+            SentDate = message.SentAt,
         };
     }
 }
