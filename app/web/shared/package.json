@@ -5,7 +5,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Concertable/b2b.git",
-    "directory": "app/web/b2b/shared"
+    "directory": "app/web/shared"
   },
   "type": "module",
   "files": [
