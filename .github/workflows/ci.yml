@@ -124,6 +124,13 @@ jobs:
             -p:ContainerImageTag="$CANDIDATE_IMAGE_TAG" \
             -p:ContainerArchiveOutputPath=${{ github.workspace }}/artifacts/images/b2b-seeding-simulator.tar.gz
 
+      - name: Patch Ubuntu package candidates
+        shell: pwsh
+        run: |
+          ./scripts/patch-container-packages.ps1 -ArchivePath '${{ github.workspace }}/artifacts/images/b2b-web.tar.gz' -Image 'concertable/b2b-web:${{ env.CANDIDATE_IMAGE_TAG }}'
+          ./scripts/patch-container-packages.ps1 -ArchivePath '${{ github.workspace }}/artifacts/images/b2b-migrations.tar.gz' -Image 'concertable/b2b-migrations:${{ env.CANDIDATE_IMAGE_TAG }}'
+          ./scripts/patch-container-packages.ps1 -ArchivePath '${{ github.workspace }}/artifacts/images/b2b-seeding-simulator.tar.gz' -Image 'concertable/b2b-seeding-simulator:${{ env.CANDIDATE_IMAGE_TAG }}'
+
       - name: Verify image candidates
         run: |
           test -s artifacts/images/b2b-migrations.tar.gz
