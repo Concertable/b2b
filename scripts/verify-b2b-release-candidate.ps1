@@ -348,6 +348,10 @@ try {
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $archivePath) -or (Get-Item -LiteralPath $archivePath).Length -eq 0) {
             throw "Could not build release-candidate image for '$($candidate.project)'."
         }
+        if ($candidate.repository -ne 'ghcr.io/concertable/b2b-workers') {
+            & (Join-Path $PSScriptRoot 'patch-container-packages.ps1') `
+                -ArchivePath $archivePath -Image "${repository}:$releaseVersion"
+        }
 
         $imageEvidence += [ordered]@{
             Candidate = $candidate

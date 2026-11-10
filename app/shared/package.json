@@ -4,8 +4,8 @@
   "private": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Concertable/concertable.git",
-    "directory": "app/b2b/shared"
+    "url": "git+https://github.com/Concertable/b2b.git",
+    "directory": "app/shared"
   },
   "type": "module",
   "files": [

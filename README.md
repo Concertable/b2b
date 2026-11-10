@@ -1,6 +1,6 @@
 # Concertable.B2B
 
-The **B2B** service of [Concertable](https://github.com/Concertable/concertable) — the
+The **B2B** service of Concertable — the
 business-facing side of the marketplace, where venue and artist managers register, manage their
 venues/artists, and create concerts. It is a *data service*: it owns its data and talks to other
 data services (Customer, Search) only through `*.Contracts` integration events, never their runtime.
