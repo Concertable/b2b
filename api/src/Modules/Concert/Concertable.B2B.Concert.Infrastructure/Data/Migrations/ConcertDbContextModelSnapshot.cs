@@ -51,10 +51,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("IdempotencyHash")
+                    b.Property<string>("Fingerprint")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
 
                     b.Property<Guid>("IssuedByTenantId")
                         .HasColumnType("uuid");

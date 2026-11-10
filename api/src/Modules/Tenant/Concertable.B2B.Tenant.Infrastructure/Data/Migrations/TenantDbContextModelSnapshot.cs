@@ -288,7 +288,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("RetiredAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("SystemPresetKey")
+                    b.Property<string>("SystemRole")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
@@ -304,9 +304,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.HasIndex("TenantId", "Name")
                         .IsUnique();
 
-                    b.HasIndex("TenantId", "SystemPresetKey")
+                    b.HasIndex("TenantId", "SystemRole")
                         .IsUnique()
-                        .HasFilter("\"SystemPresetKey\" IS NOT NULL");
+                        .HasFilter("\"SystemRole\" IS NOT NULL");
 
                     b.ToTable("RoleDefinitions", "tenant");
                 });
@@ -393,7 +393,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     b.ToTable("VerificationDocuments", "tenant");
                 });
 
-            modelBuilder.Entity("Concertable.B2B.Tenant.Infrastructure.Data.AuthorizationCatalogState", b =>
+            modelBuilder.Entity("Concertable.B2B.Tenant.Infrastructure.Data.SystemRolesFingerprint", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -401,20 +401,21 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Revision")
+                    b.Property<string>("Value")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
 
                     b.HasKey("Id");
 
-                    b.ToTable("AuthorizationCatalogState", "tenant");
+                    b.ToTable("SystemRolesFingerprint", "tenant");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            Revision = "43b845fd702a1b077afa0a3f23cab33d3bcdb8a7351ed53e9ea921cd9ff07b35"
+                            Value = "8490b4ceb4b71eb7ed121b05a96ee1d6ab69eed02e30670d684f1a65e77f60b8"
                         });
                 });
 

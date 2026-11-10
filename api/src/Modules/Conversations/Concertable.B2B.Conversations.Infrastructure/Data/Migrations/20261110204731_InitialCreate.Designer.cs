@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConversationsDbContext))]
-    [Migration("20261031005611_InitialCreate")]
+    [Migration("20261110204731_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -103,10 +103,11 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<Guid>("CreatorTenantId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("IdempotencyHash")
+                    b.Property<string>("Fingerprint")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
 
                     b.Property<Guid>("RequestId")
                         .HasColumnType("uuid");
@@ -192,16 +193,17 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     b.Property<int>("ConversationId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
+
                     b.Property<DateTime?>("HiddenAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("HiddenByUserId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("IdempotencyHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
 
                     b.Property<Guid>("RequestId")
                         .HasColumnType("uuid");

@@ -35,20 +35,6 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AuthorizationCatalogState",
-                schema: "tenant",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Revision = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AuthorizationCatalogState", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Invitations",
                 schema: "tenant",
                 columns: table => new
@@ -88,6 +74,20 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("PK_Memberships", x => x.Id);
                     table.UniqueConstraint("AK_Memberships_TenantId_Id", x => new { x.TenantId, x.Id });
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SystemRolesFingerprint",
+                schema: "tenant",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Value = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SystemRolesFingerprint", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -170,7 +170,7 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false),
-                    SystemPresetKey = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    SystemRole = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     IsProtectedOwner = table.Column<bool>(type: "boolean", nullable: false),
                     IsInvitationAssignable = table.Column<bool>(type: "boolean", nullable: false),
                     RetiredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -294,9 +294,9 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
                 schema: "tenant",
-                table: "AuthorizationCatalogState",
-                columns: new[] { "Id", "Revision" },
-                values: new object[] { 1, "43b845fd702a1b077afa0a3f23cab33d3bcdb8a7351ed53e9ea921cd9ff07b35" });
+                table: "SystemRolesFingerprint",
+                columns: new[] { "Id", "Value" },
+                values: new object[] { 1, "8490b4ceb4b71eb7ed121b05a96ee1d6ab69eed02e30670d684f1a65e77f60b8" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Activities_TenantId_At",
@@ -365,12 +365,12 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_RoleDefinitions_TenantId_SystemPresetKey",
+                name: "IX_RoleDefinitions_TenantId_SystemRole",
                 schema: "tenant",
                 table: "RoleDefinitions",
-                columns: new[] { "TenantId", "SystemPresetKey" },
+                columns: new[] { "TenantId", "SystemRole" },
                 unique: true,
-                filter: "\"SystemPresetKey\" IS NOT NULL");
+                filter: "\"SystemRole\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tenants_CreatedByUserId",
@@ -401,10 +401,6 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
                 schema: "tenant");
 
             migrationBuilder.DropTable(
-                name: "AuthorizationCatalogState",
-                schema: "tenant");
-
-            migrationBuilder.DropTable(
                 name: "BusinessActivities",
                 schema: "tenant");
 
@@ -418,6 +414,10 @@ namespace Concertable.B2B.Tenant.Infrastructure.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "RolePermissions",
+                schema: "tenant");
+
+            migrationBuilder.DropTable(
+                name: "SystemRolesFingerprint",
                 schema: "tenant");
 
             migrationBuilder.DropTable(

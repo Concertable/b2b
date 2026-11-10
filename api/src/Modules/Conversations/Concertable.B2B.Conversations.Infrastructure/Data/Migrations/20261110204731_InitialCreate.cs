@@ -103,7 +103,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     CreatorTenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedByMembershipId = table.Column<Guid>(type: "uuid", nullable: false),
                     RequestId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IdempotencyHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Fingerprint = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -173,7 +173,7 @@ namespace Concertable.B2B.Conversations.Infrastructure.Data.Migrations
                     ConversationId = table.Column<int>(type: "integer", nullable: false),
                     Sequence = table.Column<long>(type: "bigint", nullable: false),
                     RequestId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IdempotencyHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Fingerprint = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     Content = table.Column<string>(type: "text", nullable: false),
                     SenderTenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     SentByMembershipId = table.Column<Guid>(type: "uuid", nullable: false),

@@ -14,7 +14,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ConcertDbContext))]
-    [Migration("20261031005430_InitialCreate")]
+    [Migration("20261110204619_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -54,10 +54,11 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("IdempotencyHash")
+                    b.Property<string>("Fingerprint")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
 
                     b.Property<Guid>("IssuedByTenantId")
                         .HasColumnType("uuid");

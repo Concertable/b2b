@@ -13,15 +13,6 @@ internal sealed class ConcertReadDbContext(
     ConcertConfigurationProvider provider)
     : ReadDbContext(options, provider, Schema.Name), IConcertReadDbContext
 {
-    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-    {
-        base.ConfigureConventions(configurationBuilder);
-        configurationBuilder.Properties<Sha256Digest>()
-            .HaveConversion<Sha256Digest.EfCoreValueConverter>()
-            .HaveMaxLength(64)
-            .AreFixedLength();
-    }
-
     IQueryable<ConcertEntity> IConcertReadDbContext.Concerts => Query<ConcertEntity>();
     IQueryable<InvoiceEntity> IConcertReadDbContext.Invoices => Query<InvoiceEntity>();
     IQueryable<SelfBillingAgreementEntity> IConcertReadDbContext.SelfBillingAgreements =>

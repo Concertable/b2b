@@ -48,7 +48,7 @@ namespace Concertable.B2B.Concert.Infrastructure.Data.Migrations
                     IssuedByTenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     Operation = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     RequestId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IdempotencyHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Fingerprint = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     Outcome = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     RecordedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
