@@ -1,4 +1,4 @@
-﻿using Concertable.B2B.Concert.Domain.Entities;
+using Concertable.B2B.Concert.Domain.Entities;
 using Concertable.B2B.Concert.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +17,7 @@ internal sealed class ConcertCommandReceiptRepository
     public void Add(ConcertCommandReceipt receipt) =>
         context.ConcertCommandReceipts.Add(receipt);
 
-    public async Task<ConcertCommandReceipt?> GetByTenantIdAndOperationAndRequestIdForUpdateAsync(
+    public async Task<ConcertCommandReceipt?> GetByRequestForUpdateAsync(
         Guid issuedByTenantId,
         string operation,
         Guid requestId,

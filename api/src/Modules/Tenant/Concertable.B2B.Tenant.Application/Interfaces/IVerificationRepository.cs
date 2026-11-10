@@ -17,5 +17,5 @@ internal interface IVerificationRepository : IRepository<TenantVerificationEntit
 
     Task<bool> IsApprovedByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
 
-    Task<IPagination<PendingVerificationProjection>> GetPendingAsync(IPageParams pageParams);
+    Task<IPagination<PendingVerificationDto>> GetPendingAsync(IPageParams pageParams);
 }

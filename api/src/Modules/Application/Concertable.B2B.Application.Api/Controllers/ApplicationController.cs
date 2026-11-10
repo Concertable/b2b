@@ -1,3 +1,5 @@
+using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Application.Application.DTOs;
 using Concertable.B2B.Application.Api.Mappers;
 using Concertable.B2B.Application.Api.Requests;
 using Concertable.B2B.Application.Api.Responses;
@@ -11,90 +13,100 @@ namespace Concertable.B2B.Application.Api.Controllers;
 internal sealed class ApplicationController : ControllerBase
 {
     private readonly IApplicationService applicationService;
-    private readonly IApplicationMapper mapper;
     private readonly IMembershipContext membership;
+    private readonly IPermissionCatalog permissionCatalog;
 
     public ApplicationController(
         IApplicationService applicationService,
-        IApplicationMapper mapper,
-        IMembershipContext membership)
+        IMembershipContext membership,
+        IPermissionCatalog permissionCatalog)
     {
         this.applicationService = applicationService;
-        this.mapper = mapper;
         this.membership = membership;
+        this.permissionCatalog = permissionCatalog;
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpGet("opportunity/{id}")]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>>> GetAllByOpportunityId(int id)
+    [HasPermission(TenantPermission.TermsReadName)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetAllByOpportunityId(
+        int id,
+        CancellationToken ct)
     {
-        var result = await applicationService.GetByOpportunityIdAsync(id);
-        return (await result.MapAsync(mapper.ToVenueResponsesAsync)).ToOkOrProblem();
+        var result = await applicationService.GetByOpportunityIdAsync(id, ct);
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
     [EnableRateLimiting(RateLimitPolicies.Apply)]
     [HttpPost("{opportunityId}")]
-    public async Task<ActionResult<ApplicationResponse<ArtistApplicationActions>>> Apply(
+    public async Task<ActionResult<ApplicationProposalResponse>> Apply(
         int opportunityId,
         [FromBody] ApplyRequest request,
         CancellationToken ct)
     {
         var result = await applicationService.ApplyAsync(opportunityId, request.ESignature, ct);
-        var response = await result.MapAsync(mapper.ToArtistResponseAsync);
-        return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}");
+        var response = result.Map(proposal => proposal.ToResponse(membership.Membership, permissionCatalog));
+        return response.ToCreatedOrProblem(application => $"/api/application/{application.Id}/proposal");
     }
 
     [HttpGet("artist/pending")]
-    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetPendingForArtist()
+    [HasPermission(TenantPermission.TermsReadName)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetPendingForArtist(CancellationToken ct)
     {
-        var result = await applicationService.GetPendingForArtistAsync();
-        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
+        var result = await applicationService.GetPendingForArtistAsync(ct);
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HttpGet("artist/recently-denied")]
-    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetRecentDeniedForArtist()
+    [HasPermission(TenantPermission.TermsReadName)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetRecentDeniedForArtist(
+        CancellationToken ct)
     {
-        var result = await applicationService.GetRecentDeniedForArtistAsync();
-        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
+        var result = await applicationService.GetRecentDeniedForArtistAsync(ct);
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HttpGet("venue/current")]
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.OperationsViewName)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<VenueApplicationActions>>>> GetPendingForCurrentVenue()
+    [HasPermission(TenantPermission.TermsReadName)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetPendingForCurrentVenue(
+        CancellationToken ct)
     {
-        var result = await applicationService.GetPendingForCurrentVenueAsync();
-        return (await result.MapAsync(mapper.ToVenueResponsesAsync)).ToOkOrProblem();
+        var result = await applicationService.GetPendingForCurrentVenueAsync(ct);
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HttpGet("artist/current")]
     [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.OperationsViewName)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse<ArtistApplicationActions>>>> GetCurrentForCurrentArtist()
+    [HasPermission(TenantPermission.TermsReadName)]
+    public async Task<ActionResult<IReadOnlyList<ApplicationProposalResponse>>> GetCurrentForCurrentArtist(
+        CancellationToken ct)
     {
-        var result = await applicationService.GetCurrentForCurrentArtistAsync();
-        return (await result.MapAsync(mapper.ToArtistResponsesAsync)).ToOkOrProblem();
+        var result = await applicationService.GetCurrentForCurrentArtistAsync(ct);
+        return result.Map(proposals => proposals.ToResponses(membership.Membership, permissionCatalog)).ToOkOrProblem();
     }
 
     [HasPermission(TenantPermission.OperationsViewName)]
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ApplicationResponse>> GetById(int id)
+    [HttpGet("{id:int}/summary")]
+    public async Task<ActionResult<ApplicationSummaryResponse>> GetSummary(int id, CancellationToken ct)
     {
-        if (membership.Membership is not { } active)
-            return Forbid();
-
-        var result = await applicationService.GetByIdAsync(id);
-        return (await result.MapAsync(dto => mapper.ToResponseAsync(dto, active.TenantId))).ToOkOrProblem();
+        var result = await applicationService.GetSummaryAsync(id, ct);
+        return result.Map(summary => summary.ToResponse()).ToOkOrProblem();
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
+    [HasPermission(TenantPermission.TermsReadName)]
+    [HttpGet("{id:int}/proposal")]
+    public async Task<ActionResult<ApplicationProposalResponse>> GetProposal(int id, CancellationToken ct)
+    {
+        var result = await applicationService.GetProposalAsync(id, ct);
+        return result.Map(proposal => proposal.ToResponse(membership.Membership, permissionCatalog)).ToOkOrProblem();
+    }
+
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
     [HttpGet("opportunity/{opportunityId}/eligibility")]
     public async Task<ActionResult<bool>> CanApply(int opportunityId)
@@ -102,7 +114,6 @@ internal sealed class ApplicationController : ControllerBase
         return Ok(await applicationService.CanApplyAsync(opportunityId));
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpGet("{applicationId}/eligibility")]
     public async Task<ActionResult<bool>> CanAccept(int applicationId)
@@ -110,7 +121,6 @@ internal sealed class ApplicationController : ControllerBase
         return Ok(await applicationService.CanAcceptAsync(applicationId));
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
     [EnableRateLimiting(RateLimitPolicies.Checkout)]
     [HttpPost("opportunity/{opportunityId}/checkout")]
@@ -119,7 +129,6 @@ internal sealed class ApplicationController : ControllerBase
         return (await applicationService.ApplyCheckoutAsync(opportunityId)).ToOkOrProblem();
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpPost("{applicationId}/checkout")]
     public async Task<ActionResult<Checkout>> AcceptCheckout(int applicationId)
@@ -127,7 +136,6 @@ internal sealed class ApplicationController : ControllerBase
         return (await applicationService.AcceptCheckoutAsync(applicationId)).ToOkOrProblem();
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpPost("{applicationId}/accept")]
     public async Task<IActionResult> Accept(
@@ -141,7 +149,6 @@ internal sealed class ApplicationController : ControllerBase
             ct)).ToNoContentOrProblem();
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
     [HasPermission(TenantPermission.ApplicationsSubmitName)]
     [HttpPost("{applicationId}/withdraw")]
     public async Task<IActionResult> Withdraw(int applicationId, CancellationToken ct)
@@ -149,7 +156,6 @@ internal sealed class ApplicationController : ControllerBase
         return (await applicationService.WithdrawAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpPost("{applicationId}/reject")]
     public async Task<IActionResult> Reject(int applicationId, CancellationToken ct)
@@ -157,7 +163,6 @@ internal sealed class ApplicationController : ControllerBase
         return (await applicationService.RejectAsync(applicationId, ct)).ToNoContentOrProblem();
     }
 
-    [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
     [HasPermission(TenantPermission.ApplicationsDecideName)]
     [HttpPost("{applicationId}/cancel")]
     public async Task<IActionResult> Cancel(int applicationId, CancellationToken ct)

@@ -27,7 +27,7 @@ internal static class ConcertMappers
 
     extension(ConcertSummary concert)
     {
-        public SummaryResponse ToResponse() =>
+        public ConcertSummaryResponse ToResponse() =>
             new(
                 concert.Id,
                 concert.Name,
@@ -40,13 +40,13 @@ internal static class ConcertMappers
 
     extension(IEnumerable<ConcertSummary> concerts)
     {
-        public IEnumerable<SummaryResponse> ToSummaryResponses() =>
+        public IEnumerable<ConcertSummaryResponse> ToSummaryResponses() =>
             concerts.Select(concert => concert.ToResponse());
     }
 
     extension(ConcertOperations concert)
     {
-        public OperationsResponse ToResponse() => new()
+        public ConcertOperationsResponse ToResponse() => new()
         {
             Id = concert.Id,
             ApplicationId = concert.ApplicationId,
@@ -74,7 +74,7 @@ internal static class ConcertMappers
 
     extension(ConcertFinance concert)
     {
-        public FinanceResponse ToResponse() =>
+        public ConcertFinanceResponse ToResponse() =>
             new(
                 concert.Id,
                 concert.TicketsSold,

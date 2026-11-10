@@ -71,6 +71,7 @@ public static class ApplicationFactory
         application.With(nameof(ApplicationEntity.DealType), deal.DealType);
         application.With(nameof(ApplicationEntity.VenueTenantId), opportunity.TenantId);
         application.With(nameof(ApplicationEntity.ArtistTenantId), artist.TenantId);
+        application.InitializePrincipalAccess(signedAtUtc);
         application.RecordArtistESignature(
             new ContractSignature(artist.UserId, signedAtUtc, IPAddress.Loopback, null, artist.Name, null),
             ApplicationTermsFingerprint.Calculate(ToDto(deal), opportunity.Period));
