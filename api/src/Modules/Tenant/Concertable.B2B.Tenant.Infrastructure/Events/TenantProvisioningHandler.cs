@@ -50,7 +50,8 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
 
         var pendingInvitations = await context.Invitations
             .Where(invitation =>
-                invitation.Email == invitedEmail
+                candidateTenantIds.Contains(invitation.TenantId)
+                && invitation.Email == invitedEmail
                 && invitation.Status == InvitationStatus.Pending
                 && invitation.ExpiresAt > now)
             .OrderBy(invitation => invitation.TenantId)
