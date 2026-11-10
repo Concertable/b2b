@@ -30,3 +30,5 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not build the Workers image.' }
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $archive) -or (Get-Item -LiteralPath $archive).Length -eq 0) {
     throw 'Could not archive the Workers image.'
 }
+
+& (Join-Path $PSScriptRoot 'patch-container-packages.ps1') -ArchivePath $archive -Image $reference
