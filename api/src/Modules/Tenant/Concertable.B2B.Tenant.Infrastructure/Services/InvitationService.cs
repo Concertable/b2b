@@ -89,7 +89,7 @@ internal sealed class InvitationService : IInvitationService
             || selectedRoles is null
             || !await CanAssignAsync(actor, selectedRoles, ct))
             return new InviteMemberError.NotPermitted();
-        if (!RolesAvailableForTenant(tenant, selectedRoles))
+        if (!TenantRoleAssignmentPolicy.AreAvailableForTenant(tenant, selectedRoles))
             return new InviteMemberError.RoleNotAvailableForTenant();
 
         var email = request.Email.Trim().ToLowerInvariant();
@@ -173,7 +173,8 @@ internal sealed class InvitationService : IInvitationService
             || inviter.PermissionVersion != invitation.InviterPermissionVersion
             || inviter.RolePolicyVersion != invitation.InviterRolePolicyVersion
             || await tenantRepository.GetSystemRolesFingerprintAsync(ct) != SystemRoles.Fingerprint
-            || !await CanAssignAsync(inviter, selectedRoles, ct))
+            || !await CanAssignAsync(inviter, selectedRoles, ct)
+            || !TenantRoleAssignmentPolicy.AreAvailableForTenant(tenant, selectedRoles))
             return new AcceptInvitationError.InviterNotAuthorized();
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
@@ -201,19 +202,6 @@ internal sealed class InvitationService : IInvitationService
             actor,
             await roles.HasProtectedOwnerAsync(actor.TenantId, actor.MembershipId, ct),
             selectedRoles);
-
-    private static bool RolesAvailableForTenant(
-        TenantEntity tenant, IReadOnlyCollection<TenantRoleDefinition> selectedRoles)
-    {
-        var activeActivities = tenant.BusinessActivities
-            .Where(activity => activity.IsActive)
-            .Select(activity => activity.Kind)
-            .ToHashSet();
-        return selectedRoles.All(role =>
-            role.SystemRole is not { } systemRole
-            || systemRole.RequiredActivity is not { } required
-            || activeActivities.Contains(required));
-    }
 
     private static IReadOnlyList<RoleSummary> Summaries(
         IEnumerable<TenantRoleDefinition> selectedRoles) =>

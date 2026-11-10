@@ -81,6 +81,7 @@ internal sealed class TenantProvisioningHandler : IIntegrationEventHandler<Crede
                 || snapshot.PermissionVersion != invitation.InviterPermissionVersion
                 || tenant.RolePolicyVersion != invitation.InviterRolePolicyVersion
                 || invitedRoles.Length != invitedRoleIds.Length
+                || !TenantRoleAssignmentPolicy.AreAvailableForTenant(tenant, invitedRoles)
                 || !TenantRoleAssignmentPolicy.CanAssign(
                     snapshot, inviterRoles.Any(role => role.IsProtectedOwner), invitedRoles))
             {

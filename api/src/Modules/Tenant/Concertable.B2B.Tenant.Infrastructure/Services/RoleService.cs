@@ -93,7 +93,7 @@ internal sealed class RoleService : IRoleService
             || !ValidName(request.Name))
             return new CreateRoleError.Invalid();
         var name = request.Name.Trim();
-        if (await roles.NameExistsAsync(tenantId, name, null, ct))
+        if (IsSystemRoleName(name) || await roles.NameExistsAsync(tenantId, name, null, ct))
             return new CreateRoleError.NameInUse();
 
         var role = TenantRoleDefinition.CreateCustom(
@@ -124,7 +124,7 @@ internal sealed class RoleService : IRoleService
         if (!TryParseGrants(request.Permissions, out var grants) || !ValidName(request.Name))
             return new UpdateRoleError.Invalid();
         var name = request.Name.Trim();
-        if (await roles.NameExistsAsync(tenantId, name, roleId, ct))
+        if (IsSystemRoleName(name) || await roles.NameExistsAsync(tenantId, name, roleId, ct))
             return new UpdateRoleError.NameInUse();
 
         role.Update(name, request.IsInvitationAssignable, grants);
@@ -169,7 +169,7 @@ internal sealed class RoleService : IRoleService
             if (replacementId == roleId)
                 return new RetireRoleError.InvalidReplacement();
             replacement = await roles.GetActiveByIdAsync(tenantId, replacementId, ct);
-            if (replacement is null)
+            if (replacement is null || !TenantRoleAssignmentPolicy.AreAvailableForTenant(tenant, [replacement]))
                 return new RetireRoleError.InvalidReplacement();
         }
         if (affected.Count > 0 && replacement is null)
@@ -199,6 +199,9 @@ internal sealed class RoleService : IRoleService
 
     private static bool ValidName(string name) =>
         !string.IsNullOrWhiteSpace(name) && name.Trim().Length <= 100;
+
+    private static bool IsSystemRoleName(string name) =>
+        SystemRoles.All.Any(role => string.Equals(role.ToString(), name, StringComparison.OrdinalIgnoreCase));
 
     private static bool TryParseGrants(
         IReadOnlyList<RolePermissionDto> items,

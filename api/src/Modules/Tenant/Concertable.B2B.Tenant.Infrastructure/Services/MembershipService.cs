@@ -2,6 +2,7 @@ using Concertable.B2B.Tenant.Infrastructure.Authorization;
 using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.Requests;
+using Concertable.B2B.Tenant.Domain;
 using Concertable.B2B.User.Contracts;
 using Concertable.Kernel.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -95,14 +96,7 @@ internal sealed class MembershipService : IMembershipService
         var selectedRoles = await roles.ResolveActiveAsync(tenantId, request.RoleIds, ct);
         if (selectedRoles is null)
             return new ChangeMemberRolesError.InvalidRoles();
-        var activeActivities = tenant.BusinessActivities
-            .Where(activity => activity.IsActive)
-            .Select(activity => activity.Kind)
-            .ToHashSet();
-        if (!selectedRoles.All(role =>
-                role.SystemRole is not { } systemRole
-                || systemRole.RequiredActivity is not { } required
-                || activeActivities.Contains(required)))
+        if (!TenantRoleAssignmentPolicy.AreAvailableForTenant(tenant, selectedRoles))
             return new ChangeMemberRolesError.RoleNotAvailableForTenant();
 
         await repository.SaveChangesAsync(ct);

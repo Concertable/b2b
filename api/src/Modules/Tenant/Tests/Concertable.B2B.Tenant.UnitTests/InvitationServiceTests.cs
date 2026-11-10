@@ -147,6 +147,42 @@ public sealed class InvitationServiceTests
             Times.Never);
     }
 
+    [Theory]
+    [InlineData(SystemRole.Door)]
+    [InlineData(SystemRole.Sound)]
+    public async Task AcceptInvitationAsync_RequiredActivityRetired_DoesNotAssignInvitedRole(SystemRole invitedSystemRole)
+    {
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        var inviterRole = Preset(tenantId, SystemRole.Owner);
+        var invitedRole = Preset(tenantId, invitedSystemRole);
+        var inviter = TenantMembershipEntity.Create(tenantId, Guid.NewGuid(), [inviterRole.Id], null, now);
+        var tenant = TenantEntity.Create("Acme Ltd", "contact@acme.test", inviter.UserId, now, tenantId);
+        tenant.ActivateBusinessActivity(TenantBusinessActivityKind.VenueOperator, now);
+        var invitation = TenantInvitationEntity.Create(
+            tenantId, "member@example.com", [invitedRole.Id], inviter.Id, 1, 1, now, TimeSpan.FromDays(7));
+        tenant.RetireBusinessActivity(TenantBusinessActivityKind.VenueOperator, now.AddSeconds(1));
+        currentUser.SetupGet(value => value.Id).Returns(userId);
+        currentUser.SetupGet(value => value.Email).Returns(invitation.Email);
+        repository.Setup(value => value.GetByIdAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
+        repository.Setup(value => value.GetByIdWithRowLockAsync(invitation.Id, It.IsAny<CancellationToken>())).ReturnsAsync(invitation);
+        tenantRepository.Setup(value => value.GetByIdWithUpdateLockAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        membershipRepository.Setup(value => value.GetSnapshotByIdWithKeyShareLockAsync(inviter.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Snapshot(inviter, SystemRole.Owner));
+        roles.Setup(value => value.ResolveActiveAsync(tenantId, It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([invitedRole]);
+        roles.Setup(value => value.HasProtectedOwnerAsync(tenantId, inviter.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        var result = await service.AcceptInvitationAsync(invitation.Id);
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<AcceptInvitationError.InviterNotAuthorized>(error);
+        Assert.Equal(InvitationStatus.Pending, invitation.Status);
+        membershipRepository.Verify(
+            value => value.InsertAsync(It.IsAny<TenantMembershipEntity>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
     public async Task AcceptInvitationAsync_UnauthenticatedUser_ReturnsForbiddenWithoutLoadingInvitation()
     {

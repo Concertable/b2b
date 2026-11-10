@@ -91,6 +91,13 @@ public sealed class TenantApiFixture : ApiFixture
         await dbContext.SaveChangesAsync();
     }
 
+    public async Task RetireBusinessActivityAsync(Guid tenantId, TenantBusinessActivityKind activity)
+    {
+        var tenant = await dbContext.Tenants.SingleAsync(candidate => candidate.Id == tenantId);
+        tenant.RetireBusinessActivity(activity, DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+    }
+
     public async Task ChangeMembershipRolesAsync(Guid tenantId, Guid userId, params string[] presetKeys)
     {
         var membership = await dbContext.Memberships.SingleAsync(
