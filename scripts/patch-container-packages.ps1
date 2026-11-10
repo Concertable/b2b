@@ -89,7 +89,7 @@ try {
         throw "Container image '$Image' lost runtime metadata while updating apt packages."
     }
 
-    & docker run --rm --entrypoint /bin/sh $Image -c $verifyCommand
+    & docker run --rm --entrypoint /bin/sh $Image -c ($verifyCommand.Replace("`r`n", "`n"))
     if ($LASTEXITCODE -ne 0) { throw "Container image '$Image' does not contain the fixed apt packages." }
 
     & docker image save --output $archive $Image
