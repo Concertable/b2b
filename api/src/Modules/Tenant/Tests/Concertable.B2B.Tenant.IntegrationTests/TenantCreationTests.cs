@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using Concertable.Auth.Contracts;
+using Concertable.Auth.Contracts.Events;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
@@ -50,6 +52,32 @@ public sealed class TenantCreationTests : IAsyncLifetime
         var problem = await conflict.Content.ReadAsync<ProblemDetails>();
         Assert.NotNull(problem);
         Assert.Equal("You have already created an organization.", problem.Detail);
+        Assert.Equal(1, await fixture.Tenants.CountAsync(tenant => tenant.CreatedByUserId == userId));
+        Assert.Equal(1, await fixture.Memberships.CountAsync(membership => membership.UserId == userId));
+    }
+
+    [Fact]
+    public async Task Create_DelayedRegistration_ReusesTheManuallyCreatedTenant()
+    {
+        var userId = Guid.NewGuid();
+        var email = $"{userId:N}@tenant.test";
+        using var client = fixture.CreateClient(userId, email);
+        var request = new
+        {
+            displayName = "Manually created tenant",
+            contactEmail = email,
+            activities = new[] { TenantBusinessActivityKind.VenueOperator.ToString() }
+        };
+        Task provisioning = Task.CompletedTask;
+
+        var response = await fixture.RunWithTenantCreationBarrierAsync(
+            userId,
+            () => client.PostAsJsonAsync("/api/organization", request),
+            () => provisioning = fixture.ProvisionAsync(new CredentialRegisteredEvent(
+                userId, email, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id)));
+        await provisioning;
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.Equal(1, await fixture.Tenants.CountAsync(tenant => tenant.CreatedByUserId == userId));
         Assert.Equal(1, await fixture.Memberships.CountAsync(membership => membership.UserId == userId));
     }

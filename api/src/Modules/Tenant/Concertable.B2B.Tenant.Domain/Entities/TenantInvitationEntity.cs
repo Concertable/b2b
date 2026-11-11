@@ -10,17 +10,19 @@ public sealed class TenantInvitationEntity : IGuidEntity, IEventRaiser
 
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
-
     public string Email { get; private set; } = null!;
-    public TenantRole Role { get; private set; }
     public InvitationStatus Status { get; private set; }
     public Guid InviterMembershipId { get; private set; }
     public long InviterPermissionVersion { get; private set; }
+    public long InviterRolePolicyVersion { get; private set; }
     public long Version { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime ExpiresAt { get; private set; }
     public Guid? AcceptedByUserId { get; private set; }
     public DateTime? AcceptedAt { get; private set; }
+
+    private readonly List<InvitationRoleAssignment> assignments = [];
+    public IReadOnlyList<InvitationRoleAssignment> Assignments => assignments.AsReadOnly();
 
     private readonly EventRaiser events = new();
     public IReadOnlyList<IDomainEvent> DomainEvents => events.DomainEvents;
@@ -31,26 +33,32 @@ public sealed class TenantInvitationEntity : IGuidEntity, IEventRaiser
     public static TenantInvitationEntity Create(
         Guid tenantId,
         string email,
-        TenantRole role,
+        IReadOnlyCollection<Guid> roleIds,
         Guid inviterMembershipId,
         long inviterPermissionVersion,
+        long inviterRolePolicyVersion,
         DateTime at,
         TimeSpan ttl)
     {
+        if (roleIds.Count == 0 || roleIds.Any(id => id == Guid.Empty)
+            || roleIds.Count != roleIds.Distinct().Count())
+            throw new ArgumentException("Invalid invitation role assignment.");
         var invitation = new TenantInvitationEntity
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             Email = email,
-            Role = role,
             Status = InvitationStatus.Pending,
             InviterMembershipId = inviterMembershipId,
             InviterPermissionVersion = inviterPermissionVersion,
+            InviterRolePolicyVersion = inviterRolePolicyVersion,
             Version = 1,
             CreatedAt = at,
             ExpiresAt = at + ttl,
         };
-        invitation.events.Raise(new TenantInvitationCreatedDomainEvent(invitation.Id, email, role));
+        invitation.assignments.AddRange(roleIds.Select(id =>
+            InvitationRoleAssignment.Create(tenantId, invitation.Id, id)));
+        invitation.events.Raise(new TenantInvitationCreatedDomainEvent(invitation.Id, email));
         return invitation;
     }
 

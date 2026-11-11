@@ -1,5 +1,4 @@
 global using Concertable.B2B.Authorization.Contracts;
-global using Concertable.B2B.Authorization.Contracts.Enums;
 global using Concertable.B2B.Application.Application.DTOs;
 global using Concertable.B2B.Application.Application.Interfaces;
 global using Concertable.B2B.Application.Application.Requests;

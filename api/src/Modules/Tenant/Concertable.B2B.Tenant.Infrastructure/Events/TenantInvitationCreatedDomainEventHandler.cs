@@ -23,7 +23,7 @@ internal sealed class TenantInvitationCreatedDomainEventHandler : IPreCommitDoma
 
         const string subject = "You've been invited to join an organization on Concertable";
         var body =
-            $"You've been invited to join an organization on Concertable as {e.Role}. " +
+            $"You've been invited to join an organization on Concertable . " +
             $"Register or sign in on the manager portal, then accept your invitation here: {acceptLink}";
 
         return bus.SendAsync(new SendEmailCommand(e.Email, subject, body), ct);

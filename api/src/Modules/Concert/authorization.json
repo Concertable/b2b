@@ -1,0 +1,159 @@
+{
+  "permissions": [
+    {
+      "name": "concerts.ops_edit",
+      "symbol": "ConcertsOpsEdit",
+      "label": "Edit concert operations",
+      "category": "Concert",
+      "assignableAudiences": [
+        "AssignedResources",
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources",
+        "Staff": "AssignedResources",
+        "Sound": "AssignedResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "concert",
+          "facet": "Operations",
+          "policy": "venue_principal",
+          "requiresScopes": [
+            "Operations"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "concerts.check_in",
+      "symbol": "ConcertsCheckIn",
+      "label": "Check in attendees",
+      "category": "Concert",
+      "assignableAudiences": [
+        "AssignedResources",
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources",
+        "Staff": "AssignedResources",
+        "Door": "AssignedResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "concert",
+          "facet": "Operations",
+          "policy": "venue_principal",
+          "requiresScopes": [
+            "Operations"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "concerts.declare_door_revenue",
+      "symbol": "ConcertsDeclareDoorRevenue",
+      "label": "Declare door revenue",
+      "category": "Concert",
+      "assignableAudiences": [
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "concert",
+          "facet": "Finance",
+          "policy": "venue_principal",
+          "requiresScopes": [
+            "Operations",
+            "Finance"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "concerts.manage",
+      "symbol": "ConcertsManage",
+      "label": "Manage concerts",
+      "category": "Concert",
+      "assignableAudiences": [
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "concert",
+          "facet": "Operations",
+          "policy": "either_principal",
+          "requiresScopes": [
+            "Operations"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "resources.share",
+      "symbol": "ResourcesShare",
+      "label": "Share resources",
+      "category": "Concert",
+      "assignableAudiences": [
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "concert",
+          "facet": null,
+          "policy": "principal_administration",
+          "requiresScopes": []
+        },
+        {
+          "resource": "conversation",
+          "facet": null,
+          "policy": "principal_administration",
+          "requiresScopes": []
+        }
+      ]
+    },
+    {
+      "name": "concerts.publish",
+      "symbol": "ConcertsPublish",
+      "label": "Publish concerts",
+      "category": "Concert",
+      "assignableAudiences": [
+        "TenantResources"
+      ],
+      "ownerOnly": false,
+      "systemPresets": {
+        "Owner": "TenantResources",
+        "Manager": "TenantResources"
+      },
+      "resourceBindings": [
+        {
+          "resource": "concert",
+          "facet": "Operations",
+          "policy": "venue_principal",
+          "requiresScopes": [
+            "Operations"
+          ]
+        }
+      ]
+    }
+  ]
+}

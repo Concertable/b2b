@@ -43,9 +43,11 @@ public sealed class MemberManagementSteps
     public async Task ColleagueHasAPendingVenueInvitation()
     {
         using var client = await fixture.App.CreateAuthenticatedClientAsync(fixture.App.SeedState.VenueManager1.Email);
+        var roles = await client.GetFromJsonAsync<List<RoleReference>>("/api/organization/roles");
+        var staffRole = roles!.Single(role => role.Name == "Staff");
         var response = await client.PostAsJsonAsync(
             "/api/organization/invitations",
-            new { email = ColleagueEmail, role = "staff" });
+            new { email = ColleagueEmail, roleIds = new[] { staffRole.Id } });
         response.EnsureSuccessStatusCode();
         var invitation = await response.Content.ReadFromJsonAsync<InvitationReference>();
         invitationId = invitation!.Id;
@@ -100,13 +102,13 @@ public sealed class MemberManagementSteps
     public Task ColleagueAppearsInTheRoster() =>
         Assertions.Expect(membersPage.MemberRow(ColleagueId)).ToBeVisibleAsync(new() { Timeout = 30_000 });
 
-    [When(@"the owner changes the colleague's role to (\w+)")]
-    public Task OwnerChangesColleagueRole(string role) =>
-        membersPage.ChangeRoleAsync(ColleagueId, role);
+    [When(@"the owner adds (\w+) to the colleague's roles")]
+    public Task OwnerAddsColleagueRole(string role) =>
+        membersPage.AddRoleAsync(ColleagueId, role);
 
-    [Then(@"the colleague's role shows as (\w+)")]
-    public Task ColleagueRoleShowsAs(string role) =>
-        membersPage.ExpectRoleAsync(ColleagueId, role);
+    [Then(@"the colleague's roles include (.+)")]
+    public Task ColleagueRolesInclude(string roles) =>
+        membersPage.ExpectRolesAsync(ColleagueId, roles.Split(" and ", StringSplitOptions.TrimEntries));
 
     [When(@"the owner removes the colleague")]
     public Task OwnerRemovesTheColleague() => membersPage.RemoveAsync(ColleagueId);
@@ -130,4 +132,5 @@ public sealed class MemberManagementSteps
     }
 
     private sealed record InvitationReference(Guid Id);
+    private sealed record RoleReference(Guid Id, string Name);
 }

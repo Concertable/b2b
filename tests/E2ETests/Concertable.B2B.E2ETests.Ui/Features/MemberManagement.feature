@@ -11,8 +11,8 @@ Feature: Organization member management
     And the colleague accepts the invitation through the emailed link
     And the owner returns to the members page
     Then the colleague appears in the member roster
-    When the owner changes the colleague's role to Finance
-    Then the colleague's role shows as Finance
+    When the owner adds Finance to the colleague's roles
+    Then the colleague's roles include Finance and Staff
     When the owner removes the colleague
     Then the colleague no longer appears in the roster
 

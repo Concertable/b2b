@@ -1,3 +1,5 @@
+using Concertable.B2B.E2ETests.Ui.Support;
+
 namespace Concertable.B2B.E2ETests.Ui.PageObjects;
 
 public sealed class MembersPage
@@ -17,7 +19,7 @@ public sealed class MembersPage
     private ILocator Switcher => page.GetByTestId("tenant-switcher");
 
     public ILocator MemberRow(Guid userId) => page.GetByTestId($"member-row-{userId}");
-    private ILocator MemberRole(Guid userId) => page.GetByTestId($"member-role-{userId}");
+    private ILocator MemberRolesSave(Guid userId) => page.GetByTestId($"member-roles-{userId}");
     private ILocator RemoveMember(Guid userId) => page.GetByTestId($"remove-member-{userId}");
 
     public Task GotoAsync() => page.GotoSpaAsync($"{spaBaseUrl}/settings/members");
@@ -30,24 +32,30 @@ public sealed class MembersPage
 
     public async Task<Guid> InviteAsync(string email)
     {
-        var invited = page.WaitForResponseAsync(r =>
-            r.Url.Contains("/api/organization/invitations")
-            && r.Request.Method == "POST");
+        var invited = page.WaitForResponseAsync(response =>
+            response.Url.Contains("/api/organization/invitations")
+            && response.Request.Method == "POST");
         await InviteEmail.FillAsync(email);
+        await page.GetByLabel("Staff").EnsureCheckedAsync();
         await InviteSubmit.ClickAsync();
         var response = await invited;
         var body = await response.JsonAsync();
         return body!.Value.GetProperty("id").GetGuid();
     }
 
-    public async Task ChangeRoleAsync(Guid userId, string role)
+    public async Task AddRoleAsync(Guid userId, string role)
     {
-        await MemberRole(userId).ClickAsync();
-        await page.GetByRole(AriaRole.Option, new() { Name = role, Exact = true }).ClickAsync();
+        var row = MemberRow(userId);
+        await row.GetByLabel(role).EnsureCheckedAsync();
+        await MemberRolesSave(userId).ClickAsync();
     }
 
-    public Task ExpectRoleAsync(Guid userId, string role) =>
-        Assertions.Expect(MemberRole(userId)).ToContainTextAsync(role);
+    public async Task ExpectRolesAsync(Guid userId, params string[] roles)
+    {
+        var row = MemberRow(userId);
+        foreach (var role in roles)
+            await Assertions.Expect(row.GetByLabel(role)).ToHaveAttributeAsync("aria-checked", "true");
+    }
 
     public Task RemoveAsync(Guid userId) => RemoveMember(userId).ClickAsync();
 

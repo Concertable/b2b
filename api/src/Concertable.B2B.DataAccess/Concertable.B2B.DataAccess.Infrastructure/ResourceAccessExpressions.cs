@@ -15,7 +15,8 @@ public static class ResourceAccessExpressions
                 member.MembershipId == context.ActiveMembershipId
                 && member.TenantId == context.ActiveTenantId
                 && member.UserId == context.ActiveUserId
-                && member.PermissionVersion == context.ActivePermissionVersion)
+                && member.PermissionVersion == context.ActivePermissionVersion
+                && member.RolePolicyVersion == context.ActiveRolePolicyVersion)
             && grant.TenantId == context.ActiveTenantId
             && grant.RevokedAt == null
             && grant.ValidFrom <= context.ResourceAccess.UtcNow

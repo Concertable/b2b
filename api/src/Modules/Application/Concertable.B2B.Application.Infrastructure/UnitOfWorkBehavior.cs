@@ -7,6 +7,6 @@ internal interface IUnitOfWorkBehavior
 
 internal sealed class UnitOfWorkBehavior(
     ApplicationDbContext context,
-    CommandTransactionFactory transactions,
-    CommandTransactionAccessor accessor)
-    : CommandUnitOfWorkBehavior<ApplicationDbContext>(context, transactions, accessor), IUnitOfWorkBehavior;
+    UnitOfWorkRunner unitOfWorkRunner,
+    UnitOfWorkAccessor accessor)
+    : Concertable.B2B.DataAccess.Infrastructure.UnitOfWorkBehavior<ApplicationDbContext>(context, unitOfWorkRunner, accessor), IUnitOfWorkBehavior;

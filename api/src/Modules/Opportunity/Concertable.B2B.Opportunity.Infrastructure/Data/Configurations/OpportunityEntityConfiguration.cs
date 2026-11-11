@@ -19,5 +19,6 @@ internal sealed class OpportunityEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(o => o.State).IsRequired();
         builder.HasIndex(o => o.DealId).IsUnique();
         builder.PrimitiveCollection(o => o.Genres);
+        builder.PrimitiveCollection(o => o.CancelledApplicationIds);
     }
 }

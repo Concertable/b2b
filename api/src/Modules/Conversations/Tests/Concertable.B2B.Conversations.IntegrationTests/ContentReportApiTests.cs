@@ -111,11 +111,13 @@ public sealed class ContentReportApiTests : IAsyncLifetime
 
     private static async Task<List<InboxMessage>> GetMessagesAsync(HttpClient client)
     {
-        var previews = (await (await client.GetAsync("/api/conversations/previews"))
-            .Content.ReadAsync<List<MessagePreview>>())!;
+        var previewResponse = await client.GetAsync("/api/conversations/previews");
+        await previewResponse.ShouldBe(HttpStatusCode.OK);
+        var previews = (await previewResponse.Content.ReadAsync<List<MessagePreview>>())!;
         var conversationId = Assert.Single(previews).ConversationId;
-        return (await (await client.GetAsync($"/api/conversations/{conversationId}/messages"))
-            .Content.ReadAsync<List<InboxMessage>>())!;
+        var messagesResponse = await client.GetAsync($"/api/conversations/{conversationId}/messages");
+        await messagesResponse.ShouldBe(HttpStatusCode.OK);
+        return (await messagesResponse.Content.ReadAsync<List<InboxMessage>>())!;
     }
 
     private sealed record InboxMessage(int Id, int ConversationId, string Content, InboxActions Actions);

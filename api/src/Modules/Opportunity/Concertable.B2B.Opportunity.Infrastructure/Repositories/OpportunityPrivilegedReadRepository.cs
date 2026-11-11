@@ -8,11 +8,11 @@ namespace Concertable.B2B.Opportunity.Infrastructure.Repositories;
 
 internal sealed class OpportunityPrivilegedReadRepository(
     OpportunityPrivilegedDbContext context,
-    CommandTransactionAccessor transactions) : IOpportunityPrivilegedReadRepository
+    UnitOfWorkAccessor unitOfWorkAccessor) : IOpportunityPrivilegedReadRepository
 {
     public async Task<OpportunityDto?> GetByIdAsync(int opportunityId, CancellationToken ct = default)
     {
-        await (transactions.Current
+        await (unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Opportunity privileged queries require an active transaction."))
             .EnlistAsync(context, ct);
 

@@ -1,3 +1,4 @@
+using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Conversations.Application.DTOs;
 
 namespace Concertable.B2B.Conversations.Application.Interfaces;
@@ -13,12 +14,10 @@ internal interface IMessageRepository
         long sequence,
         CancellationToken ct = default);
     Task<int> GetUnreadCountAsync(
-        Guid tenantId,
-        Guid membershipId,
+        MembershipSnapshot actor,
         CancellationToken ct = default);
-    Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsByTenantIdAsync(
-        Guid tenantId,
-        Guid membershipId,
+    Task<IReadOnlyList<MessagePreview>> GetRecentPreviewsAsync(
+        MembershipSnapshot actor,
         int pageNumber,
         CancellationToken ct = default);
 }

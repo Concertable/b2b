@@ -12,8 +12,8 @@ internal sealed class ConcertCommandReceiptConfiguration : IEntityTypeConfigurat
         builder.ToTable(Schema.Tables.ConcertCommandReceipts, Schema.Name);
         builder.HasKey(receipt => receipt.Id);
         builder.Property(receipt => receipt.Operation).IsRequired().HasMaxLength(64);
-        builder.Property(receipt => receipt.PayloadHash)
-            .HasConversion(hash => hash.Value, value => CommandPayloadHash.From(value))
+        builder.Property(receipt => receipt.IdempotencyHash)
+            .HasConversion(hash => hash.Value, value => IdempotencyHash.From(value))
             .IsRequired()
             .HasMaxLength(64);
         builder.Property(receipt => receipt.Outcome).IsRequired().HasMaxLength(256);

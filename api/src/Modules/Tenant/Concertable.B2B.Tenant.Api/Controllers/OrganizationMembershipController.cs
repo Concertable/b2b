@@ -26,12 +26,12 @@ internal sealed class OrganizationMembershipController : ControllerBase
     [HttpGet("members")]
     [HasPermission(TenantPermission.OperationsViewName)]
     public async Task<ActionResult<IReadOnlyList<MemberDto>>> GetMembers() =>
-        Ok(await membershipService.ListMembersAsync());
+        (await membershipService.ListMembersAsync()).ToOkOrProblem();
 
     [HttpGet("invitations")]
     [HasPermission(TenantPermission.MembersInviteName)]
     public async Task<ActionResult<IReadOnlyList<InvitationDto>>> GetInvitations() =>
-        Ok(await invitationService.ListPendingInvitationsAsync());
+        (await invitationService.ListPendingInvitationsAsync()).ToOkOrProblem();
 
     [HttpPost("invitations")]
     [HasPermission(TenantPermission.MembersInviteName)]
@@ -44,10 +44,10 @@ internal sealed class OrganizationMembershipController : ControllerBase
     public async Task<IActionResult> RevokeInvitation(Guid id) =>
         (await invitationService.RevokeInvitationAsync(id)).ToNoContentOrProblem();
 
-    [HttpPut("members/{userId:guid}/role")]
+    [HttpPut("members/{userId:guid}/roles")]
     [HasPermission(TenantPermission.MembersManageRolesName)]
-    public async Task<IActionResult> ChangeRole(Guid userId, ChangeMemberRoleRequest request) =>
-        (await membershipService.ChangeRoleAsync(userId, request)).ToNoContentOrProblem();
+    public async Task<IActionResult> ChangeRoles(Guid userId, ChangeMemberRolesRequest request) =>
+        (await membershipService.ChangeRolesAsync(userId, request)).ToNoContentOrProblem();
 
     [HttpDelete("members/{userId:guid}")]
     [HasPermission(TenantPermission.MembersRemoveName)]

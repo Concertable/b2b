@@ -60,6 +60,7 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
     tenantId: membership.tenantId,
     membershipId: membership.membershipId,
     permissionVersion: membership.permissionVersion,
+    rolePolicyVersion: membership.rolePolicyVersion,
   });
 
   const current = (): TenantSession | undefined => {
@@ -101,7 +102,8 @@ export function createTenantSession(store: StoreApi<TenantStoreState>) {
         active.generation === session.generation &&
         active.tenantId === session.tenantId &&
         active.membershipId === session.membershipId &&
-        active.permissionVersion === session.permissionVersion
+        active.permissionVersion === session.permissionVersion &&
+        active.rolePolicyVersion === session.rolePolicyVersion
       );
     },
     beginSwitch: () => {
