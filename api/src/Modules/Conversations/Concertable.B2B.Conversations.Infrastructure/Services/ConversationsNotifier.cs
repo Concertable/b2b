@@ -9,6 +9,9 @@ internal sealed class ConversationsNotifier : IConversationsNotifier
         this.notificationClient = notificationClient;
     }
 
-    public Task MessageReceivedAsync(string userId, object payload) =>
-        notificationClient.SendAsync(userId, "MessageReceived", payload);
+    public Task ConversationChangedAsync(Guid userId, int conversationId, CancellationToken ct = default) =>
+        notificationClient.SendAsync(
+            userId.ToString(),
+            "ConversationChanged",
+            new { ConversationId = conversationId });
 }

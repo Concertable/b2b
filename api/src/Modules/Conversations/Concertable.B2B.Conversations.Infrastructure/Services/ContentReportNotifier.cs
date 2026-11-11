@@ -37,7 +37,7 @@ internal sealed class ContentReportNotifier : IContentReportNotifier
              Message id: {report.MessageId}
              Reporting tenant: {report.ReporterTenantId}
              Reported tenant: {report.ReportedTenantId}
-             Reported by user: {report.ReportedByUserId}
+             Reported by user: {report.ReporterUserId}
 
              Details:
              {report.Details ?? "(none provided)"}

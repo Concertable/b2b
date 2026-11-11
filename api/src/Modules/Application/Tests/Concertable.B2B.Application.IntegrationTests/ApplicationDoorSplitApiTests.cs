@@ -100,6 +100,9 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
             $"/api/application/{applicationId}/accept",
             request);
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
+        var accepted = await fixture.Applications.SingleAsync(item => item.Id == applicationId);
+        Assert.NotNull(accepted.AcceptanceOperationId);
+        Assert.Equal(7, accepted.AcceptanceOperationId.Value.Version);
 
         var response = await client.PostAsync(
             $"/api/application/{applicationId}/accept",

@@ -1,4 +1,5 @@
 global using Concertable.DataAccess.Infrastructure;
+global using Concertable.B2B.DataAccess.Infrastructure;
 global using Concertable.B2B.Conversations.Application.DTOs;
 global using Concertable.B2B.Conversations.Application.Interfaces;
 global using Concertable.B2B.Conversations.Application.Mappers;
@@ -14,3 +15,5 @@ global using Concertable.Kernel.ValueObjects;
 global using Concertable.Contracts;
 global using Concertable.Contracts.Enums;
 global using Concertable.B2B.Conversations.Domain.Enums;
+global using Reunion;
+global using Reunion.Errors;
