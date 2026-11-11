@@ -44,7 +44,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concert.Id);
 
         Assert.DoesNotContain(fixture.SettlementClient.Payments, p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
-        var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApplication.Id);
         Assert.Equal(ConcertState.Posted, persisted.State);
     }
 
@@ -58,7 +58,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
         await fixture.FinishConcertAsync(concert.Id);
 
         Assert.Contains(fixture.SettlementClient.Payments, p => p.Reference == PaymentOperationReferences.Settlement(concert.Id));
-        var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApp.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastDoorSplitApplication.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
     }
 
@@ -70,7 +70,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concertId);
 
-        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApplication.Id);
         Assert.Equal(ConcertState.Posted, persisted.State);
     }
 
@@ -81,7 +81,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concertId);
 
-        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApplication.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
     }
 
@@ -93,7 +93,7 @@ public sealed class ConcertPayoutComplianceGateApiTests : IAsyncLifetime
 
         await fixture.FinishConcertAsync(concertId);
 
-        var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApp.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApplication.Id);
         Assert.Equal(ConcertState.Posted, persisted.State);
     }
 }

@@ -23,6 +23,6 @@ public sealed class TenantScopingTests : IAsyncLifetime
         var booking = await fixture.Bookings
             .SingleAsync(value => value.Id == fixture.SeedState.ConfirmedBooking.Id);
 
-        Assert.Equal(fixture.SeedState.ConfirmedApp.Id, booking.ApplicationId);
+        Assert.Equal(fixture.SeedState.ConfirmedApplication.Id, booking.ApplicationId);
     }
 }

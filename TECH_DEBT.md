@@ -459,7 +459,7 @@ consumers resolving the output path from MSBuild rather than assuming `bin/<conf
 
 `TestEntity(int Id)` stands in for a flat-fee application, a door-split application, a versus application,
 a venue and two past applications — six different things behind one name that says nothing about any of
-them. A reader of `fixture.SeedState.FlatFeeApp.Id` cannot tell from the type what else that handle could
+them. A reader of `fixture.SeedState.FlatFeeApplication.Id` cannot tell from the type what else that handle could
 carry, and any field a caller needs (an opportunity id, an artist id) has nowhere to live without either
 widening the shared placeholder for every unrelated consumer or minting a one-off beside it — which is what
 `TestApplication(int Id, int OpportunityId)` already is.

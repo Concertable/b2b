@@ -140,7 +140,7 @@ public sealed class ContractApiTests : IAsyncLifetime
     [Fact]
     public async Task Get_ReturnsSignaturesForSeededAcceptedApplication()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/application/{applicationId}/checkout");
 

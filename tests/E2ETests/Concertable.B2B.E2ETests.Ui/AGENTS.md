@@ -15,12 +15,12 @@ The pattern in `VenueManagerSteps` — jump to state via seeded data, no browser
 [Given(@"a flat fee opportunity has been applied to")]
 public Task AFlatFeeOpportunityHasBeenAppliedTo()
 {
-    state.ApplicationId = fixture.App.SeedState.FlatFeeApp.Id;   // no navigation, no re-drive
+    state.ApplicationId = fixture.App.SeedState.FlatFeeApplication.Id;   // no navigation, no re-drive
     return Task.CompletedTask;
 }
 ```
 
-Seeded applications exist in the **applied** state (`FlatFeeApp` / `DoorSplitApp` / `VersusApp`). If a
+Seeded applications exist in the **applied** state (`FlatFeeApplication` / `DoorSplitApplication` / `VersusApplication`). If a
 scenario needs a *later* starting point (an accepted booking with a draft concert), **add the seeded
 state + a new `Given`** — do not reach it by replaying `post → apply → accept → pay` through the UI.
 

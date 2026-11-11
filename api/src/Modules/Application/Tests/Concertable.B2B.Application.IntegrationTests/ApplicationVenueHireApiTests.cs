@@ -30,7 +30,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await client.PostAsync(
-            $"/api/application/opportunity/{fixture.SeedState.VenueHireApp.OpportunityId}/checkout");
+            $"/api/application/opportunity/{fixture.SeedState.VenueHireApplication.OpportunityId}/checkout");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var checkout = await response.Content.ReadAsync<Checkout>();
@@ -46,7 +46,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.PostAsync(
-            $"/api/application/{fixture.SeedState.VenueHireApp.Id}/checkout");
+            $"/api/application/{fixture.SeedState.VenueHireApplication.Id}/checkout");
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -83,7 +83,7 @@ public sealed class ApplicationVenueHireApiTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldReturn409_WhenAlreadyAccepted()
     {
-        var applicationId = fixture.SeedState.VenueHireApp.Id;
+        var applicationId = fixture.SeedState.VenueHireApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var request = new { eSignature = new { signatoryName = "Test Signatory" } };
         var firstResponse = await client.PostAsync(

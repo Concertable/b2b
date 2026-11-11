@@ -45,7 +45,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     public async Task Accept_WhenTenantAdministrationHoldsRowLock_WaitsForTheDecision()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await client.PostAsync($"/api/application/{applicationId}/checkout");
 
         await using var connection = new NpgsqlConnection(fixture.ConnectionString);
@@ -56,7 +56,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
             connection,
             transaction))
         {
-            lockCommand.Parameters.AddWithValue("tenantId", fixture.SeedState.FlatFeeApp.ArtistTenantId);
+            lockCommand.Parameters.AddWithValue("tenantId", fixture.SeedState.FlatFeeApplication.ArtistTenantId);
             await lockCommand.ExecuteNonQueryAsync();
         }
 
@@ -348,7 +348,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     public async Task CancellationAndPaymentVerification_WhenConcurrent_SerializeToOneTransition()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var bookingId = await AcceptDoorSplitAsync(client);
         var verified = new VerifyPaymentSucceededDomainEvent(
             new VerifyPaymentSucceeded(applicationId));
@@ -451,7 +451,7 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
 
     private async Task<int> AcceptFlatFeeAsync(HttpClient client)
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         return await AcceptAsync(client, applicationId, new
         {
@@ -460,14 +460,14 @@ public sealed class BookingCancellationApiTests : IAsyncLifetime
     }
 
     private Task<int> AcceptVenueHireAsync(HttpClient client) =>
-        AcceptAsync(client, fixture.SeedState.VenueHireApp.Id, new
+        AcceptAsync(client, fixture.SeedState.VenueHireApplication.Id, new
         {
             eSignature = new { signatoryName = "Test Signatory" }
         });
 
     private async Task<int> AcceptDoorSplitAsync(HttpClient client)
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         return await AcceptAsync(client, applicationId, new
         {

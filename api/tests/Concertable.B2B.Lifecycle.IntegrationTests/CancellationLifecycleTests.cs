@@ -24,8 +24,8 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
     public async Task BookingCancellation_UpdatesApplicationActionsNotifiesArtistAndReopensOpportunity()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
-        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
+        var opportunityId = fixture.SeedState.FlatFeeApplication.OpportunityId;
         await AcceptFlatFeeAsync(client, applicationId);
 
         var before = await GetApplicationAsync(client, applicationId);
@@ -55,7 +55,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
     public async Task LateCaptureAfterBookingCancellation_DoesNotCreateConcert()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.VenueHireApp.Id;
+        var applicationId = fixture.SeedState.VenueHireApplication.Id;
         await AcceptAsync(client, applicationId);
         var application = await GetApplicationAsync(client, applicationId);
         Assert.Null(application.Actions.Cancel);
@@ -75,7 +75,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
     public async Task BookingCancellation_RetryUsesNewOperationAndCompletes()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await AcceptFlatFeeAsync(client, applicationId);
         var application = await GetApplicationAsync(client, applicationId);
         Assert.Null(application.Actions.Cancel);
@@ -102,8 +102,8 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
     public async Task ConcertCancellation_ReopensOpportunity()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
-        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
+        var opportunityId = fixture.SeedState.FlatFeeApplication.OpportunityId;
         await AcceptFlatFeeAsync(client, applicationId);
         var accepted = await GetApplicationAsync(client, applicationId);
         Assert.Null(accepted.Actions.Cancel);
@@ -129,7 +129,7 @@ public sealed class CancellationLifecycleTests : IAsyncLifetime
     public async Task ConcertCancellation_RetryUsesNewOperationAndCompletes()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await AcceptFlatFeeAsync(client, applicationId);
         await fixture.PaymentSimulator.SendWebhookAsync();
         var concert = await GetConcertAsync(client, applicationId);

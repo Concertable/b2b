@@ -21,10 +21,10 @@ public sealed class BookingConfirmationEmailLifecycleTests : IAsyncLifetime
     public async Task Book_StagesBothPartiesLegalDetails_ToEveryMemberOfBothTenants()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
+        await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApplication.Id}/checkout");
 
         var accept = await client.PostAsync(
-            $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept",
+            $"/api/application/{fixture.SeedState.FlatFeeApplication.Id}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await accept.ShouldBe(HttpStatusCode.NoContent);
         await fixture.PaymentSimulator.SendWebhookAsync();

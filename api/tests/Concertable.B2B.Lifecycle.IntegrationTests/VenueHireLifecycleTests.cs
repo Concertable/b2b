@@ -24,7 +24,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldConfirmBookingAndCreateDraftConcertAndNotifyArtistAndVenueAndHoldEscrow()
     {
-        var applicationId = fixture.SeedState.VenueHireApp.Id;
+        var applicationId = fixture.SeedState.VenueHireApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -56,14 +56,14 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
         Assert.Equal(artistTenantId, command.PayerId);
         Assert.Equal(venueTenantId, command.PayeeId);
         Assert.Equal(
-            (long)(fixture.SeedState.VenueHireAppDeal.HireFee * 100),
+            (long)(fixture.SeedState.VenueHireApplicationDeal.HireFee * 100),
             command.AmountMinor);
     }
 
     [Fact]
     public async Task Accept_ShouldIgnoreDuplicateWebhookEvent()
     {
-        var applicationId = fixture.SeedState.VenueHireApp.Id;
+        var applicationId = fixture.SeedState.VenueHireApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var acceptResponse = await AcceptAsync(client, applicationId);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -81,7 +81,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
     public async Task Accept_ShouldNotConfirmBooking_WhenWebhookFails()
     {
         fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
-        var applicationId = fixture.SeedState.VenueHireApp.Id;
+        var applicationId = fixture.SeedState.VenueHireApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var acceptResponse = await AcceptAsync(client, applicationId);
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
@@ -98,7 +98,7 @@ public sealed class VenueHireLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldRejectAndNotCreateDraft_WhenPaymentFails()
     {
-        var applicationId = fixture.SeedState.VenueHireApp.Id;
+        var applicationId = fixture.SeedState.VenueHireApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var response = await AcceptAsync(client, applicationId);
         await response.ShouldBe(HttpStatusCode.NoContent);

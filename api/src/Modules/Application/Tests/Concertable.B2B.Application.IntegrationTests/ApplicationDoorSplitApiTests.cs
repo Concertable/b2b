@@ -38,7 +38,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.PostAsync(
-            $"/api/application/{fixture.SeedState.DoorSplitApp.Id}/checkout");
+            $"/api/application/{fixture.SeedState.DoorSplitApplication.Id}/checkout");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var checkout = await response.Content.ReadAsync<Checkout>();
@@ -54,7 +54,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await client.PostAsync(
-            $"/api/application/opportunity/{fixture.SeedState.DoorSplitApp.OpportunityId}/checkout");
+            $"/api/application/opportunity/{fixture.SeedState.DoorSplitApplication.OpportunityId}/checkout");
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -91,7 +91,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     public async Task Accept_ShouldReturn409_WhenAlreadyAccepted()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var request = new
         {
             eSignature = new { signatoryName = "Test Signatory" }
@@ -111,7 +111,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     [Fact]
     public async Task Accept_BeforeTheCardIsVerified_AcceptsAndWaitsForTheVerification()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
         await checkout.ShouldBe(HttpStatusCode.OK);
@@ -130,7 +130,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     [Fact]
     public async Task Verification_FromAPayerOtherThanTheVenue_IsNotRecorded()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var reference = PaymentOperationReferences.MethodVerification(applicationId);
         await fixture.PaymentSessionClient.SetupPaymentMethodAsync(new PaymentMethodSetupRequest(
             reference,
@@ -148,7 +148,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     [Fact]
     public async Task VerificationFailure_FromAPayerOtherThanTheVenue_IsNotRecorded()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var reference = PaymentOperationReferences.MethodVerification(applicationId);
         await fixture.PaymentSessionClient.SetupPaymentMethodAsync(new PaymentMethodSetupRequest(
             reference,
@@ -174,7 +174,7 @@ public sealed class ApplicationDoorSplitApiTests : IAsyncLifetime
     [Fact]
     public async Task VerificationFailure_WhenPaymentIsUnavailable_IsRetried()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
         await checkout.ShouldBe(HttpStatusCode.OK);

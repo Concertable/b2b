@@ -31,7 +31,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.PostAsync(
-            $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
+            $"/api/application/{fixture.SeedState.FlatFeeApplication.Id}/checkout");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var checkout = await response.Content.ReadAsync<Checkout>();
@@ -45,7 +45,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
     public async Task AcceptCheckout_ShouldPersistStableAcceptanceOperationId_AcrossRepeatedCalls()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
 
         await (await client.PostAsync($"/api/application/{applicationId}/checkout")).ShouldBe(HttpStatusCode.OK);
         var afterFirstCheckout = await fixture.Applications.SingleAsync(item => item.Id == applicationId);
@@ -63,7 +63,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await client.PostAsync(
-            $"/api/application/opportunity/{fixture.SeedState.FlatFeeApp.OpportunityId}/checkout");
+            $"/api/application/opportunity/{fixture.SeedState.FlatFeeApplication.OpportunityId}/checkout");
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -108,7 +108,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
     public async Task Accept_ShouldReturn409_WhenAlreadyAccepted()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var firstResponse = await client.PostAsync(
             $"/api/application/{applicationId}/accept",

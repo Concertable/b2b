@@ -22,7 +22,7 @@ public sealed class TenantScopingLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_PropagatesTheTenantSnapshotThroughBookingAndConcertBoundaries()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await AcceptAndConfirmAsync(venueClient, applicationId);
 
@@ -41,7 +41,7 @@ public sealed class TenantScopingLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task ExactConcertAndContractReads_ScopePartiesAndHideUnpublishedPublicConcerts()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await AcceptAndConfirmAsync(venueClient, applicationId);
         var concert = await GetConcertAsync(venueClient, applicationId);

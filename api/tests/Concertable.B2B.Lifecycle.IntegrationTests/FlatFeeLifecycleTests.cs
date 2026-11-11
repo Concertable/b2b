@@ -26,7 +26,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldConfirmBookingAndCreateDraftConcertAndNotifyArtistAndVenueAndHoldEscrow()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
 
@@ -61,7 +61,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
         Assert.Equal(PaymentOperationReferences.EscrowType, command.Reference.OperationType);
         Assert.Equal(venueTenantId, command.PayerId);
         Assert.Equal(artistTenantId, command.PayeeId);
-        Assert.Equal((long)(fixture.SeedState.FlatFeeAppDeal.Fee * 100), command.AmountMinor);
+        Assert.Equal((long)(fixture.SeedState.FlatFeeApplicationDeal.Fee * 100), command.AmountMinor);
         var financial = await GetFinancialOperationAsync(client, applicationId);
         Assert.Equal(BookingStatus.Confirmed, financial.Status);
     }
@@ -69,7 +69,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldIgnoreDuplicateWebhookEvent()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await client.PostAsync(
@@ -89,7 +89,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
     public async Task Accept_ShouldNotConfirmBooking_WhenWebhookFails()
     {
         fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await client.PostAsync(
@@ -109,7 +109,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldRecordConfirmationFailureAndNotCreateDraft_WhenPaymentFails()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.PostAsync(
@@ -126,7 +126,7 @@ public sealed class FlatFeeLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Confirm_ShouldRollBackBookingConcertAndMessages_WhenEmailStagingFails()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var client = fixture.CreateClient(
             fixture.SeedState.VenueManager1,
             options => options.UseFailingEmailRendering());

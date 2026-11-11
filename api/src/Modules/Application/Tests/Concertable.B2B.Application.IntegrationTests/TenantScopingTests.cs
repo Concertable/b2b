@@ -47,7 +47,7 @@ public sealed class TenantScopingTests : IAsyncLifetime
     [Fact]
     public async Task Application_IsVisibleToBothPartiesAndInvisibleToThirdPartyTenants()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var venueParty = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var artistParty = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var thirdParty = fixture.CreateClient(fixture.SeedState.VenueManager2);
