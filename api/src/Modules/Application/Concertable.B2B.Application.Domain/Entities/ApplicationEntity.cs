@@ -60,7 +60,7 @@ public sealed class ApplicationEntity : IIdEntity, IConcurrencyVersioned, IEvent
         && actor.Permissions[TenantPermission.ApplicationsSubmit] == ResourceAccess.All;
 
 
-    public Guid BeginAcceptance() => AcceptanceOperationId ??= Guid.NewGuid();
+    public Guid BeginAcceptance() => AcceptanceOperationId ??= Guid.CreateVersion7();
 
     public Guid BeginAcceptance(Guid operationId)
     {

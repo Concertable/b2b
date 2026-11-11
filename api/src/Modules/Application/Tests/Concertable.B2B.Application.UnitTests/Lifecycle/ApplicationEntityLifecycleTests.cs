@@ -62,6 +62,8 @@ public sealed class ApplicationEntityLifecycleTests
             Guid.NewGuid(),
             DateTime.UnixEpoch);
         var operationId = application.BeginAcceptance();
+        Assert.Equal(7, operationId.Version);
+        Assert.Equal(operationId, application.BeginAcceptance());
         var accepted = CreateAcceptedApplication(application, operationId);
         Assert.False(application.Accept(accepted).TryGetError(out _));
         var events = application.DomainEvents.ToArray();

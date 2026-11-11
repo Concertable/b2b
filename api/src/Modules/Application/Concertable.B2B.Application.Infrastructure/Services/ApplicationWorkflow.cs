@@ -384,7 +384,7 @@ internal sealed class ApplicationWorkflow : IApplicationWorkflow
         if (application.TermsFingerprint != CalculateTermsFingerprint(deal, opportunity))
             return new AcceptApplicationError.TermsChanged();
 
-        var operationId = application.AcceptanceOperationId ?? Guid.NewGuid();
+        var operationId = application.AcceptanceOperationId ?? Guid.CreateVersion7();
         var venueSignature = eSignature.ToSignature(
             actor.UserId,
             timeProvider.GetUtcNow().UtcDateTime,
