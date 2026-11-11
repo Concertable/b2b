@@ -14,6 +14,7 @@ public static class B2BLocalSpaSurfaces
         Array.AsReadOnly<(SpaSurface Surface, string ClientName)>([
             new(Venue, "Venue"),
             new(Artist, "Artist"),
+            new(Business, "Business"),
             new(Admin, "Admin")
         ]);
 }

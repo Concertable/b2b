@@ -108,7 +108,8 @@ public sealed class ConcertCancelledTests : IAsyncLifetime
 
     private async Task<B2BConcertState> GetConcertByApplicationAsync(int appId)
     {
-        var response = await venueManagerClient.GetAsync($"/api/concert/application/{appId}");
+        var concertId = await fixture.DbFixture.Concert.GetIdByApplicationIdAsync(appId);
+        var response = await venueManagerClient.GetAsync($"/api/concert/{concertId}/operations");
         await response.ShouldBe(HttpStatusCode.OK);
         var concert = await response.Content.ReadAsync<B2BConcertState>();
         Assert.NotNull(concert);

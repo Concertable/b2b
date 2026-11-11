@@ -196,7 +196,7 @@ public sealed class AppFixture : IAsyncLifetime
         var paymentTestClient = new PaymentTestClient(
             paymentAdminClient,
             run.AdminKey);
-        DbFixture = new DbFixture(b2bTestClient, paymentTestClient);
+        DbFixture = new DbFixture(b2bTestClient, paymentTestClient, Workers);
         await DbFixture.ResetAsync();
         SeedState = await b2bTestClient.GetSeedStateAsync();
 
