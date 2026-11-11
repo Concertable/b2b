@@ -4,7 +4,7 @@ import { Button } from "@concertable/web/components/ui/button";
 import { EditableProvider } from "@concertable/shared/providers";
 import { DetailsPageSkeleton } from "@concertable/web/components/skeletons/DetailsPageSkeleton";
 import type { ConcertOperations } from "../types";
-import { useMyConcert } from "../hooks/useMyConcert";
+import { useConcertOperations } from "../hooks/useConcertOperations";
 import { useDownloadContractMutation } from "../hooks/useDownloadContractMutation";
 import { ConcertDetails } from "@concertable/web/features/concerts";
 
@@ -13,7 +13,7 @@ interface Props {
   renderActions?: (concert: ConcertOperations) => ReactNode;
 }
 
-export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
+export function ConcertOperationsPage({ id, renderActions }: Readonly<Props>) {
   const {
     concert,
     isDirty,
@@ -27,7 +27,7 @@ export function MyConcertPage({ id, renderActions }: Readonly<Props>) {
     draft,
     setName,
     setAbout,
-  } = useMyConcert(id);
+  } = useConcertOperations(id);
 
   const downloadContract = useDownloadContractMutation();
 
