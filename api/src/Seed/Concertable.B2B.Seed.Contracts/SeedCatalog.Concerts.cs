@@ -16,7 +16,6 @@ public sealed partial class SeedCatalog
         ConcertSeedSpec.Create(3, "Funk it up", 20m, 150, Artists[1], Venues[0], 180, 0, Now, [Genre.Rock, Genre.Indie]),
         ConcertSeedSpec.Create(4, "Boogie it up!", 20m, 150, Artists[1], Venues[0], -85, -85, Now),
         ConcertSeedSpec.CreateHire(5, "VenueHire Spectacular", 30m, 200, Artists[0], Venues[0], -40, -40, Now),
-        ConcertSeedSpec.Create(6, "Awaiting Show", 15m, 100, Artists[0], Venues[0], 2, 3, Now),
         ConcertSeedSpec.Create(7, "DoorSplit Settlement Show", 20m, 100, Artists[0], Venues[0], -60, -60, Now),
         ConcertSeedSpec.Create(8, "Versus Settlement Show", 20m, 100, Artists[0], Venues[0], -90, -90, Now),
         ConcertSeedSpec.Create(9, "Past Versus Show", 20m, 100, Artists[0], Venues[0], -120, -120, Now, ticketsSold: 1),

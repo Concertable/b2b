@@ -27,7 +27,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
 
         await FinishWithoutGrantingAsync(fixture.SeedState.ConcertFor(booking).Id);
 
-        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApplication.Id);
         Assert.Equal(ConcertState.Posted, persisted.State);
         Assert.Null(await InvoiceForBookingAsync(booking.Id));
     }
@@ -39,7 +39,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
 
         await FinishWithoutGrantingAsync(fixture.SeedState.ConcertFor(booking).Id);
 
-        var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApp.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastVenueHireApplication.Id);
         Assert.Equal(ConcertState.Posted, persisted.State);
         Assert.Null(await InvoiceForBookingAsync(booking.Id));
     }
@@ -58,7 +58,7 @@ public sealed class ConcertSelfBillingGateApiTests : IAsyncLifetime
         // The hourly sweep re-attempts this concert per-id; a direct re-finish is that same call, now in force.
         await FinishWithoutGrantingAsync(concert.Id);
 
-        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApp.Id);
+        var persisted = await ConcertAsync(fixture.SeedState.PastFlatFeeApplication.Id);
         Assert.Equal(ConcertState.Complete, persisted.State);
 
         var invoice = await InvoiceForBookingAsync(booking.Id);

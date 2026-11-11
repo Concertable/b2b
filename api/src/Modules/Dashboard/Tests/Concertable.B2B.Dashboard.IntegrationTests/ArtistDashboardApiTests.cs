@@ -42,9 +42,9 @@ public sealed class ArtistDashboardApiTests : IAsyncLifetime
     {
         var before = await GetAcceptedAwaitingCheckoutAsync();
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        await venueClient.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/checkout");
+        await venueClient.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApplication.Id}/checkout");
         var acceptResponse = await venueClient.PostAsync(
-            $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept",
+            $"/api/application/{fixture.SeedState.FlatFeeApplication.Id}/accept",
             new { eSignature = new { signatoryName = "Test Signatory" } });
         await acceptResponse.ShouldBe(HttpStatusCode.NoContent);
 

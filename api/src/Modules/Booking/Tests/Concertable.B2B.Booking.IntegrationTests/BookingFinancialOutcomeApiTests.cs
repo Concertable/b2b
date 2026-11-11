@@ -28,7 +28,7 @@ public sealed class BookingFinancialOutcomeApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync(
-            $"/api/booking/application/{fixture.SeedState.FlatFeeApp.Id}/summary");
+            $"/api/booking/application/{fixture.SeedState.FlatFeeApplication.Id}/summary");
 
         await response.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -37,7 +37,7 @@ public sealed class BookingFinancialOutcomeApiTests : IAsyncLifetime
     public async Task Get_MapsPendingAndRejectedAcceptanceOperation()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var accept = await client.PostAsync(
             $"/api/application/{applicationId}/accept",

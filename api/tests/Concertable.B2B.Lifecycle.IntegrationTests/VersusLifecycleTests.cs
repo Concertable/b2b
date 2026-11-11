@@ -22,7 +22,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateBooking_WithoutDraft()
     {
-        var applicationId = fixture.SeedState.VersusApp.Id;
+        var applicationId = fixture.SeedState.VersusApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await AcceptAsync(client, applicationId);
@@ -36,7 +36,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateDraftConcertAndNotifyArtistAndVenue()
     {
-        var applicationId = fixture.SeedState.VersusApp.Id;
+        var applicationId = fixture.SeedState.VersusApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -61,7 +61,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldIgnoreDuplicateWebhookEvent()
     {
-        var applicationId = fixture.SeedState.VersusApp.Id;
+        var applicationId = fixture.SeedState.VersusApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -80,7 +80,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
     public async Task Accept_ShouldNotCreateDraft_WhenVerifyPaymentFails()
     {
         fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
-        var applicationId = fixture.SeedState.VersusApp.Id;
+        var applicationId = fixture.SeedState.VersusApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -99,7 +99,7 @@ public sealed class VersusLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateDraftConcert_WhenVerifyWebhookArrivesBeforeAccept()
     {
-        var applicationId = fixture.SeedState.VersusApp.Id;
+        var applicationId = fixture.SeedState.VersusApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         await fixture.PaymentSimulator.SendWebhookAsync();

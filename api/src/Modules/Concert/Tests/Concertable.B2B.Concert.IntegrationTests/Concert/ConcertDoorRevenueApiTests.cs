@@ -29,7 +29,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     {
         // Arrange — a past, still-Booked DoorSplit gig awaiting its door take.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.PastDoorSplitApp.Id;
+        var appId = fixture.SeedState.PastDoorSplitApplication.Id;
         var concertId = fixture.SeedState.ConcertFor(fixture.SeedState.PastDoorSplitBooking).Id;
 
         var before = await (await client.GetAsync($"/api/concert/{concertId}/finance"))
@@ -57,7 +57,7 @@ public sealed class ConcertDoorRevenueApiTests : IAsyncLifetime
     {
         // A fixed-fee (VenueHire) booking settles automatically — no door-take declaration.
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.VenueHireApp.Id;
+        var appId = fixture.SeedState.VenueHireApplication.Id;
         await client.PostAsync($"/api/application/{appId}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
         await fixture.PaymentSimulator.SendWebhookAsync();
 

@@ -29,7 +29,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task Cancel_ShouldMarkCancelledAndNotifyArtist()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
@@ -47,7 +47,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task Cancel_ShouldReturn403_WhenCallerIsArtist()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
@@ -60,7 +60,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task Cancel_ShouldReturn403_WhenCallerIsDifferentVenueManager()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
@@ -71,7 +71,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task Cancel_ShouldReturn409_WhenAlreadyCancelled()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
         var firstResponse = await client.PostAsync($"/api/application/{appId}/cancel");
         await firstResponse.ShouldBe(HttpStatusCode.NoContent);
 
@@ -84,7 +84,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task Cancel_ShouldReturn409_WhenApplicationAlreadyAccepted()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.AwaitingPaymentApp.Id;
+        var appId = fixture.SeedState.AwaitingPaymentApplication.Id;
 
         var response = await client.PostAsync($"/api/application/{appId}/cancel");
 
@@ -97,8 +97,8 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task Cancel_ShouldLeaveOpportunityOpenToOtherArtists()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
-        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
+        var opportunityId = fixture.SeedState.FlatFeeApplication.OpportunityId;
 
         var cancelResponse = await client.PostAsync($"/api/application/{appId}/cancel");
 
@@ -117,7 +117,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task GetById_ShouldOfferVenueCancel_OnlyWhilePending()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
         var beforeResponse = await client.GetAsync($"/api/application/{appId}/proposal");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
         var before = await beforeResponse.Content.ReadAsync<ApplicationProposalResponse>();
@@ -141,7 +141,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task GetById_ShouldNotOfferVenueCancel_OnceAccepted()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.AwaitingPaymentApp.Id;
+        var appId = fixture.SeedState.AwaitingPaymentApplication.Id;
 
         var response = await client.GetAsync($"/api/application/{appId}/proposal");
 
@@ -154,7 +154,7 @@ public sealed class ApplicationCancelApiTests : IAsyncLifetime
     public async Task GetById_ShouldNotOfferArtistCancel_WhilePending()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         var response = await client.GetAsync($"/api/application/{appId}/proposal");
 

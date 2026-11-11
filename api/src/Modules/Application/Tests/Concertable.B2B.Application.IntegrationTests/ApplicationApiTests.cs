@@ -94,7 +94,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task GetById_AsVenuePrincipal_ReturnsDecisionActions()
     {
-        var application = fixture.SeedState.FlatFeeApp;
+        var application = fixture.SeedState.FlatFeeApplication;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync($"/api/application/{application.Id}/proposal");
@@ -110,7 +110,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task GetById_AsArtistPrincipal_ReturnsSubmissionActions()
     {
-        var application = fixture.SeedState.FlatFeeApp;
+        var application = fixture.SeedState.FlatFeeApplication;
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await client.GetAsync($"/api/application/{application.Id}/proposal");
@@ -126,7 +126,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task GetSummary_OmitsProposalTermsAndActions()
     {
-        var application = fixture.SeedState.FlatFeeApp;
+        var application = fixture.SeedState.FlatFeeApplication;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync($"/api/application/{application.Id}/summary");
@@ -210,7 +210,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.GetAsync(
-            $"/api/application/{fixture.SeedState.FlatFeeApp.Id}/eligibility");
+            $"/api/application/{fixture.SeedState.FlatFeeApplication.Id}/eligibility");
 
         await response.ShouldBe(HttpStatusCode.OK);
         Assert.True(await response.Content.ReadAsync<bool>());
@@ -220,7 +220,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     public async Task CanAccept_ArtistBookedAtAnotherVenue_ReturnsFalse()
     {
         const int concertId = int.MaxValue;
-        var application = fixture.SeedState.FlatFeeApp;
+        var application = fixture.SeedState.FlatFeeApplication;
         var opportunity = fixture.SeedState.Opportunities.Single(value => value.Id == application.OpportunityId);
         var artist = fixture.SeedState.Artists.Single(value => value.Id == application.ArtistId);
         var otherVenue = fixture.SeedState.Venues.First(value => value.TenantId != application.VenueTenantId);
@@ -260,7 +260,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
         var response = await client.GetAsync(
-            $"/api/application/opportunity/{fixture.SeedState.FlatFeeApp.OpportunityId}");
+            $"/api/application/opportunity/{fixture.SeedState.FlatFeeApplication.OpportunityId}");
 
         await AssertProblemCodeAsync(
             response,
@@ -299,7 +299,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task AcceptAndReject_WhenConcurrent_SerializeToOneTransition()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var responses = await RaceAsync(
@@ -316,7 +316,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task AcceptAndCancel_WhenConcurrent_SerializeToOneTransition()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var competitor = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var responses = await RaceAsync(
@@ -333,7 +333,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task AcceptAndWithdraw_WhenConcurrent_SerializeToOneTransition()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var responses = await RaceAsync(
@@ -350,7 +350,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task Accept_WhenPaymentVerificationWinsTheRace_StillConfirmsTheBooking()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var checkout = await client.PostAsync($"/api/application/{applicationId}/checkout");
         await checkout.ShouldBe(HttpStatusCode.OK);
@@ -384,8 +384,8 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task Accept_WhenTwoApplicationsRaceForOneOpportunity_AcceptsExactlyOneAndRejectsTheOther()
     {
-        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
-        var loserApplicationId = fixture.SeedState.FlatFeeApp.Id;
+        var opportunityId = fixture.SeedState.FlatFeeApplication.OpportunityId;
+        var loserApplicationId = fixture.SeedState.FlatFeeApplication.Id;
         var secondArtist = fixture.CreateClient(fixture.SeedState.ArtistManagers[1]);
         var apply = await secondArtist.PostAsync(
             $"/api/application/{opportunityId}",
@@ -418,7 +418,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
-        var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApplication.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -428,7 +428,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
 
-        var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApp.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
+        var response = await client.PostAsync($"/api/application/{fixture.SeedState.FlatFeeApplication.Id}/accept", new { eSignature = new { signatoryName = "Test Signatory" } });
 
         await response.ShouldBe(HttpStatusCode.Forbidden);
     }
@@ -441,8 +441,8 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     public async Task Apply_ShouldReturn400_WhenSameArtistReappliesAfterWithdraw()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
-        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
+        var opportunityId = fixture.SeedState.FlatFeeApplication.OpportunityId;
         var withdraw = await client.PostAsync($"/api/application/{appId}/withdraw");
         await withdraw.ShouldBe(HttpStatusCode.NoContent);
 
@@ -465,7 +465,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         await remove.ShouldBe(HttpStatusCode.NoContent);
 
         var command = new NotifyPaymentVerificationFailedCommand(
-            fixture.SeedState.DoorSplitApp.Id,
+            fixture.SeedState.DoorSplitApplication.Id,
             "Card was declined");
         using var scope = fixture.Services.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<
@@ -508,7 +508,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
             var handler = scope.ServiceProvider.GetRequiredService<
                 IIntegrationCommandHandler<NotifyPaymentVerificationFailedCommand>>();
             var command = new NotifyPaymentVerificationFailedCommand(
-                fixture.SeedState.DoorSplitApp.Id,
+                fixture.SeedState.DoorSplitApplication.Id,
                 "Card was declined");
             var dispatch = handler.HandleAsync(
                 command,
@@ -537,7 +537,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
     [Fact]
     public async Task PaymentFailureCommand_WhenOwnerChangesBeforeAudienceRead_NotifiesNewOwner()
     {
-        var application = fixture.SeedState.DoorSplitApp;
+        var application = fixture.SeedState.DoorSplitApplication;
         var creator = fixture.SeedState.VenueManager1;
         var replacement = fixture.SeedState.VenueManager3;
         using var scope = fixture.Services.CreateScope();

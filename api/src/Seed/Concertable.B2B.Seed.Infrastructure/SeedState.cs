@@ -79,74 +79,74 @@ public sealed class SeedState
     public IReadOnlyList<ConcertAvailabilityEntity> ConcertAvailabilities { get; }
     public IReadOnlyList<ConcertEntity> Concerts { get; }
 
-    public FlatFeeDealEntity FlatFeeAppDeal { get; }
-    public FlatFeeDealEntity ConfirmedAppDeal { get; }
-    public FlatFeeDealEntity AwaitingPaymentAppDeal { get; }
-    public VersusDealEntity VersusAppDeal { get; }
-    public DoorSplitDealEntity DoorSplitAppDeal { get; }
-    public VenueHireDealEntity VenueHireAppDeal { get; }
-    public FlatFeeDealEntity PostedFlatFeeAppDeal { get; }
-    public DoorSplitDealEntity PostedDoorSplitAppDeal { get; }
-    public VersusDealEntity PostedVersusAppDeal { get; }
-    public VenueHireDealEntity PostedVenueHireAppDeal { get; }
-    public VersusDealEntity PastVersusAppDeal { get; }
-    public FlatFeeDealEntity PastFlatFeeAppDeal { get; }
-    public VenueHireDealEntity PastVenueHireAppDeal { get; }
-    public DoorSplitDealEntity PastDoorSplitAppDeal { get; }
+    public FlatFeeDealEntity FlatFeeApplicationDeal { get; }
+    public FlatFeeDealEntity ConfirmedApplicationDeal { get; }
+    public FlatFeeDealEntity AwaitingPaymentApplicationDeal { get; }
+    public VersusDealEntity VersusApplicationDeal { get; }
+    public DoorSplitDealEntity DoorSplitApplicationDeal { get; }
+    public VenueHireDealEntity VenueHireApplicationDeal { get; }
+    public FlatFeeDealEntity PostedFlatFeeApplicationDeal { get; }
+    public DoorSplitDealEntity PostedDoorSplitApplicationDeal { get; }
+    public VersusDealEntity PostedVersusApplicationDeal { get; }
+    public VenueHireDealEntity PostedVenueHireApplicationDeal { get; }
+    public VersusDealEntity PastVersusApplicationDeal { get; }
+    public FlatFeeDealEntity PastFlatFeeApplicationDeal { get; }
+    public VenueHireDealEntity PastVenueHireApplicationDeal { get; }
+    public DoorSplitDealEntity PastDoorSplitApplicationDeal { get; }
 
     public OpportunityEntity ActiveVenueHireOpportunity { get; }
 
-    public ApplicationEntity FlatFeeApp { get; }
+    public ApplicationEntity FlatFeeApplication { get; }
     public ApplicationEntity InProgressApplication { get; }
-    public ApplicationEntity VersusApp { get; }
-    public ApplicationEntity DoorSplitApp { get; }
-    public ApplicationEntity VenueHireApp { get; }
+    public ApplicationEntity VersusApplication { get; }
+    public ApplicationEntity DoorSplitApplication { get; }
+    public ApplicationEntity VenueHireApplication { get; }
 
-    public ApplicationEntity ConfirmedApp { get; }
+    public ApplicationEntity ConfirmedApplication { get; }
     public BookingEntity ConfirmedBooking { get; }
 
-    public ApplicationEntity AwaitingPaymentApp { get; }
+    public ApplicationEntity AwaitingPaymentApplication { get; }
     public BookingEntity AwaitingPaymentBooking { get; }
 
-    public ApplicationEntity PostedFlatFeeApp { get; }
+    public ApplicationEntity PostedFlatFeeApplication { get; }
     public BookingEntity PostedFlatFeeBooking { get; }
 
-    public ApplicationEntity PostedDoorSplitApp { get; }
+    public ApplicationEntity PostedDoorSplitApplication { get; }
     public BookingEntity PostedDoorSplitBooking { get; }
 
-    public ApplicationEntity PostedVersusApp { get; }
+    public ApplicationEntity PostedVersusApplication { get; }
     public BookingEntity PostedVersusBooking { get; }
 
-    public ApplicationEntity PostedVenueHireApp { get; }
+    public ApplicationEntity PostedVenueHireApplication { get; }
     public BookingEntity PostedVenueHireBooking { get; }
 
-    public ApplicationEntity FinishedDoorSplitApp { get; }
+    public ApplicationEntity FinishedDoorSplitApplication { get; }
     public BookingEntity FinishedDoorSplitBooking { get; }
 
-    public ApplicationEntity FinishedVersusApp { get; }
+    public ApplicationEntity FinishedVersusApplication { get; }
     public BookingEntity FinishedVersusBooking { get; }
 
-    public ApplicationEntity PastVersusApp { get; }
+    public ApplicationEntity PastVersusApplication { get; }
     public BookingEntity PastVersusBooking { get; }
 
-    public ApplicationEntity PastFlatFeeApp { get; }
+    public ApplicationEntity PastFlatFeeApplication { get; }
     public BookingEntity PastFlatFeeBooking { get; }
 
-    public ApplicationEntity PastVenueHireApp { get; }
+    public ApplicationEntity PastVenueHireApplication { get; }
     public BookingEntity PastVenueHireBooking { get; }
 
-    public ApplicationEntity PastDoorSplitApp { get; }
+    public ApplicationEntity PastDoorSplitApplication { get; }
     public BookingEntity PastDoorSplitBooking { get; }
 
-    public ApplicationEntity UpcomingFlatFeeApp { get; }
+    public ApplicationEntity UpcomingFlatFeeApplication { get; }
     public BookingEntity UpcomingFlatFeeBooking { get; }
 
-    public ApplicationEntity UpcomingVenueHireApp { get; }
+    public ApplicationEntity UpcomingVenueHireApplication { get; }
     public BookingEntity UpcomingVenueHireBooking { get; }
 
-    public SeedState(SeedCatalog catalog)
+    public SeedState(SeedCatalog seedCatalog)
     {
-        var now = catalog.Now;
+        var now = seedCatalog.Now;
 
         ArtistManager1 = UserFactory.FromRegistration(
             SeedUsers.ArtistManagerId(1), SeedUsers.ArtistManagerEmail(1));
@@ -192,7 +192,7 @@ public sealed class SeedState
 
         Users = [Admin, .. ArtistManagers, .. VenueManagers, UnverifiedVenueManager];
 
-        Venues = catalog.Venues.Select(s => VenueFactory.Create(
+        Venues = seedCatalog.Venues.Select(s => VenueFactory.Create(
             id: s.VenueId, userId: s.UserId,
             name: s.Name, about: s.About,
             bannerUrl: s.BannerUrl, avatar: s.Avatar,
@@ -211,7 +211,7 @@ public sealed class SeedState
             email: "tenant-verification-gate@test.com");
         Venues = [.. Venues, unverifiedVenue];
 
-        Artists = catalog.Artists.Select(s => ArtistFactory.Create(
+        Artists = seedCatalog.Artists.Select(s => ArtistFactory.Create(
             id: s.ArtistId, userId: s.UserId,
             name: s.Name, about: s.About,
             bannerUrl: s.BannerUrl, avatar: s.Avatar,
@@ -223,20 +223,20 @@ public sealed class SeedState
             artist.TenantId = TenantSeedIds.For(artist.UserId);
         Artist = Artists[0];
 
-        ConfirmedAppDeal = FlatFeeDealFactory.Create(6, 200m);
-        PostedVenueHireAppDeal = VenueHireDealFactory.Create(21, 300m);
-        PostedFlatFeeAppDeal = FlatFeeDealFactory.Create(31, 200m);
-        AwaitingPaymentAppDeal = FlatFeeDealFactory.Create(33, 150m);
-        DoorSplitAppDeal = DoorSplitDealFactory.Create(50, 70m);
-        VersusAppDeal = VersusDealFactory.Create(51, 100m, 70m);
-        PostedDoorSplitAppDeal = DoorSplitDealFactory.Create(53, 65m);
-        PostedVersusAppDeal = VersusDealFactory.Create(54, 120m, 60m);
-        FlatFeeAppDeal = FlatFeeDealFactory.Create(55, 180m);
-        VenueHireAppDeal = VenueHireDealFactory.Create(52, 170m);
-        PastVersusAppDeal = VersusDealFactory.Create(64, 100m, 70m);
-        PastFlatFeeAppDeal = FlatFeeDealFactory.Create(65, 200m);
-        PastVenueHireAppDeal = VenueHireDealFactory.Create(66, 300m);
-        PastDoorSplitAppDeal = DoorSplitDealFactory.Create(67, 70m);
+        ConfirmedApplicationDeal = FlatFeeDealFactory.Create(6, 200m);
+        PostedVenueHireApplicationDeal = VenueHireDealFactory.Create(21, 300m);
+        PostedFlatFeeApplicationDeal = FlatFeeDealFactory.Create(31, 200m);
+        AwaitingPaymentApplicationDeal = FlatFeeDealFactory.Create(33, 150m);
+        DoorSplitApplicationDeal = DoorSplitDealFactory.Create(50, 70m);
+        VersusApplicationDeal = VersusDealFactory.Create(51, 100m, 70m);
+        PostedDoorSplitApplicationDeal = DoorSplitDealFactory.Create(53, 65m);
+        PostedVersusApplicationDeal = VersusDealFactory.Create(54, 120m, 60m);
+        FlatFeeApplicationDeal = FlatFeeDealFactory.Create(55, 180m);
+        VenueHireApplicationDeal = VenueHireDealFactory.Create(52, 170m);
+        PastVersusApplicationDeal = VersusDealFactory.Create(64, 100m, 70m);
+        PastFlatFeeApplicationDeal = FlatFeeDealFactory.Create(65, 200m);
+        PastVenueHireApplicationDeal = VenueHireDealFactory.Create(66, 300m);
+        PastDoorSplitApplicationDeal = DoorSplitDealFactory.Create(67, 70m);
 
         var deals = new List<DealEntity>
         {
@@ -245,7 +245,7 @@ public sealed class SeedState
             DoorSplitDealFactory.Create(3, 60m),
             VersusDealFactory.Create(4, 80m, 50m),
             FlatFeeDealFactory.Create(5, 180m),
-            ConfirmedAppDeal,                                                       // 6
+            ConfirmedApplicationDeal,                                                       // 6
             FlatFeeDealFactory.Create(7, 160m),
             FlatFeeDealFactory.Create(8, 140m),
             DoorSplitDealFactory.Create(9, 70m),
@@ -260,7 +260,7 @@ public sealed class SeedState
             VersusDealFactory.Create(18, 90m, 55m),
             DoorSplitDealFactory.Create(19, 60m),
             FlatFeeDealFactory.Create(20, 165m),
-            PostedVenueHireAppDeal,                                                 // 21
+            PostedVenueHireApplicationDeal,                                                 // 21
             FlatFeeDealFactory.Create(22, 175m),
             DoorSplitDealFactory.Create(23, 70m),
             VersusDealFactory.Create(24, 110m, 60m),
@@ -270,9 +270,9 @@ public sealed class SeedState
             VenueHireDealFactory.Create(28, 280m),
             VersusDealFactory.Create(29, 95m, 55m),
             FlatFeeDealFactory.Create(30, 160m),
-            PostedFlatFeeAppDeal,                                                   // 31
+            PostedFlatFeeApplicationDeal,                                                   // 31
             FlatFeeDealFactory.Create(32, 140m),
-            AwaitingPaymentAppDeal,                                                 // 33
+            AwaitingPaymentApplicationDeal,                                                 // 33
             DoorSplitDealFactory.Create(34, 70m),
             VersusDealFactory.Create(35, 100m, 60m),
             FlatFeeDealFactory.Create(36, 170m),
@@ -289,12 +289,12 @@ public sealed class SeedState
             DoorSplitDealFactory.Create(47, 65m),
             VenueHireDealFactory.Create(48, 290m),
             VersusDealFactory.Create(49, 85m, 50m),
-            DoorSplitAppDeal,                                                       // 50
-            VersusAppDeal,                                                          // 51
-            VenueHireAppDeal,                                                       // 52
-            PostedDoorSplitAppDeal,                                                 // 53
-            PostedVersusAppDeal,                                                    // 54
-            FlatFeeAppDeal,                                                         // 55
+            DoorSplitApplicationDeal,                                                       // 50
+            VersusApplicationDeal,                                                          // 51
+            VenueHireApplicationDeal,                                                       // 52
+            PostedDoorSplitApplicationDeal,                                                 // 53
+            PostedVersusApplicationDeal,                                                    // 54
+            FlatFeeApplicationDeal,                                                         // 55
             DoorSplitDealFactory.Create(56, 70m),
             VersusDealFactory.Create(57, 110m, 65m),
             FlatFeeDealFactory.Create(58, 150m),
@@ -303,10 +303,10 @@ public sealed class SeedState
             DoorSplitDealFactory.Create(61, 70m),
             VersusDealFactory.Create(62, 100m, 60m),
             VenueHireDealFactory.Create(63, 250m),
-            PastVersusAppDeal,                                                      // 64
-            PastFlatFeeAppDeal,                                                     // 65
-            PastVenueHireAppDeal,                                                   // 66
-            PastDoorSplitAppDeal,                                                   // 67
+            PastVersusApplicationDeal,                                                      // 64
+            PastFlatFeeApplicationDeal,                                                     // 65
+            PastVenueHireApplicationDeal,                                                   // 66
+            PastDoorSplitApplicationDeal,                                                   // 67
         };
         Deals = deals;
 
@@ -378,25 +378,25 @@ public sealed class SeedState
             if (tenantByDealId.TryGetValue(deal.Id, out var tenantId))
                 deal.TenantId = tenantId;
 
-        ConfirmedApp = Link(1, ApplicationFactory.Accepted(1, 6));
-        PostedDoorSplitApp = Link(2, ApplicationFactory.Accepted(1, 53));
-        PostedVersusApp = Link(3, ApplicationFactory.Accepted(2, 54));
-        PostedFlatFeeApp = Link(4, ApplicationFactory.Accepted(2, 31));
-        PostedVenueHireApp = Link(5, ApplicationFactory.Accepted(1, 21));
-        AwaitingPaymentApp = Link(6, ApplicationFactory.Accepted(1, 33));
-        FinishedDoorSplitApp = Link(7, ApplicationFactory.Accepted(1, 50));
-        FinishedVersusApp = Link(8, ApplicationFactory.Accepted(1, 51));
-        PastVersusApp = Link(9, ApplicationFactory.Accepted(1, Opportunities[63].Id));
-        PastFlatFeeApp = Link(10, ApplicationFactory.Accepted(1, Opportunities[64].Id));
-        PastVenueHireApp = Link(11, ApplicationFactory.Accepted(1, Opportunities[65].Id));
-        PastDoorSplitApp = Link(12, ApplicationFactory.Accepted(1, Opportunities[66].Id));
-        UpcomingFlatFeeApp = Link(13, ApplicationFactory.Accepted(2, 58));
-        UpcomingVenueHireApp = Link(14, ApplicationFactory.Accepted(1, 59));
+        ConfirmedApplication = Link(1, ApplicationFactory.Accepted(1, 6));
+        PostedDoorSplitApplication = Link(2, ApplicationFactory.Accepted(1, 53));
+        PostedVersusApplication = Link(3, ApplicationFactory.Accepted(2, 54));
+        PostedFlatFeeApplication = Link(4, ApplicationFactory.Accepted(2, 31));
+        PostedVenueHireApplication = Link(5, ApplicationFactory.Accepted(1, 21));
+        AwaitingPaymentApplication = Link(6, ApplicationFactory.Accepted(1, 33));
+        FinishedDoorSplitApplication = Link(7, ApplicationFactory.Accepted(1, 50));
+        FinishedVersusApplication = Link(8, ApplicationFactory.Accepted(1, 51));
+        PastVersusApplication = Link(9, ApplicationFactory.Accepted(1, Opportunities[63].Id));
+        PastFlatFeeApplication = Link(10, ApplicationFactory.Accepted(1, Opportunities[64].Id));
+        PastVenueHireApplication = Link(11, ApplicationFactory.Accepted(1, Opportunities[65].Id));
+        PastDoorSplitApplication = Link(12, ApplicationFactory.Accepted(1, Opportunities[66].Id));
+        UpcomingFlatFeeApplication = Link(13, ApplicationFactory.Accepted(2, 58));
+        UpcomingVenueHireApplication = Link(14, ApplicationFactory.Accepted(1, 59));
 
-        DoorSplitApp = ApplicationFactory.Create(1, Opportunities[55].Id, Deals[55].DealType);
-        VersusApp = ApplicationFactory.Create(1, Opportunities[56].Id, Deals[56].DealType);
-        VenueHireApp = ApplicationFactory.Create(1, Opportunities[51].Id, Deals[51].DealType);
-        FlatFeeApp = ApplicationFactory.Create(1, Opportunities[54].Id, Deals[54].DealType);
+        DoorSplitApplication = ApplicationFactory.Create(1, Opportunities[55].Id, Deals[55].DealType);
+        VersusApplication = ApplicationFactory.Create(1, Opportunities[56].Id, Deals[56].DealType);
+        VenueHireApplication = ApplicationFactory.Create(1, Opportunities[51].Id, Deals[51].DealType);
+        FlatFeeApplication = ApplicationFactory.Create(1, Opportunities[54].Id, Deals[54].DealType);
         InProgressApplication = ApplicationFactory.Create(1, Opportunities[12].Id, Deals[12].DealType);
 
         Applications =
@@ -421,7 +421,7 @@ public sealed class SeedState
             Link(32, ApplicationFactory.Accepted(2, 5)),
             Link(33, ApplicationFactory.Accepted(11, 5)),
             Link(34, ApplicationFactory.Accepted(12, 5)),
-            ConfirmedApp,
+            ConfirmedApplication,
             Link(35, ApplicationFactory.Accepted(2, 6)),
             Link(36, ApplicationFactory.Accepted(13, 6)),
             Link(37, ApplicationFactory.Accepted(14, 6)),
@@ -439,17 +439,17 @@ public sealed class SeedState
             ApplicationFactory.Create(2, 14),
             ApplicationFactory.Create(3, 14),
             ApplicationFactory.Create(4, 14),
-            PostedDoorSplitApp,
-            DoorSplitApp,
+            PostedDoorSplitApplication,
+            DoorSplitApplication,
             ApplicationFactory.Create(7, 15),
             Link(41, ApplicationFactory.Accepted(8, 15)),
             ApplicationFactory.Create(9, 16),
             ApplicationFactory.Create(10, 16),
             Link(42, ApplicationFactory.Accepted(11, 16)),
             ApplicationFactory.Create(12, 16),
-            VersusApp,
+            VersusApplication,
             ApplicationFactory.Create(14, 17),
-            PostedVersusApp,
+            PostedVersusApplication,
             ApplicationFactory.Create(16, 17),
             ApplicationFactory.Create(1, 34),
             ApplicationFactory.Create(2, 34),
@@ -466,24 +466,24 @@ public sealed class SeedState
             ApplicationFactory.Create(5, 49),
             ApplicationFactory.Create(2, 50),
             ApplicationFactory.Create(2, 51),
-            VenueHireApp,
+            VenueHireApplication,
             ApplicationFactory.Create(2, 52),
-            FlatFeeApp,
-            PostedFlatFeeApp,
+            FlatFeeApplication,
+            PostedFlatFeeApplication,
             ApplicationFactory.Create(3, 31),
             ApplicationFactory.Create(1, 32),
             ApplicationFactory.Create(2, 32),
             ApplicationFactory.Create(3, 32),
-            AwaitingPaymentApp,
-            PostedVenueHireApp,
-            FinishedDoorSplitApp,
-            FinishedVersusApp,
-            PastVersusApp,
-            PastFlatFeeApp,
-            PastVenueHireApp,
-            PastDoorSplitApp,
-            UpcomingFlatFeeApp,
-            UpcomingVenueHireApp,
+            AwaitingPaymentApplication,
+            PostedVenueHireApplication,
+            FinishedDoorSplitApplication,
+            FinishedVersusApplication,
+            PastVersusApplication,
+            PastFlatFeeApplication,
+            PastVenueHireApplication,
+            PastDoorSplitApplication,
+            UpcomingFlatFeeApplication,
+            UpcomingVenueHireApplication,
             Link(43, ApplicationFactory.Accepted(3, 34)),
             ApplicationFactory.Create(4, 34),
             ApplicationFactory.Create(5, 34),
@@ -593,8 +593,7 @@ public sealed class SeedState
         UpcomingFlatFeeBooking = Bookings[12];
         UpcomingVenueHireBooking = Bookings[13];
 
-        Concerts = catalog.Concerts
-            .Where(spec => spec.ConcertId != AwaitingPaymentBooking.Id)
+        Concerts = seedCatalog.Concerts
             .Select(spec => ConcertFactory.Create(spec, Bookings[spec.ConcertId - 1], Contracts[spec.ConcertId - 1], now))
             .ToList();
         ConcertAvailabilities = Concerts.Select(concert => ConcertAvailabilityEntity.Create(

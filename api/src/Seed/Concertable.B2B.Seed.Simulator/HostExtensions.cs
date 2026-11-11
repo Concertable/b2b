@@ -21,14 +21,14 @@ public static class HostExtensions
             builder.Services.AddSingleton(TimeProvider.System);
             builder.Services.AddSingleton<SeedCatalog>();
             builder.Services.AddAzureServiceBusTransport(
-                opts =>
+                options =>
                 {
-                    opts.ConnectionString = builder.Configuration.GetConnectionString("asb")
+                    options.ConnectionString = builder.Configuration.GetConnectionString("asb")
                         ?? (builder.Environment.IsIntegration() ? null!
                             : throw new InvalidOperationException("Connection string 'asb' is required."));
-                    opts.ServiceName = "concertable-b2b-seeding-simulator";
+                    options.ServiceName = "concertable-b2b-seeding-simulator";
                 },
-                reg => reg
+                registry => registry
                     .Publishes<PayoutOwnerRegisteredEvent>()
                     .Publishes<VenueChangedEvent>()
                     .Publishes<ArtistChangedEvent>()

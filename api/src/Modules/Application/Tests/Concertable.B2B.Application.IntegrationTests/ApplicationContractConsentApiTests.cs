@@ -57,7 +57,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
     public async Task SeededApplications_HaveCatalogTimestampedConsent()
     {
         var application = await fixture.Applications
-            .SingleAsync(value => value.Id == fixture.SeedState.FlatFeeApp.Id);
+            .SingleAsync(value => value.Id == fixture.SeedState.FlatFeeApplication.Id);
 
         Assert.Equal(fixture.SeedNow, application.ArtistESignature.AtUtc);
         Assert.False(string.IsNullOrWhiteSpace(application.TermsFingerprint));
@@ -110,7 +110,7 @@ public sealed class ApplicationContractConsentApiTests : IAsyncLifetime
     [Fact]
     public async Task AcceptedApplication_ExposesContractHateoasLink()
     {
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         var venueClient = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await venueClient.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await venueClient.PostAsync(

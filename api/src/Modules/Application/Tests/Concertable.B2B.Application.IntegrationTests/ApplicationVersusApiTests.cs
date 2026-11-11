@@ -30,7 +30,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await client.PostAsync(
-            $"/api/application/{fixture.SeedState.VersusApp.Id}/checkout");
+            $"/api/application/{fixture.SeedState.VersusApplication.Id}/checkout");
 
         await response.ShouldBe(HttpStatusCode.OK);
         var checkout = await response.Content.ReadAsync<Checkout>();
@@ -46,7 +46,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
 
         var response = await client.PostAsync(
-            $"/api/application/opportunity/{fixture.SeedState.VersusApp.OpportunityId}/checkout");
+            $"/api/application/opportunity/{fixture.SeedState.VersusApplication.OpportunityId}/checkout");
 
         await response.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -77,7 +77,7 @@ public sealed class ApplicationVersusApiTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldReturn409_WhenAlreadyAccepted()
     {
-        var applicationId = fixture.SeedState.VersusApp.Id;
+        var applicationId = fixture.SeedState.VersusApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         var request = new
         {

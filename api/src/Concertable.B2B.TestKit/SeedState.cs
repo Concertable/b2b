@@ -11,12 +11,12 @@ public sealed record SeedState
     public required IReadOnlyList<TestTenant> Tenants { get; init; }
     public required TestEntity Venue { get; init; }
     public required TestOpportunity ActiveVenueHireOpportunity { get; init; }
-    public required TestEntity FlatFeeApp { get; init; }
-    public required TestEntity DoorSplitApp { get; init; }
-    public required TestEntity VersusApp { get; init; }
-    public required TestApplication VenueHireApp { get; init; }
-    public required TestEntity PastFlatFeeApp { get; init; }
-    public required TestEntity PastVenueHireApp { get; init; }
+    public required TestEntity FlatFeeApplication { get; init; }
+    public required TestEntity DoorSplitApplication { get; init; }
+    public required TestEntity VersusApplication { get; init; }
+    public required TestApplication VenueHireApplication { get; init; }
+    public required TestEntity PastFlatFeeApplication { get; init; }
+    public required TestEntity PastVenueHireApplication { get; init; }
     public required TestBooking PastDoorSplitBooking { get; init; }
     public required TestBooking PastVersusBooking { get; init; }
 }

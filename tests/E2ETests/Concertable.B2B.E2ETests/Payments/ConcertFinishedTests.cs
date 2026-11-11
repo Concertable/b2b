@@ -20,7 +20,7 @@ public sealed class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         // Assert
         await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Concert.GetStateByApplicationIdAsync(fixture.SeedState.PastFlatFeeApp.Id),
+            () => fixture.DbFixture.Concert.GetStateByApplicationIdAsync(fixture.SeedState.PastFlatFeeApplication.Id),
             state => state == ConcertState.Complete,
             timeout: TimeSpan.FromSeconds(30));
     }
@@ -33,7 +33,7 @@ public sealed class ConcertFinishedTests(AppFixture fixture) : IAsyncLifetime
 
         // Assert
         await fixture.Polling.UntilAsync(
-            () => fixture.DbFixture.Concert.GetStateByApplicationIdAsync(fixture.SeedState.PastVenueHireApp.Id),
+            () => fixture.DbFixture.Concert.GetStateByApplicationIdAsync(fixture.SeedState.PastVenueHireApplication.Id),
             state => state == ConcertState.Complete,
             timeout: TimeSpan.FromSeconds(30));
     }

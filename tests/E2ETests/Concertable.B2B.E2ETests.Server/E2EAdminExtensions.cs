@@ -101,16 +101,16 @@ public static class E2EAdminExtensions
             Tenants = seed.Tenants.Select(tenant => new { tenant.Id, tenant.CreatedByUserId }),
             Venue = new { seed.Venue.Id },
             ActiveVenueHireOpportunity = new { seed.ActiveVenueHireOpportunity.Id, seed.ActiveVenueHireOpportunity.VenueId },
-            FlatFeeApp = new { Id = await GetApplicationIdAsync(connection, seed.FlatFeeApp) },
-            DoorSplitApp = new { Id = await GetApplicationIdAsync(connection, seed.DoorSplitApp) },
-            VersusApp = new { Id = await GetApplicationIdAsync(connection, seed.VersusApp) },
-            VenueHireApp = new
+            FlatFeeApplication = new { Id = await GetApplicationIdAsync(connection, seed.FlatFeeApplication) },
+            DoorSplitApplication = new { Id = await GetApplicationIdAsync(connection, seed.DoorSplitApplication) },
+            VersusApplication = new { Id = await GetApplicationIdAsync(connection, seed.VersusApplication) },
+            VenueHireApplication = new
             {
-                Id = await GetApplicationIdAsync(connection, seed.VenueHireApp),
-                seed.VenueHireApp.OpportunityId,
+                Id = await GetApplicationIdAsync(connection, seed.VenueHireApplication),
+                seed.VenueHireApplication.OpportunityId,
             },
-            PastFlatFeeApp = new { Id = await GetApplicationIdAsync(connection, seed.PastFlatFeeApp) },
-            PastVenueHireApp = new { Id = await GetApplicationIdAsync(connection, seed.PastVenueHireApp) },
+            PastFlatFeeApplication = new { Id = await GetApplicationIdAsync(connection, seed.PastFlatFeeApplication) },
+            PastVenueHireApplication = new { Id = await GetApplicationIdAsync(connection, seed.PastVenueHireApplication) },
             PastDoorSplitBooking = await BookingAsync(connection, seed, seed.PastDoorSplitBooking),
             PastVersusBooking = await BookingAsync(connection, seed, seed.PastVersusBooking),
         });

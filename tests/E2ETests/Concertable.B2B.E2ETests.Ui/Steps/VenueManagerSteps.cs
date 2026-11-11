@@ -120,21 +120,21 @@ public sealed class VenueManagerSteps
     [Given(@"a flat fee opportunity has been applied to")]
     public async Task AFlatFeeOpportunityHasBeenAppliedTo()
     {
-        state.ApplicationId = fixture.App.SeedState.FlatFeeApp.Id;
+        state.ApplicationId = fixture.App.SeedState.FlatFeeApplication.Id;
         await GotoCheckoutAndAgreeAsync();
     }
 
     [Given(@"a door split opportunity has been applied to")]
     public async Task ADoorSplitOpportunityHasBeenAppliedTo()
     {
-        state.ApplicationId = fixture.App.SeedState.DoorSplitApp.Id;
+        state.ApplicationId = fixture.App.SeedState.DoorSplitApplication.Id;
         await GotoCheckoutAndAgreeAsync();
     }
 
     [Given(@"a versus opportunity has been applied to")]
     public async Task AVersusOpportunityHasBeenAppliedTo()
     {
-        state.ApplicationId = fixture.App.SeedState.VersusApp.Id;
+        state.ApplicationId = fixture.App.SeedState.VersusApplication.Id;
         await GotoCheckoutAndAgreeAsync();
     }
 

@@ -30,7 +30,7 @@ public sealed class ConcertCancelledTests : IAsyncLifetime
     [Fact]
     public async Task ShouldCancelBookingAndRefundEscrow_WhenFlatFeeConcertCancelled()
     {
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         var clientSecret = await PlaceAcceptHoldAsync(appId);
         await fixture.Stripe.ConfirmHoldAsync(clientSecret);
@@ -42,10 +42,10 @@ public sealed class ConcertCancelledTests : IAsyncLifetime
     [Fact]
     public async Task ShouldCancelBookingAndRefundEscrow_WhenVenueHireConcertCancelled()
     {
-        var appId = fixture.SeedState.VenueHireApp.Id;
+        var appId = fixture.SeedState.VenueHireApplication.Id;
 
         var artistClient = await fixture.CreateAuthenticatedClientAsync(fixture.SeedState.ArtistManager1.Email);
-        await fixture.CommitArtistPaymentMethodAsync(artistClient, fixture.SeedState.VenueHireApp.OpportunityId);
+        await fixture.CommitArtistPaymentMethodAsync(artistClient, fixture.SeedState.VenueHireApplication.OpportunityId);
         await AcceptAsync(appId);
 
         await CancelAndAssertRefundedAsync(appId);

@@ -31,7 +31,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         // Act
         var response = await client.PostAsync($"/api/application/{appId}/withdraw");
@@ -49,7 +49,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         // Act
         var response = await client.PostAsync($"/api/application/{appId}/withdraw");
@@ -65,7 +65,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManagerNoArtist);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         // Act
         var response = await client.PostAsync($"/api/application/{appId}/withdraw");
@@ -79,7 +79,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         // Act
         var firstResponse = await client.PostAsync($"/api/application/{appId}/withdraw");
@@ -94,7 +94,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     public async Task Withdraw_ShouldReturn409_WhenAlreadyAccepted()
     {
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var applicationId = fixture.SeedState.AwaitingPaymentApp.Id;
+        var applicationId = fixture.SeedState.AwaitingPaymentApplication.Id;
 
         var response = await client.PostAsync(
             $"/api/application/{applicationId}/withdraw",
@@ -110,8 +110,8 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
-        var opportunityId = fixture.SeedState.FlatFeeApp.OpportunityId;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
+        var opportunityId = fixture.SeedState.FlatFeeApplication.OpportunityId;
 
         // Act
         var withdrawResponse = await client.PostAsync($"/api/application/{appId}/withdraw");
@@ -133,7 +133,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         // Act
         var response = await client.PostAsync($"/api/application/{appId}/reject");
@@ -151,7 +151,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.ArtistManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         // Act
         var response = await client.PostAsync($"/api/application/{appId}/reject");
@@ -167,7 +167,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager2);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         // Act
         var response = await client.PostAsync($"/api/application/{appId}/reject");
@@ -181,7 +181,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.AwaitingPaymentApp.Id;
+        var appId = fixture.SeedState.AwaitingPaymentApplication.Id;
 
         // Act
         var response = await client.PostAsync($"/api/application/{appId}/reject");
@@ -201,7 +201,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         // Arrange
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
         var beforeResponse = await client.GetAsync($"/api/application/{appId}/proposal");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);
         var before = await beforeResponse.Content.ReadAsync<ApplicationProposalResponse>();
@@ -229,7 +229,7 @@ public sealed class ApplicationWithdrawRejectApiTests : IAsyncLifetime
     {
         var artist = fixture.CreateClient(fixture.SeedState.ArtistManager1);
         var venue = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var appId = fixture.SeedState.FlatFeeApp.Id;
+        var appId = fixture.SeedState.FlatFeeApplication.Id;
 
         var beforeResponse = await artist.GetAsync($"/api/Application/{appId}/proposal");
         await beforeResponse.ShouldBe(HttpStatusCode.OK);

@@ -22,7 +22,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateDeferredBooking_WithoutDraft()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
 
         var response = await AcceptAsync(client, applicationId);
@@ -36,7 +36,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateDraftConcertAndNotifyArtistAndVenue()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
 
@@ -63,7 +63,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateOneConcert_WhenWebhookEventIsRedelivered()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -82,7 +82,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
     public async Task Accept_ShouldNotCreateDraft_WhenFinancialConfirmationFails()
     {
         fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var acceptResponse = await AcceptAsync(client, applicationId);
@@ -101,7 +101,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
     [Fact]
     public async Task Accept_ShouldCreateDraftConcert_WhenVerifyWebhookArrivesBeforeAccept()
     {
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         await fixture.PaymentSimulator.SendWebhookAsync();
@@ -120,7 +120,7 @@ public sealed class DoorSplitLifecycleTests : IAsyncLifetime
     public async Task Accept_ShouldRouteBookingToConfirmationFailed_WhenVerifyFailureArrivesBeforeAccept()
     {
         fixture.CreateClient(fixture.SeedState.VenueManager1, options => options.UseFailingStripe());
-        var applicationId = fixture.SeedState.DoorSplitApp.Id;
+        var applicationId = fixture.SeedState.DoorSplitApplication.Id;
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         await fixture.PaymentSimulator.SendWebhookAsync();

@@ -28,7 +28,7 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
     public async Task DuplicateCaptureSuccess_IsAcknowledgedAndAppliedExactlyOnce()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var accept = await client.PostAsync(
             $"/api/application/{applicationId}/accept",
@@ -64,7 +64,7 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
     public async Task CaptureSuccess_ForAnotherOperation_IsRecordedAndSkipped()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var accept = await client.PostAsync(
             $"/api/application/{applicationId}/accept",
@@ -95,7 +95,7 @@ public sealed class AcceptanceFinancialOperationOutcomeProcessorTests : IAsyncLi
     public async Task CaptureSuccess_WhenBookingSaveFails_RollsBackBookingConcertAndOutboundMessages()
     {
         var client = fixture.CreateClient(fixture.SeedState.VenueManager1);
-        var applicationId = fixture.SeedState.FlatFeeApp.Id;
+        var applicationId = fixture.SeedState.FlatFeeApplication.Id;
         await client.PostAsync($"/api/application/{applicationId}/checkout");
         var accept = await client.PostAsync(
             $"/api/application/{applicationId}/accept",
