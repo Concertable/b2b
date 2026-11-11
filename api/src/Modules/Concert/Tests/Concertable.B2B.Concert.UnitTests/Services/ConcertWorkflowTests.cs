@@ -1,5 +1,4 @@
 using Concertable.B2B.Booking.Contracts;
-using System.Collections.Immutable;
 
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Concert.Domain.ValueObjects;
@@ -23,7 +22,6 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 public sealed class ConcertWorkflowTests
 {
     private readonly Mock<IConcertPrivilegedRepository> concertRepository = new();
-    private readonly Mock<IResourceAuthorization> resources = new();
     private readonly Mock<IAuthorizationContext> authorizationContext = new();
     private readonly Mock<ISettlementService> settlementService = new();
     private readonly Mock<IDealStrategyFactory<ICancelStep>> cancelFactory = new();
@@ -32,21 +30,16 @@ public sealed class ConcertWorkflowTests
     private readonly ConcertWorkflow workflow;
     private readonly MembershipSnapshot actor = new(
         Guid.NewGuid(),
-        Guid.NewGuid(),
+        ConfirmedBookings.VenueTenantId,
         Guid.NewGuid(),
         1,
         1,
-        ImmutableDictionary<TenantPermission, ResourceAudience>.Empty.Add(
-            TenantPermission.ConcertsManage, ResourceAudience.TenantResources));
+        PermissionSet.From([KeyValuePair.Create(TenantPermission.ConcertsManage, ResourceAccess.All)]));
 
     public ConcertWorkflowTests()
     {
         immediateBehavior = new ImmediateBehavior();
-        var membership = new Mock<IMembershipContext>();
-        membership.SetupGet(context => context.Membership).Returns(actor);
-        resources.Setup(value => value.RequireAsync(
-                It.IsAny<AuthorizationRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(AuthorizationDecision.Allowed);
+        authorizationContext.SetupGet(context => context.Membership).Returns(actor);
         var transactionRunner = new ImmediateTransactionRunner(settlementService.Object);
         workflow = new ConcertWorkflow(
             concertRepository.Object,
@@ -54,30 +47,23 @@ public sealed class ConcertWorkflowTests
             cancelFactory.Object,
             completeFactory.Object,
             immediateBehavior,
-            membership.Object,
-            resources.Object,
             authorizationContext.Object);
         transactionRunner.Workflow = workflow;
     }
 
-    [Theory]
-    [InlineData(AuthorizationDecision.Denied)]
-    [InlineData(AuthorizationDecision.AuthorityChanged)]
-    public async Task CancelAsync_WithoutAuthority_DoesNotLoadOrCancel(AuthorizationDecision decision)
+    [Fact]
+    public async Task CancelAsync_ActorOfAnotherTenant_IsNotPermitted()
     {
-        resources.Setup(value => value.RequireAsync(
-                It.IsAny<AuthorizationRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(decision);
+        authorizationContext.SetupGet(context => context.Membership).Returns(actor with { TenantId = Guid.NewGuid() });
+        concertRepository
+            .Setup(repository => repository.GetByIdWithRowLockAsync(42, default))
+            .ReturnsAsync(CreateBooking());
 
         var result = await workflow.CancelAsync(42);
 
         Assert.True(result.TryGetError(out var error));
         Assert.IsType<CancelConcertError.NotPermitted>(error);
-        concertRepository.Verify(repository => repository.GetByIdForUpdateAsync(
-            It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         cancelFactory.Verify(factory => factory.Create(It.IsAny<DealType>()), Times.Never);
-        authorizationContext.Verify(context => context.RegisterFailure(
-            It.IsAny<Func<UnitResult<CancelConcertError>>>()), Times.Once);
     }
 
     [Fact]
@@ -87,7 +73,7 @@ public sealed class ConcertWorkflowTests
         await cancellationSource.CancelAsync();
         var cancellationToken = cancellationSource.Token;
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(It.IsAny<int>(), cancellationToken))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(It.IsAny<int>(), cancellationToken))
             .Returns(Task.FromCanceled<ConcertEntity?>(cancellationToken));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
@@ -95,17 +81,16 @@ public sealed class ConcertWorkflowTests
     }
 
     [Fact]
-    public async Task CancelAsync_ConcertNotFound_ReturnsTypedError()
+    public async Task CancelAsync_ConcertNotFound_IsNotPermitted()
     {
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(42, default))
             .ReturnsAsync((ConcertEntity?)null);
 
         var result = await workflow.CancelAsync(42);
 
         Assert.True(result.TryGetError(out var error));
-        var notFound = Assert.IsType<CancelConcertError.ConcertNotFound>(error);
-        Assert.Equal(42, notFound.ConcertId);
+        Assert.IsType<CancelConcertError.NotPermitted>(error);
     }
 
     [Fact]
@@ -114,7 +99,7 @@ public sealed class ConcertWorkflowTests
         var concert = CreateBooking();
         Assert.True(concert.BeginSettlement().TryGetValue(out _));
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(42, default))
             .ReturnsAsync(concert);
 
         var result = await workflow.CancelAsync(42);
@@ -134,7 +119,7 @@ public sealed class ConcertWorkflowTests
             .Setup(factory => factory.Create(DealType.FlatFee))
             .Returns(strategy.Object);
         concertRepository
-            .Setup(repository => repository.GetByIdForUpdateAsync(42, default))
+            .Setup(repository => repository.GetByIdWithRowLockAsync(42, default))
             .ReturnsAsync(concert);
         var result = await workflow.CancelAsync(42);
 
@@ -233,18 +218,6 @@ public sealed class ConcertWorkflowTests
             CancellationToken ct = default)
             where TService : notnull =>
             command(Resolve<TService>(), ct);
-
-        public async Task<TResult> RunAsync<TService, TResult>(
-            Func<TService, CancellationToken, Task<TResult>> command,
-            Func<TService, TResult, CancellationToken, Task<bool>> validateAuthority,
-            Func<TResult> authorityFailure,
-            CancellationToken ct = default)
-            where TService : notnull
-        {
-            var service = Resolve<TService>();
-            var result = await command(service, ct);
-            return await validateAuthority(service, result, ct) ? result : authorityFailure();
-        }
 
         private TService Resolve<TService>() where TService : notnull =>
             typeof(TService) == typeof(ConcertWorkflow)

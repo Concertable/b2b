@@ -162,6 +162,28 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
             (await fixture.Invitations.SingleAsync(candidate => candidate.Id == invitation.Id)).Status);
     }
 
+    [Theory]
+    [InlineData("Door")]
+    [InlineData("Sound")]
+    public async Task Registration_InvitationRequiresRetiredActivity_RevokesInvitation(string role)
+    {
+        var inviter = fixture.SeedState.VenueManager1;
+        var tenantId = fixture.SeedState.Tenants.Single(tenant => tenant.CreatedByUserId == inviter.Id).Id;
+        var userId = Guid.NewGuid();
+        var email = $"{Guid.NewGuid():N}@invited.test";
+        var invitation = await fixture.AddInvitationAsync(tenantId, email, role, inviter.Id, DateTime.UtcNow.AddDays(7));
+        await fixture.RetireBusinessActivityAsync(tenantId, TenantBusinessActivityKind.VenueOperator);
+
+        await fixture.ProvisionAsync(new CredentialRegisteredEvent(
+            userId, email, InteractiveClientInfo.Get(InteractiveClient.VenueBrowser).Id));
+
+        Assert.False(await fixture.Memberships.AnyAsync(member => member.TenantId == tenantId && member.UserId == userId));
+        Assert.Equal(InvitationStatus.Revoked,
+            (await fixture.Invitations.SingleAsync(candidate => candidate.Id == invitation.Id)).Status);
+        var membership = await fixture.Memberships.SingleAsync(member => member.UserId == userId);
+        Assert.Equal(TenantApiFixture.RoleId(membership.TenantId, "Owner"), Assert.Single(membership.Assignments).RoleId);
+    }
+
     [Fact]
     public async Task Registration_SeededOperator_IsIdempotent_SingleOwnerMembership()
     {

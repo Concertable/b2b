@@ -4,6 +4,4 @@ internal sealed record PermissionMetadataDto(
     string Permission,
     string Label,
     string Category,
-    IReadOnlyList<ResourceBinding> ResourceBindings,
-    IReadOnlyList<string> AssignableAudiences,
     bool OwnerOnly);

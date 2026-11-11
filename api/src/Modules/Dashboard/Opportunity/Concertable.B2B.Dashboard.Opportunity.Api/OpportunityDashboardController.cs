@@ -16,7 +16,7 @@ internal sealed class OpportunityDashboardController : ControllerBase
 
     [HttpGet("venue/current")]
     [RequiresBusinessActivity(TenantBusinessActivityKind.VenueOperator)]
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<OpportunityMetricsResponse>>>
         GetOpen(CancellationToken ct) =>
         (await service.GetOpenAsync(ct))
@@ -24,7 +24,7 @@ internal sealed class OpportunityDashboardController : ControllerBase
 
     [HttpGet("artist/recommended")]
     [RequiresBusinessActivity(TenantBusinessActivityKind.Artist)]
-    [HasPermission(TenantPermission.OperationsViewName)]
+    [HasPermission(TenantPermission.OperationsView)]
     public async Task<ActionResult<IReadOnlyList<OpportunityMatchResponse>>>
         GetRecommended(CancellationToken ct) =>
         (await service.GetRecommendedAsync(ct))

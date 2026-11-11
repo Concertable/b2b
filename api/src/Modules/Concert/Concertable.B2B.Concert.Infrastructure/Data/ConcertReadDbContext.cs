@@ -4,6 +4,7 @@ using Concertable.B2B.Concert.Domain.ReadModels;
 using Concertable.B2B.Venue.Domain.ReadModels;
 using Concertable.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Concertable.B2B.Concert.Infrastructure.Data;
 

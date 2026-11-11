@@ -12,19 +12,12 @@ internal sealed record UserMembership(
 
 internal interface IMembershipRepository : IRepository<TenantMembershipEntity, Guid>
 {
-    Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForShareAsync(
-        IReadOnlyCollection<Guid> membershipIds,
+    Task<MembershipSnapshot?> GetSnapshotByIdWithKeyShareLockAsync(Guid membershipId, CancellationToken ct = default);
+
+    Task<MembershipSnapshot?> GetSnapshotByTenantIdAndIdAsync(
+        Guid tenantId,
+        Guid membershipId,
         CancellationToken ct = default);
-
-    Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForUpdateAsync(
-        IReadOnlyCollection<Guid> membershipIds,
-        CancellationToken ct = default);
-
-    Task<AuthoritySnapshot?> GetAuthoritySnapshotByUserIdAndTenantIdAsync(
-        Guid userId, Guid tenantId, CancellationToken ct = default);
-
-    Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
-        Guid membershipId, CancellationToken ct = default);
 
     Task<UserMembership?> GetMembershipAsync(Guid userId, Guid tenantId, CancellationToken ct = default);
 
@@ -33,8 +26,10 @@ internal interface IMembershipRepository : IRepository<TenantMembershipEntity, G
     Task<IReadOnlyList<TenantMembershipEntity>> ListMembershipsByTenantAsync(
         Guid tenantId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+
     Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
-        IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default);
+        IReadOnlySet<Guid> tenantIds, CancellationToken ct = default);
 
     Task<TenantMembershipEntity?> FindMembershipAsync(
         Guid tenantId, Guid userId, CancellationToken ct = default);

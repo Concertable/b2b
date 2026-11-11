@@ -17,8 +17,6 @@ using Concertable.B2B.Booking.Infrastructure.Specifications;
 using Concertable.B2B.Booking.Infrastructure.Strategies;
 using Concertable.DataAccess.Infrastructure.Extensions;
 using Concertable.B2B.Deal.Contracts;
-using Concertable.B2B.Tenant.Contracts;
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.Messaging.Contracts;
 using Concertable.Payment.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +28,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 {
     private readonly IBookingRepository bookingRepository;
     private readonly IBookingPrivilegedRepository privilegedRepository;
-    private readonly ITenantModule tenantModule;
     private readonly IUnitOfWork unitOfWork;
     private readonly IUnitOfWorkBehavior unitOfWorkBehavior;
     private readonly IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior;
@@ -42,16 +39,12 @@ internal sealed class BookingWorkflow : IBookingWorkflow
     private readonly IDealStrategyFactory<IContractFactory> contractFactory;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<BookingWorkflow> logger;
-    private readonly IMembershipContext membership;
     private readonly IAuthorizationContext authorizationContext;
-    private readonly ITenantResolver tenantResolver;
-    private readonly IResourceAuthorization resources;
     private readonly ITransactionRunner transactionRunner;
 
     public BookingWorkflow(
         IBookingRepository bookingRepository,
         IBookingPrivilegedRepository privilegedRepository,
-        ITenantModule tenantModule,
         IUnitOfWork unitOfWork,
         IUnitOfWorkBehavior unitOfWorkBehavior,
         IOutboxUnitOfWorkBehavior outboxUnitOfWorkBehavior,
@@ -63,15 +56,11 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         IDealStrategyFactory<IContractFactory> contractFactory,
         TimeProvider timeProvider,
         ILogger<BookingWorkflow> logger,
-        IMembershipContext membership,
         IAuthorizationContext authorizationContext,
-        ITenantResolver tenantResolver,
-        IResourceAuthorization resources,
         ITransactionRunner transactionRunner)
     {
         this.bookingRepository = bookingRepository;
         this.privilegedRepository = privilegedRepository;
-        this.tenantModule = tenantModule;
         this.unitOfWork = unitOfWork;
         this.unitOfWorkBehavior = unitOfWorkBehavior;
         this.outboxUnitOfWorkBehavior = outboxUnitOfWorkBehavior;
@@ -83,10 +72,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         this.contractFactory = contractFactory;
         this.timeProvider = timeProvider;
         this.logger = logger;
-        this.membership = membership;
         this.authorizationContext = authorizationContext;
-        this.tenantResolver = tenantResolver;
-        this.resources = resources;
         this.transactionRunner = transactionRunner;
     }
 
@@ -99,7 +85,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         int bookingId,
         CancellationToken ct = default)
     {
-        if (membership.Membership is not { } actor)
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return new CancelBookingError.NotPermitted();
 
         try
@@ -138,10 +124,8 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
         => await privilegedUnitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            if (await resources.CheckAsync(new AuthorizationRequest(
-                TenantPermission.BookingsCancel,
-                ResourceAddress.Create(ResourceKind.Booking, bookingId),
-                ResourceFacet.Operations), ct) != AuthorizationDecision.Allowed)
+            if (await privilegedRepository.GetByIdAsync(bookingId, ct) is not { } booking
+                || !booking.IsCancellableBy(expectedActor))
                 return (UnitResult<CancelBookingError>)new CancelBookingError.NotPermitted();
 
             if (await privilegedRepository.GetStateByIdAsync(bookingId, ct)
@@ -161,28 +145,13 @@ internal sealed class BookingWorkflow : IBookingWorkflow
 
     private async Task<UnitResult<CancelBookingError>> CancelCoreAsync(
         int bookingId,
-        MembershipSnapshot expectedActor,
+        MembershipSnapshot actor,
         CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<UnitResult<CancelBookingError>>(
-            () => new CancelBookingError.NotPermitted());
-        var parties = await privilegedRepository.GetPartyTenantIdsAsync(bookingId, ct);
-        if (parties.Count == 0)
-            return new CancelBookingError.BookingNotFound(bookingId);
-        var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.ExistingTenantIds.SetEquals(parties)
-            || await resources.RequireAsync(new AuthorizationRequest(
-                TenantPermission.BookingsCancel,
-                ResourceAddress.Create(ResourceKind.Booking, bookingId),
-                ResourceFacet.Operations), ct) != AuthorizationDecision.Allowed)
-            return new CancelBookingError.NotPermitted();
-        var actor = resolution.Actor;
-
-        var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);
+        var booking = await privilegedRepository.GetByIdWithRowLockAsync(bookingId, ct);
         if (booking is null)
             return new CancelBookingError.BookingNotFound(bookingId);
-        if (!parties.ToHashSet().SetEquals([booking.VenueTenantId, booking.ArtistTenantId]))
+        if (!booking.IsCancellableBy(actor))
             return new CancelBookingError.NotPermitted();
         if (booking.State is BookingState.Cancelled or BookingState.CancellationPending)
             return new Success();
@@ -231,7 +200,6 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         CancellationToken ct)
     {
         var booking = BookingEntity.Create(snapshot);
-        await tenantModule.RequireBookingTenantsAsync(booking.VenueTenantId, booking.ArtistTenantId, ct);
         await bookingRepository.AddAsync(booking, ct);
         await bookingRepository.SaveChangesAsync(ct);
 
@@ -247,7 +215,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationSucceeded operation,
         CancellationToken ct)
     {
-        var booking = await privilegedRepository.GetWithContractByIdForUpdateAsync(bookingId, ct);
+        var booking = await privilegedRepository.GetWithContractByIdWithRowLockAsync(bookingId, ct);
         if (booking is null || !Matches(bookingId, booking, operation))
         {
             logger.FinancialOutcomeSkipped(operation.Operation, bookingId);
@@ -277,7 +245,7 @@ internal sealed class BookingWorkflow : IBookingWorkflow
         FinancialOperationFailed operation,
         CancellationToken ct)
     {
-        var booking = await privilegedRepository.GetByIdForUpdateAsync(bookingId, ct);
+        var booking = await privilegedRepository.GetByIdWithRowLockAsync(bookingId, ct);
         if (booking is null || !Matches(bookingId, booking, operation))
         {
             logger.FinancialOutcomeSkipped(operation.Operation, bookingId);

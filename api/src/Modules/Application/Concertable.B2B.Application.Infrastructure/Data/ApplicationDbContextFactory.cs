@@ -13,5 +13,6 @@ internal sealed class ApplicationDbContextFactory : B2BDesignTimeDbContextFactor
             DefaultOutboxOptions,
             new ApplicationConfigurationProvider(),
             DesignTimeTenantContext.Instance,
-            DesignTimeResourceAccessContext.Instance);
+            DesignTimeAuthorizationContext.Instance,
+            TimeProvider.System);
 }

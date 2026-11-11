@@ -458,7 +458,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(creator);
         var promote = await client.PutAsJsonAsync(
             $"/api/organization/members/{replacement.Id}/roles",
-            new { roleIds = new[] { SystemPresetIds.For(fixture.SeedState.DoorSplitApp.VenueTenantId, "Owner") } });
+            new { roleIds = new[] { SystemRole.Owner.IdFor(fixture.SeedState.DoorSplitApp.VenueTenantId) } });
         await promote.ShouldBe(HttpStatusCode.NoContent);
         var remove = await client.DeleteAsync($"/api/organization/members/{creator.Id}");
         await remove.ShouldBe(HttpStatusCode.NoContent);
@@ -488,7 +488,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
         var client = fixture.CreateClient(creator);
         var promote = await client.PutAsJsonAsync(
             $"/api/organization/members/{replacement.Id}/roles",
-            new { roleIds = new[] { SystemPresetIds.For(fixture.SeedState.DoorSplitApp.VenueTenantId, "Owner") } });
+            new { roleIds = new[] { SystemRole.Owner.IdFor(fixture.SeedState.DoorSplitApp.VenueTenantId) } });
         await promote.ShouldBe(HttpStatusCode.NoContent);
 
         var enteredSend = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -575,7 +575,7 @@ public sealed class ApplicationApiTests : IAsyncLifetime
                 DELETE FROM tenant."Memberships"
                 WHERE "TenantId" = @tenantId AND "UserId" = @creatorId
                 """;
-            changeMembers.Parameters.AddWithValue("ownerRoleId", SystemPresetIds.For(application.VenueTenantId, "Owner"));
+            changeMembers.Parameters.AddWithValue("ownerRoleId", SystemRole.Owner.IdFor(application.VenueTenantId));
             changeMembers.Parameters.AddWithValue("tenantId", application.VenueTenantId);
             changeMembers.Parameters.AddWithValue("replacementId", replacement.Id);
             changeMembers.Parameters.AddWithValue("creatorId", creator.Id);

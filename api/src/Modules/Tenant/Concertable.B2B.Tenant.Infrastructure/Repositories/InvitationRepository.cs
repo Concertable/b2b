@@ -1,5 +1,6 @@
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
@@ -17,21 +18,14 @@ internal sealed class InvitationRepository : Repository<TenantInvitationEntity>,
         this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
-    public async Task<TenantInvitationEntity?> GetByIdForUpdateAsync(
+    public async Task<TenantInvitationEntity?> GetByIdWithRowLockAsync(
         Guid invitationId,
         CancellationToken ct = default)
     {
         var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Invitation updates require an active unit of work.");
         await unitOfWork.EnlistAsync(context, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Invitations"
-             WHERE "Id" = {invitationId}
-             FOR UPDATE
-             """,
-            ct);
+        await context.Invitations.LockRowsAsync(invitation => invitation.Id == invitationId, RowLock.NoKeyUpdate, ct);
         return await context.Invitations.SingleOrDefaultAsync(invitation => invitation.Id == invitationId, ct);
     }
 

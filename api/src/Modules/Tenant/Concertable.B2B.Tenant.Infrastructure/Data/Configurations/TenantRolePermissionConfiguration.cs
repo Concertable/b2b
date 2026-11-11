@@ -10,6 +10,6 @@ internal sealed class TenantRolePermissionConfiguration : IEntityTypeConfigurati
         builder.ToTable(Schema.Tables.RolePermissions, Schema.Name);
         builder.HasKey(row => new { row.TenantId, row.RoleId, row.PermissionKey });
         builder.Property(row => row.PermissionKey).HasMaxLength(100).IsRequired();
-        builder.Property(row => row.Audience).IsRequired();
+        builder.Property(row => row.Access).IsRequired();
     }
 }

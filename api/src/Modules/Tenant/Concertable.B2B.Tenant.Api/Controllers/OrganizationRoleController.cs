@@ -11,28 +11,28 @@ namespace Concertable.B2B.Tenant.Api.Controllers;
 internal sealed class OrganizationRoleController(IRoleService roles) : ControllerBase
 {
     [HttpGet("roles")]
-    [HasPermission(TenantPermission.MembersInviteName)]
+    [HasPermission(TenantPermission.MembersInvite)]
     public async Task<ActionResult<IReadOnlyList<RoleDto>>> GetRoles() =>
         (await roles.ListAsync()).ToOkOrProblem();
 
     [HttpGet("permissions")]
-    [HasPermission(TenantPermission.MembersManageRolesName)]
+    [HasPermission(TenantPermission.MembersManageRoles)]
     public async Task<ActionResult<IReadOnlyList<PermissionMetadataDto>>> GetPermissions() =>
         (await roles.GetPermissionsAsync()).ToOkOrProblem();
 
     [HttpPost("roles")]
-    [HasPermission(TenantPermission.MembersManageRolesName)]
+    [HasPermission(TenantPermission.MembersManageRoles)]
     public async Task<ActionResult<RoleDto>> Create(CreateRoleRequest request) =>
         (await roles.CreateAsync(request)).ToCreatedOrProblem(
             role => $"/api/organization/roles/{role.Id}");
 
     [HttpPut("roles/{roleId:guid}")]
-    [HasPermission(TenantPermission.MembersManageRolesName)]
+    [HasPermission(TenantPermission.MembersManageRoles)]
     public async Task<ActionResult<RoleDto>> Update(Guid roleId, UpdateRoleRequest request) =>
         (await roles.UpdateAsync(roleId, request)).ToOkOrProblem();
 
     [HttpPost("roles/{roleId:guid}/retire")]
-    [HasPermission(TenantPermission.MembersManageRolesName)]
+    [HasPermission(TenantPermission.MembersManageRoles)]
     public async Task<IActionResult> Retire(Guid roleId, RetireRoleRequest request) =>
         (await roles.RetireAsync(roleId, request)).ToNoContentOrProblem();
 }

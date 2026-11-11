@@ -11,7 +11,7 @@ internal sealed class TenantDbContext(
     : DbContextBase(options, outboxOptions)
 {
     public DbSet<TenantEntity> Tenants => Set<TenantEntity>();
-    public DbSet<AuthorizationCatalogState> AuthorizationCatalogStates => Set<AuthorizationCatalogState>();
+    public DbSet<SystemRolesFingerprint> SystemRolesFingerprints => Set<SystemRolesFingerprint>();
     public DbSet<TenantBusinessActivityEntity> BusinessActivities => Set<TenantBusinessActivityEntity>();
     public DbSet<TenantMembershipEntity> Memberships => Set<TenantMembershipEntity>();
     public DbSet<TenantRoleDefinition> RoleDefinitions => Set<TenantRoleDefinition>();

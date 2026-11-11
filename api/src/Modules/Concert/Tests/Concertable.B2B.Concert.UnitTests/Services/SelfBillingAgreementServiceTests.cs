@@ -20,6 +20,7 @@ namespace Concertable.B2B.Concert.UnitTests.Services;
 public sealed class SelfBillingAgreementServiceTests
 {
     private readonly Mock<ISelfBillingAgreementRepository> repository = new();
+    private readonly Mock<IUnitOfWorkBehavior> unitOfWorkBehavior = new();
     private readonly Mock<ITenantModule> tenantModule = new();
     private readonly Mock<ICurrentUser> currentUser = new();
     private readonly Mock<IClientContext> clientContext = new();
@@ -33,6 +34,11 @@ public sealed class SelfBillingAgreementServiceTests
     public SelfBillingAgreementServiceTests()
     {
         tenantContext.SetupGet(t => t.TenantId).Returns(supplierTenantId);
+        unitOfWorkBehavior
+            .Setup(u => u.ExecuteAsync(
+                It.IsAny<Func<Task<UnitResult<GrantSelfBillingAgreementError>>>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns((Func<Task<UnitResult<GrantSelfBillingAgreementError>>> action, CancellationToken _) => action());
         currentUser.SetupGet(u => u.Id).Returns(userId);
         clientContext.SetupGet(c => c.IpAddress).Returns(IPAddress.Loopback);
         clientContext.SetupGet(c => c.UserAgent).Returns("supplier-agent");
@@ -56,6 +62,7 @@ public sealed class SelfBillingAgreementServiceTests
 
         service = new SelfBillingAgreementService(
             repository.Object,
+            unitOfWorkBehavior.Object,
             tenantModule.Object,
             currentUser.Object,
             clientContext.Object,
@@ -88,6 +95,26 @@ public sealed class SelfBillingAgreementServiceTests
         Assert.Equal("2026-07", built.PlatformTermsVersion);
         Assert.Contains("Sally Supplier Ltd", built.ClauseText);
         repository.Verify(r => r.InsertAsync(It.IsAny<SelfBillingAgreementEntity>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GrantAsync_TakesTheTenantAgreementsLockBeforeReadingTheTenant()
+    {
+        var steps = new List<string>();
+        repository
+            .Setup(r => r.AcquireTenantAgreementsSharedLockAsync(supplierTenantId, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("lock"))
+            .Returns(Task.CompletedTask);
+        tenantModule.Setup(m => m.GetByIdAsync(supplierTenantId, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("tenant"))
+            .ReturnsAsync(Option.None<TenantDto>());
+
+        var result = await service.GrantAsync(new ESignatureRequest { SignatoryName = "Sally Supplier" });
+
+        Assert.True(result.TryGetError(out var error));
+        Assert.IsType<GrantSelfBillingAgreementError.TenantNotFound>(error);
+        Assert.Equal(["lock", "tenant"], steps);
+        repository.Verify(r => r.InsertAsync(It.IsAny<SelfBillingAgreementEntity>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

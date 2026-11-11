@@ -1,4 +1,5 @@
 using Concertable.B2B.Tenant.Contracts;
+using Concertable.B2B.Tenant.Domain.Errors;
 using Concertable.Kernel;
 
 namespace Concertable.B2B.Tenant.Domain.Entities;
@@ -37,17 +38,20 @@ public sealed class TenantMembershipEntity : IGuidEntity
         return membership;
     }
 
-    public void ReplaceRoles(IReadOnlyCollection<Guid> roleIds, Guid issuerMembershipId, DateTime at)
+    public UnitResult<MembershipRoleError> ChangeRoles(
+        IReadOnlySet<Guid> roleIds, Guid changedByMembershipId, DateTime at)
     {
-        if (roleIds.Count == 0 || roleIds.Any(id => id == Guid.Empty)
-            || roleIds.Count != roleIds.Distinct().Count())
-            throw new ArgumentException("Invalid membership role assignment.");
+        if (roleIds.Count == 0)
+            return new MembershipRoleError.NoRoles();
+        if (roleIds.Contains(Guid.Empty))
+            throw new ArgumentException("Invalid membership role assignment.", nameof(roleIds));
         if (assignments.Select(a => a.RoleId).ToHashSet().SetEquals(roleIds))
-            return;
+            return new Success();
         assignments.RemoveAll(row => !roleIds.Contains(row.RoleId));
         var existing = assignments.Select(row => row.RoleId).ToHashSet();
         assignments.AddRange(roleIds.Where(id => !existing.Contains(id)).Select(id =>
-            MembershipRoleAssignment.Create(TenantId, Id, id, issuerMembershipId, at)));
+            MembershipRoleAssignment.Create(TenantId, Id, id, changedByMembershipId, at)));
         PermissionVersion++;
+        return new Success();
     }
 }

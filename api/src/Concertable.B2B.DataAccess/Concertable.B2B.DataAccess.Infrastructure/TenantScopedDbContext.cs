@@ -32,11 +32,8 @@ public abstract class TenantScopedDbContext : DbContextBase, IHasTenantContext
         base.OnModelCreating(modelBuilder);
         modelBuilder.HasDefaultSchema(defaultSchema);
         provider.Configure(modelBuilder);
-        ConfigureMembershipAuthority(modelBuilder);
         ApplyTenantFilters(modelBuilder);
     }
-
-    protected virtual void ConfigureMembershipAuthority(ModelBuilder modelBuilder) { }
 
     protected abstract void ApplyTenantFilters(ModelBuilder modelBuilder);
 }

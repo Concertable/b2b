@@ -1,3 +1,4 @@
+using Concertable.B2B.IntegrationTests.Fixtures;
 using Concertable.B2B.Infrastructure.Payments;
 using System.Net;
 using System.Text;
@@ -32,9 +33,6 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
 
     private Task<InvoiceEntity?> InvoiceForBookingAsync(int bookingId) =>
         fixture.Invoices.FirstOrDefaultAsync(invoice => invoice.BookingId == bookingId);
-
-    private Guid TenantOf(Guid userId) =>
-        fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
 
     private async Task RepointArtistTenantAsync(int concertId, Guid artistTenantId)
     {
@@ -180,7 +178,7 @@ public sealed class ConcertInvoiceApiTests : IAsyncLifetime
     {
         var booking = fixture.SeedState.PastFlatFeeBooking;
         var concert = fixture.SeedState.ConcertFor(booking);
-        await RepointArtistTenantAsync(concert.Id, TenantOf(fixture.SeedState.ArtistManagerNoArtist.Id));
+        await RepointArtistTenantAsync(concert.Id, fixture.SeedState.ArtistManagerNoArtist.TenantId);
 
         await fixture.FinishConcertAsync(concert.Id);
 

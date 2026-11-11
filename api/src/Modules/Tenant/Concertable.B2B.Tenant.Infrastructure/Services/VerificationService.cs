@@ -148,7 +148,7 @@ internal sealed class VerificationService : IVerificationService
         Action<TenantVerificationEntity> transition,
         CancellationToken ct)
     {
-        var verification = await repository.GetByTenantIdForReviewAsync(tenantId, ct);
+        var verification = await repository.GetByTenantIdWithRowLockAsync(tenantId, ct);
         if (verification is null)
             return new VerificationReviewError.NotFound(tenantId);
         if (verification.Status != TenantVerificationStatus.Pending)

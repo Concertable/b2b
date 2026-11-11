@@ -1,4 +1,5 @@
 using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 
 namespace Concertable.B2B.Tenant.Domain.Entities;
 
@@ -10,7 +11,7 @@ public sealed class TenantRoleDefinition
     public Guid TenantId { get; private set; }
     public string Name { get; private set; } = null!;
     public long Version { get; private set; }
-    public string? SystemPresetKey { get; private set; }
+    public SystemRole? SystemRole { get; private set; }
     public bool IsProtectedOwner { get; private set; }
     public bool IsInvitationAssignable { get; private set; }
     public DateTime? RetiredAt { get; private set; }
@@ -18,15 +19,13 @@ public sealed class TenantRoleDefinition
     private readonly List<TenantRolePermission> permissions = [];
     public IReadOnlyList<TenantRolePermission> Permissions => permissions.AsReadOnly();
 
-    public static TenantRoleDefinition CreateSystemPreset(Guid tenantId, string presetKey)
+    public static TenantRoleDefinition CreateSystemRole(Guid tenantId, SystemRole systemRole)
     {
-        if (!AuthorizationCatalog.Presets.TryGetValue(presetKey, out var preset))
-            throw new ArgumentException("Unknown system preset.", nameof(presetKey));
-        var role = Create(tenantId, preset.Key, preset.Permissions, true,
-            SystemPresetIds.For(tenantId, preset.Key));
-        role.SystemPresetKey = preset.Key;
-        role.IsProtectedOwner = preset.IsProtectedOwner;
-        role.IsInvitationAssignable = preset.IsInvitationAssignable;
+        var role = Create(tenantId, systemRole.ToString(), systemRole.Grants, true,
+            systemRole.IdFor(tenantId));
+        role.SystemRole = systemRole;
+        role.IsProtectedOwner = systemRole.IsProtected;
+        role.IsInvitationAssignable = systemRole.IsInvitationAssignable;
         return role;
     }
 
@@ -34,7 +33,7 @@ public sealed class TenantRoleDefinition
         Guid tenantId,
         string name,
         bool invitationAssignable,
-        IReadOnlyDictionary<TenantPermission, ResourceAudience> grants)
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants)
     {
         var role = Create(tenantId, name, grants, false);
         role.IsInvitationAssignable = invitationAssignable;
@@ -44,7 +43,7 @@ public sealed class TenantRoleDefinition
     private static TenantRoleDefinition Create(
         Guid tenantId,
         string name,
-        IReadOnlyDictionary<TenantPermission, ResourceAudience> grants,
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants,
         bool systemPreset,
         Guid? id = null)
     {
@@ -64,7 +63,7 @@ public sealed class TenantRoleDefinition
     public void Update(
         string name,
         bool invitationAssignable,
-        IReadOnlyDictionary<TenantPermission, ResourceAudience> grants)
+        IReadOnlyDictionary<TenantPermission, ResourceAccess> grants)
     {
         EnsureEditable();
         if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > 100)
@@ -83,32 +82,31 @@ public sealed class TenantRoleDefinition
     }
 
     public bool Has(TenantPermission permission) =>
-        permissions.Any(row => row.PermissionKey == permission.Value);
+        permissions.Any(row => row.PermissionKey == permission.Name);
 
-    private void SetPermissions(IReadOnlyDictionary<TenantPermission, ResourceAudience> grants, bool systemPreset)
+    private void SetPermissions(IReadOnlyDictionary<TenantPermission, ResourceAccess> grants, bool systemPreset)
     {
-        foreach (var (permission, audience) in grants)
+        foreach (var (permission, access) in grants)
         {
-            if (!TenantPermission.TryParse(permission.Value, out var known)
-                || !AuthorizationCatalog.Permissions.TryGetValue(known, out var descriptor)
-                || !descriptor.AssignableAudiences.Contains(audience)
-                || descriptor.OwnerOnly && !systemPreset)
-                throw new ArgumentException("Invalid role permission or audience.");
+            if (!TenantPermission.All.Contains(permission)
+                || access is not (ResourceAccess.Assigned or ResourceAccess.All)
+                || permission.IsOwnerOnly && !systemPreset)
+                throw new ArgumentException("Invalid role permission or access.");
         }
-        permissions.RemoveAll(row => !grants.Keys.Any(key => key.Value == row.PermissionKey));
-        foreach (var (permission, audience) in grants)
+        permissions.RemoveAll(row => !grants.Keys.Any(permission => permission.Name == row.PermissionKey));
+        foreach (var (permission, access) in grants)
         {
-            var existing = permissions.Find(row => row.PermissionKey == permission.Value);
+            var existing = permissions.Find(row => row.PermissionKey == permission.Name);
             if (existing is null)
-                permissions.Add(TenantRolePermission.Create(TenantId, Id, permission, audience));
+                permissions.Add(TenantRolePermission.Create(TenantId, Id, permission, access));
             else
-                existing.ChangeAudience(audience);
+                existing.ChangeAccess(access);
         }
     }
 
     private void EnsureEditable()
     {
-        if (SystemPresetKey is not null || RetiredAt is not null)
+        if (SystemRole is not null || RetiredAt is not null)
             throw new InvalidOperationException("System or retired roles cannot be edited.");
     }
 }

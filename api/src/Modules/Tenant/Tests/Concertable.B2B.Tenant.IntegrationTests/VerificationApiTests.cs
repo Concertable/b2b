@@ -28,8 +28,6 @@ public sealed class VerificationApiTests : IAsyncLifetime
     public Task InitializeAsync() => fixture.ResetAsync();
     public Task DisposeAsync() { fixture.DetachOutput(); return Task.CompletedTask; }
 
-    private Guid TenantOf(Guid userId) => fixture.SeedState.Tenants.Single(t => t.CreatedByUserId == userId).Id;
-
     private static Task<HttpResponseMessage> Submit(
         HttpClient client, params (IFormFile File, VerificationDocumentType DocumentType)[] documents) =>
         SubmitAsync(client, documents);
@@ -74,7 +72,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     public async Task SubmitDocuments_FirstSubmission_PersistsPendingVerificationWithDocuments()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var client = fixture.CreateClient(owner);
 
         var response = await Submit(
@@ -92,7 +90,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     public async Task SubmitDocuments_WhilePending_ReturnsConflict_WithoutUploadingAgain()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var client = fixture.CreateClient(owner);
         await Submit(client, (VerificationFileBuilder.Pdf(), VerificationDocumentType.Licence));
 
@@ -106,7 +104,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     public async Task SubmitDocuments_AfterRejection_ResubmitsAndClearsReason()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var rejected = await fixture.AddRejectedVerificationAsync(
             tenantId, VerificationDocumentType.Licence, "Illegible scan.", DateTime.UtcNow.AddDays(-1));
         var client = fixture.CreateClient(owner);
@@ -144,7 +142,7 @@ public sealed class VerificationApiTests : IAsyncLifetime
     public async Task SubmitDocuments_AsStaff_IsForbidden()
     {
         var owner = fixture.SeedState.UnverifiedVenueManager;
-        var tenantId = TenantOf(owner.Id);
+        var tenantId = owner.TenantId;
         var staff = fixture.SeedState.VenueManagerNoVenue;
         await fixture.AddMembershipAsync(tenantId, staff.Id, "Staff");
         var client = fixture.CreateClient(staff);

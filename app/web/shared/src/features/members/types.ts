@@ -24,11 +24,11 @@ export interface Invitation {
   expiresAt: string;
 }
 
-export type ResourceAudience = "AssignedResources" | "TenantResources";
+export type ResourceAccess = "Assigned" | "All";
 
 export interface RolePermission {
   permission: TenantPermission;
-  audience: ResourceAudience;
+  audience: ResourceAccess;
 }
 
 export interface Role {
@@ -45,7 +45,5 @@ export interface PermissionMetadata {
   permission: TenantPermission;
   label: string;
   category: string;
-  resourceBindings: ReadonlyArray<{ resource: string; facet: string | null; policy: string; requiresScopes: ReadonlyArray<string> }>;
-  assignableAudiences: ReadonlyArray<ResourceAudience>;
   ownerOnly: boolean;
 }

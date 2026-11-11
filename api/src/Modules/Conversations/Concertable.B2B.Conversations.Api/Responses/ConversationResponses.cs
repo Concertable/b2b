@@ -6,7 +6,7 @@ namespace Concertable.B2B.Conversations.Api.Responses;
 internal sealed record ConversationResponse(
     int ConversationId,
     long AccessVersion,
-    IReadOnlyList<ConversationParticipant> Participants);
+    IReadOnlyList<ConversationParticipantDto> Participants);
 
 internal sealed record MessageResponse(
     int Id,

@@ -11,8 +11,10 @@ internal interface IApplicationRepository : IRepository<ApplicationEntity, int>
     Task<ApplicationEntity?> GetSummaryByIdAsync(int id, CancellationToken ct = default);
     Task<ApplicationEntity?> GetProposalByIdAsync(int id, CancellationToken ct = default);
     Task<ApplicationEntity?> GetDecisionByIdAsync(int id, CancellationToken ct = default);
-    Task<IReadOnlySet<int>> GetAllowedIdsAsync(
-        IReadOnlyCollection<int> applicationIds, TenantPermission permission, CancellationToken ct = default);
+    Task<IReadOnlySet<int>> GetDecidableIdsAsync(
+        IReadOnlyCollection<int> applicationIds, CancellationToken ct = default);
+    Task<IReadOnlySet<int>> GetWithdrawableIdsAsync(
+        IReadOnlyCollection<int> applicationIds, CancellationToken ct = default);
     Task<IReadOnlyList<ApplicationEntity>> GetByOpportunityIdAsync(
         int opportunityId,
         CancellationToken ct = default);

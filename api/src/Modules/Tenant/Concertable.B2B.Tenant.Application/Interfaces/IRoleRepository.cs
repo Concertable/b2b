@@ -4,7 +4,10 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal interface IRoleRepository
 {
-    Task InsertPresetsAsync(Guid tenantId, CancellationToken ct = default);
+    Task InsertPresetsAsync(
+        Guid tenantId, IReadOnlyCollection<TenantBusinessActivityKind> activities, CancellationToken ct = default);
+    Task ProvisionMissingSystemRolesAsync(
+        Guid tenantId, IReadOnlyCollection<TenantBusinessActivityKind> activities, CancellationToken ct = default);
     void Insert(TenantRoleDefinition role);
     Task<TenantRoleDefinition?> GetActiveByIdAsync(Guid tenantId, Guid roleId, CancellationToken ct = default);
     Task<IReadOnlyList<TenantRoleDefinition>> ListActiveAsync(Guid tenantId, CancellationToken ct = default);

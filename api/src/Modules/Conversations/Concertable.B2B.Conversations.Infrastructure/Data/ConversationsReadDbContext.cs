@@ -1,5 +1,6 @@
 using Concertable.DataAccess.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Concertable.B2B.Conversations.Infrastructure.Data;
 

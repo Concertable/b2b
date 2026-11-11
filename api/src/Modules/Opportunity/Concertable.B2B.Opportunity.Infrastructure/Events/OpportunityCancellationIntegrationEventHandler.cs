@@ -2,6 +2,7 @@ using Concertable.B2B.Booking.Contracts.Events;
 using Concertable.B2B.Concert.Contracts.Events;
 using Concertable.B2B.Opportunity.Infrastructure.Data;
 using Concertable.Messaging.Contracts;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Opportunity.Infrastructure.Events;
@@ -45,19 +46,9 @@ internal sealed class OpportunityCancellationIntegrationEventHandler :
                 return;
 
             context.AddInboxMessage(envelope, handler);
-            await LockOpportunityAsync(opportunityId, ct);
+            await context.Opportunities.LockRowsAsync(value => value.Id == opportunityId, RowLock.NoKeyUpdate, ct);
             var opportunity = await context.Opportunities
                 .SingleOrDefaultAsync(value => value.Id == opportunityId, ct);
             opportunity?.CancelApplication(applicationId);
         }, ct);
-
-    private Task LockOpportunityAsync(int opportunityId, CancellationToken ct) =>
-        context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM opportunity."Opportunities"
-             WHERE "Id" = {opportunityId}
-             FOR UPDATE
-             """,
-            ct);
 }

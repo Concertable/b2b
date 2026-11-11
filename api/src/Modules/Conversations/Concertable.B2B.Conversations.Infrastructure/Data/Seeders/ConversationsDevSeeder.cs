@@ -1,4 +1,3 @@
-using Concertable.B2B.DataAccess.Application;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Shared;
 using Concertable.Seed.Shared.Extensions;
@@ -46,9 +45,8 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
             {
                 var artistTenantId = TenantSeedIds.For(artists[pair].Id);
                 conversations.Add(ConversationEntity.Create(
-                    [TenantSeedIds.For(venues[pair].Id), artistTenantId],
+                    new HashSet<Guid> { TenantSeedIds.For(venues[pair].Id), artistTenantId },
                     artistTenantId,
-                    artists[pair].Id,
                     now.AddDays(-7)));
             }
             context.Conversations.AddRange(conversations);
@@ -77,7 +75,7 @@ internal sealed class ConversationsDevSeeder : IDevSeeder
             conversation.Id,
             conversation.AllocateMessageSequence(),
             Guid.NewGuid(),
-            IdempotencyHash.Create(content, action),
+            Sha256Digest.Of(content, action),
             tenantId,
             membershipId,
             userId,

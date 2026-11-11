@@ -17,7 +17,7 @@ internal sealed class PaymentVerificationRecorder : IPaymentVerificationRecorder
     public Task RecordAsync(VerifyPayment payment, CancellationToken ct = default) =>
         unitOfWorkBehavior.ExecuteAsync(async () =>
         {
-            var application = await applicationRepository.GetByIdForUpdateAsync(payment.ApplicationId, ct)
+            var application = await applicationRepository.GetByIdWithRowLockAsync(payment.ApplicationId, ct)
                 ?? throw new InvalidOperationException($"Application {payment.ApplicationId} was not found.");
             if (!application.RecordPaymentVerification(payment.ToPaymentVerification()))
                 return;

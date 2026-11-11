@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel;
 using Concertable.B2B.Application.Contracts;
 using Concertable.B2B.Booking.Contracts;
-using Concertable.B2B.Booking.Contracts.Enums;
 using Concertable.B2B.Booking.Domain.Financial;
 using Concertable.B2B.Booking.Domain.ValueObjects;
 using Concertable.B2B.DataAccess.Application;
@@ -35,8 +34,6 @@ public abstract class ContractEntity : IIdEntity
     public string? PdfBlobName { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
-    private readonly List<ContractAccessGrant> accessGrants = [];
-    public IReadOnlyList<ContractAccessGrant> AccessGrants => accessGrants;
 
     protected ContractEntity() { }
 
@@ -69,23 +66,6 @@ public abstract class ContractEntity : IIdEntity
         VenueSignature = Sign(contract.VenueSignature);
         CreatedAtUtc = createdAtUtc;
         PdfBlobName = $"contracts/{bookingId}-{Guid.NewGuid():N}.pdf";
-        IssuePrincipalGrants(createdAtUtc);
-    }
-
-    private void IssuePrincipalGrants(DateTime at)
-    {
-        foreach (var tenantId in new[] { VenueTenantId, ArtistTenantId }.Distinct())
-        {
-            accessGrants.Add(ContractAccessGrant.Issue(
-                Id,
-                tenantId,
-                membershipId: null,
-                ContractAccessScope.Read,
-                issuedByTenantId: VenueTenantId,
-                issuedByUserId: VenueSignature.UserId,
-                ResourceGrantKind.Principal,
-                at));
-        }
     }
 
     private static Signature Sign(ContractSignature signature) =>

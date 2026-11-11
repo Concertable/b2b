@@ -29,4 +29,7 @@ internal interface IOpportunityReadRepository
     Task<IReadOnlyList<OpportunityEntity>> GetOpenByVenueTenantIdAsync(
         Guid venueTenantId,
         CancellationToken ct = default);
+    Task<bool> ExistsLiveByTenantIdAsync(
+        Guid tenantId,
+        CancellationToken ct = default);
 }

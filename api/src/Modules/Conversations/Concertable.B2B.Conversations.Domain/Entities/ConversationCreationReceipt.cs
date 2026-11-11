@@ -1,5 +1,3 @@
-using Concertable.B2B.DataAccess.Application;
-
 namespace Concertable.B2B.Conversations.Domain.Entities;
 
 public sealed class ConversationCreationReceipt : IGuidEntity
@@ -11,7 +9,7 @@ public sealed class ConversationCreationReceipt : IGuidEntity
     public Guid CreatorTenantId { get; private set; }
     public Guid CreatedByMembershipId { get; private set; }
     public Guid RequestId { get; private set; }
-    public IdempotencyHash IdempotencyHash { get; private set; }
+    public Sha256Digest Fingerprint { get; private set; } = null!;
     public DateTime CreatedAt { get; private set; }
 
     public static ConversationCreationReceipt Record(
@@ -19,7 +17,7 @@ public sealed class ConversationCreationReceipt : IGuidEntity
         Guid creatorTenantId,
         Guid createdByMembershipId,
         Guid requestId,
-        IdempotencyHash idempotencyHash,
+        Sha256Digest fingerprint,
         DateTime createdAt) => new()
         {
             Id = Guid.NewGuid(),
@@ -27,14 +25,9 @@ public sealed class ConversationCreationReceipt : IGuidEntity
             CreatorTenantId = creatorTenantId,
             CreatedByMembershipId = createdByMembershipId,
             RequestId = requestId,
-            IdempotencyHash = idempotencyHash != default
-                ? idempotencyHash
-                : throw new ArgumentException("An idempotency hash is required.", nameof(idempotencyHash)),
+            Fingerprint = fingerprint,
             CreatedAt = createdAt
         };
 
-    public bool Matches(IdempotencyHash idempotencyHash) => IdempotencyHash ==
-        (idempotencyHash != default
-            ? idempotencyHash
-            : throw new ArgumentException("An idempotency hash is required.", nameof(idempotencyHash)));
+    public bool Matches(Sha256Digest fingerprint) => Fingerprint == fingerprint;
 }

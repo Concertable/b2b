@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Net;
 using Concertable.B2B.Authorization.Contracts;
 using System.Net.Http.Json;
@@ -41,7 +40,7 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CustomOperationsAndFinanceComposeWithPerPermissionAudienceUnion()
+    public async Task CustomOperationsAndFinanceComposeWithPerPermissionAccessUnion()
     {
         var owner = fixture.SeedState.VenueManager1;
         var member = fixture.SeedState.VenueManagerNoVenue;
@@ -49,31 +48,32 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
         await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
         var ownerClient = fixture.CreateClient(owner);
         var customRoleId = await CreateRoleAsync(ownerClient, "Operations assistant",
-            [new { permission = "operations.view", audience = "AssignedResources" },
-             new { permission = "concerts.ops_edit", audience = "AssignedResources" }]);
+            [new { permission = "operations:view", audience = "Assigned" },
+             new { permission = "concerts:ops_edit", audience = "Assigned" }]);
         var assigned = await ownerClient.PutAsJsonAsync($"/api/organization/members/{member.Id}/roles",
             new { roleIds = new[] { customRoleId, TenantApiFixture.RoleId(tenantId, "Finance") } });
         await assigned.ShouldBe(HttpStatusCode.NoContent);
 
         var membership = fixture.Memberships.Single(value => value.TenantId == tenantId && value.UserId == member.Id);
         var tenant = fixture.Tenants.Single(value => value.Id == tenantId);
-        var expectedPermissions = AuthorizationCatalog.Presets["Finance"].Permissions
-            .ToImmutableDictionary()
-            .SetItem(TenantPermission.ConcertsOpsEdit, ResourceAudience.AssignedResources);
+        var expectedPermissions = PermissionSet.From(SystemRole.Finance.Grants
+            .Where(grant => grant.Key != TenantPermission.ConcertsOpsEdit)
+            .Append(KeyValuePair.Create(TenantPermission.ConcertsOpsEdit, ResourceAccess.Assigned)));
         var expected = new MembershipSnapshot(membership.Id, tenantId, member.Id,
             membership.PermissionVersion, tenant.RolePolicyVersion, expectedPermissions);
-        var resolved = await fixture.ExecuteResolutionAsync((resolver, ct) =>
-            resolver.ResolveAsync(expected, tenantId, ct: ct));
+        var read = await fixture.RunInTransactionAsync((ITenantModule tenantModule, CancellationToken ct) =>
+            tenantModule.GetCurrentMembershipAsync(tenantId, membership.Id, ct));
 
-        Assert.True(resolved.TryGetValue(out var resolution));
-        Assert.Equal(ResourceAudience.TenantResources,
-            resolution.Actor.AudienceFor(TenantPermission.OperationsView));
-        Assert.Equal(ResourceAudience.AssignedResources,
-            resolution.Actor.AudienceFor(TenantPermission.ConcertsOpsEdit));
-        Assert.Equal(ResourceAudience.TenantResources,
-            resolution.Actor.AudienceFor(TenantPermission.PayoutsManage));
-        Assert.Equal(ResourceAudience.None,
-            resolution.Actor.AudienceFor(TenantPermission.ConcertsManage));
+        Assert.True(read.TryGetValue(out var snapshot));
+        Assert.Equal(expected, snapshot);
+        Assert.Equal(ResourceAccess.All,
+            snapshot.Permissions[TenantPermission.OperationsView]);
+        Assert.Equal(ResourceAccess.Assigned,
+            snapshot.Permissions[TenantPermission.ConcertsOpsEdit]);
+        Assert.Equal(ResourceAccess.All,
+            snapshot.Permissions[TenantPermission.PayoutsManage]);
+        Assert.Equal(ResourceAccess.None,
+            snapshot.Permissions[TenantPermission.ConcertsManage]);
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
         var result = await fixture.RemoveOwnersInOneCommandAsync(owner.Id, coOwner.Id, tenantId);
 
         Assert.True(result.TryGetError(out var error));
-        Assert.IsType<RemoveMemberError.NotPermitted>(error);
+        Assert.IsType<RemoveMemberError.LastOwner>(error);
         var owners = fixture.Memberships.Where(value => value.TenantId == tenantId
             && value.Assignments.Any(row => row.RoleId == TenantApiFixture.RoleId(tenantId, "Owner")))
             .Select(value => value.UserId)
@@ -191,7 +191,7 @@ public sealed class ComposableRoleApiTests : IAsyncLifetime
         await fixture.AddMembershipAsync(tenantId, member.Id, "Staff");
         var ownerClient = fixture.CreateClient(owner);
         var roleId = await CreateRoleAsync(ownerClient, "Messaging",
-            [new { permission = "messages.read", audience = "AssignedResources" }]);
+            [new { permission = "messages:read", audience = "Assigned" }]);
         var ownerRoleId = TenantApiFixture.RoleId(tenantId, "Owner");
         var assigned = await ownerClient.PutAsJsonAsync($"/api/organization/members/{member.Id}/roles",
             new { roleIds = new[] { ownerRoleId, roleId } });

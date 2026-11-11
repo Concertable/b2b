@@ -1,13 +1,13 @@
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.Tenant.Infrastructure.Mappers;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
 
 internal sealed class TenantRepository : Repository<TenantEntity>, ITenantRepository
 {
-    private const long CreationLockSeed = 638457220;
     private readonly TenantDbContext context;
     private readonly UnitOfWorkAccessor unitOfWorkAccessor;
 
@@ -19,70 +19,29 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
         this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
-    public async Task<IReadOnlySet<Guid>> GetExistingIdsForShareAsync(
-        IReadOnlyCollection<Guid> tenantIds,
-        CancellationToken ct = default)
+    public async Task<bool> ExistsByIdWithKeyShareLockAsync(Guid tenantId, CancellationToken ct = default)
     {
         var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Tenant locking requires an active transaction.");
         await unitOfWork.EnlistAsync(context, ct);
-        var distinctIds = tenantIds.Distinct().Order().ToArray();
-        foreach (var tenantId in distinctIds)
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Tenants"
-                 WHERE "Id" = {tenantId}
-                 FOR SHARE
-                 """,
-                ct);
-        }
-
-        return await context.Tenants
-            .Where(tenant => distinctIds.Contains(tenant.Id))
-            .Select(tenant => tenant.Id)
-            .ToHashSetAsync(ct);
+        return await context.Tenants.LockRowsAsync(tenant => tenant.Id == tenantId, RowLock.KeyShare, ct);
     }
 
-    public Task<string?> GetAuthorizationCatalogRevisionAsync(CancellationToken ct = default) =>
-        context.AuthorizationCatalogStates.AsNoTracking()
+    public Task<Sha256Digest?> GetSystemRolesFingerprintAsync(CancellationToken ct = default) =>
+        context.SystemRolesFingerprints.AsNoTracking()
             .Where(state => state.Id == 1)
-            .Select(state => state.Revision)
+            .Select(state => (Sha256Digest?)state.Value)
             .SingleOrDefaultAsync(ct);
 
-    public async Task<TenantEntity?> GetByIdForAdministrationAsync(
+    public async Task<TenantEntity?> GetByIdWithUpdateLockAsync(
         Guid tenantId,
         CancellationToken ct = default)
     {
         var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Tenant administration requires an active unit of work.");
         await unitOfWork.EnlistAsync(context, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Tenants"
-             WHERE "Id" = {tenantId}
-             FOR UPDATE
-             """,
-            ct);
+        await context.Tenants.LockRowsAsync(tenant => tenant.Id == tenantId, RowLock.Update, ct);
         return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.Id == tenantId, ct);
-    }
-
-    public async Task<bool> ExistsForBookingAsync(Guid tenantId, CancellationToken ct = default)
-    {
-        var unitOfWork = unitOfWorkAccessor.Current
-            ?? throw new InvalidOperationException("Booking tenant validation requires an active unit of work.");
-        await unitOfWork.EnlistAsync(context, ct);
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Tenants"
-             WHERE "Id" = {tenantId}
-             FOR SHARE
-             """,
-            ct);
-        return await context.Tenants.AnyAsync(tenant => tenant.Id == tenantId, ct);
     }
 
     public async Task<TenantEntity?> GetByCreatedByUserIdForCreationAsync(
@@ -93,11 +52,7 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
             await unitOfWork.EnlistAsync(context, ct);
         else if (context.Database.CurrentTransaction is null)
             throw new InvalidOperationException("Tenant creation requires an active transaction.");
-        await context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT pg_advisory_xact_lock(hashtextextended(CAST({userId} AS text), {CreationLockSeed}))
-             """,
-            ct);
+        await context.Database.AcquireAdvisoryLockAsync(AdvisoryLock.TenantCreation, userId, ct);
         return await context.Tenants.SingleOrDefaultAsync(tenant => tenant.CreatedByUserId == userId, ct);
     }
 
@@ -108,7 +63,7 @@ internal sealed class TenantRepository : Repository<TenantEntity>, ITenantReposi
             .FirstOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsByTenantIdsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default) =>
         await context.Tenants
             .Where(t => tenantIds.Contains(t.Id))

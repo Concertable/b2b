@@ -4,7 +4,7 @@ namespace Concertable.B2B.Tenant.Application.Interfaces;
 
 internal interface IInvitationRepository : IRepository<TenantInvitationEntity, Guid>
 {
-    Task<TenantInvitationEntity?> GetByIdForUpdateAsync(Guid invitationId, CancellationToken ct = default);
+    Task<TenantInvitationEntity?> GetByIdWithRowLockAsync(Guid invitationId, CancellationToken ct = default);
 
     Task<IReadOnlyList<TenantInvitationEntity>> ListPendingAssignedToRoleAsync(
         Guid tenantId, Guid roleId, CancellationToken ct = default);

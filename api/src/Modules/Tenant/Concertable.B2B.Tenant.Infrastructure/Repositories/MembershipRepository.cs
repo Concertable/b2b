@@ -1,8 +1,7 @@
-using System.Collections.Immutable;
-using System.Data;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Infrastructure.Data;
 using Concertable.B2B.DataAccess.Infrastructure;
+using Concertable.DataAccess.Infrastructure.Locking;
 using Microsoft.EntityFrameworkCore;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Repositories;
@@ -21,97 +20,41 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         this.unitOfWorkAccessor = unitOfWorkAccessor;
     }
 
-    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForShareAsync(
-        IReadOnlyCollection<Guid> membershipIds,
+    public async Task<MembershipSnapshot?> GetSnapshotByIdWithKeyShareLockAsync(
+        Guid membershipId,
         CancellationToken ct = default)
     {
         var unitOfWork = unitOfWorkAccessor.Current
             ?? throw new InvalidOperationException("Membership locking requires an active transaction.");
         await unitOfWork.EnlistAsync(context, ct);
-        var distinctIds = membershipIds.Distinct().Order().ToArray();
-        foreach (var membershipId in distinctIds)
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Memberships"
-                 WHERE "Id" = {membershipId}
-                 FOR SHARE
-                 """,
-                ct);
-        }
+        await context.Memberships.LockRowsAsync(member => member.Id == membershipId, RowLock.KeyShare, ct);
         var members = await context.Memberships.AsNoTracking()
-            .Where(member => distinctIds.Contains(member.Id)).ToListAsync(ct);
-        return await MaterializeAsync(members, ct);
+            .Where(member => member.Id == membershipId)
+            .ToListAsync(ct);
+        return (await MaterializeAsync(members, ct)).SingleOrDefault();
     }
 
-    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByIdsForUpdateAsync(
-        IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
+    public async Task<MembershipSnapshot?> GetSnapshotByTenantIdAndIdAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default)
     {
-        var unitOfWork = unitOfWorkAccessor.Current
-            ?? throw new InvalidOperationException("Membership updates require an active transaction.");
-        await unitOfWork.EnlistAsync(context, ct);
-        var distinctIds = membershipIds.Distinct().Order().ToArray();
-        foreach (var membershipId in distinctIds)
-        {
-            await context.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                 SELECT 1
-                 FROM tenant."Memberships"
-                 WHERE "Id" = {membershipId}
-                 FOR UPDATE
-                 """,
-                ct);
-        }
-        var members = await context.Memberships.AsNoTracking()
-            .Where(member => distinctIds.Contains(member.Id)).ToListAsync(ct);
-        return await MaterializeAsync(members, ct);
+        var members = await context.Memberships
+            .Where(member => member.TenantId == tenantId && member.Id == membershipId)
+            .ToListAsync(ct);
+        return (await MaterializeAsync(members, ct)).SingleOrDefault();
     }
 
-    public Task<MembershipSnapshot?> GetSnapshotByMembershipIdAsync(
-        Guid membershipId, CancellationToken ct = default) =>
-        ReadWithFenceAsync(async readCt =>
-        {
-            var tenantId = await context.Memberships.AsNoTracking()
-                .Where(member => member.Id == membershipId)
-                .Select(member => (Guid?)member.TenantId).SingleOrDefaultAsync(readCt);
-            if (tenantId is null)
-                return null;
-            await LockTenantForShareAsync(tenantId.Value, readCt);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => member.Id == membershipId && member.TenantId == tenantId)
-                .ToListAsync(readCt);
-            return (await MaterializeAsync(members, readCt)).SingleOrDefault();
-        }, ct);
-
-    public Task<AuthoritySnapshot?> GetAuthoritySnapshotByUserIdAndTenantIdAsync(
-        Guid userId, Guid tenantId, CancellationToken ct = default) =>
-        ReadWithFenceAsync(async readCt =>
-        {
-            await LockTenantForShareAsync(tenantId, readCt);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => member.UserId == userId && member.TenantId == tenantId)
-                .ToListAsync(readCt);
-            var actor = (await MaterializeAsync(members, readCt)).SingleOrDefault();
-            if (actor is null)
-                return null;
-            var revision = await context.AuthorizationCatalogStates.AsNoTracking()
-                .Where(state => state.Id == 1)
-                .Select(state => state.Revision)
-                .SingleOrDefaultAsync(readCt);
-            return revision is null ? null : new AuthoritySnapshot(actor, revision);
-        }, ct);
-
-    public Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
-        Guid userId, Guid tenantId, CancellationToken cancellationToken = default) =>
-        ReadWithFenceAsync(async ct =>
-        {
-            await LockTenantForShareAsync(tenantId, ct);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => member.UserId == userId && member.TenantId == tenantId)
-                .ToListAsync(ct);
-            return (await MaterializeAsync(members, ct)).SingleOrDefault();
-        }, cancellationToken);
+    public async Task<MembershipSnapshot?> GetSnapshotByUserIdAndTenantIdAsync(
+        Guid userId, Guid tenantId, CancellationToken ct = default)
+    {
+        if (await EnlistInActiveUnitOfWorkAsync(ct))
+            await FenceTenantDeletionAsync(new HashSet<Guid> { tenantId }, ct);
+        var members = await context.Memberships.AsNoTracking()
+            .Where(member => member.UserId == userId && member.TenantId == tenantId)
+            .ToListAsync(ct);
+        return (await MaterializeAsync(members, ct)).SingleOrDefault();
+    }
 
     public Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByUserIdAsync(
         Guid userId, CancellationToken cancellationToken = default) =>
@@ -130,17 +73,19 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         Guid tenantId, CancellationToken ct = default) =>
         await context.Memberships.Where(member => member.TenantId == tenantId).ToListAsync(ct);
 
-    public Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
-        IReadOnlyCollection<Guid> tenantIds, CancellationToken ct = default) =>
-        ReadWithFenceAsync(async readCt =>
-        {
-            var distinctIds = tenantIds.Distinct().Order().ToArray();
-            foreach (var tenantId in distinctIds)
-                await LockTenantForShareAsync(tenantId, readCt);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => distinctIds.Contains(member.TenantId)).ToListAsync(readCt);
-            return await MaterializeAsync(members, readCt);
-        }, ct);
+    public Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdAsync(
+        Guid tenantId, CancellationToken ct = default) =>
+        GetSnapshotsByTenantIdsAsync(new HashSet<Guid> { tenantId }, ct);
+
+    public async Task<IReadOnlyList<MembershipSnapshot>> GetSnapshotsByTenantIdsAsync(
+        IReadOnlySet<Guid> tenantIds, CancellationToken ct = default)
+    {
+        if (await EnlistInActiveUnitOfWorkAsync(ct))
+            await FenceTenantDeletionAsync(tenantIds, ct);
+        var members = await context.Memberships.AsNoTracking()
+            .Where(member => tenantIds.Contains(member.TenantId)).ToListAsync(ct);
+        return await MaterializeAsync(members, ct);
+    }
 
     public Task<TenantMembershipEntity?> FindMembershipAsync(
         Guid tenantId, Guid userId, CancellationToken ct = default) =>
@@ -181,18 +126,13 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
             .ToDictionaryAsync(role => role.Id, ct);
         return members.Select(member =>
         {
-            var effective = member.Assignments
+            var permissions = member.Assignments
                 .Where(row => roles.TryGetValue(row.RoleId, out var role) && role.TenantId == member.TenantId)
-                .SelectMany(row => roles[row.RoleId].Permissions)
-                .Where(row => TenantPermission.TryParse(row.PermissionKey, out _)
-                    && row.Audience is ResourceAudience.AssignedResources or ResourceAudience.TenantResources)
-                .GroupBy(row => row.PermissionKey, StringComparer.Ordinal)
-                .ToImmutableDictionary(
-                    group => TenantPermission.TryParse(group.Key, out var key) ? key : default,
-                    group => (ResourceAudience)group.Max(row => (int)row.Audience));
+                .Select(row => roles[row.RoleId])
+                .ToPermissionSet();
             return new MembershipSnapshot(
                 member.Id, member.TenantId, member.UserId, member.PermissionVersion,
-                tenants[member.TenantId].RolePolicyVersion, effective);
+                tenants[member.TenantId].RolePolicyVersion, permissions);
         }).ToList();
     }
 
@@ -222,49 +162,34 @@ internal sealed class MembershipRepository : Repository<TenantMembershipEntity>,
         }).ToList();
     }
 
-    private Task<TResult> ReadByUserIdAsync<TResult>(
+    private async Task<TResult> ReadByUserIdAsync<TResult>(
         Guid userId,
         Func<IReadOnlyList<MembershipSnapshot>, CancellationToken, Task<TResult>> project,
-        CancellationToken ct) =>
-        ReadWithFenceAsync(async readCt =>
-        {
-            var tenantIds = await context.Memberships.AsNoTracking()
-                .Where(member => member.UserId == userId)
-                .Select(member => member.TenantId).Distinct().Order().ToListAsync(readCt);
-            foreach (var tenantId in tenantIds)
-                await LockTenantForShareAsync(tenantId, readCt);
-            var members = await context.Memberships.AsNoTracking()
-                .Where(member => member.UserId == userId && tenantIds.Contains(member.TenantId))
-                .ToListAsync(readCt);
-            var snapshots = await MaterializeAsync(members, readCt);
-            return await project(snapshots, readCt);
-        }, ct);
-
-    private async Task<TResult> ReadWithFenceAsync<TResult>(
-        Func<CancellationToken, Task<TResult>> read, CancellationToken ct)
+        CancellationToken ct)
     {
-        if (unitOfWorkAccessor.Current is { } unitOfWork)
-        {
-            await unitOfWork.EnlistAsync(context, ct);
-            return await read(ct);
-        }
-
-        await using var transaction = await BeginStandaloneReadAsync(ct);
-        var result = await read(ct);
-        await transaction.CommitAsync(ct);
-        return result;
+        var fenced = await EnlistInActiveUnitOfWorkAsync(ct);
+        var tenantIds = await context.Memberships.AsNoTracking()
+            .Where(member => member.UserId == userId)
+            .Select(member => member.TenantId)
+            .ToHashSetAsync(ct);
+        if (fenced)
+            await FenceTenantDeletionAsync(tenantIds, ct);
+        var members = await context.Memberships.AsNoTracking()
+            .Where(member => member.UserId == userId && tenantIds.Contains(member.TenantId))
+            .ToListAsync(ct);
+        var snapshots = await MaterializeAsync(members, ct);
+        return await project(snapshots, ct);
     }
 
-    private Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginStandaloneReadAsync(
-        CancellationToken ct) =>
-        context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
+    private async Task<bool> EnlistInActiveUnitOfWorkAsync(CancellationToken ct)
+    {
+        if (unitOfWorkAccessor.Current is not { } unitOfWork)
+            return false;
 
-    private Task<int> LockTenantForShareAsync(Guid tenantId, CancellationToken ct) =>
-        context.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-             SELECT 1
-             FROM tenant."Tenants"
-             WHERE "Id" = {tenantId}
-             FOR SHARE
-             """, ct);
+        await unitOfWork.EnlistAsync(context, ct);
+        return true;
+    }
+
+    private Task FenceTenantDeletionAsync(IReadOnlySet<Guid> tenantIds, CancellationToken ct) =>
+        context.Tenants.LockRowsAsync(tenant => tenantIds.Contains(tenant.Id), RowLock.KeyShare, ct);
 }

@@ -7,14 +7,14 @@ internal interface IConversationRepository : IRepository<ConversationEntity>
 
 internal interface IConversationPrivilegedRepository
 {
-    Task<ConversationEntity?> GetWithGrantsByIdAsync(int conversationId, CancellationToken ct = default);
-    Task<ConversationEntity?> GetWithGrantsByIdForUpdateAsync(int conversationId, CancellationToken ct = default);
-    Task<ConversationCreationReceipt?> GetCreationReceiptForUpdateAsync(
+    Task<ConversationEntity?> GetByIdAsync(int conversationId, CancellationToken ct = default);
+    Task<ConversationEntity?> GetByIdWithRowLockAsync(int conversationId, CancellationToken ct = default);
+    Task<ConversationCreationReceipt?> GetCreationReceiptWithRowLockAsync(
         Guid creatorTenantId,
         Guid createdByMembershipId,
         Guid requestId,
         CancellationToken ct = default);
-    Task<MessageEntity?> GetMessageReceiptForUpdateAsync(
+    Task<MessageEntity?> GetMessageReceiptWithRowLockAsync(
         int conversationId,
         Guid sentByMembershipId,
         Guid requestId,
@@ -23,7 +23,6 @@ internal interface IConversationPrivilegedRepository
         IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default);
     void Add(ConversationEntity conversation);
-    void AddAccessGrants(IEnumerable<ConversationAccessGrant> grants);
     void Add(ConversationCreationReceipt receipt);
     void Add(MessageEntity message);
     Task SaveChangesAsync(CancellationToken ct = default);

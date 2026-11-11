@@ -1,6 +1,6 @@
-using Concertable.B2B.DataAccess.Application;
 using Concertable.B2B.Conversations.Domain.Enums;
 using Concertable.Kernel;
+using Concertable.Kernel.ValueObjects;
 
 namespace Concertable.B2B.Conversations.UnitTests.Domain;
 
@@ -16,7 +16,7 @@ public sealed class ContentReportEntityTests
             ConversationId,
             1,
             Guid.NewGuid(),
-            IdempotencyHash.Create("payload"),
+            Sha256Digest.Of("payload"),
             ArtistTenantId,
             Guid.NewGuid(),
             Guid.NewGuid(),

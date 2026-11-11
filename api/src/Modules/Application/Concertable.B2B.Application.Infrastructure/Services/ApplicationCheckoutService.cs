@@ -1,7 +1,5 @@
 using Concertable.B2B.Application.Application.Errors;
 using Concertable.B2B.DataAccess.Infrastructure;
-using Concertable.B2B.Tenant.Contracts;
-using ITenantResolver = Concertable.B2B.Tenant.Contracts.ITenantResolver;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Application.Application.Responses;
 using Concertable.B2B.Application.Application.Strategies;
@@ -19,12 +17,8 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 {
     private readonly IApplicationRepository repository;
     private readonly IApplicationPrivilegedRepository privilegedRepository;
-    private readonly IMembershipContext membership;
     private readonly IAuthorizationContext authorizationContext;
-    private readonly ITenantResolver tenantResolver;
     private readonly ITransactionRunner transactionRunner;
-    private readonly IPermissionAuthorization permissions;
-    private readonly IResourceAuthorization resources;
     private readonly IArtistModule artistModule;
     private readonly IOpportunityModule opportunityModule;
     private readonly IVenueModule venueModule;
@@ -38,12 +32,8 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     public ApplicationCheckoutService(
         IApplicationRepository repository,
         IApplicationPrivilegedRepository privilegedRepository,
-        IMembershipContext membership,
         IAuthorizationContext authorizationContext,
-        ITenantResolver tenantResolver,
         ITransactionRunner transactionRunner,
-        IPermissionAuthorization permissions,
-        IResourceAuthorization resources,
         IArtistModule artistModule,
         IOpportunityModule opportunityModule,
         IVenueModule venueModule,
@@ -56,12 +46,8 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     {
         this.repository = repository;
         this.privilegedRepository = privilegedRepository;
-        this.membership = membership;
         this.authorizationContext = authorizationContext;
-        this.tenantResolver = tenantResolver;
         this.transactionRunner = transactionRunner;
-        this.permissions = permissions;
-        this.resources = resources;
         this.artistModule = artistModule;
         this.opportunityModule = opportunityModule;
         this.venueModule = venueModule;
@@ -76,8 +62,8 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateApplyCheckoutAsync(
         int opportunityId)
     {
-        if (await permissions.CheckAsync(TenantPermission.ApplicationsSubmit, ResourceAudience.TenantResources)
-            != AuthorizationDecision.Allowed)
+        if (!authorizationContext.Membership.TryGetValue(out var actor)
+            || !actor.Permissions[TenantPermission.ApplicationsSubmit].Includes(ResourceAccess.All))
             return new ApplicationCheckoutError.Ineligible(
                 new ApplicationEligibilityError.MissingArtist());
         var opportunityOption = await opportunityModule.GetOpenAsync(opportunityId);
@@ -117,10 +103,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
 
     public async Task<Result<Checkout, ApplicationCheckoutError>> CreateAcceptCheckoutAsync(int applicationId)
     {
-        if (applicationId <= 0 || await resources.CheckAsync(new AuthorizationRequest(
-            TenantPermission.ApplicationsDecide,
-            ResourceAddress.Create(ResourceKind.Application, applicationId),
-            ResourceFacet.Proposal)) != AuthorizationDecision.Allowed)
+        if (applicationId <= 0)
             return new ApplicationCheckoutError.ApplicationNotFound();
         var application = await repository.GetDecisionByIdAsync(applicationId);
         if (application is null)
@@ -194,7 +177,7 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     private Task<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>> PrepareAcceptCheckoutAsync(
         int applicationId)
     {
-        if (membership.Membership is not { } actor)
+        if (!authorizationContext.Membership.TryGetValue(out var actor))
             return Task.FromResult<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>(
                 new ApplicationCheckoutError.ApplicationNotFound());
         return transactionRunner.RunAsync<ApplicationCheckoutService,
@@ -203,27 +186,14 @@ internal sealed class ApplicationCheckoutService : IApplicationCheckoutService
     }
 
     private async Task<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>
-        PrepareAcceptCheckoutCoreAsync(int applicationId, MembershipSnapshot expectedActor, CancellationToken ct)
+        PrepareAcceptCheckoutCoreAsync(int applicationId, MembershipSnapshot actor, CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<Result<AcceptCheckoutCommitment, ApplicationCheckoutError>>(
-            () => new ApplicationCheckoutError.ApplicationNotFound());
         var opportunityId = await privilegedRepository.GetOpportunityIdAsync(applicationId, ct);
-        var parties = await privilegedRepository.GetNotificationTenantIdsAsync(applicationId, false, ct);
-        if (opportunityId is null || parties.Count == 0)
-            return new ApplicationCheckoutError.ApplicationNotFound();
-        var resolutionOption = await tenantResolver.ResolveManyAsync(expectedActor, parties, ct);
-        if (!resolutionOption.TryGetValue(out var resolution)
-            || !resolution.ExistingTenantIds.SetEquals(parties))
+        if (opportunityId is null)
             return new ApplicationCheckoutError.ApplicationNotFound();
         await privilegedRepository.LockOpportunityAsync(opportunityId.Value, ct);
-        if (await resources.RequireAsync(new AuthorizationRequest(
-            TenantPermission.ApplicationsDecide,
-            ResourceAddress.Create(ResourceKind.Application, applicationId),
-            ResourceFacet.Proposal), ct) != AuthorizationDecision.Allowed)
-            return new ApplicationCheckoutError.ApplicationNotFound();
-        var application = await privilegedRepository.GetByIdForUpdateAsync(applicationId, ct);
-        if (application is null || application.VenueTenantId != resolution.Actor.TenantId
-            || !parties.ToHashSet().SetEquals([application.VenueTenantId, application.ArtistTenantId]))
+        var application = await privilegedRepository.GetByIdWithRowLockAsync(applicationId, ct);
+        if (application is null || !application.IsDecidableBy(actor))
             return new ApplicationCheckoutError.ApplicationNotFound();
         var operationId = application.BeginAcceptance();
         return new AcceptCheckoutCommitment(

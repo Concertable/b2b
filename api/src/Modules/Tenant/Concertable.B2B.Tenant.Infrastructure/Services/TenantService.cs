@@ -1,10 +1,12 @@
 using Concertable.B2B.Tenant.Infrastructure.Authorization;
+using Concertable.B2B.Tenant.Infrastructure.Extensions;
 using Concertable.B2B.Authorization.Contracts;
 using Concertable.B2B.Tenant.Application.DTOs;
 using Concertable.B2B.Tenant.Application.Tax;
 using Concertable.B2B.Tenant.Application.Requests;
 using Concertable.B2B.Tenant.Contracts;
 using Concertable.Kernel.Identity;
+using Microsoft.EntityFrameworkCore;
 using Reunion.Errors;
 
 namespace Concertable.B2B.Tenant.Infrastructure.Services;
@@ -16,14 +18,11 @@ internal sealed class TenantService : ITenantService
     private readonly IRoleRepository roles;
     private readonly IInvitationRepository invitationRepository;
     private readonly ITenantContext tenantContext;
-    private readonly IMembershipContext membershipContext;
-    private readonly IMembershipResolver membershipResolver;
     private readonly IVatPolicy vatPolicy;
     private readonly IOutboxUnitOfWorkBehavior unitOfWork;
     private readonly TimeProvider timeProvider;
     private readonly IReadOnlyList<ITenantDeletionGuard> deletionGuards;
     private readonly ICurrentUser currentUser;
-    private readonly TenantAuthorityResolver authority;
     private readonly IAuthorizationContext authorizationContext;
 
     public TenantService(
@@ -32,14 +31,11 @@ internal sealed class TenantService : ITenantService
         IRoleRepository roles,
         IInvitationRepository invitationRepository,
         ITenantContext tenantContext,
-        IMembershipContext membershipContext,
-        IMembershipResolver membershipResolver,
         IVatPolicy vatPolicy,
         IOutboxUnitOfWorkBehavior unitOfWork,
         TimeProvider timeProvider,
         IEnumerable<ITenantDeletionGuard> deletionGuards,
         ICurrentUser currentUser,
-        TenantAuthorityResolver authority,
         IAuthorizationContext authorizationContext)
     {
         this.repository = repository;
@@ -47,31 +43,16 @@ internal sealed class TenantService : ITenantService
         this.roles = roles;
         this.invitationRepository = invitationRepository;
         this.tenantContext = tenantContext;
-        this.membershipContext = membershipContext;
-        this.membershipResolver = membershipResolver;
         this.vatPolicy = vatPolicy;
         this.unitOfWork = unitOfWork;
         this.timeProvider = timeProvider;
         this.deletionGuards = deletionGuards.ToList();
         this.currentUser = currentUser;
-        this.authority = authority;
         this.authorizationContext = authorizationContext;
     }
 
     public async Task<Option<TenantDto>> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         (await repository.GetByIdAsync(id, ct)).ToOption().Map(tenant => tenant.ToDto());
-
-    public async Task RequireBookingTenantsAsync(
-        Guid venueTenantId,
-        Guid artistTenantId,
-        CancellationToken ct = default)
-    {
-        foreach (var tenantId in new[] { venueTenantId, artistTenantId }.Distinct().Order())
-        {
-            if (!await repository.ExistsForBookingAsync(tenantId, ct))
-                throw new TenantUnavailableException(tenantId);
-        }
-    }
 
     public async Task<IReadOnlyList<MembershipDto>> GetMembershipsAsync(Guid userId, CancellationToken ct = default)
     {
@@ -85,7 +66,7 @@ internal sealed class TenantService : ITenantService
                 m.Snapshot.PermissionVersion,
                 m.Snapshot.RolePolicyVersion,
                 m.BusinessActivities,
-                [.. m.Snapshot.Permissions.Keys.Select(permission => permission.Value)]))
+                [.. m.Snapshot.Permissions.Select(grant => grant.Key.Name)]))
             .ToList();
     }
 
@@ -96,27 +77,28 @@ internal sealed class TenantService : ITenantService
     }
 
     public Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default) =>
         membershipRepository.GetSnapshotsByTenantIdsAsync(tenantIds, ct);
+
+    public async Task<Option<MembershipSnapshot>> GetCurrentMembershipAsync(
+        Guid tenantId,
+        Guid membershipId,
+        CancellationToken ct = default) =>
+        await membershipRepository.GetSnapshotByTenantIdAndIdAsync(tenantId, membershipId, ct);
 
     public async Task<IReadOnlyList<MembershipSnapshot>> GetCurrentMembershipsForNotificationAsync(
         Guid tenantId,
         CancellationToken ct = default) =>
-        await repository.GetByIdForAdministrationAsync(tenantId, ct) is null
+        await repository.GetByIdWithUpdateLockAsync(tenantId, ct) is null
             ? []
-            : await membershipRepository.GetSnapshotsByTenantIdsAsync([tenantId], ct);
-
-    public Task<Option<MembershipSnapshot>> ResolveMembershipSnapshotAsync(
-        MembershipSnapshot expected,
-        CancellationToken ct = default) =>
-        membershipResolver.ResolveSnapshotAsync(expected, ct);
+            : await membershipRepository.GetSnapshotsByTenantIdAsync(tenantId, ct);
 
     public async Task<Option<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(Guid tenantId, CancellationToken ct = default) =>
         (await repository.GetTenantBusinessDetailsByTenantIdAsync(tenantId, ct)).ToOption();
 
     public Task<IReadOnlyList<TenantBusinessDetails>> GetTenantBusinessDetailsAsync(
-        IReadOnlyCollection<Guid> tenantIds,
+        IReadOnlySet<Guid> tenantIds,
         CancellationToken ct = default) =>
         repository.GetTenantBusinessDetailsByTenantIdsAsync(tenantIds, ct);
 
@@ -154,10 +136,10 @@ internal sealed class TenantService : ITenantService
             tenant.ActivateBusinessActivity(activity, now);
 
         await repository.InsertAsync(tenant, ct);
-        await roles.InsertPresetsAsync(tenant.Id, ct);
+        await roles.InsertPresetsAsync(tenant.Id, request.Activities, ct);
         await membershipRepository.InsertAsync(
             TenantMembershipEntity.Create(
-                tenant.Id, userId, [SystemPresetIds.For(tenant.Id, "Owner")], null, now),
+                tenant.Id, userId, [SystemRole.Owner.IdFor(tenant.Id)], null, now),
             ct);
         return ToDetails(tenant);
     }
@@ -171,15 +153,11 @@ internal sealed class TenantService : ITenantService
         UpdateTenantRequest request,
         CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<Result<TenantDetails, UpdateTenantError>>(
-            () => Result.Failure<TenantDetails, UpdateTenantError>(
-                new UpdateTenantError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
+        var tenant = await repository.GetByIdWithUpdateLockAsync(tenantId, ct);
         if (tenant is null)
             return new UpdateTenantError.TenantNotFound(tenantId);
-        if (await authority.AuthorizeAdministrationAsync(
-            tenantId, TenantPermission.TenantSettingsEdit, false, ct) is null)
+        if (!(authorizationContext.TryGetMembership(tenantId, out var actor) && actor.HasPermission(TenantPermission.TenantSettingsEdit)))
             return new UpdateTenantError.NotPermitted();
         if (tenant.Version != request.ExpectedVersion)
             return new UpdateTenantError.Superseded();
@@ -219,41 +197,49 @@ internal sealed class TenantService : ITenantService
                     new ValidationErrors([new(nameof(kind), "The organization activity is invalid.")]));
             }
 
-            authorizationContext.RegisterFailure<Result<TenantDetails, ChangeBusinessActivityError>>(
-                () => Result.Failure<TenantDetails, ChangeBusinessActivityError>(
-                    new ChangeBusinessActivityError.NotPermitted()));
             var tenantId = tenantContext.GetTenantId();
-            var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
+            var tenant = await repository.GetByIdWithUpdateLockAsync(tenantId, ct);
             if (tenant is null)
                 return new ChangeBusinessActivityError.TenantNotFound(tenantId);
-            if (await authority.AuthorizeAdministrationAsync(
-                tenantId, TenantPermission.TenantSettingsEdit, false, ct) is null)
+            if (!(authorizationContext.TryGetMembership(tenantId, out var actor) && actor.HasPermission(TenantPermission.TenantSettingsEdit)))
                 return new ChangeBusinessActivityError.NotPermitted();
             if (tenant.EligibilityVersion != request.ExpectedEligibilityVersion)
                 return new ChangeBusinessActivityError.Superseded();
 
             var now = timeProvider.GetUtcNow().UtcDateTime;
             if (activate)
+            {
                 tenant.ActivateBusinessActivity(kind, now);
+                await roles.ProvisionMissingSystemRolesAsync(
+                    tenantId, [.. tenant.BusinessActivities.Where(activity => activity.IsActive).Select(activity => activity.Kind)], ct);
+            }
             else
                 tenant.RetireBusinessActivity(kind, now);
 
             return Result.Success<TenantDetails, ChangeBusinessActivityError>(ToDetails(tenant));
         }, ct);
 
-    public Task<UnitResult<DeleteTenantError>> DeleteAsync(CancellationToken ct = default) =>
-        unitOfWork.ExecuteAsync(() => DeleteCoreAsync(ct), ct);
+    public async Task<UnitResult<DeleteTenantError>> DeleteAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            return await unitOfWork.ExecuteAsync(() => DeleteCoreAsync(ct), ct);
+        }
+        catch (DbUpdateException exception) when (exception.IsMembershipConcurrencyConflict())
+        {
+            return new DeleteTenantError.NotPermitted();
+        }
+    }
 
     private async Task<UnitResult<DeleteTenantError>> DeleteCoreAsync(CancellationToken ct)
     {
-        authorizationContext.RegisterFailure<UnitResult<DeleteTenantError>>(
-            () => UnitResult.Failure<DeleteTenantError>(new DeleteTenantError.NotPermitted()));
         var tenantId = tenantContext.GetTenantId();
-        var tenant = await repository.GetByIdForAdministrationAsync(tenantId, ct);
+        var tenant = await repository.GetByIdWithUpdateLockAsync(tenantId, ct);
         if (tenant is null)
             return new DeleteTenantError.TenantNotFound(tenantId);
-        if (await authority.AuthorizeAdministrationAsync(
-            tenantId, TenantPermission.TenantDelete, true, ct) is null)
+        if (!authorizationContext.TryGetMembership(tenantId, out var actor)
+            || !actor.HasPermission(TenantPermission.TenantDelete)
+            || !await roles.HasProtectedOwnerAsync(tenantId, actor.MembershipId, ct))
             return new DeleteTenantError.NotPermitted();
 
         foreach (var guard in deletionGuards)
@@ -263,8 +249,6 @@ internal sealed class TenantService : ITenantService
         }
 
         var members = await membershipRepository.ListMembershipsByTenantAsync(tenantId, ct);
-        if (!await authority.TrackTenantDeletionAsync(tenant, members, ct))
-            return new DeleteTenantError.NotPermitted();
         foreach (var membership in members)
             membershipRepository.Remove(membership);
 
@@ -303,18 +287,6 @@ internal sealed class TenantService : ITenantService
                 $"Tenant {tenantId} has no tax compliance; the settlement tax-gate should guarantee it by invoice time.");
 
         return vatPolicy.Apply(gross, compliance.VatNumber);
-    }
-
-    private async Task<bool> HasCurrentPermissionAsync(
-        Guid tenantId,
-        TenantPermission permission,
-        CancellationToken ct)
-    {
-        var expected = membershipContext.Membership;
-        if (expected is null || expected.TenantId != tenantId)
-            return false;
-        var currentOption = await membershipResolver.ResolveSnapshotAsync(expected, ct);
-        return currentOption.TryGetValue(out var current) && current.HasPermission(permission);
     }
 
     private TenantDetails ToDetails(TenantEntity tenant) => new()

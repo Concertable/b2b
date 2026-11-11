@@ -1,10 +1,23 @@
 using Concertable.B2B.Authorization.Contracts;
+using Concertable.B2B.Tenant.Contracts;
 using Concertable.B2B.Tenant.Domain.Entities;
 
 namespace Concertable.B2B.Tenant.Domain;
 
 public static class TenantRoleAssignmentPolicy
 {
+    public static bool AreAvailableForTenant(TenantEntity tenant, IReadOnlyCollection<TenantRoleDefinition> roles)
+    {
+        var activeActivities = tenant.BusinessActivities
+            .Where(activity => activity.IsActive)
+            .Select(activity => activity.Kind)
+            .ToHashSet();
+        return roles.All(role =>
+            role.SystemRole is not { } systemRole
+            || systemRole.RequiredActivity is not { } required
+            || activeActivities.Contains(required));
+    }
+
     public static bool CanAssign(
         MembershipSnapshot actor,
         bool isProtectedOwner,
@@ -21,9 +34,9 @@ public static class TenantRoleAssignmentPolicy
             role.IsInvitationAssignable
             && !role.IsProtectedOwner
             && role.Permissions.All(grant =>
-                TenantPermission.TryParse(grant.PermissionKey, out var permission)
+                TenantPermission.TryParseName(grant.PermissionKey, out var permission)
                 && permission != TenantPermission.MembersInvite
-                && !AuthorizationCatalog.Permissions[permission].OwnerOnly
-                && actor.AudienceFor(permission) >= grant.Audience));
+                && !permission.IsOwnerOnly
+                && actor.Permissions[permission] >= grant.Access));
     }
 }

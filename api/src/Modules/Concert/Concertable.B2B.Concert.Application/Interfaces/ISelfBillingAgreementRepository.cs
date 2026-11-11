@@ -5,6 +5,12 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 
 internal interface ISelfBillingAgreementRepository : ITenantScopedRepository<SelfBillingAgreementEntity>
 {
+    Task AcquireTenantAgreementsSharedLockAsync(Guid tenantId, CancellationToken ct = default);
+
+    Task AcquireTenantAgreementsExclusiveLockAsync(Guid tenantId, CancellationToken ct = default);
+
+    Task<bool> ExistsByTenantIdAsync(Guid tenantId, CancellationToken ct = default);
+
     /// <summary>Deliberately bypasses the ambient single-owner scoping to check an explicit
     /// (possibly third-party) tenant's in-force agreement — unlike every other member on this
     /// interface, which is scoped to the caller.</summary>

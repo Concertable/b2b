@@ -8,7 +8,6 @@ namespace Concertable.B2B.Conversations.IntegrationTests;
 
 public sealed class ConversationsApiFixture : ApiFixture
 {
-    private const long ConversationCreationLockSeed = 638457221;
     private string connectionString = null!;
 
     internal async Task<T[]> RunWithConversationCreationBarrierAsync<T>(
@@ -118,25 +117,6 @@ public sealed class ConversationsApiFixture : ApiFixture
         return outcome!;
     }
 
-    internal async Task RevokeMemberReadGrantAsync(int conversationId, Guid membershipId)
-    {
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync();
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
-            UPDATE conversations."ConversationAccessGrants"
-            SET "RevokedAt" = now(), "Version" = "Version" + 1
-            WHERE "ResourceId" = @conversationId
-              AND "MembershipId" = @membershipId
-              AND "Scope" = 1
-              AND "RevokedAt" IS NULL
-            """;
-        command.Parameters.AddWithValue("conversationId", conversationId);
-        command.Parameters.AddWithValue("membershipId", membershipId);
-        if (await command.ExecuteNonQueryAsync() != 1)
-            throw new InvalidOperationException("Expected one live member Read grant.");
-    }
-
     private async Task WaitForConversationCreationLockWaitersAsync()
     {
         await using var observer = new NpgsqlConnection(connectionString);
@@ -171,26 +151,10 @@ public sealed class ConversationsApiFixture : ApiFixture
     {
         await using var command = connection.CreateCommand();
         command.CommandText = acquire
-            ? """
-              SELECT pg_advisory_lock(
-                  hashtextextended(
-                      CAST(@creatorTenantId AS text)
-                      || ':' || CAST(@createdByMembershipId AS text)
-                      || ':' || CAST(@requestId AS text),
-                      @seed))
-              """
-            : """
-              SELECT pg_advisory_unlock(
-                  hashtextextended(
-                      CAST(@creatorTenantId AS text)
-                      || ':' || CAST(@createdByMembershipId AS text)
-                      || ':' || CAST(@requestId AS text),
-                      @seed))
-              """;
-        command.Parameters.AddWithValue("creatorTenantId", creatorTenantId);
-        command.Parameters.AddWithValue("createdByMembershipId", createdByMembershipId);
-        command.Parameters.AddWithValue("requestId", requestId);
-        command.Parameters.AddWithValue("seed", ConversationCreationLockSeed);
+            ? "SELECT pg_advisory_lock(@lockNamespace, @key)"
+            : "SELECT pg_advisory_unlock(@lockNamespace, @key)";
+        command.Parameters.AddWithValue("lockNamespace", (int)AdvisoryLock.ConversationCreation);
+        command.Parameters.AddWithValue("key", requestId.GetHashCode());
         await command.ExecuteNonQueryAsync();
     }
 

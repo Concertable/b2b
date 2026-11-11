@@ -19,7 +19,10 @@ internal abstract partial record InviteMemberError : IError
             ErrorDefinition.Forbidden<NotPermitted>(
                 "You cannot assign this role."),
         Unauthenticated =>
-            ErrorDefinition.Forbidden<Unauthenticated>("No authenticated user was found.")
+            ErrorDefinition.Forbidden<Unauthenticated>("No authenticated user was found."),
+        RoleNotAvailableForTenant =>
+            ErrorDefinition.Invalid<RoleNotAvailableForTenant>(
+                "This role is not available for your organization's activities.")
     };
 
     [ErrorCode("tenant.invite_tenant_not_found")]
@@ -36,4 +39,7 @@ internal abstract partial record InviteMemberError : IError
 
     [ErrorCode("tenant.invite_not_permitted")]
     public partial record NotPermitted;
+
+    [ErrorCode("tenant.invite_role_not_available_for_tenant")]
+    public partial record RoleNotAvailableForTenant;
 }

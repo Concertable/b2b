@@ -23,7 +23,6 @@ namespace Concertable.B2B.Tenant.IntegrationTests;
 
 public sealed class TenantApiFixture : ApiFixture
 {
-    private const long TenantCreationLockSeed = 638457220;
     private TenantDbContext dbContext = null!;
     private ITransactionRunner transactionRunner = null!;
     private TenantProvisioningHandler provisioningHandler = null!;
@@ -36,10 +35,11 @@ public sealed class TenantApiFixture : ApiFixture
     public IQueryable<TenantVerificationEntity> Verifications =>
         dbContext.Verifications.Include(verification => verification.Documents).AsNoTracking();
 
-    public Task<TResult> ExecuteResolutionAsync<TResult>(
-        Func<ITenantResolver, CancellationToken, Task<TResult>> resolve,
-        CancellationToken ct = default) =>
-        transactionRunner.RunAsync(resolve, ct);
+    public Task<TResult> RunInTransactionAsync<TService, TResult>(
+        Func<TService, CancellationToken, Task<TResult>> action,
+        CancellationToken ct = default)
+        where TService : notnull =>
+        transactionRunner.RunAsync(action, ct);
 
     internal async Task<UnitResult<RemoveMemberError>> RemoveOwnersInOneCommandAsync(
         Guid ownerUserId,
@@ -67,10 +67,7 @@ public sealed class TenantApiFixture : ApiFixture
                     var first = await members.RemoveMemberAsync(otherOwnerUserId, ct);
                     if (first.TryGetError(out var firstError))
                         throw new InvalidOperationException($"First owner removal failed: {firstError}.");
-                    var second = await members.RemoveMemberAsync(ownerUserId, ct);
-                    if (second.TryGetError(out var secondError))
-                        throw new InvalidOperationException($"Second owner removal failed: {secondError}.");
-                    return second;
+                    return await members.RemoveMemberAsync(ownerUserId, ct);
                 });
         }
         finally
@@ -94,11 +91,19 @@ public sealed class TenantApiFixture : ApiFixture
         await dbContext.SaveChangesAsync();
     }
 
+    public async Task RetireBusinessActivityAsync(Guid tenantId, TenantBusinessActivityKind activity)
+    {
+        var tenant = await dbContext.Tenants.SingleAsync(candidate => candidate.Id == tenantId);
+        tenant.RetireBusinessActivity(activity, DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+    }
+
     public async Task ChangeMembershipRolesAsync(Guid tenantId, Guid userId, params string[] presetKeys)
     {
         var membership = await dbContext.Memberships.SingleAsync(
             candidate => candidate.TenantId == tenantId && candidate.UserId == userId);
-        membership.ReplaceRoles([.. presetKeys.Select(key => RoleId(tenantId, key))], Guid.NewGuid(), DateTime.UtcNow);
+        Assert.True(membership.ChangeRoles(
+            presetKeys.Select(key => RoleId(tenantId, key)).ToHashSet(), Guid.NewGuid(), DateTime.UtcNow).IsSuccess);
         await dbContext.SaveChangesAsync();
     }
 
@@ -127,7 +132,8 @@ public sealed class TenantApiFixture : ApiFixture
         await dbContext.SaveChangesAsync();
         return invitation;
     }
-    internal static Guid RoleId(Guid tenantId, string presetKey) => SystemPresetIds.For(tenantId, presetKey);
+    internal static Guid RoleId(Guid tenantId, string presetKey) =>
+        Enum.Parse<SystemRole>(presetKey).IdFor(tenantId);
 
     public async Task<TenantVerificationEntity> AddRejectedVerificationAsync(
         Guid tenantId,
@@ -170,7 +176,7 @@ public sealed class TenantApiFixture : ApiFixture
         await control.OpenAsync();
         await ExecuteScalarAsync(
             control,
-            "SELECT pg_advisory_lock(hashtextextended(CAST(@userId AS text), @seed))",
+            "SELECT pg_advisory_lock(@lockNamespace, @key)",
             userId);
         var lockHeld = true;
         var result = action();
@@ -184,7 +190,7 @@ public sealed class TenantApiFixture : ApiFixture
             await WaitForTenantCreationWaitersAsync(control, 2);
             await ExecuteScalarAsync(
                 control,
-                "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
+                "SELECT pg_advisory_unlock(@lockNamespace, @key)",
                 userId);
             lockHeld = false;
             return await result;
@@ -194,7 +200,7 @@ public sealed class TenantApiFixture : ApiFixture
             if (lockHeld)
                 await ExecuteScalarAsync(
                     control,
-                    "SELECT pg_advisory_unlock(hashtextextended(CAST(@userId AS text), @seed))",
+                    "SELECT pg_advisory_unlock(@lockNamespace, @key)",
                     userId);
         }
     }
@@ -229,7 +235,7 @@ public sealed class TenantApiFixture : ApiFixture
             deletionResult = deletion();
             await WaitForLockWaiterAsync(monitor, """%DELETE FROM tenant."Invitations"%""");
             contenderResult = contender();
-            await WaitForLockWaiterAsync(monitor, """%tenant."Tenants"%FOR UPDATE%""");
+            await WaitForLockWaiterAsync(monitor, "%concertable:row-lock:Update%");
         }
         finally
         {
@@ -346,7 +352,7 @@ public sealed class TenantApiFixture : ApiFixture
                 WHERE datname = current_database()
                   AND pid <> pg_backend_pid()
                   AND wait_event = 'advisory'
-                  AND query LIKE '%pg_advisory_xact_lock(hashtextextended%'
+                  AND query LIKE '%pg_advisory_xact_lock%'
                 """;
             if (Convert.ToInt32(await command.ExecuteScalarAsync(timeout.Token)) >= count)
                 return;
@@ -379,8 +385,8 @@ public sealed class TenantApiFixture : ApiFixture
     {
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
-        command.Parameters.AddWithValue("userId", userId);
-        command.Parameters.AddWithValue("seed", TenantCreationLockSeed);
+        command.Parameters.AddWithValue("lockNamespace", (int)AdvisoryLock.TenantCreation);
+        command.Parameters.AddWithValue("key", userId.GetHashCode());
         await command.ExecuteScalarAsync();
     }
 

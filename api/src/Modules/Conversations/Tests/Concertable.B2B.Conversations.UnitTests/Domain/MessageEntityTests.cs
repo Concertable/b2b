@@ -1,4 +1,4 @@
-using Concertable.B2B.DataAccess.Application;
+using Concertable.Kernel.ValueObjects;
 
 namespace Concertable.B2B.Conversations.UnitTests.Domain;
 
@@ -11,16 +11,16 @@ public sealed class MessageEntityTests
         var senderTenantId = Guid.NewGuid();
         var membershipId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var idempotencyHash = IdempotencyHash.Create("payload");
+        var fingerprint = Sha256Digest.Of("payload");
 
         var message = MessageEntity.Create(
-            3, 7, requestId, idempotencyHash, senderTenantId, membershipId, userId,
+            3, 7, requestId, fingerprint, senderTenantId, membershipId, userId,
             "content", new DateTime(2026, 1, 1), MessageAction.ApplicationAccepted);
 
         Assert.Equal(3, message.ConversationId);
         Assert.Equal(7, message.Sequence);
         Assert.Equal(requestId, message.RequestId);
-        Assert.Equal(idempotencyHash, message.IdempotencyHash);
+        Assert.Equal(fingerprint, message.Fingerprint);
         Assert.Equal(senderTenantId, message.SenderTenantId);
         Assert.Equal(membershipId, message.SentByMembershipId);
         Assert.Equal(userId, message.SentByUserId);
@@ -58,6 +58,6 @@ public sealed class MessageEntityTests
 
     private static MessageEntity CreateMessage(string content) =>
         MessageEntity.Create(
-            3, 1, Guid.NewGuid(), IdempotencyHash.Create("payload"), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+            3, 1, Guid.NewGuid(), Sha256Digest.Of("payload"), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             content, new DateTime(2026, 1, 1));
 }

@@ -93,7 +93,6 @@ public static class ServiceCollectionExtensions
         services.AddUnitOfWork();
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<TenantInterceptor>();
-        services.AddScoped<IResourceAccessContext, ResourceAccessContext>();
         services.AddScoped<IDomainEventDispatchInterceptor, DomainEventDispatchInterceptor>();
 
         services.AddDataAccessSpecifications();

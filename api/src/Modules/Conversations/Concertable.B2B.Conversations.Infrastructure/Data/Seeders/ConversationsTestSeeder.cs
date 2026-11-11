@@ -1,4 +1,3 @@
-using Concertable.B2B.DataAccess.Application;
 using Concertable.DataAccess;
 using Concertable.Seed.Identity;
 using Concertable.Seed.Shared;
@@ -44,7 +43,7 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
             var venueMembershipId = MembershipId(venueTenantId, venueUserId);
             var artistMembershipId = MembershipId(artistTenantId, artistUserId);
             var conversation = ConversationEntity.Create(
-                [venueTenantId, artistTenantId], artistTenantId, artistUserId, now.AddDays(-1));
+                new HashSet<Guid> { venueTenantId, artistTenantId }, artistTenantId, now.AddDays(-1));
             context.Conversations.Add(conversation);
             await context.SaveChangesAsync(ct);
 
@@ -53,7 +52,7 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
                 conversation.Id,
                 conversation.AllocateMessageSequence(),
                 Guid.NewGuid(),
-                IdempotencyHash.Create(firstContent, MessageAction.ApplicationReceived),
+                Sha256Digest.Of(firstContent, MessageAction.ApplicationReceived),
                 artistTenantId,
                 artistMembershipId,
                 artistUserId,
@@ -65,7 +64,7 @@ internal sealed class ConversationsTestSeeder : ITestSeeder
                 conversation.Id,
                 conversation.AllocateMessageSequence(),
                 Guid.NewGuid(),
-                IdempotencyHash.Create(secondContent, MessageAction.ApplicationAccepted),
+                Sha256Digest.Of(secondContent, MessageAction.ApplicationAccepted),
                 venueTenantId,
                 venueMembershipId,
                 venueUserId,

@@ -7,6 +7,6 @@ internal interface IConcertCommandReceiptRepository : IRepository<ConcertCommand
 {
     void Add(ConcertCommandReceipt receipt);
 
-    Task<ConcertCommandReceipt?> GetByRequestForUpdateAsync(
+    Task<ConcertCommandReceipt?> GetByRequestWithRowLockAsync(
         Guid issuedByTenantId, string operation, Guid requestId, CancellationToken ct = default);
 }

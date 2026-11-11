@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
         roles: [{ id: "staff-id", name: "Staff", isProtectedOwner: false }],
         permissionVersion: 1,
         rolePolicyVersion: 1,
-        permissions: ["operations.view"] as const,
+        permissions: ["operations:view"] as const,
       },
     ],
   },

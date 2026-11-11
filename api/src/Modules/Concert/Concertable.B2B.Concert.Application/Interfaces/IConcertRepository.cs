@@ -8,7 +8,6 @@ namespace Concertable.B2B.Concert.Application.Interfaces;
 internal interface IConcertRepository : IRepository<ConcertEntity>
 {
     Task<ConcertEntity?> GetByBookingIdAsync(int bookingId, CancellationToken ct = default);
-    Task<ConcertEntity?> GetWithGrantsByIdAsync(int id, CancellationToken ct = default);
     Task<ConcertState?> GetStateByIdAsync(int concertId, CancellationToken ct = default);
     Task<ConcertSummary?> GetSummaryByIdAsync(int id, CancellationToken ct = default);
     Task<ConcertOperations?> GetOperationsByIdAsync(int id, CancellationToken ct = default);

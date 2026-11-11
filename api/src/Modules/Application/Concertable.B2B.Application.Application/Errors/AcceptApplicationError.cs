@@ -20,8 +20,6 @@ internal abstract partial record AcceptApplicationError : IError
             $"Application {applicationId} changed while this acceptance was in flight."),
         NotPermitted => ErrorDefinition.Forbidden<NotPermitted>(
             "You are not permitted to accept this application."),
-        PartyUnavailable => ErrorDefinition.Conflict<PartyUnavailable>(
-            "A booking party is no longer available."),
         PaymentMethodRequired => ErrorDefinition.Invalid<PaymentMethodRequired>(
             "This deal requires a payment method at acceptance.")
     };
@@ -42,8 +40,6 @@ internal abstract partial record AcceptApplicationError : IError
 
     [ErrorCode("application.accept.not_permitted")]
     public partial record NotPermitted;
-    [ErrorCode("application.accept.party_unavailable")]
-    public partial record PartyUnavailable;
 
     [ErrorCode("application.accept.payment_method_required")]
     public partial record PaymentMethodRequired;
