@@ -50,6 +50,7 @@ public sealed class ApplicationFlatFeeApiTests : IAsyncLifetime
         await (await client.PostAsync($"/api/application/{applicationId}/checkout")).ShouldBe(HttpStatusCode.OK);
         var afterFirstCheckout = await fixture.Applications.SingleAsync(item => item.Id == applicationId);
         Assert.NotNull(afterFirstCheckout.AcceptanceOperationId);
+        Assert.Equal(7, afterFirstCheckout.AcceptanceOperationId.Value.Version);
 
         await (await client.PostAsync($"/api/application/{applicationId}/checkout")).ShouldBe(HttpStatusCode.OK);
         var afterSecondCheckout = await fixture.Applications.SingleAsync(item => item.Id == applicationId);
