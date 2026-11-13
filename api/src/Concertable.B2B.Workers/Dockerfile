@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.15-noble@sha256:bfd912c83295ce66d4b706ebb8541b9f14259b0e76fbb88b2751f58ce2399d2e AS patched-runtime
 
-FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated10.0@sha256:25eab21b041bddcfbc2559a6b06f8b1979e77e8ccdc4190dab37d1a2c7a29191
+FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated10.0@sha256:6990da543e1dc1c7bb8d8d32c702c87a525db7b8ea621e645b479c822ed72c6d
 
 # The Functions base still ships .NET 10.0.12. Replace that runtime while retaining its host and other runtime families.
 RUN rm -rf /usr/share/dotnet/shared/Microsoft.NETCore.App/10.0.* \
